@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import print_function
 from fnmatch import fnmatch
 import json
 import os
@@ -222,7 +221,7 @@ def _get_valid_tf_targets(config, targets):
     for target in targets:
         matches = {
             '{}.{}'.format(value_type, value)
-            for value_type, values in modules.iteritems()
+            for value_type, values in modules.items()
             for value in values
             if fnmatch(value, target)
         }
@@ -257,7 +256,7 @@ def get_tf_modules(config, generate=False):
                     modules.update(set((tf_data['module'])))
                     resources.update(
                         '{}.{}'.format(resource, value)
-                        for resource, values in tf_data.get('resource', {}).iteritems()
+                        for resource, values in tf_data.get('resource', {}).items()
                         for value in values
                     )
 
@@ -277,7 +276,7 @@ def terraform_list_targets(config):
     if not modules:
         return False
 
-    max_resource_len = max(len(value) for values in modules.itervalues() for value in values) + 8
+    max_resource_len = max(len(value) for values in modules.values() for value in values) + 8
 
     row_format_str = '{prefix:<{pad}}{value}'
 

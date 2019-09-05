@@ -61,9 +61,8 @@ def safe_timeout(func):
     return _wrapper
 
 
-class AppIntegration(object):
+class AppIntegration(metaclass=ABCMeta):
     """Base class for all app integrations to be implemented for various services"""
-    __metaclass__ = ABCMeta
     # This _POLL_BUFFER_MULTIPLIER is a multiplier that will be used, along with the time it
     # took to perform an API request and forward logs, to determine if there is enough
     # time remaining in the execution of this function to perform another request.
@@ -200,7 +199,7 @@ class AppIntegration(object):
         """Method for performing any startup steps, like setting state to running"""
         # Perform another safety check to make sure this is not being invoked already
         if self._config.is_running:
-            LOGGER.error('[%s] App already running', self)
+            LOGGER.warning('[%s] App already running', self)
             return False
 
         # Check if this is an invocation spawned from a previous partial execution
@@ -340,7 +339,7 @@ class AppIntegration(object):
 
     @_report_time
     def _gather(self):
-        """Protected entry point to peform the gather that returns the time the process took
+        """Protected entry point to perform the gather that returns the time the process took
 
         Returns:
             float: time, in seconds, for which the function ran

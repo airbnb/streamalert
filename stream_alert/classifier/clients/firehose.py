@@ -19,7 +19,8 @@ import re
 
 import backoff
 import boto3
-from botocore.exceptions import ClientError, ConnectionError, HTTPClientError
+from botocore.exceptions import ClientError, HTTPClientError
+from botocore.exceptions import ConnectionError as BotocoreConnectionError
 
 from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 import stream_alert.shared.helpers.boto as boto_helpers
@@ -34,7 +35,7 @@ from stream_alert.shared.backoff_handlers import (
 LOGGER = get_logger(__name__)
 
 
-class FirehoseClient(object):
+class FirehoseClient:
     """Handles preparing and sending data from the classifier function to Kinesis Firehose"""
     # Used to detect special characters in payload keys.
     # This is necessary for sanitization of data prior to searching in Athena.
@@ -54,7 +55,7 @@ class FirehoseClient(object):
     DEFAULT_FIREHOSE_PREFIX = 'streamalert_data_{}'
 
     # Exception for which backoff operations should be performed
-    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectionError, HTTPClientError)
+    EXCEPTIONS_TO_BACKOFF = (ClientError, BotocoreConnectionError, HTTPClientError)
 
     # Set of enabled log types for firehose, loaded from configs
     _ENABLED_LOGS = dict()
@@ -131,7 +132,7 @@ class FirehoseClient(object):
             dict: A sanitized record
         """
         new_record = {}
-        for key, value in record.iteritems():
+        for key, value in record.items():
             sanitized_key = re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, key)
 
             # Handle nested objects
@@ -193,7 +194,7 @@ class FirehoseClient(object):
             size (int): The original size of the batch being sent
         """
         if not response:
-            return  # Could happen in the case of backoff failing enitrely
+            return  # Could happen in the case of backoff failing entirely
 
         # Check for failures that occurred in PutRecordBatch after several backoff attempts
         if response.get('FailedPutCount'):
@@ -281,13 +282,13 @@ class FirehoseClient(object):
 
     @classmethod
     def firehose_log_name(cls, log_name):
-        """Convert conventional log names into Firehose delievery stream names
+        """Convert conventional log names into Firehose delivery stream names
 
         Args:
             log_name: The name of the log from logs.json
 
         Returns
-            str: Converted name which corresponds to a Firehose Delievery Stream
+            str: Converted name which corresponds to a Firehose delivery Stream
         """
         return re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, log_name)
 
@@ -382,7 +383,7 @@ class FirehoseClient(object):
         # Iterate through each set of categorized payloads.
         # Each batch will be processed to their specific Firehose, which lands the data
         # in a specific prefix in S3.
-        for log_type, records in records.iteritems():
+        for log_type, records in records.items():
             # This same substitution method is used when naming the Delivery Streams
             formatted_log_type = self.firehose_log_name(log_type)
             stream_name = self.DEFAULT_FIREHOSE_PREFIX.format(formatted_log_type)

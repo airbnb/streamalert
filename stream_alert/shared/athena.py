@@ -35,7 +35,7 @@ class AthenaQueryExecutionError(Exception):
     """Exception to be raised when an Athena query fails"""
 
 
-class AthenaClient(object):
+class AthenaClient:
     """A StreamAlert Athena Client for creating tables, databases, and executing queries
 
     Attributes:
@@ -99,13 +99,13 @@ class AthenaClient(object):
         """
         response = self._execute_query(query)
 
-        exeuction_id = response['QueryExecutionId']
+        execution_id = response['QueryExecutionId']
 
         # This will block until the execution is complete, or raise an
         # AthenaQueryExecutionError exception if an error occurs
-        self.check_query_status(exeuction_id)
+        self.check_query_status(execution_id)
 
-        return exeuction_id
+        return execution_id
 
     def _execute_query(self, query):
         """Execute an Athena query on the current database. This operation is non-blocking

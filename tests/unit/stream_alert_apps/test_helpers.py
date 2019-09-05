@@ -30,7 +30,7 @@ def put_mock_params(app_type):
         '{}_auth'.format(app_type): _get_auth_info(app_type)
     }
     ssm_client = boto3.client('ssm')
-    for key, value in params.iteritems():
+    for key, value in params.items():
         ssm_client.put_parameter(
             Name=key,
             Value=json.dumps(value),
@@ -47,13 +47,13 @@ def _get_auth_info(app_type):
             'integration_key': 'DI1234567890ABCDEF12',
             'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
         }
-    elif app_type.startswith('onelogin'):
+    if app_type.startswith('onelogin'):
         return {
             'region': 'us',
             'client_secret': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             'client_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
         }
-    elif app_type.startswith('gsuite'):
+    if app_type.startswith('gsuite'):
         return {
             'delegation_email': 'test@email.com',
             'keyfile': {
@@ -71,7 +71,7 @@ def _get_auth_info(app_type):
                                          'a-test-200%40myapp-123456.iam.gserviceaccount.com')
             }
         }
-    elif app_type.startswith('box'):
+    if app_type.startswith('box'):
         return {
             'keyfile': {
                 'boxAppSettings': {
@@ -88,13 +88,13 @@ def _get_auth_info(app_type):
                 'enterpriseID': '12345678'
             }
         }
-    elif app_type == 'aliyun':
+    if app_type == 'aliyun':
         return {
             'access_key_id': 'ACCESS_KEY_ID',
             'access_key_secret': 'ACCESS_KEY_SECRET',
             'region_id': 'REGION_ID'
         }
-    elif app_type == 'salesforce':
+    if app_type == 'salesforce':
         return {
             'client_id': 'CLIENT_ID',
             'client_secret': 'CLIENT_SECRET',
@@ -102,7 +102,7 @@ def _get_auth_info(app_type):
             'password': 'PASSWORD',
             'security_token': 'SECURITY_TOKEN'
         }
-    elif app_type == 'slack':
+    if app_type == 'slack':
         return {
             'auth_token': 'xoxp-aaaaaaa-111111111-eeeeeeeeee-fffffff'
         }
@@ -116,7 +116,7 @@ def _get_auth_info(app_type):
     }
 
 
-class MockLambdaClient(object):
+class MockLambdaClient:
     """Helper mock class to act as the ssm boto3 client"""
     _raise_exception = False
 
@@ -160,15 +160,15 @@ def _get_formatted_timestamp(app_type):
     """Different services required different date formats - return the proper format here"""
     if app_type.startswith('duo'):
         return 1505316432
-    elif app_type.startswith('onelogin'):
+    if app_type.startswith('onelogin'):
         return '2017-10-10T22:03:57Z'
-    elif app_type.startswith('gsuite') or app_type == 'salesforce':
+    if app_type.startswith('gsuite') or app_type == 'salesforce':
         return '2017-06-17T15:39:18.460Z'
-    elif app_type.startswith('box'):
+    if app_type.startswith('box'):
         return '2017-10-27T12:31:22-07:00'
-    elif app_type == 'slack':
+    if app_type == 'slack':
         return 1422922593
-    elif app_type == 'aliyun':
+    if app_type == 'aliyun':
         return '2018-07-23T15:42:11Z'
 
     return 1234567890

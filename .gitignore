@@ -3,6 +3,7 @@ docs/build
 
 # Compiled Python files
 *.pyc
+__pycache__
 
 # Terraform files
 *.terraform/
@@ -11,20 +12,18 @@ terraform/terraform.tfstate*
 terraform/*.zip
 terraform/*.tf.json
 
-# MacOS artifacts
-Thumbs.db
-.DS_Store
-*.swp
-terminal.glue
-
 # Coveralls repo token
 .coveralls.yml
 
 # nose coverage file
 .coverage
 
-# virtualenv files
-venv/
+# virtualenv files in root of repo
+/venv
 
-.vagrant/
-htmlcov/
+# Vagrant VM artifacts
+ubuntu*.log
+/vagrant
+
+# Coverage artifacts
+/htmlcov

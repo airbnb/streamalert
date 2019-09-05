@@ -25,7 +25,7 @@ LOGGER = get_logger(__name__)
 class OneLoginApp(AppIntegration):
     """OneLogin StreamAlert App"""
     _ONELOGIN_EVENTS_URL = 'https://api.{}.onelogin.com/api/1/events'
-    _ONELOGIN_TOKEN_URL = 'https://api.{}.onelogin.com/auth/oauth2/v2/token'
+    _ONELOGIN_TOKEN_URL = 'https://api.{}.onelogin.com/auth/oauth2/v2/token' # nosec
     _ONELOGIN_RATE_LIMIT_URL = 'https://api.{}.onelogin.com/auth/rate_limit'
     # OneLogin API returns 50 events per page
     _MAX_EVENTS_LIMIT = 50

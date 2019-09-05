@@ -27,7 +27,7 @@ BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
 LOGGER = get_logger(__name__)
 
 
-class LambdaPackage(object):
+class LambdaPackage:
     """Build a deployment package for a StreamAlert Lambda function."""
     config_key = None                  # Configuration key to access conf/lambda.json
     lambda_handler = None              # Entry point for the Lambda function
@@ -43,17 +43,17 @@ class LambdaPackage(object):
     # Define a package dict to support pinning versions across all subclasses
     PACKAGE_LIBS = {
         'aliyun-python-sdk-actiontrail': 'aliyun-python-sdk-actiontrail==2.0.0',
-        'backoff': 'backoff==1.7.0',
-        'boto3': 'boto3==1.9.50',
+        'backoff': 'backoff==1.8.0',
+        'boto3': 'boto3==1.9.208',
         'boxsdk[jwt]': 'boxsdk[jwt]==2.0.0a11',
-        'cbapi': 'cbapi==1.3.6',
+        'cbapi': 'cbapi==1.5.1',
         'google-api-python-client': 'google-api-python-client==1.6.4',
-        'jmespath': 'jmespath==0.9.3',
+        'jmespath': 'jmespath==0.9.4',
         'jsonlines': 'jsonlines==1.2.0',
         'netaddr': 'netaddr==0.7.19',
         'oauth2client': 'oauth2client==4.1.3',
         'policyuniverse': 'policyuniverse==1.3.2.0',
-        'requests': 'requests==2.20.1',
+        'requests': 'requests==2.22.0',
     }
 
     def __init__(self, config):
@@ -178,7 +178,7 @@ class LambdaPackage(object):
         LOGGER.info('Installing libraries: %s', ', '.join(libs_to_install))
         pip_command = ['pip', 'install']
         pip_command.extend(libs_to_install)
-        pip_command.extend(['--upgrade', '--target', temp_package_path])
+        pip_command.extend(['--no-cache-dir', '--upgrade', '--target', temp_package_path])
 
         # Return True if the pip command is successfully run
         return run_command(pip_command, cwd=temp_package_path, quiet=True)

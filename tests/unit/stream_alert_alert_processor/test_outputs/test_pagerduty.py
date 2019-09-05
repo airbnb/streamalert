@@ -29,7 +29,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestPagerDutyOutput(object):
+class TestPagerDutyOutput:
     """Test class for PagerDutyOutput"""
     DESCRIPTOR = 'unit_test_pagerduty'
     SERVICE = 'pagerduty'
@@ -173,7 +173,7 @@ class TestPagerDutyOutput(object):
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestPagerDutyOutputV2(object):
+class TestPagerDutyOutputV2:
     """Test class for PagerDutyOutputV2"""
     DESCRIPTOR = 'unit_test_pagerduty-v2'
     SERVICE = 'pagerduty-v2'
@@ -277,7 +277,7 @@ class TestPagerDutyOutputV2(object):
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
-class TestPagerDutyIncidentOutput(object):
+class TestPagerDutyIncidentOutput:
     """Test class for PagerDutyIncidentOutput"""
     DESCRIPTOR = 'unit_test_pagerduty-incident'
     SERVICE = 'pagerduty-incident'
@@ -458,7 +458,7 @@ class TestPagerDutyIncidentOutput(object):
             timeout=3.05, verify=False
         )
 
-    @patch('logging.Logger.warn')
+    @patch('logging.Logger.warning')
     @patch('logging.Logger.info')
     @patch('requests.put')
     @patch('requests.post')
@@ -584,7 +584,7 @@ class TestPagerDutyIncidentOutput(object):
             timeout=3.05, verify=False
         )
 
-    @patch('logging.Logger.warn')
+    @patch('logging.Logger.warning')
     @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
     @patch('requests.put')
     @patch('requests.post')
@@ -1112,7 +1112,7 @@ class TestPagerDutyIncidentOutput(object):
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
-class TestWorkContext(object):
+class TestWorkContext:
     """Test class for WorkContext"""
     DESCRIPTOR = 'unit_test_pagerduty-incident'
     SERVICE = 'pagerduty-incident'
@@ -1293,7 +1293,7 @@ class TestWorkContext(object):
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
-class TestPagerDutyRestApiClient(object):
+class TestPagerDutyRestApiClient:
 
     @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, _):
@@ -1310,11 +1310,11 @@ class TestPagerDutyRestApiClient(object):
         self._api_client.add_note('incident_id', 'this is another note')
         self._api_client.add_note('incident_id', 'this is a third note')
 
-        class Anything(object):
+        class Anything:
             def __eq__(self, _):
                 return True
 
-        class VerifyIsCalledWith(object):
+        class VerifyIsCalledWith:
             def __init__(self, expected_verify_value):
                 self._expected_verify_value = expected_verify_value
 
@@ -1446,7 +1446,7 @@ class TestPagerDutyRestApiClient(object):
         assert_equal(policy.get('id'), 'PDUDOHF')
 
 
-class TestJsonHttpProvider(object):
+class TestJsonHttpProvider:
 
     def setup(self):
         self._dispatcher = MagicMock(spec=OutputDispatcher)
@@ -1513,7 +1513,7 @@ class TestJsonHttpProvider(object):
         assert_false(self._http.put('http://airbnb.com', {}))
 
 
-class TestWorkContextUnit(object):
+class TestWorkContextUnit:
     """This test focuses on testing corner cases instead of top-down.
 
     This class does not mock out entire requests but rather mocks out behavior on the Work class.
@@ -1596,7 +1596,7 @@ class StringThatStartsWith(str):
         return other.startswith(self)
 
 
-class RequestMocker(object):
+class RequestMocker:
     CREATE_EVENT_JSON = {'something': '?'}
     USERS_JSON = {'users': [{'id': 'valid_user_id'}]}
     INCIDENTS_JSON = {'incidents': [{'id': 'incident_id'}]}
@@ -1614,7 +1614,7 @@ class RequestMocker(object):
     def inspect_calls(mock):
         """Prints out all of the calls to this mock, in the order of call.
         """
-        print mock.call_args_list
+        print(mock.call_args_list)
 
     @staticmethod
     def assert_mock_with_no_calls_like(mock, condition):

@@ -91,7 +91,7 @@ def continue_prompt(message=None):
 
     response = ''
     while response not in required_responses:
-        response = raw_input('\n{} (yes or no): '.format(message))
+        response = input('\n{} (yes or no): '.format(message)) # nosec
 
     return response == 'yes'
 
@@ -176,11 +176,11 @@ def user_input(requested_info, mask, input_restrictions):
 
     if not mask:
         while not response:
-            response = raw_input(prompt)
+            response = input(prompt) # nosec
 
         # Restrict having spaces or colons in items (applies to things like
         # descriptors, etc)
-        if isinstance(input_restrictions, re._pattern_type):
+        if isinstance(input_restrictions, re.Pattern):
             valid_response = input_restrictions.match(response)
             if not valid_response:
                 LOGGER.error('The supplied input should match the following '
@@ -276,7 +276,7 @@ def record_to_schema(record, recursive=False):
         return
 
     result = {}
-    for key, value in record.iteritems():
+    for key, value in record.items():
         # only worry about recursion for dicts, not lists
         if recursive and isinstance(value, dict):
             result[key] = record_to_schema(value, recursive)

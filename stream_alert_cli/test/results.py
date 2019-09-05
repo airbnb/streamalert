@@ -20,18 +20,15 @@ from stream_alert.shared import rule
 from stream_alert_cli.test.format import format_green, format_red, format_underline
 
 
-class TestEventFile(object):
+class TestEventFile:
     """TestEventFile handles caching results of test events within a test file"""
 
     def __init__(self, rel_path):
         self._rel_path = rel_path
         self._results = []
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self._results)
-
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
 
     @property
     def all_passed(self):
@@ -57,14 +54,14 @@ class TestEventFile(object):
         return '\n'.join(str(item) for item in output)
 
 
-class TestResult(object):
+class TestResult:
     """TestResult contains information useful for tracking test results"""
 
     _NONE_STRING = '<None>'
     _PASS_STRING = format_green('Pass')
     _FAIL_STRING = format_red('Fail')
     _SIMPLE_TEMPLATE = '{header}:'
-    _PASS_TEMPLATE = '{header}: {pass}'
+    _PASS_TEMPLATE = '{header}: {pass}' # nosec
     _DESCRIPTION_LINE = (
         '''
     Description: {description}'''
@@ -113,11 +110,8 @@ class TestResult(object):
         self._publication_results = {}
         self.alerts = []
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self._classified_result)
-
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
 
     def __str__(self):
         fmt = {
@@ -183,7 +177,7 @@ class TestResult(object):
 
             num_pass = 0
             num_total = 0
-            for _, result in self._publication_results.iteritems():
+            for _, result in self._publication_results.items():
                 num_total += 1
                 num_pass += 1 if result['success'] else 0
             fmt['publishers_status'] = (
@@ -252,7 +246,7 @@ class TestResult(object):
         success = defaultdict(list)
         for rule_name in sorted(self._live_test_results):
             result = self._live_test_results[rule_name]
-            for output, status in result.iteritems():
+            for output, status in result.items():
                 if not status:
                     failed[rule_name].append(output)
                 else:
@@ -333,8 +327,8 @@ class TestResult(object):
         """
         if not self.has_live_tests:
             return False
-        for result in self._live_test_results.itervalues():
-            if not all(status for status in result.itervalues()):
+        for result in self._live_test_results.values():
+            if not all(status for status in result.values()):
                 return False
         return True
 
@@ -347,7 +341,7 @@ class TestResult(object):
         if not self.publisher_tests_were_run:
             return False
 
-        for _, result in self._publication_results.iteritems():
+        for _, result in self._publication_results.items():
             if not result['success']:
                 return False
 
@@ -367,14 +361,14 @@ class TestResult(object):
         return [
             "{}: ({}) {}".format(output_descriptor, type(item['error']).__name__, item['error'])
             for output_descriptor, item
-            in self._publication_results.iteritems()
+            in self._publication_results.items()
             if not item['success']
         ]
 
     @property
     def count_publisher_tests_passed(self):
         """Returns number of publisher tests that failed"""
-        return sum(1 for _, result in self._publication_results.iteritems() if result['success'])
+        return sum(1 for _, result in self._publication_results.items() if result['success'])
 
     @property
     def count_publisher_tests_run(self):

@@ -18,7 +18,9 @@ from datetime import datetime
 import hashlib
 import hmac
 import re
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 
 import requests
 
@@ -59,22 +61,25 @@ class DuoApp(AppIntegration):
         formatted_date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S -0000')
 
         auth_string = '\n'.join([formatted_date, 'GET', hostname,
-                                 self._endpoint(), urllib.urlencode(params)])
+                                 self._endpoint(), urllib.parse.urlencode(params)]).encode()
 
         try:
-            signature = hmac.new(self._config.auth['secret_key'],
+            signature = hmac.new(self._config.auth['secret_key'].encode(),
                                  auth_string, hashlib.sha1)
-        except TypeError:
+        # Since we force the auth_string and auth['secret_key'] to types which
+        # support .encode(), we must expand the catch to include attribute
+        # errors for mismatched types.
+        except (TypeError, AttributeError):
             LOGGER.exception('Could not generate hmac signature')
             return False
 
         # Format the basic auth with integration key and the hmac hex digest
         basic_auth = ':'.join([self._config.auth['integration_key'],
-                               signature.hexdigest()])
+                               signature.hexdigest()]).encode()
 
         return {
             'Date': formatted_date,
-            'Authorization': 'Basic {}'.format(b64encode(basic_auth)),
+            'Authorization': 'Basic {}'.format(b64encode(basic_auth).decode()),
             'Host': hostname
         }
 

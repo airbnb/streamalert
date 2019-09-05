@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import absolute_import
 from datetime import datetime
 import json
 import os
@@ -29,7 +28,7 @@ from stream_alert.shared.metrics import ALERT_MERGER_NAME, MetricLogger
 LOGGER = get_logger(__name__)
 
 
-class AlertMergeGroup(object):
+class AlertMergeGroup:
     """A list of alerts within a single merge window which match on their merge keys."""
     # In order to limit the size of a merged alert, cap the maximum number that can be merged.
     MAX_ALERTS_PER_GROUP = 50
@@ -53,7 +52,7 @@ class AlertMergeGroup(object):
         return False
 
 
-class AlertMerger(object):
+class AlertMerger:
     """Dispatch alerts to the alert processor."""
     ALERT_MERGER = None  # AlertMerger instance which can be re-used across Lambda invocations
 

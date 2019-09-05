@@ -18,7 +18,7 @@ from nose.tools import assert_equal
 from stream_alert_cli.terraform import rules_engine
 
 
-class TestTerraformGenerateRuleEngine(object):
+class TestTerraformGenerateRuleEngine:
     """CLI Terraform Generate, Rules Engine"""
     # pylint: disable=no-self-use,attribute-defined-outside-init
 

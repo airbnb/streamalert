@@ -17,7 +17,7 @@ import os
 
 from mock import Mock, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal, raises
+from nose.tools import assert_equal, assert_false, assert_count_equal, raises
 
 from stream_alert.apps._apps.slack import SlackApp, SlackAccessApp, SlackIntegrationsApp
 from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
@@ -27,7 +27,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 @mock_ssm
 @patch.object(SlackApp, '_endpoint', Mock(return_value='endpoint'))
 @patch.object(SlackApp, '_type', Mock(return_value='type'))
-class TestSlackApp(object):
+class TestSlackApp:
     """Test class for the SlackApp"""
     # pylint: disable=protected-access
 
@@ -43,7 +43,7 @@ class TestSlackApp(object):
 
     def test_required_auth_info(self):
         """SlackApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
+        assert_count_equal(list(self._app.required_auth_info().keys()), {'auth_token'})
 
     @patch('requests.post')
     @patch('logging.Logger.error')
@@ -71,7 +71,7 @@ class TestSlackApp(object):
 
 
 @mock_ssm
-class TestSlackAccessApp(object):
+class TestSlackAccessApp:
     """Test class for the SlackAccessApp"""
     # pylint: disable=protected-access
 
@@ -228,18 +228,18 @@ class TestSlackAccessApp(object):
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
-        assert 'before' not in requests_mock.call_args[1]['data'].keys()
+        assert 'before' not in list(requests_mock.call_args[1]['data'].keys()) # nosec
         assert_equal(len(gathered_logs), 0)
         assert_equal(self._app._next_page, 1)
         assert_equal(True, self._app._more_to_poll)
         assert_equal(self._app._before_time, logs['logins'][-1]['date_first'])
 
         self._app._gather_logs()
-        assert 'before' in requests_mock.call_args[1]['data'].keys()
+        assert 'before' in list(requests_mock.call_args[1]['data'].keys()) # nosec
 
 
 @mock_ssm
-class TestSlackIntegrationsApp(object):
+class TestSlackIntegrationsApp:
     """Test class for the SlackIntegrationsApp"""
     # pylint: disable=protected-access
 

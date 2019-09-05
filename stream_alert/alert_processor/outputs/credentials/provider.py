@@ -27,7 +27,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class OutputCredentialsProvider(object):
+class OutputCredentialsProvider:
     """Loads credentials that are housed on AWS S3, or cached locally.
 
     Helper service to OutputDispatcher.
@@ -119,7 +119,7 @@ class OutputCredentialsProvider(object):
         """
 
         creds = {name: prop.value
-                 for (name, prop) in props.iteritems() if prop.cred_requirement}
+                 for (name, prop) in props.items() if prop.cred_requirement}
 
         credentials = Credentials(creds, False, self._region)
         return self._core_driver.save_credentials_into_s3(descriptor, credentials, kms_key_alias)
@@ -148,7 +148,7 @@ class OutputCredentialsProvider(object):
                 descriptor
             )
             return None
-        elif credentials.is_encrypted():
+        if credentials.is_encrypted():
             decrypted_creds = credentials.get_data_kms_decrypted()
         else:
             decrypted_creds = credentials.data()
@@ -167,7 +167,7 @@ class OutputCredentialsProvider(object):
         return self._account_id
 
 
-class Credentials(object):
+class Credentials:
     """Encapsulation for a set of credentials.
 
     When storing to or loading from a Driver, the raw credentials data may or may not be encrypted
@@ -249,7 +249,7 @@ class Credentials(object):
         self._data = AwsKms.encrypt(creds_json, region=self._region, key_alias=kms_key_alias)
 
 
-class CredentialsProvidingDriver(object):
+class CredentialsProvidingDriver:
     """Drivers encapsulate logic for loading credentials"""
 
     @abstractmethod
@@ -277,7 +277,7 @@ class CredentialsProvidingDriver(object):
         """
 
 
-class FileDescriptorProvider(object):
+class FileDescriptorProvider:
     """Interface for Drivers capable of offering file-handles to aid in download of credentials."""
 
     @abstractmethod
@@ -292,7 +292,7 @@ class FileDescriptorProvider(object):
         """
 
 
-class CredentialsCachingDriver(object):
+class CredentialsCachingDriver:
     """Interface for Drivers capable of being used as a caching layer to accelerate the speed
     of credential loading."""
 
@@ -484,8 +484,12 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
             LOGGER.error('Error: Writing unencrypted credentials to disk is disallowed.')
             return False
 
+        creds = credentials.data()
+        if not isinstance(creds, bytes):
+            creds = creds.encode()
+
         with self.offer_fileobj(descriptor) as file_handle:
-            file_handle.write(credentials.data())
+            file_handle.write(creds)
         return True
 
     @staticmethod
@@ -591,6 +595,8 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
             return False
 
         raw_creds = credentials.data()
+        if not isinstance(raw_creds, bytes):
+            raw_creds = raw_creds.encode()
 
         spool = tempfile.SpooledTemporaryFile()
         spool.write(raw_creds)

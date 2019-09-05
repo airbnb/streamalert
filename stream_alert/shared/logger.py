@@ -16,6 +16,46 @@ limitations under the License.
 import logging
 import os
 
+LOCAL_LOGGER_FMT = '[%(levelname)s %(asctime)s (%(name)s:%(lineno)d)]: %(message)s'
+
+
+class LogFormatter(logging.Formatter):
+
+    def formatException(self, ei):
+        """Override the default exception logger so it looks nice in CloudWatch Logs"""
+        value = super().formatException(ei)
+
+        # Replace the newlines with carriage returns
+        return value.replace('\n', '\r')
+
+
+def set_formatter(logger):
+    """
+    The Lambda execution environment injects a default `LambdaLoggerHandler`
+    into the root logger, so we just want to update the traceback formatter on
+    it without changing the actual logging format.
+
+    Alternatively, locally the root logger will not have any handlers. In this case,
+    we create a logging.StreamHandler and add the formatter to it.
+
+    Args:
+        logger (logging.Logger): An instance of a logger for which to update the formatter
+    """
+    # Update the LambdaLoggerHandler formatter
+    if logger.hasHandlers():
+        for handler in logger.handlers + logger.parent.handlers:
+            # pylint: disable=protected-access
+            # Retain the handlers format spec if it has one
+            fmt = handler.formatter._fmt if handler.formatter else None
+            handler.setFormatter(LogFormatter(fmt=fmt))
+        return
+
+    # Otherwise, create a handler with the desired formatter
+    formatter = LogFormatter(fmt=LOCAL_LOGGER_FMT)
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
 
 def get_logger(name, level=None):
     """Get a logger instance for the specified name.
@@ -31,13 +71,14 @@ def get_logger(name, level=None):
     if not level:
         level = os.environ.get('LOGGER_LEVEL', 'INFO')
 
-    logging.basicConfig(format='[%(levelname)s %(asctime)s (%(name)s:%(lineno)d)]: %(message)s')
     logger = logging.getLogger(name)
+
+    set_formatter(logger)
 
     try:
         logger.setLevel(level.upper())
     except (TypeError, ValueError) as err:
         logger.setLevel('INFO')
-        logger.error('Defaulting to INFO logging: %s', err.message)
+        logger.error('Defaulting to INFO logging: %s', str(err))
 
     return logger

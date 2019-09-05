@@ -43,7 +43,7 @@ def _rollback_production(lambda_client, function_name):
 
     current_version = int(version)
     if current_version == 1:
-        LOGGER.warn('%s:production is already at version 1', function_name)
+        LOGGER.warning('%s:production is already at version 1', function_name)
         return False
 
     LOGGER.info('Rolling back %s:production from version %d => %d',

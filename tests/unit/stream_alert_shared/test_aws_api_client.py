@@ -25,13 +25,13 @@ from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_alert_processor import KMS_ALIAS, REGION
 
 
-class TestAwsKms(object):
+class TestAwsKms:
 
     @staticmethod
     @mock_kms
     def test_encrypt_decrypt():
         """AwsApiClient - AwsKms - encrypt/decrypt - Encrypt and push creds, then pull them down"""
-        secret = 'shhhhhh'
+        secret = 'shhhhhh'.encode() # nosec
 
         ciphertext = AwsKms.encrypt(secret, region=REGION, key_alias=KMS_ALIAS)
         response = AwsKms.decrypt(ciphertext, region=REGION)
@@ -53,13 +53,13 @@ class TestAwsKms(object):
         AwsKms.encrypt('secret', region=REGION, key_alias=KMS_ALIAS)
 
 
-class TestAwsS3(object):
+class TestAwsS3:
 
     @staticmethod
     @mock_s3
     def test_put_download():
         """AwsApiClient - AwsS3 - PutObject/Download - Upload then download object"""
-        payload = 'zzzzz'
+        payload = 'zzzzz'.encode()
         bucket = 'bucket'
         key = 'key'
 

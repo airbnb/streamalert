@@ -17,6 +17,7 @@ import ast
 from copy import deepcopy
 import hashlib
 import inspect
+import json
 
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.stats import time_rule
@@ -43,7 +44,7 @@ def disable(rule_instance):
     return rule_instance
 
 
-class Rule(object):
+class Rule:
     """Rule class to handle processing"""
     DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
     CHECKSUM_UNKNOWN = 'checksum unknown'
@@ -159,6 +160,7 @@ class Rule(object):
             return self.func(record)
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception('Encountered error with rule: %s', self.name)
+            LOGGER.error('Record that resulted in error:\n%s', json.dumps(record))
 
         return False
 
@@ -178,7 +180,7 @@ class Rule(object):
                     # This check is necessary to ensure changes to the docstring
                     # are allowed without altering the checksum
                     if not isinstance(expression, ast.Expr):
-                        md5.update(ast.dump(expression))
+                        md5.update(ast.dump(expression).encode('utf-8'))
 
                 self._checksum = md5.hexdigest()
             except (TypeError, IndentationError, IndexError):
@@ -215,14 +217,14 @@ class Rule(object):
 
     @classmethod
     def rule_names(cls):
-        return Rule._rules.keys()
+        return list(Rule._rules.keys())
 
     @classmethod
     def rules_with_datatypes(cls):
-        return [item for item in Rule._rules.values()
+        return [item for item in list(Rule._rules.values())
                 if item.datatypes and not item.disabled]
 
     @classmethod
     def rules_for_log_type(cls, log_type):
-        return [item for item in Rule._rules.values()
+        return [item for item in list(Rule._rules.values())
                 if (item.logs is None or log_type in item.logs) and not item.disabled]

@@ -1,4 +1,4 @@
-"""Alert when a DUO bypass code is artisanly crafted and not auto-generated."""
+"""Alert when a DUO bypass code is artisanally crafted and not auto-generated."""
 from rules.helpers.base import safe_json_loads
 from stream_alert.shared.rule import rule
 

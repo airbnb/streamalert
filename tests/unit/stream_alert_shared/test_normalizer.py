@@ -19,7 +19,7 @@ from nose.tools import assert_equal
 from stream_alert.shared.normalize import Normalizer
 
 
-class TestNormalizer(object):
+class TestNormalizer:
     """Normalizer tests"""
     # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 

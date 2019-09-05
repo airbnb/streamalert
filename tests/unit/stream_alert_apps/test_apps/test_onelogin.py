@@ -17,7 +17,7 @@ import os
 
 from mock import Mock, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal
+from nose.tools import assert_equal, assert_false, assert_count_equal
 
 from stream_alert.apps._apps.onelogin import OneLoginApp
 
@@ -27,7 +27,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 @mock_ssm
 @patch.object(OneLoginApp, 'type', Mock(return_value='type'))
-class TestOneLoginApp(object):
+class TestOneLoginApp:
     """Test class for the OneLoginApp"""
     # pylint: disable=protected-access
 
@@ -85,7 +85,7 @@ class TestOneLoginApp(object):
 
     def test_required_auth_info(self):
         """OneLoginApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(),
+        assert_count_equal(list(self._app.required_auth_info().keys()),
                            {'region', 'client_secret', 'client_id'})
 
     @staticmethod
@@ -98,7 +98,7 @@ class TestOneLoginApp(object):
             'user_id': 321,
             'event_type_id': 4321,
             'notes': 'Notes',
-            'ipaddr': '0.0.0.0',
+            'ipaddr': '0.0.0.0', # nosec
             'actor_user_id': 987,
             'assuming_acting_user_id': 654,
             'role_id': 456,

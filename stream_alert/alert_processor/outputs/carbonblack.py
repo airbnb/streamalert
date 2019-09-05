@@ -87,7 +87,7 @@ class CarbonBlackOutput(OutputDispatcher):
             binary_hash = carbonblack_context.get('value')
             # The binary should already exist in CarbonBlack
             binary = client.select(Binary, binary_hash)
-            # Determine if the binary is currenty listed as banned
+            # Determine if the binary is currently listed as banned
             if binary.banned:
                 # Determine if the banned action is enabled, if true exit
                 if binary.banned.enabled:
@@ -106,6 +106,5 @@ class CarbonBlackOutput(OutputDispatcher):
                 banned_hash.save()
 
             return banned_hash.enabled is True
-        else:
-            LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
-            return False
+        LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
+        return False

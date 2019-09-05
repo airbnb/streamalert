@@ -1,9 +1,9 @@
 language: python
-dist: trusty
+dist: xenial
 cache: pip
 sudo: required
 python:
-  - 2.7
+  - 3.7
 before_install:
   - sudo rm -f /etc/boto.cfg
 install:

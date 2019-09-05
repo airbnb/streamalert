@@ -23,7 +23,7 @@ import apiclient
 import oauth2client
 from mock import Mock, mock_open, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
+from nose.tools import assert_equal, assert_false, assert_count_equal, assert_true, raises
 
 from stream_alert.apps._apps.gsuite import GSuiteReportsApp
 
@@ -34,7 +34,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 @mock_ssm
 @patch.object(GSuiteReportsApp, '_type', Mock(return_value='admin'))
 @patch.object(GSuiteReportsApp, 'type', Mock(return_value='type'))
-class TestGSuiteReportsApp(object):
+class TestGSuiteReportsApp:
     """Test class for the GSuiteReportsApp"""
     # pylint: disable=protected-access
 
@@ -54,7 +54,7 @@ class TestGSuiteReportsApp(object):
 
     def test_required_auth_info(self):
         """GSuiteReportsApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(),
+        assert_count_equal(list(self._app.required_auth_info().keys()),
                            {'delegation_email', 'keyfile'})
 
     @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict',
@@ -64,7 +64,7 @@ class TestGSuiteReportsApp(object):
         validation_function = self._app.required_auth_info()['keyfile']['format']
         data = {'test': 'keydata'}
         mocker = mock_open(read_data=json.dumps(data))
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             loaded_keydata = validation_function('fakepath')
             assert_equal(loaded_keydata, data)
 
@@ -74,7 +74,7 @@ class TestGSuiteReportsApp(object):
         validation_function = self._app.required_auth_info()['keyfile']['format']
         cred_mock.return_value = False
         mocker = mock_open(read_data=json.dumps({'test': 'keydata'}))
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_called()
 
@@ -83,7 +83,7 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Keyfile Validation, Bad JSON"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
         mocker = mock_open(read_data='invalid json')
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_not_called()
 
@@ -166,7 +166,7 @@ class TestGSuiteReportsApp(object):
     def test_gather_logs_http_error(self, log_mock):
         """GSuiteReportsApp - Gather Logs, Google API HTTP Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
-            error = apiclient.errors.HttpError('response', bytes('bad'))
+            error = apiclient.errors.HttpError('response', 'bad'.encode())
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)
@@ -275,7 +275,7 @@ class TestGSuiteReportsApp(object):
             'kind': 'audit#activity',
             'id': {
                 'time': _get_timestamp('2011-06-17T15:39:18.460000Z', index),
-                'uniqueQualifier': -12345678901234567890L + index,
+                'uniqueQualifier': -12345678901234567890 + index,
                 'applicationName': 'admin',
                 'customerId': 'C03az79cb'
             },

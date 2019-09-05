@@ -57,7 +57,7 @@ class SalesforceApp(AppIntegration):
     ReportExport:
         events contain details about reports that a user exported.
     """
-    _SALESFORCE_TOKEN_URL = 'https://login.salesforce.com/services/oauth2/token'
+    _SALESFORCE_TOKEN_URL = 'https://login.salesforce.com/services/oauth2/token' # nosec
     _SALESFORCE_QUERY_URL = ('{instance_url}/services/data/v{api_version}/'
                              '{query}{start_time}{event_type}')
     # Use the Query resource to retrieve log files.
@@ -194,15 +194,15 @@ class SalesforceApp(AppIntegration):
 
             # Get request will retry when SalesforceAppError exception raised
             raise SalesforceAppError
-        elif resp.status_code == 403 and resp.json().get('errorCode') == 'REQUEST_LIMIT_EXCEEDED':
+        if resp.status_code == 403 and resp.json().get('errorCode') == 'REQUEST_LIMIT_EXCEEDED':
             # Exceeded API request limits in your org. Log this information for
             # future reference.
             LOGGER.error('Exceeded API request limits')
             return False
-        elif resp.status_code == 500:
+        if resp.status_code == 500:
             # Server internal error. Get request will retry.
             raise SalesforceAppError
-        elif resp.status_code > 200:
+        if resp.status_code > 200:
             LOGGER.error('Unexpected status code %d detected, error message %s',
                          resp.status_code,
                          resp.json())
@@ -250,7 +250,7 @@ class SalesforceApp(AppIntegration):
                 return False, None
             except ValueError:
                 # When fetch log events, Salesforce returns raw data in csv format, not json
-                return True, resp.text.encode('utf-8')
+                return True, resp.text
 
         return _make_get_request()
 

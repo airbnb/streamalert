@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
 from datetime import datetime
-from nose.tools import assert_equal, assert_less_equal
+from nose.tools import assert_equal, assert_dict_equal, assert_less_equal
 
 from publishers.community.slack.slack_layout import (
     AttachFullRecord,
@@ -27,7 +27,7 @@ from publishers.community.slack.slack_layout import (
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-class TestSummary(object):
+class TestSummary:
 
     def setup(self):
         self._publisher = Summary()
@@ -67,19 +67,18 @@ class TestSummary(object):
         }
 
         assert_equal(publication['@slack.text'], expectation['@slack.text'])
-        assert_equal(
+        assert_dict_equal(
             publication['@slack._previous_publication'],
             expectation['@slack._previous_publication']
         )
         assert_equal(len(publication['@slack.attachments']), len(expectation['@slack.attachments']))
-        assert_equal(
-            publication['@slack.attachments'][0].keys(),
-            expectation['@slack.attachments'][0].keys()
+        assert_dict_equal(
+            publication['@slack.attachments'][0],
+            expectation['@slack.attachments'][0]
         )
-        assert_equal(publication['@slack.attachments'][0], expectation['@slack.attachments'][0])
 
 
-class TestAttachRuleInfo(object):
+class TestAttachRuleInfo:
 
     def setup(self):
         self._publisher = AttachRuleInfo()
@@ -103,22 +102,22 @@ Att&ck vector:  Assuming direct control
                     'color': '#8ce071',
                     'fields': [
                         {
-                            'title': 'Att&ck vector',
-                            'value': 'Assuming direct control',
-                        },
-                        {
                             'title': 'Reference',
                             'value': 'somewhere_over_the_rainbow',
+                        },
+                        {
+                            'title': 'Att&ck vector',
+                            'value': 'Assuming direct control',
                         }
                     ]
                 }
             ]
         }
 
-        assert_equal(publication, expectation)
+        assert_dict_equal(publication, expectation)
 
 
-class TestAttachPublication(object):
+class TestAttachPublication:
 
     def setup(self):
         self._publisher = AttachPublication()
@@ -154,7 +153,7 @@ class TestAttachPublication(object):
         assert_equal(publication, expectation)
 
 
-class TestAttachStringTemplate(object):
+class TestAttachStringTemplate:
     def setup(self):
         self._publisher = AttachStringTemplate()
 
@@ -200,7 +199,7 @@ class TestAttachStringTemplate(object):
         assert_equal(publication, expectation)
 
 
-class TestAttachFullRecord(object):
+class TestAttachFullRecord:
 
     def setup(self):
         self._publisher = AttachFullRecord()

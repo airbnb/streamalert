@@ -15,7 +15,7 @@ limitations under the License.
 """
 from datetime import datetime
 import uuid
-from StringIO import StringIO
+from io import BytesIO
 import zipfile
 
 import boto3
@@ -23,7 +23,7 @@ from botocore.exceptions import ClientError
 
 from stream_alert.shared.helpers.aws_api_client import AwsS3
 
-class MockLambdaClient(object):
+class MockLambdaClient:
     """http://boto3.readthedocs.io/en/latest/reference/services/lambda.html"""
 
     def __init__(self, name, **kwargs):
@@ -45,7 +45,7 @@ class MockLambdaClient(object):
         return {
             'FunctionName': function_name,
             'FunctionArn': 'arn:aws:lambda:region:account-id:function:{}'.format(function_name),
-            'Runtime': 'python2.7',
+            'Runtime': 'python3.7',
             'Role': 'string',
             'Handler': 'main.handler',
             'CodeSize': 128,
@@ -58,10 +58,10 @@ class MockLambdaClient(object):
         }
 
 
-class MockAthenaClient(object):
+class MockAthenaClient:
     """http://boto3.readthedocs.io/en/latest/reference/services/athena.html"""
 
-    class MockAthenaPaginator(object):
+    class MockAthenaPaginator:
         """Mock class for paginating athena results"""
         def __init__(self, func, pages):
             self._func = func
@@ -104,7 +104,7 @@ class MockAthenaClient(object):
         }
 
     def start_query_execution(self, **kwargs):
-        """Start an Athena Query Exectuion."""
+        """Start an Athena Query Execution."""
         if self.raise_exception:
             raise ClientError({'Error': {'Code': 10}}, 'InvalidRequestException')
         new_query_execution = self.get_start_query_execution(**kwargs)
@@ -116,7 +116,7 @@ class MockAthenaClient(object):
         }
 
     def get_query_execution(self, **kwargs):
-        """Get the status of an Athena Query Exectuion."""
+        """Get the status of an Athena Query Execution."""
         query_execution = self.query_executions.get(kwargs['QueryExecutionId'])
         query_execution['QueryExecution']['Status']['State'] = self.result_state
 
@@ -138,7 +138,7 @@ def _make_lambda_package():
 def handler(event, context):
     return event
 """
-    package_output = StringIO()
+    package_output = BytesIO()
     package = zipfile.ZipFile(package_output, 'w', zipfile.ZIP_DEFLATED)
     package.writestr('function.zip', mock_lambda_function)
     package.close()
@@ -154,7 +154,7 @@ def create_lambda_function(function_name, region):
 
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
-        Runtime='python2.7',
+        Runtime='python3.7',
         Role='test-iam-role',
         Handler='function.handler',
         Description='test lambda function',

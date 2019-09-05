@@ -35,7 +35,7 @@ class SlackApp(AppIntegration):
         contain details about your workspace's integrated apps
     """
 
-    _DEFAULT_REQUEST_TIMEOUT = 6.05
+    _DEFAULT_REQUEST_TIMEOUT = 30
     _SLACK_API_BASE_URL = 'https://slack.com/api/'
     _SLACK_API_MAX_ENTRY_COUNT = 1000
     _SLACK_API_MAX_PAGE_COUNT = 100
@@ -81,7 +81,7 @@ class SlackApp(AppIntegration):
 
     def _check_for_more_to_poll(self, response):
         self._next_page += 1
-        return not ('paging' in response.keys() and
+        return not ('paging' in list(response.keys()) and
                     response['paging']['pages'] == response['paging']['page'])
 
     def _filter_response_entries(self, response):

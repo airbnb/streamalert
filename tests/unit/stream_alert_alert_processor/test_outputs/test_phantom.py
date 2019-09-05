@@ -20,7 +20,7 @@ from stream_alert.alert_processor.outputs.phantom import PhantomOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestPhantomOutput(object):
+class TestPhantomOutput:
     """Test class for PhantomOutput"""
     DESCRIPTOR = 'unit_test_phantom'
     SERVICE = 'phantom'
@@ -171,6 +171,9 @@ class TestPhantomOutput(object):
         """PhantomOutput - Container Query URL"""
         rule_description = 'Info about this rule and what actions to take'
         headers = {'ph-auth-token': 'mocked_auth_token'}
+        # NOTE(bobby): Is this supposed to require failing status codes?
+        get_mock.return_value.status_code = 404
+        post_mock.return_value.status_code = 404
         assert_false(PhantomOutput._setup_container('rule_name',
                                                     rule_description,
                                                     self.CREDS['url'],

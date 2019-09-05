@@ -42,13 +42,13 @@ try:
 except ValueError as err:
     ENABLE_METRICS = False
     LOGGER.error('Invalid value for metric toggling, expected 0 or 1: %s',
-                 err.message)
+                 err)
 
 if not ENABLE_METRICS:
     LOGGER.debug('Logging of metric data is currently disabled.')
 
 
-class MetricLogger(object):
+class MetricLogger:
     """Class to hold metric logging to be picked up by log metric filters.
 
     This basically acts as an enum, allowing for the use of dot notation for

@@ -34,7 +34,7 @@ AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
 AWS_RATE_HELPER = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
 
 
-class AppConfig(object):
+class AppConfig:
     """Centralized config for handling configuration loading/parsing"""
     MAX_STATE_SAVE_TRIES = 5
     BOTO_TIMEOUT = 5
@@ -48,14 +48,14 @@ class AppConfig(object):
     _CONTEXT_KEY = 'context'
     _STATE_DESCRIPTION = 'State information for the \'{}\' app for use in the \'{}\' function'
 
-    class States(object):
+    class States:
         """States object to encapsulate various acceptable states"""
         PARTIAL = 'partial'
         RUNNING = 'running'
         SUCCEEDED = 'succeeded'
         FAILED = 'failed'
 
-    class Events(object):
+    class Events:
         """Events object to encapsulate various acceptable events"""
         SUCCESSIVE_INVOKE = 'successive'
 
@@ -157,8 +157,8 @@ class AppConfig(object):
 
         # Load the authentication info. This data can vary from service to service
         auth_config = {
-            key: value.encode('utf-8') if isinstance(value, unicode) else value
-            for key, value in params[auth_param_name].iteritems()
+            key: value if isinstance(value, str) else value
+            for key, value in params[auth_param_name].items()
         }
         state_config = params.get(state_param_name, {})
 
@@ -181,7 +181,7 @@ class AppConfig(object):
         """
         info = param_info.copy()
         info[auth_param_name] = {key: '*' * len(str(value))
-                                 for key, value in info[auth_param_name].iteritems()}
+                                 for key, value in info[auth_param_name].items()}
 
         return info
 
@@ -290,7 +290,7 @@ class AppConfig(object):
             })
         except TypeError as err:
             raise AppStateError('Could not serialize state for name \'{}\'. Error: '
-                                '{}'.format(self._state_name, err.message))
+                                '{}'.format(self._state_name, str(err)))
 
         @backoff.on_exception(backoff.expo,
                               ClientError,
