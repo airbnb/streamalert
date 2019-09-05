@@ -18,7 +18,7 @@ limitations under the License.
 class StagingStatistic:
     """Store information on generated alerts."""
 
-    _ALERT_COUNT_UNKOWN = 'unknown'
+    _ALERT_COUNT_UNKOWN = -1
 
     _COUNT_QUERY_TEMPLATE = (
         "SELECT rule_name, count(*) AS count FROM alerts WHERE {where_clause} GROUP BY rule_name"
@@ -113,6 +113,8 @@ class StagingStatistic:
             if self.execution_id
             else 'n/a'
         )
+
+        info['alert_count'] = 'unknown' if info['alert_count'] == -1 else info['alert_count']
 
         # \u25E6 is unicode for a bullet
         return (
