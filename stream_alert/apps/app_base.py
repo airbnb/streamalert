@@ -322,8 +322,10 @@ class AppIntegration(metaclass=ABCMeta):
         """Method for returning the json loaded response for this POST request
 
         Returns:
-            tuple (bool, dict): False if the was an error performing the request,
-                and the dictionary loaded from the json response
+            tuple (bool, dict|None): The first return value will be False if there
+                was an error performing the request.
+                The second return value will be None if JSONDecodeError raised,
+                otherwise it will be the dictionary loaded from the json response.
         """
         LOGGER.debug('[%s] Making POST request on poll #%d', self, self._poll_count)
 
