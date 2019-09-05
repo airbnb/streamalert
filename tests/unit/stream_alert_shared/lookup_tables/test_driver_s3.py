@@ -253,10 +253,10 @@ class TestCompression:
             'compression': 'gzip'
         })
 
-        compressed_data = Compression.gz_compress(driver, original_data)
+        compressed_data = Compression.gz_compress(driver, original_data.encode())
         decompressed_data = Compression.gz_decompress(driver, compressed_data)
 
-        assert_equal(original_data, decompressed_data)
+        assert_equal(original_data, decompressed_data.decode())
 
 
 class TestS3Adapter:

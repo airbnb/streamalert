@@ -160,18 +160,18 @@ class S3Driver(PersistenceDriver):
         the file's contents into memory.
         """
         # First, download the item from S3
-        data = self._s3_adapter.download()
+        bytes_data = self._s3_adapter.download()
 
         # The lookup data can optionally be compressed, so try to decompress
         # This will fall back and use the original data if decompression fails
         if self._compression:
-            data = Compression.gz_decompress(self, data)
+            bytes_data = Compression.gz_decompress(self, bytes_data)
         else:
             LOGGER.debug('LookupTable (%s): File does not need decompression')
 
         # Decode the data; right now we make the assumption that the data is always encoded
         # as JSON.
-        data = Encoding.json_decode(self, data)
+        data = Encoding.json_decode(self, bytes_data)
 
         self._cache.setall(data, self._cache_refresh_minutes)
         self._cache.set(self._MAGIC_CACHE_TTL_KEY, True, self._cache_refresh_minutes)
@@ -185,9 +185,9 @@ class Compression:
         """
         Params:
             driver (PersistenceDriver)
-            data (str): Compressed data
+            data (Bytes): Compressed data
 
-        Return: str
+        Return: Bytes
         """
         try:
             data = zlib.decompress(data, 47)
@@ -201,20 +201,20 @@ class Compression:
                 'LookupTable (%s): Data is not compressed; defaulting to original payload',
                 driver.id
             )
-        return data.decode()
+        return data
 
     @staticmethod
     def gz_compress(driver, data):
         """
         Params:
             driver (PersistenceDriver)
-            data (str): Uncompressed data
+            data (Bytes): Uncompressed data
 
-        Return: str
+        Return: Bytes
         """
         try:
             original_size = sys.getsizeof(data)
-            data = zlib.compress(data.encode(), level=zlib.Z_BEST_COMPRESSION)
+            data = zlib.compress(data, level=zlib.Z_BEST_COMPRESSION)
             LOGGER.debug(
                 'LookupTable (%s): Successfully compressed input data from %d to %d bytes',
                 driver.id,
@@ -235,17 +235,31 @@ class Encoding:
 
     @staticmethod
     def json_encode(driver, data):
+        """
+        Params:
+            driver (PersistenceDriver)
+            data (string|dict|list|mixed):
+
+        Returns: bytes
+        """
         try:
-            return json.dumps(data)
+            return json.dumps(data).encode()
         except (ValueError, TypeError):
             LOGGER.exception(
                 'LookupTable (%s): Failed to json encode data', driver.id
             )
 
     @staticmethod
-    def json_decode(driver, data):
+    def json_decode(driver, bytes_data):
+        """
+        Params:
+            driver (PersistenceDriver)
+            bytes_data (bytes)
+
+        Returns: (string|dict|list|mixed)
+        """
         try:
-            data = json.loads(data)
+            data = json.loads(bytes_data)
             LOGGER.debug(
                 'LookupTable (%s): File successfully JSON decoded. Discovered %s keys.',
                 driver.id,
@@ -267,11 +281,15 @@ class S3Adapter:
         self._s3_bucket = s3_bucket
         self._s3_key = s3_key
 
-    def upload(self, data):
+    def upload(self, bytes_data):
+        """
+        Params:
+            bytes_data (bytes)
+        """
         try:
             self._s3_client.Bucket(self._s3_bucket).put_object(
                 Key=self._s3_key,
-                Body=data
+                Body=bytes_data
             )
             LOGGER.debug(
                 'LookupTable (%s): Object successfully uploaded to S3',
@@ -299,10 +317,13 @@ class S3Adapter:
             )
 
     def download(self):
+        """
+        Return: bytes
+        """
         try:
             start_time = time.time()
             s3_object = self._s3_client.Object(self._s3_bucket, self._s3_key).get()
-            data = s3_object.get('Body').read()
+            bytes = s3_object.get('Body').read()
 
             total_time = time.time() - start_time
             size_kb = round(s3_object.get('ContentLength') / 1024.0, 2)
@@ -314,7 +335,7 @@ class S3Adapter:
                 round(total_time, 2)
             )
 
-            return data
+            return bytes
         except ClientError as err:
             LOGGER.error(
                 'LookupTable (%s): Encountered error while downloading %s from %s: %s',
