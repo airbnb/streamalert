@@ -19,13 +19,16 @@ from botocore.exceptions import ClientError
 from mock import call, Mock, patch
 from moto import mock_ssm
 from nose.tools import (
+    assert_count_equal,
     assert_equal,
     assert_false,
     assert_is_instance,
-    assert_count_equal,
+    assert_is_none,
     assert_true,
     raises
 )
+
+import requests
 from requests.exceptions import ConnectTimeout
 
 from stream_alert.apps import StreamAlertApp
@@ -346,3 +349,17 @@ class TestAppIntegration:
         self._app._config.current_state = 'running'
         self._app.gather()
         finalize_mock.assert_not_called()
+
+    @patch('requests.sessions.Session.request')
+    def test_make_post_request_gateway_timeout(self, requests_mock):
+        """App Integration - Make Post Request when gateway timed out"""
+        # set the return value to an empty response
+        # the reponse's content defaults to None, which returns an empty str
+        requests_mock.return_value = requests.Response()
+
+        # need to set status_code in the response
+        requests_mock.return_value.status_code = 504
+
+        result, response = self._app._make_post_request('', None, None, False)
+        assert_false(result)
+        assert_is_none(response)
