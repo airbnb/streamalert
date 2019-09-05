@@ -102,6 +102,7 @@ class TestStreamPayload(object):
     @patch.object(StreamPayload, '__abstractmethods__', frozenset())
     def test_repr_invalid_str(self):
         """StreamPayload - Repr, Invalid, Str Payload"""
+        # pylint: disable=abstract-class-instantiated
         payload = StreamPayload('foobar', '{"key": "value"}')
         payload.fully_classified = False
         expected_result = (
