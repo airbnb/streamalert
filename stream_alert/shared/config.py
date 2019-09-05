@@ -38,7 +38,7 @@ class TopLevelConfigKeys:
 class ConfigError(Exception):
     """Exception class for config file errors"""
 
-class SchemaSorter(object):
+class SchemaSorter:
     """Statefully sort schema by priority where 0 is the highest priority
     and the lowest priority is any positive numeric value.
     In the event that no priority is specified for a schema,
