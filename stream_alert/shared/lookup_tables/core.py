@@ -3,7 +3,7 @@ from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.configuration import LookupTablesConfiguration
 from stream_alert.shared.lookup_tables.driver_dynamodb import DynamoDBDriver
 from stream_alert.shared.lookup_tables.driver_s3 import S3Driver
-from stream_alert.shared.lookup_tables.drivers import NullDriver, PersistenceDriver
+from stream_alert.shared.lookup_tables.drivers import NullDriver
 from stream_alert.shared.lookup_tables.drivers_factory import construct_persistence_driver
 from stream_alert.shared.lookup_tables.table import LookupTable
 
@@ -152,7 +152,14 @@ class LookupTablesCore:
         """
         return self.get_table(table_name).get(key, default)
 
+    # pylint: disable=protected-access
     def _install_mocks(self, mock_data):
+        """
+        Extremely gnarly, extremely questionable manner to install mocking data into our tables.
+        The reason this exists at all is to support the secret features of table scanning S3-backed
+        tables, which isn't a "normally" available feature but is required for some pre-existing
+        StreamAlert users.
+        """
         for table_name, table in self._tables.items():
             table._initialized = True
             driver = table._driver

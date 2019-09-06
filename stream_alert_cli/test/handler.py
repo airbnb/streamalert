@@ -31,8 +31,6 @@ from stream_alert.classifier.parsers import ParserBase
 from stream_alert.rules_engine import rules_engine
 from stream_alert.shared import rule
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.lookup_tables.core import LookupTablesCore
-from stream_alert.shared.lookup_tables.table import LookupTable
 from stream_alert.shared.stats import get_rule_stats
 from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
