@@ -17,14 +17,19 @@ from datetime import datetime
 import json
 import zlib
 
+import botocore
 from botocore.exceptions import ReadTimeoutError
-from mock import patch, ANY
+from mock import patch, ANY, MagicMock
 from moto import mock_s3
 from nose.tools import assert_equal, assert_raises
 
 from stream_alert.shared.config import load_config
+from stream_alert.shared.lookup_tables.driver_s3 import S3Driver, Compression, S3Adapter
 from stream_alert.shared.lookup_tables.drivers_factory import construct_persistence_driver
-from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
+from stream_alert.shared.lookup_tables.errors import (
+    LookupTablesCommitError,
+    LookupTablesInitializationError,
+)
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -225,3 +230,73 @@ class TestS3Driver:
         self._foo_driver.set('new_key', 'BazBuzz')
         self._foo_driver.commit()
         assert_equal(self._foo_driver.get('new_key'), 'BazBuzz')
+
+    @patch('logging.Logger.warning')
+    def test_set_commit_nothing(self, mock_logger):
+        """LookupTables - Drivers - S3 Driver - Commit with nothing"""
+        self._foo_driver.initialize()
+        self._foo_driver.commit()
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Empty commit; no records dirtied', 's3:bucket_name/foo.json'
+        )
+
+
+class TestCompression:
+
+    @staticmethod
+    def test_compression_decompression():
+        """LookupTables - Drivers - S3 Driver - Compression"""
+        original_data = 'Human is dead; Mismatch'
+        driver = S3Driver({
+            'bucket': 'bucket',
+            'key': 'key',
+            'compression': 'gzip'
+        })
+
+        compressed_data = Compression.gz_compress(driver, original_data.encode())
+        decompressed_data = Compression.gz_decompress(driver, compressed_data)
+
+        assert_equal(original_data, decompressed_data.decode())
+
+
+class TestS3Adapter:
+
+    @staticmethod
+    def test_upload_with_error():
+        """LookupTables - Drivers - S3 Driver - Adapter - AWS Error"""
+        driver = S3Driver({
+            'bucket': 'bucket',
+            'key': 'key',
+            'compression': 'gzip'
+        })
+        boto_s3_client = MagicMock(name='Boto3Client')
+        boto_s3_client.Bucket.return_value.put_object.side_effect = \
+            botocore.exceptions.ClientError({'Error': {'Message': 'uh oh'}}, 'operation_name')
+        adapter = S3Adapter(
+            driver,
+            boto_s3_client,
+            'bucket',
+            'key'
+        )
+
+        assert_raises(LookupTablesCommitError, adapter.upload, 'asdf')
+
+    @staticmethod
+    def test_upload_with_timeout():
+        """LookupTables - Drivers - S3 Driver - Adapter - AWS Timeout"""
+        driver = S3Driver({
+            'bucket': 'bucket',
+            'key': 'key',
+            'compression': 'gzip'
+        })
+        boto_s3_client = MagicMock(name='Boto3Client')
+        boto_s3_client.Bucket.return_value.put_object.side_effect = \
+            botocore.exceptions.ConnectTimeoutError(endpoint_url='http://yay')
+        adapter = S3Adapter(
+            driver,
+            boto_s3_client,
+            'bucket',
+            'key'
+        )
+
+        assert_raises(LookupTablesCommitError, adapter.upload, 'asdf')

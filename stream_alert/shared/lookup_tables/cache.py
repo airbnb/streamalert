@@ -113,7 +113,7 @@ class DriverCache:
             # The reason for RANDOM eviction is that for a LRU cache replacement policy,
             # Cache pollution can occur for Lambdas that experience extremely deterministic
             # key loading orders.
-            selected_key = random.choice(self._ttls.keys())
+            selected_key = random.choice(list(self._ttls.keys()))
             del self._ttls[selected_key]
             del self._data[selected_key]
 
@@ -146,6 +146,11 @@ class DriverCache:
             keyvalue_data (dict)
             ttl_minutes (int)
         """
+        if not keyvalue_data:
+            self._data = {}
+            self._ttls = {}
+            return
+
         self._data = keyvalue_data
         ttl = self._clock.utcnow() + timedelta(minutes=ttl_minutes)
         for key in keyvalue_data.keys():
