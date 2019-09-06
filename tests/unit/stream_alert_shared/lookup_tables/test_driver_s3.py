@@ -181,7 +181,7 @@ class TestS3Driver:
     def test_barely_does_not_need_refresh(self, mock_logger):
         """LookupTables - Drivers - S3 Driver - Refresh - Barely Does not need refresh"""
         # Wind the clock back; note this is before initialize.
-        self._foo_driver._cache._clock.time_machine(datetime(year=3000, month=1, day=1))
+        self._foo_driver._cache_clock._clock.time_machine(datetime(year=3000, month=1, day=1))
 
         self._foo_driver.initialize()
 
@@ -189,7 +189,7 @@ class TestS3Driver:
         self._foo_driver._cache.set('key_1', 'stale', 10)  # 10-minute ttl
 
         # Wind the "clock" forward JUST BEFORE it needs a refresh
-        self._foo_driver._cache._clock.time_machine(
+        self._foo_driver._cache_clock._clock.time_machine(
             datetime(year=3000, month=1, day=1, minute=9, second=59)
         )
 
@@ -207,11 +207,11 @@ class TestS3Driver:
         self._foo_driver.initialize()
 
         # Mess up some of the data so we fake that it's "stale"
-        self._foo_driver._cache._clock.time_machine(datetime(year=3000, month=1, day=1))
+        self._foo_driver._cache_clock._clock.time_machine(datetime(year=3000, month=1, day=1))
         self._foo_driver._cache.set('key_1', 'stale', 10)  # 10-minute ttl
 
         # Wind the "clock" forward JUST AFTER it needs a refresh
-        self._foo_driver._cache._clock.time_machine(
+        self._foo_driver._cache_clock._clock.time_machine(
             datetime(year=3000, month=1, day=1, minute=10, second=1)
         )
 

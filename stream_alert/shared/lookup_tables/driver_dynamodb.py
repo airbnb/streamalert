@@ -122,6 +122,7 @@ class DynamoDBDriver(PersistenceDriver):
                 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services
                 #       /dynamodb.html#DynamoDB.Table.put_item
                 self._table.put_item(**put_item_args)
+                self._cache.set(key, value, self._cache_refresh_minutes)
 
             except (ClientError, ConnectTimeoutError, ReadTimeoutError):
                 raise LookupTablesInitializationError(

@@ -73,8 +73,10 @@ class S3Driver(PersistenceDriver):
         )
 
         self._cache = DriverCache(maximum_key_count=0)
-        self._cache_clock = DriverCache()
 
+        # S3 cannot support a per-key TTL so I use a separate DriverCache that stores
+        # the global cache invalidation timer.
+        self._cache_clock = DriverCache()
         self._dirty = False
 
         # Explicitly set timeout for S3 connection. The boto default timeout is 60 seconds.
@@ -117,6 +119,7 @@ class S3Driver(PersistenceDriver):
 
         # Invalidate the cache key
         self._cache_clock.set(self._MAGIC_CACHE_TTL_KEY, False, 9999)
+        self._dirty = False
 
         LOGGER.info('LookupTable (%s): Successfully uploaded new data', self.id)
 
@@ -125,12 +128,8 @@ class S3Driver(PersistenceDriver):
         return self._cache.get(key, default)
 
     def set(self, key, value):
-        """
-        Under construction
-        FIXME (derek.wang)
-        """
         self._reload_if_necessary()
-        self._cache.set(key, value, self._cache_refresh_minutes)
+        self._cache.set(key, value, 9999)
         self._dirty = True
 
     def _reload_if_necessary(self):
@@ -141,7 +140,7 @@ class S3Driver(PersistenceDriver):
         If it needs a reload, this method will appropriately call reload.
         """
         if self._cache_clock.has(self._MAGIC_CACHE_TTL_KEY) and \
-                self._cache_clock.get(self._MAGIC_CACHE_TTL_KEY):
+                self._cache_clock.get(self._MAGIC_CACHE_TTL_KEY, False):
             LOGGER.debug(
                 'LookupTable (%s): Does not need refresh. TTL: %s',
                 self.id,
@@ -174,7 +173,7 @@ class S3Driver(PersistenceDriver):
         # as JSON.
         data = Encoding.json_decode(self, bytes_data)
 
-        self._cache.setall(data, self._cache_refresh_minutes)
+        self._cache.setall(data, 9999)
         self._cache_clock.set(self._MAGIC_CACHE_TTL_KEY, True, self._cache_refresh_minutes)
         LOGGER.info('LookupTable (%s): Successfully loaded', self.id)
 
