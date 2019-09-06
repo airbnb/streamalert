@@ -3,20 +3,20 @@ Lookup Tables
 
 Overview
 --------
-LookupTables is a framework for injecting additional data into your StreamAlert lambda functions. LookupTables
-offers a unified key-value interface into a set of backend storage solutions, allowing StreamAlert lambda functions
+LookupTables is a framework for injecting additional data into StreamAlert Lambda functions. LookupTables
+offers a unified key-value interface into a set of backend storage solutions, allowing StreamAlert Lambda functions
 to use state from outside of the raw telemetry that they receive.
 
-With LookupTables, you can hydrate alerting data, add statefulness to alerts, scalable pull down remote data, rapidly
+With LookupTables, StreamAlert can hydrate alerting data, add statefulness to alerts, scalable pull down remote data, rapidly
 tune rule logic, and much more!
 
 
 How do LookupTables work?
 `````````````````````````
-LookupTables is a unified Python interface into backend data storage mechanisms. The two currently supported storage
-solutions are AWS S3 and AWS DynamoDb.
+LookupTables provides unified Python interface into backend data storage mechanisms. The two currently supported storage
+solutions are AWS S3 and AWS DynamoDB.
 
-LookupTables makes these storage solutions available to StreamAlert's lambda functions. It is available on all
+LookupTables makes these storage solutions available to StreamAlert's Lambda functions. It is available on all
 classifiers, the rules engine, the alert merger, and the alert processor.
 
 
@@ -68,12 +68,12 @@ LookupTables is configured via a single file, ``conf/lookup_tables.json``.
 
 * ``enabled`` — (bool) Pass `true` to activate LookupTables. Leave `false` to disable.
 * ``tables`` — (dict) A dict mapping the name of a LookupTable to its corresponding configuration.
-  The exact configuration varies from Driver to Driver. See below:
+  The exact configuration varies from driver to driver. See below:
 
 
 S3 Driver
 `````````
-This uses AWS S3. It stores all LookupTables data into a single file in a S3 bucket, specified in the
+This uses AWS S3. It stores all LookupTables data into a single file in an S3 bucket, specified in the
 configuration:
 
 .. code-block::
@@ -87,29 +87,28 @@ configuration:
   }
 
 * ``driver`` — (str) Use ``s3``
-* ``bucket`` — (str) The name of the S3 bucket. It must be on the same AWS account. NOTE: Multiple S3 LookupTables
+* ``bucket`` — (str) The name of the S3 bucket. It must be in the same AWS account. NOTE: Multiple S3 LookupTables
   can use the same bucket, as long as they reference different ``key``'s.
-* ``key`` — (str) The name of the S3 object key (or filename) of the object in the S3 bucket.
+* ``key`` — (str) The S3 object key (aka filename) in the bucket.
 * ``compression`` — (str|bool) The compression algorithm of the S3 object. Currently only supports ``gzip``.
   Pass ``false`` if the object is not compressed and is stored as JSON plaintext.
-* ``cache_refresh_minutes`` — (int) Number of minutes to cache the entire table. See "caching" section below.
+* ``cache_refresh_minutes`` — (int) Number of minutes to cache the entire table. See the `caching <#Caching>` section below.
 
 
-The nitty gritty
+The Nitty Gritty
 ''''''''''''''''
-Because S3 driver stores all data in a single S3 file, it loads the **entire table** upfront. The benefit here
-is if your code frequently scans multiple keys back-to-back, only a single HTTP call will be made to S3, and
+Because S3 driver stores all data in a single S3 file, it loads the **entire table** upfront. This is beneficial
+to StreamAlert code that scans multiple keys back-to-back, as only a single HTTP call will be made to S3, and
 subsequent calls will be made to the caching layer.
 
-On the other hand, because the entire S3 file is loaded into memory, this can consume significant memory and
-risk running into the memory ceiling of your lambda functions. It is generally not advisable to store an
-overly large file into S3 to use for LookupTables.
+On the other hand, because the entire S3 file is loaded into memory, large S3 files can risk running into the
+memory ceiling of StreamAlert's Lambda functions.
 
 
-DynamoDb Driver
+DynamoDB Driver
 ```````````````
-This driver uses DynamoDb as the storage layer. This driver stores individual keys as discrete rows on the DynamoDb
-table. You can configure the DynamoDb driver to respect both tables with a single partition key, as well as tables
+This driver uses DynamoDB as the storage layer. This driver stores individual keys as discrete rows on the DynamoDB
+table. The DynamoDB driver can be configured to respect both tables with a single partition key, as well as tables
 with both a partition and a sort key.
 
 .. code-block::
@@ -127,15 +126,15 @@ with both a partition and a sort key.
   }
 
 * ``driver`` — (str) Use ``dynamodb``
-* ``table`` — (str) The name of the DynamoDb table. This table must be on the same AWS region as the StreamAlert deployment.
+* ``table`` — (str) The name of the DynamoDB table. This table must be on the same AWS region as the StreamAlert deployment.
 * ``partition_key`` — (str) The name of the partition key. The partition key MUST be a string type.
 * ``sort_key`` — (str) (Optional) The name of the sort key, if one exists. The sort key MUST be a string type.
-* ``value_key`` — (str) The name of the value column. NOTE: Multiple LookupTables can be "overlapped" on a single DynamoDb table,
+* ``value_key`` — (str) The name of the value column. NOTE: Multiple LookupTables can be "overlapped" on a single DynamoDB table,
   using different ``value_key``'s.
-* ``consistent_read`` — (bool) (Optional) When ``true``, it forces DynamoDb queries to be strongly consistent. This reduces performance,
+* ``consistent_read`` — (bool) (Optional) When ``true``, it forces DynamoDB queries to be strongly consistent. This reduces performance,
   (potentially increasing HTTP latency during dynamo calls), but guarantees that modified values to LookupTables will be immediately
   available. Passing ``false`` allows eventually consistent reads, which can greatly improve performance.
-* ``key_delimiter`` — (str) (Optional) When accessing keys in a dynamodb LookupTable that uses both a ``partition_key`` and a
+* ``key_delimiter`` — (str) (Optional) When accessing keys in a DynamoDB LookupTable that uses both a ``partition_key`` and a
   ``sort_key``, the syntax of the final key is ``{partition_key}{delimiter}{sort_key}``. The default delimiter is a
   colon (``:``), but this parameter can be provided to offer a different delimiter.
 * ``cache_refresh_minutes`` — (int) Number of minutes to cache each individual key.
@@ -143,13 +142,13 @@ with both a partition and a sort key.
   will be evicted on a random-selection basis.
 
 
-The nitty gritty
+The Nitty Gritty
 ''''''''''''''''
-The DynamoDb driver is designed to retrieve a minimal amount of data per request. This reduces the memory footprint
+The DynamoDB driver is designed to retrieve a minimal amount of data per request. This reduces the memory footprint
 compared to the S3 driver, and can reduce the Lambda memory limit required to prevent out-of-memory errors.
 
-As a tradeoff, rapid back-to-back accesses of different keys will result in many HTTP calls being made to DynamoDb,
-which can slow down your application.
+As a tradeoff, rapid back-to-back accesses of different keys will result in many HTTP calls being made to DynamoDB,
+which can slow down StreamAlert's Lambda execution.
 
 
 Caching
@@ -163,8 +162,8 @@ increase Lambda memory consumption, but can also reduce runtime by reducing numb
 
 Putting Data Into LookupTables
 ------------------------------
-It is **not** advisable (yet) for StreamAlert lambdas to write values into LookupTables. It is generally
-advisable for external lambdas (or other processes) to manage the data in LookupTables.
+It is **not** advisable (yet) for StreamAlert Lambdas to write values into LookupTables. It is generally
+advisable for external Lambdas (or other processes) to manage the data in LookupTables.
 
 
 manage.py lookup-tables
@@ -183,13 +182,13 @@ Best Practices
 This section documents several best practices in no particular order.
 
 
-Organize your Data
-``````````````````
+Organize LookupTables Data
+``````````````````````````
 While LookupTables *can* support storage of whatever-data in whatever-table using whatever-key, for usage
 patterns that push scaling limits, it is generally advisable to organize data into tables that optimize
 for their access patterns.
 
-It is advisable to split your data into many LookupTables, each containing data of similar access patterns.
+It is advisable to split the data into many LookupTables, each containing data of similar access patterns.
 
 
 When to use S3, and when to use Dynamo
@@ -207,13 +206,13 @@ Caching Best Practices
 Really, we haven't found any reason to stress out about these values. Setting 5 minutes or 10 minutes is
 enough.
 
-More effective is to use the DynamoDb driver with ``cache_maximum_key_count``. This allows more fine-grained
+More effective is to use the DynamoDB driver with ``cache_maximum_key_count``. This allows more fine-grained
 control of the maximum memory consumption of the cache.
 
 
 Prefer Eventually Consistent Reads
 ``````````````````````````````````
-We **strongly** recommend allowing eventually consistent reads on the DynamoDb driver. The public SLA for
+We **strongly** recommend allowing eventually consistent reads on the DynamoDB driver. The public SLA for
 eventually consistent reads is 20 seconds, with a typical delay of less than 3 seconds.
 
 
@@ -223,7 +222,7 @@ When LookupTables are configured properly, a subsequent run of ``./manage.py gen
 will create a new file: ``terraform/lookup_tables.tf.json`` and build the appropriate *IAM PERMISSIONS* for
 the StreamAlert Lambdas to access them.
 
-It **will not** build the actual S3 buckets or DynamoDb tables, however. You have to build those elsewhere.
+It **will not** build the actual S3 buckets or DynamoDB tables, however. Those resources have to be built elsewhere.
 
 
 Usage Ideas
@@ -250,7 +249,7 @@ Consider using LookupTables:
 
 External Configuration
 ``````````````````````
-Suppose you receive a piece of telemetry that includes a hostname:
+Suppose StreamAlert receive a piece of telemetry that includes a hostname:
 
 .. code-block::
 
@@ -259,8 +258,8 @@ Suppose you receive a piece of telemetry that includes a hostname:
     ...
   }
 
-But suppose you want an IP address instead. You can use LookupTables to retrieve realtime information about the
-DHCP or DNS information about that hostname, even if the IP address is not available in the original telemetry.
+But suppose the rules logic requires an IP address instead. LookupTables can be used to retrieve realtime information
+about the DHCP or DNS information about that hostname, even if the IP address is not available in the original telemetry.
 
 .. code-block:: python
 
