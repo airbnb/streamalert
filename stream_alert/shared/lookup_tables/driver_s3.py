@@ -73,6 +73,7 @@ class S3Driver(PersistenceDriver):
         )
 
         self._cache = DriverCache(maximum_key_count=0)
+        self._cache_clock = DriverCache()
 
         self._dirty = False
 
@@ -115,7 +116,7 @@ class S3Driver(PersistenceDriver):
         self._s3_adapter.upload(data)
 
         # Invalidate the cache key
-        self._cache.set(self._MAGIC_CACHE_TTL_KEY, False, 9999)
+        self._cache_clock.set(self._MAGIC_CACHE_TTL_KEY, False, 9999)
 
         LOGGER.info('LookupTable (%s): Successfully uploaded new data', self.id)
 
@@ -139,12 +140,12 @@ class S3Driver(PersistenceDriver):
 
         If it needs a reload, this method will appropriately call reload.
         """
-        if self._cache.has(self._MAGIC_CACHE_TTL_KEY) and \
-                self._cache.get(self._MAGIC_CACHE_TTL_KEY):
+        if self._cache_clock.has(self._MAGIC_CACHE_TTL_KEY) and \
+                self._cache_clock.get(self._MAGIC_CACHE_TTL_KEY):
             LOGGER.debug(
                 'LookupTable (%s): Does not need refresh. TTL: %s',
                 self.id,
-                self._cache.ttl(self._MAGIC_CACHE_TTL_KEY)
+                self._cache_clock.ttl(self._MAGIC_CACHE_TTL_KEY)
             )
 
         else:
@@ -174,7 +175,7 @@ class S3Driver(PersistenceDriver):
         data = Encoding.json_decode(self, bytes_data)
 
         self._cache.setall(data, self._cache_refresh_minutes)
-        self._cache.set(self._MAGIC_CACHE_TTL_KEY, True, self._cache_refresh_minutes)
+        self._cache_clock.set(self._MAGIC_CACHE_TTL_KEY, True, self._cache_refresh_minutes)
         LOGGER.info('LookupTable (%s): Successfully loaded', self.id)
 
 
