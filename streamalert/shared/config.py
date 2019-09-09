@@ -261,7 +261,7 @@ def _validate_config(config):
                             ', '.join('\'{}\''.format(source) for source in supported_sources)
                         )
                     )
-                validate_sources(data_sources)
+                _validate_sources(data_sources)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:
         if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
@@ -282,7 +282,7 @@ def _validate_config(config):
                         'one log type in normalized types'.format(normalized_key, ioc_type)
                     )
 
-def validate_sources(data_sources):
+def _validate_sources(data_sources):
     """ Validates the sources for a cluster
     Args:
         data_sources (dict): The sources to validate
