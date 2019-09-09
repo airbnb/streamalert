@@ -33,34 +33,172 @@ from stream_alert.shared import rule
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.stats import get_rule_stats
 from stream_alert_cli.helpers import check_credentials
+from stream_alert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
 from stream_alert_cli.test.format import format_green, format_red, format_underline, format_yellow
 from stream_alert_cli.test.mocks import mock_lookup_table_results, mock_threat_intel_query_results
 from stream_alert_cli.test.results import TestEventFile, TestResult
+from stream_alert_cli.utils import CLICommand, generate_subparser, UniqueSetAction
 
 LOGGER = get_logger(__name__)
 
 
-def test_handler(options, config):
-    """Handler for starting the test framework
+class TestCommand(CLICommand):
+    description = 'Perform various integration/functional tests'
 
-    Args:
-        options (argparse.Namespace): Parsed arguments
-        config (CLIConfig): Loaded StreamAlert config
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add the test subparser: manage.py test"""
+        test_subparsers = subparser.add_subparsers(dest="test subcommand", required=True)
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    result = True
-    opts = vars(options)
-    repeat = opts.get('repeat', 1)
-    for i in range(repeat):
-        if repeat != 1:
-            print('\nRepetition #', i+1)
-        result = result and TestRunner(options, config).run()
+        cls._setup_test_classifier_subparser(test_subparsers)
+        cls._setup_test_rules_subparser(test_subparsers)
+        cls._setup_test_live_subparser(test_subparsers)
 
-    if opts.get('stats'):
-        print(get_rule_stats())
-    return result
+    @classmethod
+    def _setup_test_classifier_subparser(cls, subparsers):
+        """Add the test validation subparser: manage.py test classifier [options]"""
+        test_validate_parser = generate_subparser(
+            subparsers,
+            'classifier',
+            description='Validate defined log schemas using integration test files',
+            subcommand=True
+        )
+
+        cls._add_default_test_args(test_validate_parser)
+
+    @classmethod
+    def _setup_test_rules_subparser(cls, subparsers):
+        """Add the test rules subparser: manage.py test rules [options]"""
+        test_rules_parser = generate_subparser(
+            subparsers,
+            'rules',
+            description='Test rules using integration test files',
+            subcommand=True
+        )
+
+        # Flag to run additional stats during testing
+        test_rules_parser.add_argument(
+            '-s',
+            '--stats',
+            action='store_true',
+            help='Enable outputing of statistical information on rules that run'
+        )
+
+        # Validate the provided repitition value
+        def _validate_repitition(val):
+            """Make sure the input is between 1 and 1000"""
+            err = ('Invalid repitition value [{}]. Must be an integer between 1 '
+                   'and 1000').format(val)
+            try:
+                count = int(val)
+            except TypeError:
+                raise test_rules_parser.error(err)
+
+            if not 1 <= count <= 1000:
+                raise test_rules_parser.error(err)
+
+            return count
+
+        # flag to run these tests a given number of times
+        test_rules_parser.add_argument(
+            '-n',
+            '--repeat',
+            default=1,
+            type=_validate_repitition,
+            help='Number of times to repeat the tests, to be used as a form performance testing'
+        )
+
+        cls._add_default_test_args(test_rules_parser)
+
+    @classmethod
+    def _setup_test_live_subparser(cls, subparsers):
+        """Add the test live subparser: manage.py test live [options]"""
+        test_live_parser = generate_subparser(
+            subparsers,
+            'live',
+            description=(
+                'Run end-to-end tests that will attempt to send alerts to each rule\'s outputs'
+            ),
+            subcommand=True
+        )
+
+        cls._add_default_test_args(test_live_parser)
+
+    @staticmethod
+    def _add_default_test_args(test_parser):
+        """Add the default arguments to the test parsers"""
+        test_filter_group = test_parser.add_mutually_exclusive_group(required=False)
+
+        # add the optional ability to test against a rule/set of rules
+        test_filter_group.add_argument(
+            '-f',
+            '--test-files',
+            dest='files',
+            metavar='FILENAMES',
+            nargs='+',
+            help='One or more file to test, separated by spaces',
+            action=UniqueSetAction,
+            default=set()
+        )
+
+        # add the optional ability to test against a rule/set of rules
+        test_filter_group.add_argument(
+            '-r',
+            '--test-rules',
+            dest='rules',
+            nargs='+',
+            help='One or more rule to test, separated by spaces',
+            action=UniqueSetAction,
+            default=set()
+        )
+
+        # add the optional ability to change the test files directory
+        test_parser.add_argument(
+            '-d',
+            '--files-dir',
+            help='Path to directory containing test files',
+            default=DEFAULT_TEST_FILES_DIRECTORY
+        )
+
+        # Add the optional ability to log verbosely or use quite logging for tests
+        verbose_group = test_parser.add_mutually_exclusive_group(required=False)
+
+        verbose_group.add_argument(
+            '-v',
+            '--verbose',
+            action='store_true',
+            help='Output additional information during testing'
+        )
+
+        verbose_group.add_argument(
+            '-q',
+            '--quiet',
+            action='store_true',
+            help='Suppress output for passing tests, only logging if there is a failure'
+        )
+
+    @classmethod
+    def handler(cls, options, config):
+        """Handler for starting the test framework
+
+        Args:
+            options (argparse.Namespace): Parsed arguments
+            config (CLIConfig): Loaded StreamAlert config
+
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        result = True
+        opts = vars(options)
+        repeat = opts.get('repeat', 1)
+        for i in range(repeat):
+            if repeat != 1:
+                print('\nRepetition #', i+1)
+            result = result and TestRunner(options, config).run()
+
+        if opts.get('stats'):
+            print(get_rule_stats())
+        return result
 
 
 class TestRunner:
@@ -109,7 +247,6 @@ class TestRunner:
     def _run_rules_engine(self, record):
         """Create a fresh rules engine and process the record, returning the result"""
         with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
-             patch.object(rules_engine.LookupTables, 'load_lookup_tables') as lt_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
              patch.object(rules_engine, 'RuleTable') as rule_table, \
              patch('rules.helpers.base.random_bool', return_value=True):
@@ -118,15 +255,38 @@ class TestRunner:
             # non-required outputs to get properly populated on the Alerts that are generated
             # when running the Rules Engine.
             rule_table.return_value = False
-
             ti_mock.side_effect = self._threat_intel_mock
 
-            # pylint: disable=protected-access
-            rules_engine.LookupTables._tables = self._lookup_tables_mock
-            lt_mock.return_value = rules_engine.LookupTables
             _rules_engine = rules_engine.RulesEngine()
 
+            self._install_lookup_tables_mocks(_rules_engine)
+
             return _rules_engine.run(records=record)
+
+    # pylint: disable=protected-access
+    def _install_lookup_tables_mocks(self, rules_engine_instance):
+        """
+        Extremely gnarly, extremely questionable manner to install mocking data into our tables.
+        The reason this exists at all is to support the secret features of table scanning S3-backed
+        tables, which isn't a "normally" available feature but is required for some pre-existing
+        StreamAlert users.
+        """
+        from stream_alert.shared.lookup_tables.driver_dynamodb import DynamoDBDriver
+        from stream_alert.shared.lookup_tables.driver_s3 import S3Driver
+
+        mock_data = self._lookup_tables_mock
+        for table_name, table in rules_engine_instance._lookup_tables._tables.items():
+            table._initialized = True
+            driver = table._driver
+            data = mock_data.get(table_name, {})
+            if isinstance(driver, S3Driver):
+                driver._cache.setall(data, 999999)
+                driver._cache_clock.set(S3Driver._MAGIC_CACHE_TTL_KEY, True, 999999)
+                continue
+
+            if isinstance(driver, DynamoDBDriver):
+                driver._cache.setall(data, 999999)
+                continue
 
     @staticmethod
     def _run_alerting(record):

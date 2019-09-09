@@ -47,6 +47,7 @@ from stream_alert_cli.terraform.classifier import generate_classifier
 from stream_alert_cli.terraform.rules_engine import generate_rules_engine
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
+from stream_alert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.51.0'}}
@@ -354,6 +355,18 @@ def cleanup_old_tf_files(config):
                 os.remove(os.path.join('terraform', terraform_file))
 
 
+class TerraformGenerateCommand(CLICommand):
+    description = 'Generate Terraform files from JSON cluster files'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Manage.py generate takes no arguments"""
+
+    @classmethod
+    def handler(cls, options, config):
+        return terraform_generate_handler(config, check_creds=False)
+
+
 def terraform_generate_handler(config, init=False, check_tf=True, check_creds=True):
     """Generate all Terraform plans for the configured clusters.
 
@@ -376,13 +389,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
 
     # Setup the main.tf.json file
     LOGGER.debug('Generating cluster file: main.tf.json')
-    with open('terraform/main.tf.json', 'w') as tf_file:
-        json.dump(
-            generate_main(config, init=init),
-            tf_file,
-            indent=2,
-            sort_keys=True
-        )
+    _create_terraform_module_file(generate_main(config, init=init), 'terraform/main.tf.json')
 
     # Return early during the init process, clusters are not needed yet
     if init:
@@ -401,23 +408,15 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
                 'An error was generated while creating the %s cluster', cluster)
             return False
 
-        with open('terraform/{}.tf.json'.format(cluster), 'w') as tf_file:
-            json.dump(
-                cluster_dict,
-                tf_file,
-                indent=2,
-                sort_keys=True
-            )
+        _create_terraform_module_file(cluster_dict, 'terraform/{}.tf.json'.format(cluster))
 
     metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
     if metric_filters:
-        with open('terraform/metric_filters.tf.json', 'w') as tf_file:
-            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
+        _create_terraform_module_file(metric_filters, 'terraform/metric_filters.tf.json')
 
     metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
     if metric_alarms:
-        with open('terraform/metric_alarms.tf.json', 'w') as tf_file:
-            json.dump(metric_alarms, tf_file, indent=2, sort_keys=True)
+        _create_terraform_module_file(metric_alarms, 'terraform/metric_alarms.tf.json')
 
     # Setup Athena
     generate_global_lambda_settings(
@@ -473,7 +472,57 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         message='Removing old Alert Merger Terraform file'
     )
 
+    # Setup Lookup Tables if applicable
+    _generate_lookup_tables_settings(config)
+
     return True
+
+
+def _generate_lookup_tables_settings(config):
+    """
+    Generates .tf.json file for LookupTables
+    """
+    tf_file_name = 'terraform/lookup_tables.tf.json'
+
+    if not config['lookup_tables'].get('enabled', False):
+        remove_temp_terraform_file(tf_file_name, 'Removing old LookupTables Terraform file')
+        return
+
+    dynamodb_tables = []
+    s3_buckets = []
+
+    for _, table_config in config['lookup_tables'].get('tables', {}).items():
+        if table_config['driver'] == 's3':
+            s3_buckets.append(table_config['bucket'])
+            continue
+
+        if table_config['driver'] == 'dynamodb':
+            dynamodb_tables.append(table_config['table'])
+            continue
+
+    roles = [
+        '${module.alert_processor_lambda.role_id}',
+        '${module.alert_merger_lambda.role_id}',
+        '${module.rules_engine_lambda.role_id}',
+    ]
+
+    for cluster in config.clusters():
+        roles.append('${{module.classifier_{}_lambda.role_id}}'.format(cluster))
+
+    generated_config = {
+        'module': {
+            'lookup_tables_iam': {
+                'source': 'modules/tf_lookup_tables',
+                'account_id': config['global']['account']['aws_account_id'],
+                'region': config['global']['account']['region'],
+                'prefix': config['global']['account']['prefix'],
+                'dynamodb_tables': dynamodb_tables,
+                's3_buckets': s3_buckets,
+                'roles': roles,
+            }
+        }
+    }
+    _create_terraform_module_file(generated_config, tf_file_name)
 
 
 def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_file, message):
@@ -494,8 +543,7 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
     if config['lambda'][config_name].get('enabled', True):
         generated_config = generate_func(config=config)
         if generated_config:
-            with open(tf_tmp_file, 'w') as tf_file:
-                json.dump(generated_config, tf_file, indent=2, sort_keys=True)
+            _create_terraform_module_file(generated_config, tf_tmp_file)
     else:
         remove_temp_terraform_file(tf_tmp_file, message)
 
@@ -550,3 +598,12 @@ def _generate_global_module(config):
 
 def _config_get_logging_bucket(config):
     return config['global']['s3_access_logging']['logging_bucket']
+
+
+def _create_terraform_module_file(generated_config, filename):
+    """
+    Dumps the given generated_config, a JSON dict, into the given filename under the terraform/
+    directory, as a .tf.json file.
+    """
+    with open(filename, 'w') as file:
+        json.dump(generated_config, file, indent=2, sort_keys=True)
