@@ -117,7 +117,7 @@ class S3Driver(PersistenceDriver):
         # Upload to S3
         self._s3_adapter.upload(data)
 
-        # Invalidate the cache key
+        # Invalidate the cache key by setting a "False" value into the magic key
         self._cache_clock.set(self._MAGIC_CACHE_TTL_KEY, False, 9999)
         self._dirty = False
 
@@ -129,7 +129,7 @@ class S3Driver(PersistenceDriver):
 
     def set(self, key, value):
         self._reload_if_necessary()
-        self._cache.set(key, value, 9999)
+        self._cache.set(key, value, 9999)  # We don't do per-key cache TTLs
         self._dirty = True
 
     def _reload_if_necessary(self):
@@ -173,6 +173,8 @@ class S3Driver(PersistenceDriver):
         # as JSON.
         data = Encoding.json_decode(self, bytes_data)
 
+        # We don't do per-key cache TTLs; instead, we use a single global cache TTL that's set
+        # as a "True" value in the magic key
         self._cache.setall(data, 9999)
         self._cache_clock.set(self._MAGIC_CACHE_TTL_KEY, True, self._cache_refresh_minutes)
         LOGGER.info('LookupTable (%s): Successfully loaded', self.id)
