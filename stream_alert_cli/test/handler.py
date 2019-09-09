@@ -247,7 +247,6 @@ class TestRunner:
     def _run_rules_engine(self, record):
         """Create a fresh rules engine and process the record, returning the result"""
         with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
-             patch.object(rules_engine.LookupTables, 'get_instance') as lt_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
              patch.object(rules_engine, 'RuleTable') as rule_table, \
              patch('rules.helpers.base.random_bool', return_value=True):
@@ -256,15 +255,38 @@ class TestRunner:
             # non-required outputs to get properly populated on the Alerts that are generated
             # when running the Rules Engine.
             rule_table.return_value = False
-
             ti_mock.side_effect = self._threat_intel_mock
 
-            # pylint: disable=protected-access
-            rules_engine.LookupTables._tables = self._lookup_tables_mock
-            lt_mock.return_value = rules_engine.LookupTables
             _rules_engine = rules_engine.RulesEngine()
 
+            self._install_lookup_tables_mocks(_rules_engine)
+
             return _rules_engine.run(records=record)
+
+    # pylint: disable=protected-access
+    def _install_lookup_tables_mocks(self, rules_engine_instance):
+        """
+        Extremely gnarly, extremely questionable manner to install mocking data into our tables.
+        The reason this exists at all is to support the secret features of table scanning S3-backed
+        tables, which isn't a "normally" available feature but is required for some pre-existing
+        StreamAlert users.
+        """
+        from stream_alert.shared.lookup_tables.driver_dynamodb import DynamoDBDriver
+        from stream_alert.shared.lookup_tables.driver_s3 import S3Driver
+
+        mock_data = self._lookup_tables_mock
+        for table_name, table in rules_engine_instance._lookup_tables._tables.items():
+            table._initialized = True
+            driver = table._driver
+            data = mock_data.get(table_name, {})
+            if isinstance(driver, S3Driver):
+                driver._cache.setall(data, 999999)
+                driver._cache_clock.set(S3Driver._MAGIC_CACHE_TTL_KEY, True, 999999)
+                continue
+
+            if isinstance(driver, DynamoDBDriver):
+                driver._cache.setall(data, 999999)
+                continue
 
     @staticmethod
     def _run_alerting(record):
