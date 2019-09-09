@@ -281,7 +281,7 @@ def _validate_config(config):
                         'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
                         'one log type in normalized types'.format(normalized_key, ioc_type)
                     )
- 
+
 def validate_sources(data_sources):
     """ Validates the sources for a cluster
     Args:

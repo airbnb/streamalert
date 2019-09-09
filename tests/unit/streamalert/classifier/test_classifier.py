@@ -16,6 +16,7 @@ limitations under the License.
 from collections import OrderedDict
 import os
 
+import os
 from mock import Mock, patch
 from nose.tools import assert_equal
 
