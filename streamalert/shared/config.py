@@ -247,7 +247,7 @@ def _validate_config(config):
 
     # Check if the defined sources are supported and report any invalid entries
     if TopLevelConfigKeys.CLUSTERS in config:
-        for cluster in config[TopLevelConfigKeys.CLUSTERS].iteritems():
+        for cluster in config[TopLevelConfigKeys.CLUSTERS].items():
             if 'data_sources' in cluster[1]:
                 data_sources = cluster[1]['data_sources']
                 supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
@@ -291,7 +291,7 @@ def validate_sources(data_sources):
     """
     # Iterate over each defined source and make sure the required subkeys exist
     for attrs in data_sources.values():
-        for entity, entity_attrs in attrs.iteritems():
+        for entity, entity_attrs in attrs.items():
             if TopLevelConfigKeys.LOGS not in entity_attrs:
                 raise ConfigError('Missing \'logs\' key for entity: {}'.format(entity))
 
