@@ -5,17 +5,17 @@ data "aws_iam_policy_document" "streamalert_read_items_from_lookup_tables" {
       "dynamodb:DescribeTable",
     ]
 
-    resources = "${local.dynamodb_table_arns}"
+    resources = ["${local.dynamodb_table_arns}"]
   }
 
   statement {
     actions   = ["s3:List*"]
-    resources = "${local.s3_bucket_arns}"
+    resources = ["${local.s3_bucket_arns}"]
   }
 
   statement {
     actions   = ["s3:Get*"]
-    resources = "${local.s3_bucket_arn_star}"
+    resources = ["${local.s3_bucket_arn_star}"]
   }
 }
 
