@@ -30,7 +30,7 @@ import textwrap
 from stream_alert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
 
 CLUSTERS = [
-    os.path.splitext(cluster)[0] for _, _, files in os.walk('../conf/clusters')
+    os.path.splitext(cluster)[0] for _, _, files in os.walk('./conf/clusters')
     for cluster in files
 ]
 
