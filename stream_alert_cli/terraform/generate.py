@@ -524,6 +524,7 @@ def _generate_lookup_tables_settings(config):
             'roles': sorted(roles),
             'account_id': config['global']['account']['aws_account_id'],
             'region': config['global']['account']['region'],
+            'prefix': config['global']['account']['prefix'],
         }
 
     if s3_buckets:
@@ -531,6 +532,7 @@ def _generate_lookup_tables_settings(config):
             'source': 'modules/tf_lookup_tables_s3',
             's3_buckets': sorted(s3_buckets),
             'roles': sorted(roles),
+            'prefix': config['global']['account']['prefix'],
         }
 
     _create_terraform_module_file(generated_config, tf_file_name)

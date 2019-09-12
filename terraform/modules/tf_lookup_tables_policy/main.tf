@@ -1,5 +1,5 @@
 resource "aws_iam_policy" "streamalert_read_from_lookup_tables" {
-  name   = "StreamAlertReadFromLookupTablesPolicy_${var.type}"
+  name   = "${var.prefix}_StreamAlertReadFromLookupTablesPolicy_${var.type}"
   policy = "${var.policy_json}"
 }
 

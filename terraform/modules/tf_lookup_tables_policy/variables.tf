@@ -12,3 +12,8 @@ variable "type" {
   description = "Type of access (e.g. s3 or dynamodb); used to suffix the policy name"
   type        = "string"
 }
+
+variable "prefix" {
+  description = "StreamAlert prefix"
+  type        = "string"
+}

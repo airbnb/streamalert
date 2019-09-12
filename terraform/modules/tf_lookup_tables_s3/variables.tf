@@ -7,3 +7,8 @@ variable "roles" {
   description = "List of role ids to grant LookupTable access to"
   type        = "list"
 }
+
+variable "prefix" {
+  description = "StreamAlert prefix"
+  type        = "string"
+}

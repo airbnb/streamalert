@@ -17,3 +17,8 @@ variable "region" {
   description = "AWS Region that the DynamoDB tables reside in"
   type        = "string"
 }
+
+variable "prefix" {
+  description = "StreamAlert prefix"
+  type        = "string"
+}
