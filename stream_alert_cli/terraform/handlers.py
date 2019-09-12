@@ -145,7 +145,7 @@ class TerraformBuildCommand(CLICommand):
             )
         )
 
-        _add_default_tf_args(subparser)
+        _add_default_tf_args(subparser, add_cluster_args=False)
 
     @classmethod
     def handler(cls, options, config):
@@ -316,7 +316,7 @@ class TerraformListTargetsCommand(CLICommand):
         return True
 
 
-def _add_default_tf_args(tf_parser):
+def _add_default_tf_args(tf_parser, add_cluster_args=True):
     """Add the default terraform parser options"""
     tf_parser.add_argument(
         '-t',
@@ -331,8 +331,9 @@ def _add_default_tf_args(tf_parser):
         nargs='+'
     )
 
-    # Add the option to specify cluster(s)
-    add_clusters_arg(tf_parser)
+    if add_cluster_args:
+        # Add the option to specify cluster(s)
+        add_clusters_arg(tf_parser)
 
 
 def _get_valid_tf_targets(config, targets):
