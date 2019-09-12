@@ -277,7 +277,7 @@ def generate_outputs(cluster_name, cluster_dict, config):
     """
     output_config = config['clusters'][cluster_name].get('outputs')
     if output_config:
-        for tf_module, output_vars in list(output_config.items()):
+        for tf_module, output_vars in sorted(output_config.items()):
             for output_var in output_vars:
                 cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
                     'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}
@@ -520,8 +520,8 @@ def _generate_lookup_tables_settings(config):
     if dynamodb_tables:
         generated_config['module']['lookup_tables_iam_dynamodb'] = {
             'source': 'modules/tf_lookup_tables_dynamodb',
-            'dynamodb_tables': list(dynamodb_tables),
-            'roles': list(roles),
+            'dynamodb_tables': sorted(dynamodb_tables),
+            'roles': sorted(roles),
             'account_id': config['global']['account']['aws_account_id'],
             'region': config['global']['account']['region'],
         }
@@ -529,8 +529,8 @@ def _generate_lookup_tables_settings(config):
     if s3_buckets:
         generated_config['module']['lookup_tables_iam_s3'] = {
             'source': 'modules/tf_lookup_tables_s3',
-            's3_buckets': list(s3_buckets),
-            'roles': list(roles),
+            's3_buckets': sorted(s3_buckets),
+            'roles': sorted(roles),
         }
 
     _create_terraform_module_file(generated_config, tf_file_name)
