@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import json
+
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.core import LookupTables
 from stream_alert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
@@ -186,16 +188,23 @@ class LookupTablesCommand(CLICommand):
         value = LookupTables.get(table_name, key)
 
         print('  Value: {}'.format(value))
+        print('  Type:  {}'.format(type(value)))
 
         return True
 
     @staticmethod
     def _set_handler(options, config):
+        print('==== LookupTables; Set Key ====')
+
         table_name = options.table
         key = options.key
-        new_value = options.value
 
-        print('==== LookupTables; Set Key ====')
+        try:
+            new_value = json.loads(options.value)
+        except TypeError as e:
+            print('  ERROR: Input is not valid JSON:')
+            print(e)
+            return False
 
         core = LookupTables.get_instance(config=config)
 
