@@ -17,6 +17,7 @@ import json
 
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.core import LookupTables
+from stream_alert.shared.lookup_tables.drivers import PersistenceDriver
 from stream_alert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
 
 LOGGER = get_logger(__name__)
@@ -117,7 +118,7 @@ class LookupTablesCommand(CLICommand):
                 '''\
                 Examples:
 
-                    manage.py lookup-tables set -t [table] -k [key] -v [value]
+                    manage.py lookup-tables set -t [table] -k [key] -v [value] -j
                 '''
             )
         )
@@ -144,6 +145,14 @@ class LookupTablesCommand(CLICommand):
             help='Value to save into LookupTable',
             required=True,
             default=None
+        )
+
+        set_parser.add_argument(
+            '-j',
+            '--json',
+            help='Parse the given value as JSON instead of as a string',
+            required=False,
+            action='store_true'
         )
 
     @classmethod
@@ -199,12 +208,15 @@ class LookupTablesCommand(CLICommand):
         table_name = options.table
         key = options.key
 
-        try:
-            new_value = json.loads(options.value)
-        except TypeError as e:
-            print('  ERROR: Input is not valid JSON:')
-            print(e)
-            return False
+        if options.json:
+            try:
+                new_value = json.loads(options.value)
+            except json.decoder.JSONDecodeError as e:
+                print('  ERROR: Input is not valid JSON:')
+                print(e)
+                return False
+        else:
+            new_value = options.value
 
         core = LookupTables.get_instance(config=config)
 
@@ -212,6 +224,11 @@ class LookupTablesCommand(CLICommand):
         print('  Key:   {}'.format(key))
 
         table = core.table(table_name)
+
+        if table.driver_type == PersistenceDriver.TYPE_NULL:
+            print('  ERROR: Nonexistent table referenced!')
+            return False
+
         old_value = table.get(key)
 
         print('  Value: {} --> {}'.format(old_value, new_value))
