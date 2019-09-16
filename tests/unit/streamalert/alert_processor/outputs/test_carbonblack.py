@@ -21,7 +21,7 @@ from nose.tools import assert_false, assert_is_instance, assert_true
 
 from streamalert.alert_processor.outputs import carbonblack
 from streamalert.alert_processor.outputs.carbonblack import CarbonBlackOutput
-from tests.unit.streamalert.alert_processor. import CONFIG
+from tests.unit.streamalert.alert_processor import CONFIG
 from tests.unit.helpers.mocks import MockCBAPI
 from tests.unit.streamalert.alert_processor.helpers import get_alert
 

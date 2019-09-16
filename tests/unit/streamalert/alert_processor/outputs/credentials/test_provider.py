@@ -37,11 +37,12 @@ from streamalert.alert_processor.outputs.credentials.provider import (
     Credentials,
     OutputCredentialsProvider,
     EphemeralUnencryptedDriver, SpooledTempfileDriver, get_formatted_output_credentials_name)
-from tests.unit.streamalert.alert_processor. import (
+from tests.unit.streamalert.alert_processor import (
     CONFIG,
     KMS_ALIAS,
     REGION,
-    MOCK_ENV)
+    MOCK_ENV
+)
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.streamalert.alert_processor.helpers import (
     encrypt_with_kms,
