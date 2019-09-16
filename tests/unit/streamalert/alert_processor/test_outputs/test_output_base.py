@@ -40,7 +40,7 @@ from tests.unit.streamalert.alert_processor. import (
     MOCK_ENV,
     REGION
 )
-from tests.unit.streamalert.alert_processor..helpers import (
+from tests.unit.streamalert.alert_processor.helpers import (
     put_mock_creds,
     remove_temp_secrets
 )

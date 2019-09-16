@@ -23,7 +23,7 @@ from streamalert.alert_processor.outputs import carbonblack
 from streamalert.alert_processor.outputs.carbonblack import CarbonBlackOutput
 from tests.unit.streamalert.alert_processor. import CONFIG
 from tests.unit.helpers.mocks import MockCBAPI
-from tests.unit.streamalert.alert_processor..helpers import get_alert
+from tests.unit.streamalert.alert_processor.helpers import get_alert
 
 
 @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
