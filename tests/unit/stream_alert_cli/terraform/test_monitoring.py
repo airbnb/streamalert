@@ -145,7 +145,7 @@ def test_generate_cloudwatch_monitoring_custom_sns():
         expected_cloudwatch_tf_custom)
 
 
-@patch('stream_alert_cli.terraform.monitoring.LOGGER')
+@patch('streamalert_cli.terraform.monitoring.LOGGER')
 def test_generate_cloudwatch_monitoring_invalid_config(mock_logging):
     """CLI - Terraform Generate Cloudwatch Monitoring with Invalid Config"""
     CONFIG['global']['infrastructure'] = {}

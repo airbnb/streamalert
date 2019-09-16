@@ -44,7 +44,7 @@ def test_generate_athena():
                 'queue_name': '{}_streamalert_athena_s3_notifications'.format(prefix),
                 'results_bucket': '{}.streamalert.athena-results'.format(prefix),
                 'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
-                'lambda_handler': 'stream_alert.athena_partition_refresh.main.handler',
+                'lambda_handler': 'streamalert.athena_partition_refresh.main.handler',
                 'lambda_log_level': 'info',
                 'lambda_memory': '128',
                 'lambda_timeout': '60',

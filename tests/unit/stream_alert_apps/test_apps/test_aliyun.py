@@ -103,9 +103,9 @@ class TestAliyunApp:
         assert_true(self._app._more_to_poll)
         assert_equal(self._app.request.get_NextToken(), "20")
 
-    @patch('stream_alert.apps.app_base.AppIntegration._invoke_successive_app')
-    @patch('stream_alert.apps.batcher.Batcher._send_logs_to_lambda')
-    @patch('stream_alert.apps._apps.aliyun.AliyunApp._sleep_seconds')
+    @patch('streamalert.apps.app_base.AppIntegration._invoke_successive_app')
+    @patch('streamalert.apps.batcher.Batcher._send_logs_to_lambda')
+    @patch('streamalert.apps._apps.aliyun.AliyunApp._sleep_seconds')
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     def test_gather_logs_last_timestamp(self, client_mock, sleep_mock, batcher_mock, _):
         """AliyunApp - Test last_timestamp"""

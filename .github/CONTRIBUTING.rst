@@ -51,7 +51,7 @@ Make changes, add features, or fix bugs.
 When writing commit messages, make sure to prefix with one of the following tags::
 
   [docs]              # changes to StreamAlert documentation
-  [cli]               # stream_alert_cli changes
+  [cli]               # streamalert_cli changes
   [terraform]         # terraform changes
   [core]              # changes with core stream_alert classes used across lambda functions
   [testing]           # changes with testing infrastructure or processes

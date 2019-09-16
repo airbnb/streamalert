@@ -28,7 +28,7 @@ from streamalert.alert_processor.outputs.pagerduty import (
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyOutput:
     """Test class for PagerDutyOutput"""
     DESCRIPTOR = 'unit_test_pagerduty'
@@ -37,7 +37,7 @@ class TestPagerDutyOutput:
     CREDS = {'url': 'http://pagerduty.foo.bar/create_event.json',
              'service_key': 'mocked_service_key'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
@@ -112,7 +112,7 @@ class TestPagerDutyOutput:
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
-    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('streamalert.alert_processor.outputs.pagerduty.compose_alert')
     @patch('logging.Logger.info')
     @patch('requests.post')
     def test_dispatch_success_with_contexts(self, post_mock, log_mock, compose_alert):
@@ -172,7 +172,7 @@ class TestPagerDutyOutput:
         )
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyOutputV2:
     """Test class for PagerDutyOutputV2"""
     DESCRIPTOR = 'unit_test_pagerduty-v2'
@@ -181,7 +181,7 @@ class TestPagerDutyOutputV2:
     CREDS = {'url': 'http://pagerduty.foo.bar/create_event.json',
              'routing_key': 'mocked_routing_key'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
@@ -274,9 +274,9 @@ class TestPagerDutyOutputV2:
 
 
 # pylint: disable=too-many-public-methods
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-@patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
-@patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
+@patch('streamalert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
 class TestPagerDutyIncidentOutput:
     """Test class for PagerDutyIncidentOutput"""
     DESCRIPTOR = 'unit_test_pagerduty-incident'
@@ -291,7 +291,7 @@ class TestPagerDutyIncidentOutput:
              'email_from': 'email@domain.com',
              'integration_key': 'mocked_key'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
@@ -531,7 +531,7 @@ class TestPagerDutyIncidentOutput:
         log_info_mock.assert_called_with('Successfully sent alert to %s:%s',
                                          self.SERVICE, self.DESCRIPTOR)
 
-    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('streamalert.alert_processor.outputs.pagerduty.compose_alert')
     @patch('requests.put')
     @patch('requests.post')
     @patch('requests.get')
@@ -585,7 +585,7 @@ class TestPagerDutyIncidentOutput:
         )
 
     @patch('logging.Logger.warning')
-    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('streamalert.alert_processor.outputs.pagerduty.compose_alert')
     @patch('requests.put')
     @patch('requests.post')
     @patch('requests.get')
@@ -1109,9 +1109,9 @@ class TestPagerDutyIncidentOutput:
         )
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-@patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
-@patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
+@patch('streamalert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
 class TestWorkContext:
     """Test class for WorkContext"""
     DESCRIPTOR = 'unit_test_pagerduty-incident'
@@ -1126,7 +1126,7 @@ class TestWorkContext:
              'email_from': 'email@domain.com',
              'integration_key': 'mocked_key'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
@@ -1290,12 +1290,12 @@ class TestWorkContext:
         assert_false(user_verified)
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-@patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
-@patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
+@patch('streamalert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
 class TestPagerDutyRestApiClient:
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, _):
         dispatcher = PagerDutyIncidentOutput(None)
         http = JsonHttpProvider(dispatcher)
@@ -1547,7 +1547,7 @@ class TestWorkContextUnit:
         self._work = work
 
     @patch('logging.Logger.error')
-    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('streamalert.alert_processor.outputs.pagerduty.compose_alert')
     def test_positive_case(self, compose_alert_mock, log_error):
         """PagerDuty WorkContext - Minimum Positive Case"""
         publication = {}
@@ -1560,7 +1560,7 @@ class TestWorkContextUnit:
         log_error.assert_not_called()
 
     @patch('logging.Logger.error')
-    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('streamalert.alert_processor.outputs.pagerduty.compose_alert')
     def test_unstable_note_fail(self, compose_alert_mock, log_error):
         """PagerDuty WorkContext - Unstable - Add Note Failed"""
         publication = {}
@@ -1574,7 +1574,7 @@ class TestWorkContextUnit:
 
         log_error.assert_called_with(StringThatStartsWith("[test] Failed to add note to incident"))
 
-    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('streamalert.alert_processor.outputs.pagerduty.compose_alert')
     def test_unstable_adds_instability_note(self, compose_alert_mock):
         """PagerDuty WorkContext - Unstable - Add Instability Note"""
         publication = {}

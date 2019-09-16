@@ -34,7 +34,7 @@ class TestClassifier:
         with patch.object(classifier_module, 'Normalizer'), \
              patch.object(classifier_module, 'FirehoseClient'), \
              patch.object(classifier_module, 'SQSClient'), \
-             patch('stream_alert.classifier.classifier.config.load_config',
+             patch('streamalert.classifier.classifier.config.load_config',
                    Mock(return_value=self._mock_conf())):
             self._classifier = Classifier()
 
@@ -265,7 +265,7 @@ class TestClassifier:
 
     # Since we mock the Normalizer, we must also mock the class variable
     # referenced in the class methods.
-    @patch('stream_alert.shared.normalize.Normalizer._types_config', dict())
+    @patch('streamalert.shared.normalize.Normalizer._types_config', dict())
     def test_classify_payload_bad_record(self):
         """Classifier - Classify Payload, Bad Record"""
         with patch.object(Classifier, '_process_log_schemas'), \

@@ -73,7 +73,7 @@ class TestStreamAlertApp:
 
         assert_count_equal(expected_apps, StreamAlertApp.get_all_apps())
 
-    @patch('stream_alert.apps.app_base.Batcher', Mock())
+    @patch('streamalert.apps.app_base.Batcher', Mock())
     def test_get_app(self):
         """StreamAlertApp - Get App"""
         assert_equal(StreamAlertApp.get_app('duo_auth'), DuoAuthApp)
@@ -92,7 +92,7 @@ class TestAppIntegration:
 
     # Remove all abstractmethods so we can instantiate AppIntegration for testing
     @patch.object(AppIntegration, '__abstractmethods__', frozenset())
-    @patch('stream_alert.apps.app_base.Batcher', Mock())
+    @patch('streamalert.apps.app_base.Batcher', Mock())
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
@@ -110,7 +110,7 @@ class TestAppIntegration:
         log_mock.assert_called_with('Skipping sleep for first poll')
 
     @patch('time.sleep')
-    @patch('stream_alert.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
+    @patch('streamalert.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
     def test_sleep(self, time_mock):
         """App Integration - App Base, Sleep"""
         self._app._poll_count = 1
@@ -123,7 +123,7 @@ class TestAppIntegration:
         assert_true(self._app._check_http_response(response))
 
     @patch('logging.Logger.info')
-    @patch('stream_alert.apps.app_base.time')
+    @patch('streamalert.apps.app_base.time')
     def test_report_time(self, time_mock, log_mock):
         """App Integration - Report Time"""
         # pylint: disable=no-self-use
@@ -143,7 +143,7 @@ class TestAppIntegration:
             raise ConnectTimeout(response='too slow')
         assert_equal(_test(), (False, None))
 
-    @patch('stream_alert.apps.app_base.AppIntegration._required_auth_info')
+    @patch('streamalert.apps.app_base.AppIntegration._required_auth_info')
     def test_required_auth_info(self, auth_mock):
         """App Integration - Required Auth Info"""
         expected_result = {'host': 'host_name'}
@@ -182,7 +182,7 @@ class TestAppIntegration:
         assert_false(self._app._initialize())
         log_mock.assert_called_with('[%s] App in partial execution state, exiting', self._app)
 
-    @patch('stream_alert.apps.config.AppConfig.mark_success')
+    @patch('streamalert.apps.config.AppConfig.mark_success')
     def test_finalize(self, mark_mock):
         """App Integration - Finalize, Valid"""
         test_new_time = 50000000
@@ -191,7 +191,7 @@ class TestAppIntegration:
         assert_equal(self._app._config.last_timestamp, test_new_time)
         mark_mock.assert_called()
 
-    @patch('stream_alert.apps.app_base.AppIntegration._invoke_successive_app')
+    @patch('streamalert.apps.app_base.AppIntegration._invoke_successive_app')
     def test_finalize_more_logs_error(self, invoke_mock):
         """App Integration - Finalize, More Logs"""
         self._app._more_to_poll = True
@@ -311,7 +311,7 @@ class TestAppIntegration:
             )
 
     @patch('logging.Logger.info')
-    @patch('stream_alert.apps.app_base.time')
+    @patch('streamalert.apps.app_base.time')
     def test_gather_success(self, time_mock, log_mock):
         """App Integration - Gather, Success"""
         time_mock.time.side_effect = [100.0, 300.0]
@@ -323,17 +323,17 @@ class TestAppIntegration:
                 '[%s] Function executed in %.4f seconds.', '_gather', 200.0
             )
 
-    @patch('stream_alert.apps.app_base.AppIntegration._finalize')
-    @patch('stream_alert.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
-    @patch('stream_alert.apps.config.AppConfig.remaining_ms', Mock(return_value=5000))
+    @patch('streamalert.apps.app_base.AppIntegration._finalize')
+    @patch('streamalert.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
+    @patch('streamalert.apps.config.AppConfig.remaining_ms', Mock(return_value=5000))
     def test_gather_entry(self, finalize_mock):
         """App Integration - Gather, Entry Point"""
         self._app.gather()
         finalize_mock.assert_called()
 
-    @patch('stream_alert.apps.app_base.AppIntegration._gather')
-    @patch('stream_alert.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
-    @patch('stream_alert.apps.config.AppConfig.remaining_ms',
+    @patch('streamalert.apps.app_base.AppIntegration._gather')
+    @patch('streamalert.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
+    @patch('streamalert.apps.config.AppConfig.remaining_ms',
            Mock(side_effect=[8000, 8000, 2000, 2000]))
     def test_gather_multiple(self, gather_mock):
         """App Integration - Gather, Entry Point, Multiple Calls"""
@@ -343,7 +343,7 @@ class TestAppIntegration:
         self._app.gather()
         assert_equal(gather_mock.call_count, 2)
 
-    @patch('stream_alert.apps.app_base.AppIntegration._finalize')
+    @patch('streamalert.apps.app_base.AppIntegration._finalize')
     def test_gather_running(self, finalize_mock):
         """App Integration - Gather, Entry Point, Already Running"""
         self._app._config.current_state = 'running'

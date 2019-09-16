@@ -125,7 +125,7 @@ class TestOutputDispatcher:
 
     @patch.object(OutputDispatcher, '__service__', 'test_service')
     @patch.object(OutputDispatcher, '__abstractmethods__', frozenset())
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def test_credentials_provider(self, provider_constructor):
         """OutputDispatcher - Constructor"""
         provider = MagicMock()

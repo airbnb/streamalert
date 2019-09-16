@@ -88,7 +88,7 @@ class TestDemistoOutput:
         'token': 'aaaabbbbccccddddeeeeffff',
     }
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
@@ -156,7 +156,7 @@ class TestDemistoOutput:
 
     @patch('logging.Logger.exception')
     @patch('requests.post')
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS',
+    @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS',
            1)
     def test_dispatch_fail(self, request_mock, logger_spy):
         """DemistoOutput - Dispatch Success, Response is Failure"""

@@ -210,7 +210,7 @@ def get_athena_client(config):
     return AthenaClient(
         db_name,
         results_bucket,
-        'stream_alert_cli',
+        'streamalert_cli',
         region=config['global']['account']['region']
     )
 

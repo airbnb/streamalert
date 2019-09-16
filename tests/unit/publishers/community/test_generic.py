@@ -33,7 +33,7 @@ class TestPublishersForOutput:
         alert = get_alert(context={'context': 'value'})
         alert.created = datetime(2019, 1, 1)
         alert.publishers = {
-            'slack': 'stream_alert.shared.publisher.DefaultPublisher',
+            'slack': 'streamalert.shared.publisher.DefaultPublisher',
             'slack:unit_test_channel': 'publishers.community.generic.remove_internal_fields',
             'demisto': 'publishers.community.generic.blank',
         }
@@ -69,7 +69,7 @@ class TestPublishersForOutput:
 
 
 class TestDefaultPublisher:
-    PUBLISHER_NAME = 'stream_alert.shared.publisher.DefaultPublisher'
+    PUBLISHER_NAME = 'streamalert.shared.publisher.DefaultPublisher'
 
     def setup(self):
         self._alert = get_alert(context={'context': 'value'})
@@ -81,7 +81,7 @@ class TestDefaultPublisher:
         """AlertPublisher - DefaultPublisher - Positive Case"""
         publication = compose_alert(self._alert, self._output, 'test')
         expectation = {
-            'publishers': ['stream_alert.shared.publisher.DefaultPublisher'],
+            'publishers': ['streamalert.shared.publisher.DefaultPublisher'],
             'source_entity': 'corp-prefix.prod.cb.region',
             'outputs': ['slack:unit_test_channel'],
             'cluster': '',
@@ -203,7 +203,7 @@ class TestRemoveStreamAlertNormalizationFields:
         expectation = {
             'staged': False,
             'publishers': [
-                'stream_alert.shared.publisher.DefaultPublisher',
+                'streamalert.shared.publisher.DefaultPublisher',
                 'publishers.community.generic.remove_streamalert_normalization'
             ],
             'source_entity': 'corp-prefix.prod.cb.region',
@@ -268,7 +268,7 @@ class TestEnumerateFields:
             'log_source': 'carbonblack:binarystore.file.added',
             'log_type': 'json',
             'outputs[0]': 'slack:unit_test_channel',
-            'publishers[0]': 'stream_alert.shared.publisher.DefaultPublisher',
+            'publishers[0]': 'streamalert.shared.publisher.DefaultPublisher',
             'publishers[1]': 'publishers.community.generic.enumerate_fields',
             'record.timestamp': '1496947381.18',
             'record.compressed_size': '9982',

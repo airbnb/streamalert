@@ -41,11 +41,11 @@ class TestAlertProcessor:
     """Tests for alert_processor/main.py"""
     # pylint: disable=no-member,no-self-use,protected-access
 
-    @patch('stream_alert.alert_processor.main.load_config',
+    @patch('streamalert.alert_processor.main.load_config',
            Mock(return_value=load_config('tests/unit/conf/', validate=True)))
     @patch.dict(os.environ, MOCK_ENV)
     @patch.object(AlertProcessor, 'BACKOFF_MAX_TRIES', 1)
-    @patch('stream_alert.alert_processor.main.AlertTable', MagicMock())
+    @patch('streamalert.alert_processor.main.AlertTable', MagicMock())
     def setup(self):
         """Alert Processor - Test Setup"""
         # pylint: disable=attribute-defined-outside-init
@@ -60,13 +60,13 @@ class TestAlertProcessor:
         """Alert Processor - Initialization"""
         assert_is_instance(self.processor.config, dict)
 
-    @patch('stream_alert.alert_processor.main.LOGGER')
+    @patch('streamalert.alert_processor.main.LOGGER')
     def test_create_dispatcher_invalid(self, mock_logger):
         """Alert Processor - Create Dispatcher - Invalid Output"""
         assert_is_none(self.processor._create_dispatcher('helloworld'))
         mock_logger.error.called_once_with(ANY, 'helloworld')
 
-    @patch('stream_alert.alert_processor.main.LOGGER')
+    @patch('streamalert.alert_processor.main.LOGGER')
     def test_create_dispatcher_output_doesnt_exist(self, mock_logger):
         """Alert Processor - Create Dispatcher - Output Does Not Exist"""
         assert_is_none(self.processor._create_dispatcher('slack:no-such-channel'))
@@ -135,7 +135,7 @@ class TestAlertProcessor:
         mock_send_alerts.assert_called_once()
         mock_update_table.assert_called_once()
 
-    @patch('stream_alert.alert_processor.main.LOGGER')
+    @patch('streamalert.alert_processor.main.LOGGER')
     def test_run_invalid_alert(self, mock_logger):
         """Alert Processor - Run With an Invalid Alert"""
         result = self.processor.run({'Record': 'Nonsense'})
@@ -157,7 +157,7 @@ class TestAlertProcessor:
         mock_send_alerts.assert_called_once()
         mock_update_table.assert_called_once()
 
-    @patch('stream_alert.alert_processor.main.LOGGER')
+    @patch('streamalert.alert_processor.main.LOGGER')
     def test_run_alert_does_not_exist(self, mock_logger):
         """Alert Processor - Run - Alert Does Not Exist"""
         self.processor.alerts_table.get_alert_record = MagicMock(return_value=None)

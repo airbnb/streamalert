@@ -51,7 +51,7 @@ def test_as_custom_details_default():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'stream_alert.shared.publisher.DefaultPublisher',
+            'streamalert.shared.publisher.DefaultPublisher',
             'publishers.community.pagerduty.pagerduty_layout.as_custom_fields'
         ]
     }
@@ -64,7 +64,7 @@ def test_as_custom_details_default():
     expectation = {
         'publishers': {
             'pagerduty': [
-                'stream_alert.shared.publisher.DefaultPublisher',
+                'streamalert.shared.publisher.DefaultPublisher',
                 'publishers.community.pagerduty.pagerduty_layout.as_custom_fields'
             ]
         },
@@ -96,7 +96,7 @@ def test_as_custom_details_ignores_custom_fields():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'stream_alert.shared.publisher.DefaultPublisher',
+            'streamalert.shared.publisher.DefaultPublisher',
             'publishers.community.pagerduty.pagerduty_layout.ShortenTitle',
             'publishers.community.pagerduty.pagerduty_layout.as_custom_details',
         ]
@@ -168,7 +168,7 @@ def test_pretty_print_arrays():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'stream_alert.shared.publisher.DefaultPublisher',
+            'streamalert.shared.publisher.DefaultPublisher',
             'publishers.community.generic.populate_fields',
             'publishers.community.pagerduty.pagerduty_layout.PrettyPrintArrays'
         ]
@@ -183,7 +183,7 @@ def test_pretty_print_arrays():
         'publishers': [
             {
                 'pagerduty': (
-                    'stream_alert.shared.publisher.DefaultPublisher\n\n----------\n\n'
+                    'streamalert.shared.publisher.DefaultPublisher\n\n----------\n\n'
                     'publishers.community.generic.populate_fields\n\n----------\n\n'
                     'publishers.community.pagerduty.pagerduty_layout.PrettyPrintArrays'
                 )

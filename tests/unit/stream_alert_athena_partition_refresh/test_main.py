@@ -32,10 +32,10 @@ from tests.unit.helpers.aws_mocks import MockAthenaClient
 class TestAthenaRefresher:
     """Test class for AthenaRefresher"""
 
-    @patch('stream_alert.athena_partition_refresh.main.load_config',
+    @patch('streamalert.athena_partition_refresh.main.load_config',
            Mock(return_value=load_config('tests/unit/conf/')))
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
-    @patch('stream_alert.shared.athena.boto3')
+    @patch('streamalert.shared.athena.boto3')
     def setup(self, boto_patch):
         """Setup the AthenaRefresher tests"""
         boto_patch.client.return_value = MockAthenaClient()
@@ -177,7 +177,7 @@ class TestAthenaRefresher:
         }
 
     @patch('logging.Logger.debug')
-    @patch('stream_alert.athena_partition_refresh.main.AthenaRefresher._add_partitions')
+    @patch('streamalert.athena_partition_refresh.main.AthenaRefresher._add_partitions')
     def test_run(self, add_mock, log_mock):
         """AthenaRefresher - Run"""
         add_mock.return_value = True

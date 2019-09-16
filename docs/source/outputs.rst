@@ -148,7 +148,7 @@ Adding support for a new service involves five steps:
 
    - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
 
-6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``stream_alert_cli/test.py`` module to provide mock credentials for your new output.
+6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``streamalert_cli/test.py`` module to provide mock credentials for your new output.
 
 Strategy
 --------

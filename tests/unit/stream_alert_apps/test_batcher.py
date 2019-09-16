@@ -82,7 +82,7 @@ class TestAppBatcher:
                                     'limit and will be dropped (%d > %d max).',
                                     128073, 128000)
 
-    @patch('stream_alert.apps.batcher.Batcher._send_logs_to_lambda')
+    @patch('streamalert.apps.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send(self, batcher_mock):
         """App Integration Batcher - Segment and Send Logs to StreamAlert"""
         logs = [{'timestamp': 'time',
@@ -92,7 +92,7 @@ class TestAppBatcher:
 
         assert_equal(batcher_mock.call_count, 2)
 
-    @patch('stream_alert.apps.batcher.Batcher._send_logs_to_lambda')
+    @patch('streamalert.apps.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send_multi(self, batcher_mock):
         """App Integration Batcher - Segment and Send Logs to StreamAlert, Multi-segment"""
         batcher_mock.side_effect = [False, True, True, True]
@@ -103,7 +103,7 @@ class TestAppBatcher:
 
         assert_equal(batcher_mock.call_count, 4)
 
-    @patch('stream_alert.apps.batcher.Batcher._segment_and_send')
+    @patch('streamalert.apps.batcher.Batcher._segment_and_send')
     def test_send_logs_one_batch(self, batcher_mock):
         """App Integration Batcher - Send Logs, One batch"""
         logs = [{'timestamp': 'time',
@@ -113,7 +113,7 @@ class TestAppBatcher:
 
         batcher_mock.assert_not_called()
 
-    @patch('stream_alert.apps.batcher.Batcher._segment_and_send')
+    @patch('streamalert.apps.batcher.Batcher._segment_and_send')
     def test_send_logs_multi_batch(self, batcher_mock):
         """App Integration Batcher - Send Logs, Multi-batch"""
         logs = [{'timestamp': 'time',

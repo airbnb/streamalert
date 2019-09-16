@@ -51,6 +51,6 @@ for app_file in os.listdir(os.path.join(os.path.dirname(__file__), '_apps')):
     if app_file.startswith('__init__') or not app_file.endswith('.py'):
         continue
 
-    full_import = ['stream_alert', 'apps', '_apps', os.path.splitext(app_file)[0]]
+    full_import = ['streamalert', 'apps', '_apps', os.path.splitext(app_file)[0]]
 
     importlib.import_module('.'.join(full_import))

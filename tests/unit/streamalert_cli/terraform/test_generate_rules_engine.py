@@ -108,7 +108,7 @@ class TestTerraformGenerateRuleEngine:
                     'errors_alarm_threshold': 0,
                     'filename': 'rules_engine.zip',
                     'function_name': 'unit-test_streamalert_rules_engine',
-                    'handler': 'stream_alert.rules_engine.main.handler',
+                    'handler': 'streamalert.rules_engine.main.handler',
                     'log_retention_days': 14,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',

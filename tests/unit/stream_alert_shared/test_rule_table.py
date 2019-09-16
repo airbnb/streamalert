@@ -149,7 +149,7 @@ class TestRuleTable:
         state = self.rule_table._load_remote_state()
         assert_equal(state, expected_state)
 
-    @patch('stream_alert.shared.rule_table.RuleTable._staged_window')
+    @patch('streamalert.shared.rule_table.RuleTable._staged_window')
     def test_load_remote_state_state(self, window_mock):
         """Rule Table - Load Remote State of Rules, Existing Database"""
         window_mock.return_value = ('2018-04-21T02:23:13.0Z', '2018-04-23T02:23:13.0Z')
@@ -185,7 +185,7 @@ class TestRuleTable:
         record = self.rule_table._dynamo_record('foo_rule', True)
         assert_equal(record, expected_record)
 
-    @patch('stream_alert.shared.rule_table.RuleTable._staged_window')
+    @patch('streamalert.shared.rule_table.RuleTable._staged_window')
     def test_dynamo_record(self, window_mock):
         """Rule Table - DynamoDB Record, Existing Database"""
         window_mock.return_value = ('staged-at-date', 'staged-until-date')
@@ -207,7 +207,7 @@ class TestRuleTable:
         expected_result = {'Staged': True}
         assert_equal(self.rule_table.rule_info(rule_name), expected_result)
 
-    @patch('stream_alert.shared.rule_table.datetime')
+    @patch('streamalert.shared.rule_table.datetime')
     def test_staged_window(self, date_mock):
         """Rule Table - Staged Window"""
         date_mock.utcnow.return_value = datetime(

@@ -93,7 +93,7 @@ class TestStatsPublisher:
         digest = self.publisher._format_digest(stats)
         assert_equal(digest, expected_digest)
 
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._publish_message')
+    @patch('streamalert.rule_promotion.publisher.StatsPublisher._publish_message')
     def test_query_alerts_none(self, publish_mock):
         """StatsPublisher - Query Alerts, No Alerts for Stat"""
         stats = list(self._get_fake_stats(count=1))
@@ -119,7 +119,7 @@ class TestStatsPublisher:
             mock.run_async_query.return_value = {'QueryExecutionId': execution_id}
             assert_equal(self.publisher._query_alerts(stat), execution_id)
 
-    @patch('stream_alert.rule_promotion.publisher.boto3')
+    @patch('streamalert.rule_promotion.publisher.boto3')
     def test_publish_message(self, boto_mock):
         """StatsPublisher - Publish Message"""
         self.publisher._publish_message(list(self._get_fake_stats(count=1)))
@@ -135,8 +135,8 @@ class TestStatsPublisher:
         }
         boto_mock.resource.return_value.Topic.return_value.publish.assert_called_with(**args)
 
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._publish_message')
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._query_alerts')
+    @patch('streamalert.rule_promotion.publisher.StatsPublisher._publish_message')
+    @patch('streamalert.rule_promotion.publisher.StatsPublisher._query_alerts')
     def test_publish(self, query_mock, publish_mock):
         """StatsPublisher - Publish, False"""
         query_mock.return_value = 'fake-id'

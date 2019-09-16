@@ -21,7 +21,7 @@ from streamalert.alert_processor.outputs.komand import KomandOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestKomandutput:
     """Test class for KomandOutput"""
     DESCRIPTOR = 'unit_test_komand'
@@ -30,7 +30,7 @@ class TestKomandutput:
     CREDS = {'url': 'http://komand.foo.bar',
              'komand_auth_token': 'mocked_auth_token'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()

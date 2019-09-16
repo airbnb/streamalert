@@ -21,7 +21,7 @@ from streamalert.alert_processor.outputs.jira import JiraOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestJiraOutput:
     """Test class for JiraOutput"""
     DESCRIPTOR = 'unit_test_jira'
@@ -34,7 +34,7 @@ class TestJiraOutput:
              'issue_type': 'Task',
              'aggregate': 'yes'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
