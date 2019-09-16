@@ -17,7 +17,7 @@ limitations under the License.
 from mock import call, patch, PropertyMock, Mock, MagicMock
 from nose.tools import assert_false, assert_true
 from streamalert.alert_processor.outputs.phantom import PhantomOutput
-from tests.unit.stream_alert_alert_processor.helpers import get_alert
+from tests.unit.streamalert.alert_processor..helpers import get_alert
 
 @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPhantomOutput:

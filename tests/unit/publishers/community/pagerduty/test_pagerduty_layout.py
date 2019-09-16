@@ -21,7 +21,7 @@ from nose.tools import assert_equal, assert_true, assert_false
 
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import OutputDispatcher
-from tests.unit.stream_alert_alert_processor.helpers import get_alert
+from tests.unit.streamalert.alert_processor..helpers import get_alert
 
 
 def test_shorten_title():
