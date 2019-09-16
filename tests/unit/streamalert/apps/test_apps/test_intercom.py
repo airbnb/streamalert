@@ -8,11 +8,11 @@ from nose.tools import (
 # import requests
 
 from streamalert.apps._apps.intercom import IntercomApp
-from tests.unit.stream_alert_apps.test_helpers import (
+from tests.unit.streamalert.apps.test_helpers import (
     get_event,
     put_mock_params
 )
-from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
+from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm

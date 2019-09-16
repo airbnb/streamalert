@@ -21,8 +21,8 @@ from nose.tools import assert_equal, assert_false, assert_count_equal
 
 from streamalert.apps._apps.onelogin import OneLoginApp
 
-from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
-from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
+from tests.unit.streamalert.apps.test_helpers import get_event, put_mock_params
+from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm

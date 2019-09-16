@@ -32,8 +32,8 @@ from streamalert.threat_intel_downloader.exceptions import (
     ThreatStreamRequestsError
 )
 from streamalert.threat_intel_downloader.main import ThreatStream
-from tests.unit.stream_alert_apps.test_helpers import MockLambdaClient
-from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
+from tests.unit.streamalert.apps.test_helpers import MockLambdaClient
+from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 from tests.unit.threat_intel_downloader.test_helpers import put_mock_params
 
 
