@@ -27,7 +27,7 @@ class TestAlertForwarder:
     """Test class for AlertForwarder"""
     # pylint: disable=attribute-defined-outside-init,protected-access
 
-    @patch('stream_alert.rules_engine.alert_forwarder.AlertTable', Mock())
+    @patch('streamalert.rules_engine.alert_forwarder.AlertTable', Mock())
     @patch.dict(os.environ, {'ALERTS_TABLE': _ALERTS_TABLE})
     def setup(self):
         self.forwarder = AlertForwarder()

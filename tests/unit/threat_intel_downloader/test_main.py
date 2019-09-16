@@ -42,7 +42,7 @@ class TestThreatStream:
     """Test class to test ThreatStream functionalities"""
     # pylint: disable=protected-access
 
-    @patch('stream_alert.threat_intel_downloader.main.load_config',
+    @patch('streamalert.threat_intel_downloader.main.load_config',
            Mock(return_value=load_config('tests/unit/conf/')))
     def setup(self):
         """Setup TestThreatStream"""
@@ -79,7 +79,7 @@ class TestThreatStream:
             }
         }
 
-    @patch('stream_alert.threat_intel_downloader.main.load_config',
+    @patch('streamalert.threat_intel_downloader.main.load_config',
            Mock(return_value=load_config('tests/unit/conf/')))
     def test_load_config(self):
         """ThreatStream - Load Config"""
@@ -202,7 +202,7 @@ class TestThreatStream:
         put_mock_params(ThreatStream.CRED_PARAMETER_NAME, value)
         self.threatstream._load_api_creds()
 
-    @patch('stream_alert.threat_intel_downloader.main.datetime')
+    @patch('streamalert.threat_intel_downloader.main.datetime')
     def test_epoch_now(self, date_mock):
         """ThreatStream - Epoch, Now"""
         fake_date_now = datetime(year=2017, month=9, day=1)
@@ -247,8 +247,8 @@ class TestThreatStream:
         """ThreatStream - Threshold Property"""
         assert_equal(self.threatstream.threshold, 499000)
 
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._finalize')
-    @patch('stream_alert.threat_intel_downloader.main.requests.get')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._finalize')
+    @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect(self, get_mock, finalize_mock):
         """ThreatStream - Connection to ThreatStream.com"""
         get_mock.return_value.json.return_value = self._get_http_response()
@@ -266,8 +266,8 @@ class TestThreatStream:
         ]
         finalize_mock.assert_called_with(expected_intel, None)
 
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._finalize')
-    @patch('stream_alert.threat_intel_downloader.main.requests.get')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._finalize')
+    @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect_with_next(self, get_mock, finalize_mock):
         """ThreatStream - Connection to ThreatStream.com, with Continuation"""
         next_url = 'this_url'
@@ -287,7 +287,7 @@ class TestThreatStream:
         finalize_mock.assert_called_with(expected_intel, next_url)
 
     @raises(ThreatStreamRequestsError)
-    @patch('stream_alert.threat_intel_downloader.main.requests.get')
+    @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect_with_unauthed(self, get_mock):
         """ThreatStream - Connection to ThreatStream.com, Unauthorized Error"""
         get_mock.return_value.json.return_value = self._get_http_response()
@@ -295,21 +295,21 @@ class TestThreatStream:
         self.threatstream._connect('previous_url')
 
     @raises(ThreatStreamRequestsError)
-    @patch('stream_alert.threat_intel_downloader.main.requests.get')
+    @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect_with_retry_error(self, get_mock):
         """ThreatStream - Connection to ThreatStream.com, Retry Error"""
         get_mock.return_value.status_code = 500
         self.threatstream._connect('previous_url')
 
     @raises(ThreatStreamRequestsError)
-    @patch('stream_alert.threat_intel_downloader.main.requests.get')
+    @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect_with_unknown_error(self, get_mock):
         """ThreatStream - Connection to ThreatStream.com, Unknown Error"""
         get_mock.return_value.status_code = 404
         self.threatstream._connect('previous_url')
 
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._load_api_creds')
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._connect')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._load_api_creds')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._connect')
     def test_runner(self, connect_mock, _):
         """ThreatStream - Runner"""
         expected_url = ('/api/v2/intelligence/?username=user&api_key=key&limit=1000&q='
@@ -321,8 +321,8 @@ class TestThreatStream:
         self.threatstream.runner({'none': 'test'})
         connect_mock.assert_called_with(expected_url)
 
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._write_to_dynamodb_table')
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._invoke_lambda_function')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._write_to_dynamodb_table')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._invoke_lambda_function')
     def test_finalize(self, invoke_mock, write_mock):
         """ThreatStream - Finalize with Intel"""
         intel = ['foo', 'bar']
@@ -330,8 +330,8 @@ class TestThreatStream:
         write_mock.assert_called_with(intel)
         invoke_mock.assert_not_called()
 
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._write_to_dynamodb_table')
-    @patch('stream_alert.threat_intel_downloader.main.ThreatStream._invoke_lambda_function')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._write_to_dynamodb_table')
+    @patch('streamalert.threat_intel_downloader.main.ThreatStream._invoke_lambda_function')
     def test_finalize_next_url(self, invoke_mock, write_mock):
         """ThreatStream - Finalize with Next URL"""
         intel = ['foo', 'bar']

@@ -213,7 +213,7 @@ class TestCLIConfig:
         assert_equal(self.config['threat_intel'], expected_config)
 
     @patch('logging.Logger.info')
-    @patch('stream_alert_cli.config.CLIConfig.write')
+    @patch('streamalert_cli.config.CLIConfig.write')
     def test_add_threat_intel_downloader(self, write_mock, log_mock):
         """CLI - Add Threat Intel Downloader config"""
         del self.config['lambda']['threat_intel_downloader_config']

@@ -9,7 +9,7 @@ for input_file in os.listdir(os.path.dirname(__file__)):
         continue
 
     full_import = [
-        'stream_alert',
+        'streamalert',
         'classifier',
         'payload',
         os.path.splitext(input_file)[0]

@@ -46,8 +46,8 @@ class TestRulePromoter:
         # pylint: disable=attribute-defined-outside-init
         self.dynamo_mock = mock_dynamodb2()
         self.dynamo_mock.start()
-        with patch('stream_alert.rule_promotion.promoter.load_config') as config_mock, \
-             patch('stream_alert.rule_promotion.promoter.StatsPublisher', Mock()), \
+        with patch('streamalert.rule_promotion.promoter.load_config') as config_mock, \
+             patch('streamalert.rule_promotion.promoter.StatsPublisher', Mock()), \
              patch('boto3.client', _mock_boto), \
              patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
             setup_mock_rules_table(_RULES_TABLE)
@@ -85,7 +85,7 @@ class TestRulePromoter:
             }
         }
 
-    @patch('stream_alert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
+    @patch('streamalert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
     def test_get_staging_info(self, table_mock):
         """RulePromoter - Get Staging Info"""
         self.promoter._staging_stats.clear()
@@ -99,7 +99,7 @@ class TestRulePromoter:
         assert_equal(self.promoter._get_staging_info(), True)
         assert_equal(len(self.promoter._staging_stats), 1)
 
-    @patch('stream_alert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
+    @patch('streamalert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
     def test_get_staging_info_none(self, table_mock):
         """RulePromoter - Get Staging Info, None Staged"""
         self.promoter._staging_stats.clear()
@@ -113,7 +113,7 @@ class TestRulePromoter:
         assert_equal(self.promoter._get_staging_info(), False)
         assert_equal(len(self.promoter._staging_stats), 0)
 
-    @patch('stream_alert.shared.athena.AthenaClient.query_result_paginator')
+    @patch('streamalert.shared.athena.AthenaClient.query_result_paginator')
     def test_update_alert_count(self, athena_mock):
         """RulePromoter - Update Alert Count"""
         athena_mock.return_value = [self._mock_athena_data()]
@@ -123,8 +123,8 @@ class TestRulePromoter:
         assert_equal(self.promoter._staging_stats['test_rule'].alert_count, 7)
         assert_equal(self.promoter._staging_stats['test_rule_2'].alert_count, 5)
 
-    @patch('stream_alert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher.publish')
+    @patch('streamalert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
+    @patch('streamalert.rule_promotion.publisher.StatsPublisher.publish')
     def test_run(self, publish_mock, table_mock):
         """RulePromoter - Run"""
         self.promoter._staging_stats.clear()
@@ -149,7 +149,7 @@ class TestRulePromoter:
         log_mock.assert_called_with('No staged rules to promote')
 
     @patch('logging.Logger.debug')
-    @patch('stream_alert.shared.athena.AthenaClient.query_result_paginator')
+    @patch('streamalert.shared.athena.AthenaClient.query_result_paginator')
     def test_run_do_not_send_digest(self, athena_mock, log_mock):
         """RulePromoter - Run, Do Not Send Digest"""
         athena_mock.return_value = [self._mock_athena_data()]

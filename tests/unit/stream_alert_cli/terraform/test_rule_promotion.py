@@ -63,7 +63,7 @@ class TestRulePromotion:
                     'errors_alarm_threshold': 3,
                     'filename': 'rule_promotion.zip',
                     'function_name': 'unit-testing_streamalert_rule_promotion',
-                    'handler': 'stream_alert.rule_promotion.main.handler',
+                    'handler': 'streamalert.rule_promotion.main.handler',
                     'log_retention_days': 10,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',

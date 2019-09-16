@@ -26,7 +26,7 @@ from tests.unit.stream_alert_alert_processor.helpers import (
 )
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestSlackOutput:
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_channel'
@@ -34,7 +34,7 @@ class TestSlackOutput:
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'url': 'https://api.slack.com/web-hook-key'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()

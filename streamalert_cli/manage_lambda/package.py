@@ -187,12 +187,12 @@ class LambdaPackage:
 class ClassifierPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Classifier function"""
     config_key = 'classifier_config'
-    lambda_handler = 'stream_alert.classifier.main.handler'
+    lambda_handler = 'streamalert.classifier.main.handler'
     package_files = {
         'conf',
-        'stream_alert/__init__.py',
-        'stream_alert/classifier',
-        'stream_alert/shared',
+        'streamalert/__init__.py',
+        'streamalert/classifier',
+        'streamalert/shared',
     }
     package_name = 'classifier'
     package_libs = {'jmespath', 'jsonlines'}
@@ -201,14 +201,14 @@ class ClassifierPackage(LambdaPackage):
 class RulesEnginePackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rules Engine function"""
     config_key = 'rules_engine_config'
-    lambda_handler = 'stream_alert.rules_engine.main.handler'
+    lambda_handler = 'streamalert.rules_engine.main.handler'
     package_files = {
         'conf',
         'publishers',
         'rules',
-        'stream_alert/__init__.py',
-        'stream_alert/rules_engine',
-        'stream_alert/shared',
+        'streamalert/__init__.py',
+        'streamalert/rules_engine',
+        'streamalert/shared',
     }
     package_name = 'rules_engine'
     package_libs = {'netaddr', 'policyuniverse'}
@@ -217,13 +217,13 @@ class RulesEnginePackage(LambdaPackage):
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
     config_key = 'alert_processor_config'
-    lambda_handler = 'stream_alert.alert_processor.main.handler'
+    lambda_handler = 'streamalert.alert_processor.main.handler'
     package_files = {
         'conf',
         'publishers',
-        'stream_alert/__init__.py',
-        'stream_alert/alert_processor',
-        'stream_alert/shared'
+        'streamalert/__init__.py',
+        'streamalert/alert_processor',
+        'streamalert/shared'
     }
     package_name = 'alert_processor'
     package_libs = {'cbapi', 'netaddr', 'requests'}
@@ -232,11 +232,11 @@ class AlertProcessorPackage(LambdaPackage):
 class AlertMergerPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Merger function"""
     config_key = 'alert_merger_config'
-    lambda_handler = 'stream_alert.alert_merger.main.handler'
+    lambda_handler = 'streamalert.alert_merger.main.handler'
     package_files = {
-        'stream_alert/__init__.py',
-        'stream_alert/alert_merger',
-        'stream_alert/shared'
+        'streamalert/__init__.py',
+        'streamalert/alert_merger',
+        'streamalert/shared'
     }
     package_name = 'alert_merger'
     package_libs = {'netaddr'}
@@ -245,11 +245,11 @@ class AlertMergerPackage(LambdaPackage):
 class AppPackage(LambdaPackage):
     """Deployment package class for App functions"""
     config_key = 'stream_alert_apps_config'
-    lambda_handler = 'stream_alert.apps.main.handler'
+    lambda_handler = 'streamalert.apps.main.handler'
     package_files = {
-        'stream_alert/__init__.py',
-        'stream_alert/apps',
-        'stream_alert/shared'
+        'streamalert/__init__.py',
+        'streamalert/apps',
+        'streamalert/shared'
     }
     package_name = 'stream_alert_app'
     precompiled_libs = {'boxsdk[jwt]', 'aliyun-python-sdk-actiontrail'}
@@ -266,12 +266,12 @@ class AppPackage(LambdaPackage):
 class AthenaPackage(LambdaPackage):
     """Create the Athena Partition Refresh Lambda function package"""
     config_key = 'athena_partition_refresh_config'
-    lambda_handler = 'stream_alert.athena_partition_refresh.main.handler'
+    lambda_handler = 'streamalert.athena_partition_refresh.main.handler'
     package_files = {
         'conf',
-        'stream_alert/__init__.py',
-        'stream_alert/athena_partition_refresh',
-        'stream_alert/shared'
+        'streamalert/__init__.py',
+        'streamalert/athena_partition_refresh',
+        'streamalert/shared'
     }
     package_name = 'athena_partition_refresh'
 
@@ -279,12 +279,12 @@ class AthenaPackage(LambdaPackage):
 class ThreatIntelDownloaderPackage(LambdaPackage):
     """Create the Threat Intel Downloader Lambda function package"""
     config_key = 'threat_intel_downloader_config'
-    lambda_handler = 'stream_alert.threat_intel_downloader.main.handler'
+    lambda_handler = 'streamalert.threat_intel_downloader.main.handler'
     package_files = {
         'conf',
-        'stream_alert/__init__.py',
-        'stream_alert/shared',
-        'stream_alert/threat_intel_downloader'
+        'streamalert/__init__.py',
+        'streamalert/shared',
+        'streamalert/threat_intel_downloader'
     }
     package_name = 'threat_intel_downloader'
     package_libs = {'requests'}
@@ -293,11 +293,11 @@ class ThreatIntelDownloaderPackage(LambdaPackage):
 class RulePromotionPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Promotion function"""
     config_key = 'rule_promotion_config'
-    lambda_handler = 'stream_alert.rule_promotion.main.handler'
+    lambda_handler = 'streamalert.rule_promotion.main.handler'
     package_files = {
         'conf',
-        'stream_alert/__init__.py',
-        'stream_alert/rule_promotion',
-        'stream_alert/shared'
+        'streamalert/__init__.py',
+        'streamalert/rule_promotion',
+        'streamalert/shared'
     }
     package_name = 'rule_promotion'

@@ -19,7 +19,7 @@ from nose.tools import assert_false, assert_true
 from streamalert.alert_processor.outputs.phantom import PhantomOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPhantomOutput:
     """Test class for PhantomOutput"""
     DESCRIPTOR = 'unit_test_phantom'
@@ -28,7 +28,7 @@ class TestPhantomOutput:
     CREDS = {'url': 'http://phantom.foo.bar',
              'ph_auth_token': 'mocked_auth_token'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
@@ -165,8 +165,8 @@ class TestPhantomOutput:
         log_error_mock.assert_called_with('Failed to send alert to %s:%s',
                                           self.SERVICE, 'bad_descriptor')
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._get_request')
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._post_request')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher._get_request')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher._post_request')
     def test_dispatch_container_query(self, post_mock, get_mock):
         """PhantomOutput - Container Query URL"""
         rule_description = 'Info about this rule and what actions to take'

@@ -219,7 +219,7 @@ class TestRunner:
         self._files_dir = os.path.join(options.files_dir, '')  # ensure theres a trailing slash
         self._verbose = options.verbose
         self._quiet = options.quiet
-        self._s3_mocker = patch('stream_alert.classifier.payload.s3.boto3.resource').start()
+        self._s3_mocker = patch('streamalert.classifier.payload.s3.boto3.resource').start()
         self._errors = defaultdict(list)  # cache errors to be logged at the endpoint
         self._tested_rules = set()
         self._threat_intel_mock = mock_threat_intel_query_results()

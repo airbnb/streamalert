@@ -23,7 +23,7 @@ from streamalert.alert_processor.outputs.github import GithubOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestGithubOutput:
     """Test class for GithubOutput"""
     DESCRIPTOR = 'unit_test_repo'
@@ -36,7 +36,7 @@ class TestGithubOutput:
              'api': 'https://api.github.com',
             }
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()

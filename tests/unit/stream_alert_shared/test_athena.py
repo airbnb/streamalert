@@ -51,7 +51,7 @@ class TestAthenaClient:
             'unit-testing'
         )
 
-    @patch('stream_alert.shared.athena.datetime')
+    @patch('streamalert.shared.athena.datetime')
     def test_init_fix_bucket_path(self, date_mock):
         """Athena - Fix Bucket Path"""
         date_now = datetime.utcnow()
@@ -135,7 +135,7 @@ class TestAthenaClient:
         self.client._client.raise_exception = True
         assert_raises(AthenaQueryExecutionError, self.client.drop_table, 'test_table')
 
-    @patch('stream_alert.shared.athena.AthenaClient.drop_table')
+    @patch('streamalert.shared.athena.AthenaClient.drop_table')
     def test_drop_all_tables(self, drop_table_mock):
         """Athena - Drop All Tables, Success"""
         self.client._client.results = [
@@ -146,7 +146,7 @@ class TestAthenaClient:
         assert_true(self.client.drop_all_tables())
         assert_equal(drop_table_mock.call_count, 2)
 
-    @patch('stream_alert.shared.athena.AthenaClient.drop_table')
+    @patch('streamalert.shared.athena.AthenaClient.drop_table')
     def test_drop_all_tables_failure(self, drop_table_mock):
         """Athena - Drop All Tables, Failure"""
         self.client._client.results = [

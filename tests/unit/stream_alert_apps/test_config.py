@@ -124,7 +124,7 @@ class TestAppConfig:
             self._config._get_parameters(key)
 
     @raises(AppConfigError)
-    @patch('stream_alert.apps.config.AppConfig.SSM_CLIENT')
+    @patch('streamalert.apps.config.AppConfig.SSM_CLIENT')
     def test_get_parameters_exception(self, client_mock):
         """AppConfig - Get Parameters, ClientError"""
         with patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1):
@@ -132,7 +132,7 @@ class TestAppConfig:
                 {'Error': {'Code': 'TEST', 'Message': 'BadError'}}, 'GetParameters')
             self._config._get_parameters('{}_state'.format(self._test_app_name))
 
-    @patch('stream_alert.apps.config.json')
+    @patch('streamalert.apps.config.json')
     def test_get_parameters_bad_names(self, json_mock):
         """AppConfig - Get parameter, Bad Names"""
         _, invalid_names = AppConfig._get_parameters('bad_name')
@@ -144,7 +144,7 @@ class TestAppConfig:
         assert_equal(self._config._evaluate_interval(), 60 * 10)
 
     @raises(AppStateError)
-    @patch('stream_alert.apps.config.AppConfig.SSM_CLIENT')
+    @patch('streamalert.apps.config.AppConfig.SSM_CLIENT')
     def test_save_state_error(self, client_mock):
         """AppConfig - Save State, Error"""
         with patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1):
@@ -159,7 +159,7 @@ class TestAppConfig:
         self._config.current_state = bad_state
         log_mock.assert_called_with('Current state cannot be saved with value \'%s\'', bad_state)
 
-    @patch('stream_alert.apps.config.AppConfig._save_state')
+    @patch('streamalert.apps.config.AppConfig._save_state')
     def test_suppress_state_save_no_change(self, save_mock):
         """AppConfig - Suppress Save State on No Change"""
         # Try to mark with success more than once
@@ -168,7 +168,7 @@ class TestAppConfig:
 
         save_mock.assert_called_once()
 
-    @patch('stream_alert.apps.config.AppConfig._save_state')
+    @patch('streamalert.apps.config.AppConfig._save_state')
     def test_suppress_state_save(self, save_mock):
         """AppConfig - Save State on Change"""
         # Try to mark with failure followed by success
@@ -190,19 +190,19 @@ class TestAppConfig:
         self._config.report_remaining_seconds()
         log_mock.assert_called_with('Lambda remaining seconds: %.2f', 0.1)
 
-    @patch('stream_alert.apps.config.AppConfig._save_state')
+    @patch('streamalert.apps.config.AppConfig._save_state')
     def test_set_last_timestamp_same(self, save_mock):
         """AppConfig - Set Last Timestamp, Same Value"""
         self._config.last_timestamp = 1234567890
         save_mock.assert_not_called()
 
-    @patch('stream_alert.apps.config.AppConfig._save_state')
+    @patch('streamalert.apps.config.AppConfig._save_state')
     def test_set_context_new(self, save_mock):
         """AppConfig - Set Context, New Value"""
         self._config.context = {"key": "value"}
         save_mock.assert_called_once()
 
-    @patch('stream_alert.apps.config.AppConfig._save_state')
+    @patch('streamalert.apps.config.AppConfig._save_state')
     def test_set_context_same(self, save_mock):
         """AppConfig - Set Context, Same Value"""
         self._config.context = {}

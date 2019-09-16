@@ -26,7 +26,7 @@ from tests.unit.helpers.mocks import MockCBAPI
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
+@patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestCarbonBlackOutput:
     """Test class for CarbonBlackOutput"""
     DESCRIPTOR = 'unit_test_carbonblack'
@@ -36,7 +36,7 @@ class TestCarbonBlackOutput:
              'ssl_verify': 'Y',
              'token': '1234567890127a3d7f37f4153270bff41b105899'}
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
         """Setup before each method"""
         provider = MagicMock()
