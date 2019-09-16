@@ -19,7 +19,7 @@ from nose.tools import (
     assert_true
 )
 
-from stream_alert.shared.lookup_tables.configuration import LookupTablesConfiguration
+from streamalert.shared.lookup_tables.configuration import LookupTablesConfiguration
 
 
 class TestLookupTablesConfiguration:

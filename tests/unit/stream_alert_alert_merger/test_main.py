@@ -21,8 +21,8 @@ from mock import ANY, call, patch, MagicMock
 from moto import mock_dynamodb2, mock_lambda
 from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.alert_merger import main
-from stream_alert.shared.alert import Alert
+from streamalert.alert_merger import main
+from streamalert.shared.alert import Alert
 from tests.unit.helpers.aws_mocks import create_lambda_function, setup_mock_alerts_table
 
 _ALERTS_TABLE = 'PREFIX_streamalert_alerts'

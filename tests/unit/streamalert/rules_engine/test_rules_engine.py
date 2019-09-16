@@ -21,9 +21,9 @@ from mock import Mock, patch, PropertyMock
 from nose.tools import assert_equal
 
 from publishers.community.generic import remove_internal_fields
-from stream_alert.shared.publisher import AlertPublisher, Register, DefaultPublisher
-import stream_alert.rules_engine.rules_engine as rules_engine_module
-from stream_alert.rules_engine.rules_engine import RulesEngine
+from streamalert.shared.publisher import AlertPublisher, Register, DefaultPublisher
+import streamalert.rules_engine.rules_engine as rules_engine_module
+from streamalert.rules_engine.rules_engine import RulesEngine
 
 
 def mock_conf():

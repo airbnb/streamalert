@@ -24,9 +24,9 @@ from nose.tools import (
     assert_true
 )
 
-from stream_alert.alert_processor.outputs.output_base import OutputProperty
-from stream_alert.alert_processor.outputs import aws as aws_outputs
-from stream_alert.alert_processor.outputs.aws import (
+from streamalert.alert_processor.outputs.output_base import OutputProperty
+from streamalert.alert_processor.outputs import aws as aws_outputs
+from streamalert.alert_processor.outputs.aws import (
     AWSOutput,
     KinesisFirehoseOutput,
     LambdaOutput,

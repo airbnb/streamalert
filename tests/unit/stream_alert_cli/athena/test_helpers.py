@@ -15,8 +15,8 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert_cli.athena import helpers
-from stream_alert_cli.config import CLIConfig
+from streamalert_cli.athena import helpers
+from streamalert_cli.config import CLIConfig
 
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')

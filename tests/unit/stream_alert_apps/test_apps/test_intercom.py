@@ -7,7 +7,7 @@ from nose.tools import (
 )
 # import requests
 
-from stream_alert.apps._apps.intercom import IntercomApp
+from streamalert.apps._apps.intercom import IntercomApp
 from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
     put_mock_params

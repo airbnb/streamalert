@@ -1,5 +1,5 @@
 """Github two-factor authentication requirement was disabled for an org."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['ghe:general'])

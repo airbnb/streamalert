@@ -22,7 +22,7 @@ from mock import Mock, patch
 from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_not_equal, assert_raises
 
-from stream_alert.shared import rule as rule_module, rule_table
+from streamalert.shared import rule as rule_module, rule_table
 from tests.unit.helpers.aws_mocks import setup_mock_rules_table
 
 _RULES_TABLE = 'PREFIX_streamalert_rules'

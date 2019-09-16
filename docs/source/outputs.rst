@@ -75,7 +75,7 @@ Adding support for a new service involves five steps:
 
 .. code-block:: python
 
-  from stream_alert.alert_processor.helpers import compose_alert
+  from streamalert.alert_processor.helpers import compose_alert
 
 
   def get_user_defined_properties(self):

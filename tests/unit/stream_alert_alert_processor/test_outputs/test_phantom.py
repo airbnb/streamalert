@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=protected-access,attribute-defined-outside-init
 from mock import call, patch, PropertyMock, Mock, MagicMock
 from nose.tools import assert_false, assert_true
-from stream_alert.alert_processor.outputs.phantom import PhantomOutput
+from streamalert.alert_processor.outputs.phantom import PhantomOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)

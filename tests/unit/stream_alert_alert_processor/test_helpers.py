@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert.alert_processor.helpers import elide_string_middle
+from streamalert.alert_processor.helpers import elide_string_middle
 
 
 def test_elide_string_middle():

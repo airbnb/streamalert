@@ -16,9 +16,9 @@ limitations under the License.
 import json
 import random
 
-from stream_alert.alert_processor.outputs.credentials.provider import LocalFileDriver
-from stream_alert.shared.alert import Alert
-from stream_alert.shared.helpers.aws_api_client import AwsKms
+from streamalert.alert_processor.outputs.credentials.provider import LocalFileDriver
+from streamalert.shared.alert import Alert
+from streamalert.shared.helpers.aws_api_client import AwsKms
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 

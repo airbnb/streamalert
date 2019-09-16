@@ -20,8 +20,8 @@ import os
 from mock import Mock, patch
 from nose.tools import assert_equal, assert_raises, assert_true, raises
 
-from stream_alert.athena_partition_refresh.main import AthenaRefresher, AthenaRefreshError
-from stream_alert.shared.config import load_config
+from streamalert.athena_partition_refresh.main import AthenaRefresher, AthenaRefreshError
+from streamalert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
 

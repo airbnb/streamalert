@@ -15,8 +15,8 @@ limitations under the License.
 """
 from nose.tools import assert_equal, assert_true
 
-from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import common, kinesis_streams
+from streamalert_cli.config import CLIConfig
+from streamalert_cli.terraform import common, kinesis_streams
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 

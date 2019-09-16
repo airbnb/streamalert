@@ -15,7 +15,7 @@ limitations under the License.
 """
 from mock import Mock, patch
 
-from stream_alert.shared.backoff_handlers import (
+from streamalert.shared.backoff_handlers import (
     backoff_handler,
     giveup_handler,
     success_handler

@@ -20,9 +20,9 @@ from mock import MagicMock
 from nose.tools import assert_equal, assert_true, assert_false
 
 from publishers.community.generic import _delete_dictionary_fields, StringifyArrays
-from stream_alert.alert_processor.helpers import compose_alert
-from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
-from stream_alert.alert_processor.outputs.slack import SlackOutput
+from streamalert.alert_processor.helpers import compose_alert
+from streamalert.alert_processor.outputs.output_base import OutputDispatcher
+from streamalert.alert_processor.outputs.slack import SlackOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 

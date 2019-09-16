@@ -18,8 +18,8 @@ import json
 from mock import patch
 from nose.tools import assert_equal
 
-import stream_alert.classifier.parsers as parsers
-from stream_alert.classifier.parsers import ParserBase
+import streamalert.classifier.parsers as parsers
+from streamalert.classifier.parsers import ParserBase
 
 
 class TestParserBaseConfiguration:

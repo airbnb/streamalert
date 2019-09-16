@@ -1,5 +1,5 @@
 """Alert when root AWS credentials are used."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(

@@ -17,7 +17,7 @@ limitations under the License.
 from mock import patch, PropertyMock, Mock, MagicMock
 from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.alert_processor.outputs.jira import JiraOutput
+from streamalert.alert_processor.outputs.jira import JiraOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 

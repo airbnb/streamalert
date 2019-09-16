@@ -29,7 +29,7 @@ with the ``@Register`` decorator.
 
 .. code-block:: python
 
-  from stream_alert.shared.publisher import Register
+  from streamalert.shared.publisher import Register
 
   @Register
   def my_publisher(alert: Alert, publication: dict) -> dict:
@@ -44,7 +44,7 @@ Decorate the class with the ``@Register`` decorator.
 
 .. code-block:: python
 
-  from stream_alert.shared.publisher import AlertPublisher, Register
+  from streamalert.shared.publisher import AlertPublisher, Register
 
   @Register
   class MyPublisherClass(AlertPublisher):
@@ -65,7 +65,7 @@ doing in-place modifications of the publications, and should prefer to copy-and-
 
 .. code-block:: python
 
-  from stream_alert.shared.publisher import Register
+  from streamalert.shared.publisher import Register
 
   @Register
   def sample_publisher(alert, publication):
@@ -93,7 +93,7 @@ All data returned by ``compose_alert()`` should be assumed as optional.
 
 .. code-block:: python
 
-  from stream_alert.alert_processor.helpers import compose_alert
+  from streamalert.alert_processor.helpers import compose_alert
 
   def _dispatch(self, alert, descriptor):
     # ...
@@ -163,7 +163,7 @@ Register publishers on a rule using the ``publisher`` argument on the ``@rule`` 
 .. code-block:: python
 
   from publishers import publisher_1, publisher_2
-  from stream_alert.shared.rule import Rule
+  from streamalert.shared.rule import Rule
 
   @rule(
     logs=['stuff'],
@@ -244,7 +244,7 @@ The publisher can also simplify the PagerDuty title:
 
 .. code-block:: python
 
-  from stream_alert.shared.publisher import Register
+  from streamalert.shared.publisher import Register
 
   @Register
   def simplify_pagerduty_output(alert, publication):
@@ -263,7 +263,7 @@ integration, leaving the Slack integration the same. Registering the publisher c
 .. code-block:: python
 
   from publishers.pagerduty import simplify_pagerduty_output
-  from stream_alert.shared.rule import Rule
+  from streamalert.shared.rule import Rule
 
   @rule(
     logs=['ssh'],

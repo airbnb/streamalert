@@ -18,7 +18,7 @@ import json
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.classifier.payload.payload_base import RegisterInput, StreamPayload
+from streamalert.classifier.payload.payload_base import RegisterInput, StreamPayload
 
 
 class TestRegisterInput:

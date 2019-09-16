@@ -20,7 +20,7 @@ import importlib
 from mock import patch, ANY
 from nose.tools import assert_equal
 
-from stream_alert import shared
+from streamalert import shared
 
 
 class TestMetrics:

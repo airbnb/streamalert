@@ -18,8 +18,8 @@ from collections import Counter, OrderedDict
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_equal, assert_false, assert_true, assert_set_equal
 
-from stream_alert.alert_processor.helpers import compose_alert
-from stream_alert.alert_processor.outputs.slack import SlackOutput
+from streamalert.alert_processor.helpers import compose_alert
+from streamalert.alert_processor.outputs.slack import SlackOutput
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_random_alert,
     get_alert,

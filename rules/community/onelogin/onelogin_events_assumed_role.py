@@ -1,5 +1,5 @@
 """Alert on the OneLogin event that a user has assumed the role of someone else."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['onelogin:events'])

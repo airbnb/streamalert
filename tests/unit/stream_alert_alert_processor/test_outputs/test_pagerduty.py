@@ -19,8 +19,8 @@ from collections import OrderedDict
 from mock import patch, Mock, MagicMock, call
 from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.alert_processor.outputs.output_base import OutputDispatcher, OutputRequestFailure
-from stream_alert.alert_processor.outputs.pagerduty import (
+from streamalert.alert_processor.outputs.output_base import OutputDispatcher, OutputRequestFailure
+from streamalert.alert_processor.outputs.pagerduty import (
     PagerDutyOutput,
     PagerDutyOutputV2,
     PagerDutyIncidentOutput,

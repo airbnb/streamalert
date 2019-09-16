@@ -19,7 +19,7 @@ import os
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.rule_promotion.statistic import StagingStatistic
+from streamalert.rule_promotion.statistic import StagingStatistic
 
 
 class TestStagingStatistic:

@@ -17,8 +17,8 @@ import unittest
 
 from nose.tools import assert_equal
 
-from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import alert_processor
+from streamalert_cli.config import CLIConfig
+from streamalert_cli.terraform import alert_processor
 
 
 class TestAlertProcessor(unittest.TestCase):

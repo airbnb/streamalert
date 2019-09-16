@@ -20,7 +20,7 @@ from mock import patch
 from moto import mock_kms, mock_s3
 from nose.tools import assert_equal, raises
 
-from stream_alert.shared.helpers.aws_api_client import AwsS3, AwsKms
+from streamalert.shared.helpers.aws_api_client import AwsS3, AwsKms
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_alert_processor import KMS_ALIAS, REGION
 
