@@ -906,8 +906,6 @@ class TestPagerDutyIncidentOutput:
         )
 
         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        RequestMocker.inspect_calls(log_mock)
         log_mock.assert_any_call('[%s] Incident is missing "id"??', self.SERVICE)
 
     @patch('logging.Logger.error')
@@ -1609,12 +1607,6 @@ class RequestMocker:
         'requester': {'id': 'responder_user_id'},
         'responder_request_targets': []
     }}
-
-    @staticmethod
-    def inspect_calls(mock):
-        """Prints out all of the calls to this mock, in the order of call.
-        """
-        print(mock.call_args_list)
 
     @staticmethod
     def assert_mock_with_no_calls_like(mock, condition):
