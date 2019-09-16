@@ -20,7 +20,7 @@ from mock import patch
 from nose.tools import assert_equal, assert_false, assert_true, raises
 
 from streamalert.apps.batcher import Batcher
-from tests.unit.stream_alert_apps.test_helpers import MockLambdaClient
+from tests.unit.streamalert.apps.test_helpers import MockLambdaClient
 
 
 class TestAppBatcher:
