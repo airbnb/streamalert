@@ -23,7 +23,7 @@ from publishers.community.generic import _delete_dictionary_fields, StringifyArr
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import OutputDispatcher
 from streamalert.alert_processor.outputs.slack import SlackOutput
-from tests.unit.streamalert.alert_processor..helpers import get_alert
+from tests.unit.streamalert.alert_processor.helpers import get_alert
 
 
 class TestPublishersForOutput:

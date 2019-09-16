@@ -43,7 +43,7 @@ from tests.unit.streamalert.alert_processor. import (
     REGION,
     MOCK_ENV)
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
-from tests.unit.streamalert.alert_processor..helpers import (
+from tests.unit.streamalert.alert_processor.helpers import (
     encrypt_with_kms,
     put_mock_creds,
     remove_temp_secrets

@@ -20,7 +20,7 @@ from mock import patch, Mock, MagicMock
 from nose.tools import assert_false, assert_true, assert_equal, assert_is_not_none
 
 from streamalert.alert_processor.outputs.github import GithubOutput
-from tests.unit.streamalert.alert_processor..helpers import get_alert
+from tests.unit.streamalert.alert_processor.helpers import get_alert
 
 
 @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
