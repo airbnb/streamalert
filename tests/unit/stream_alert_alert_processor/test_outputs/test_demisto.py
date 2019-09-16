@@ -20,9 +20,9 @@ from datetime import datetime
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_is_instance, assert_true, assert_false, assert_equal
 
-from stream_alert.alert_processor.helpers import compose_alert
-from stream_alert.alert_processor.outputs.demisto import DemistoOutput, DemistoRequestAssembler
-from stream_alert.alert_processor.outputs.output_base import OutputRequestFailure
+from streamalert.alert_processor.helpers import compose_alert
+from streamalert.alert_processor.outputs.demisto import DemistoOutput, DemistoRequestAssembler
+from streamalert.alert_processor.outputs.output_base import OutputRequestFailure
 
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 

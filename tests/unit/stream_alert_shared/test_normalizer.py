@@ -16,7 +16,7 @@ limitations under the License.
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.shared.normalize import Normalizer
+from streamalert.shared.normalize import Normalizer
 
 
 class TestNormalizer:

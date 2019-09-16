@@ -19,7 +19,7 @@ from mock import call, patch
 from nose.tools import assert_equal, assert_raises
 from pyfakefs import fake_filesystem_unittest
 
-from stream_alert.shared.importer import import_folders, _path_to_module, _python_file_paths
+from streamalert.shared.importer import import_folders, _path_to_module, _python_file_paths
 
 class RuleImportTest(fake_filesystem_unittest.TestCase):
     """Test rule import logic with a mocked filesystem."""

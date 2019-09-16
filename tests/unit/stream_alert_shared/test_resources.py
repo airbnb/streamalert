@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equal, assert_count_equal
 
-from stream_alert.shared import resources
+from streamalert.shared import resources
 
 
 def test_get_required_outputs():

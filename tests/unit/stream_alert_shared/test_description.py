@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert.shared.description import RuleDescriptionParser
+from streamalert.shared.description import RuleDescriptionParser
 
 
 class TestRuleDescriptionParserParse:

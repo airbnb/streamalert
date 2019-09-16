@@ -20,8 +20,8 @@ from mock import ANY, patch
 from moto import mock_s3, mock_dynamodb2
 from nose.tools import assert_equal
 
-from stream_alert.shared.config import load_config
-from stream_alert.shared.lookup_tables.core import LookupTables
+from streamalert.shared.config import load_config
+from streamalert.shared.lookup_tables.core import LookupTables
 from tests.unit.helpers.aws_mocks import put_mock_s3_object, put_mock_dynamod_data
 
 

@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert_cli import helpers
+from streamalert_cli import helpers
 
 
 def test_record_to_schema_no_recurse():

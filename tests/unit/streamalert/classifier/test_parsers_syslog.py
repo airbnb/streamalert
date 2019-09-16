@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import SyslogParser
+from streamalert.classifier.parsers import SyslogParser
 
 
 class TestSyslogParser:

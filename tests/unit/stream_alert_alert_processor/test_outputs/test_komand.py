@@ -17,7 +17,7 @@ limitations under the License.
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_false, assert_true
 
-from stream_alert.alert_processor.outputs.komand import KomandOutput
+from streamalert.alert_processor.outputs.komand import KomandOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 

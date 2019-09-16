@@ -18,8 +18,8 @@ from collections import OrderedDict
 from mock import Mock, patch
 from nose.tools import assert_equal
 
-import stream_alert.classifier.classifier as classifier_module
-from stream_alert.classifier.classifier import Classifier
+import streamalert.classifier.classifier as classifier_module
+from streamalert.classifier.classifier import Classifier
 
 
 class TestClassifier:

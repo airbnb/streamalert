@@ -31,10 +31,10 @@ from nose.tools import (
 import requests
 from requests.exceptions import ConnectTimeout
 
-from stream_alert.apps import StreamAlertApp
-from stream_alert.apps.app_base import AppIntegration, safe_timeout, _report_time
-from stream_alert.apps._apps.duo import DuoAuthApp
-from stream_alert.apps.exceptions import AppException
+from streamalert.apps import StreamAlertApp
+from streamalert.apps.app_base import AppIntegration, safe_timeout, _report_time
+from streamalert.apps._apps.duo import DuoAuthApp
+from streamalert.apps.exceptions import AppException
 from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
 from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 

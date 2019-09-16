@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from publishers.community.generic import StringifyArrays
-from stream_alert.shared.publisher import AlertPublisher, Register
+from streamalert.shared.publisher import AlertPublisher, Register
 
 
 @Register

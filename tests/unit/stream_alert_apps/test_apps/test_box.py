@@ -22,7 +22,7 @@ from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_count_equal, assert_true
 from requests.exceptions import ConnectionError as reConnectionError, Timeout
 
-from stream_alert.apps._apps.box import BoxApp
+from streamalert.apps._apps.box import BoxApp
 
 from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
 from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context

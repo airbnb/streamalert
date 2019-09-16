@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 import mock
 from nose.tools import assert_equal
 
-from stream_alert_cli.manage_lambda import rollback
+from streamalert_cli.manage_lambda import rollback
 from tests.unit.helpers.config import basic_streamalert_config, MockCLIConfig
 
 

@@ -1,5 +1,5 @@
 """Alert on insecure Amazon Machine Images (AMIs)."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(

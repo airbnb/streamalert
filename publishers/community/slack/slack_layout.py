@@ -18,8 +18,8 @@ import cgi
 import json
 import urllib.request, urllib.parse, urllib.error
 
-from stream_alert.shared.publisher import AlertPublisher, Register
-from stream_alert.shared.description import RuleDescriptionParser
+from streamalert.shared.publisher import AlertPublisher, Register
+from streamalert.shared.description import RuleDescriptionParser
 
 RAUSCH = '#ff5a5f'
 BABU = '#00d1c1'

@@ -1,7 +1,7 @@
 """Tests for stream_alert/shared/utils.py"""
 from nose.tools import assert_equal, assert_false
 
-from stream_alert.shared import utils
+from streamalert.shared import utils
 
 
 def test_valid_ip():

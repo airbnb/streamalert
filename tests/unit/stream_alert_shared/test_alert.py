@@ -26,7 +26,7 @@ from nose.tools import (
     assert_true
 )
 
-from stream_alert.shared.alert import Alert, AlertCreationError
+from streamalert.shared.alert import Alert, AlertCreationError
 
 
 class TestAlert:

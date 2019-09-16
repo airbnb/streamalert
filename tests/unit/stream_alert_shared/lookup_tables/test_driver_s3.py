@@ -23,10 +23,10 @@ from mock import patch, ANY, MagicMock
 from moto import mock_s3
 from nose.tools import assert_equal, assert_raises
 
-from stream_alert.shared.config import load_config
-from stream_alert.shared.lookup_tables.driver_s3 import S3Driver, Compression, S3Adapter
-from stream_alert.shared.lookup_tables.drivers_factory import construct_persistence_driver
-from stream_alert.shared.lookup_tables.errors import (
+from streamalert.shared.config import load_config
+from streamalert.shared.lookup_tables.driver_s3 import S3Driver, Compression, S3Adapter
+from streamalert.shared.lookup_tables.drivers_factory import construct_persistence_driver
+from streamalert.shared.lookup_tables.errors import (
     LookupTablesCommitError,
     LookupTablesInitializationError,
 )

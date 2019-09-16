@@ -19,8 +19,8 @@ from collections import OrderedDict
 from mock import call, patch, Mock, MagicMock
 from nose.tools import assert_false, assert_is_instance, assert_true
 
-from stream_alert.alert_processor.outputs import carbonblack
-from stream_alert.alert_processor.outputs.carbonblack import CarbonBlackOutput
+from streamalert.alert_processor.outputs import carbonblack
+from streamalert.alert_processor.outputs.carbonblack import CarbonBlackOutput
 from tests.unit.stream_alert_alert_processor import CONFIG
 from tests.unit.helpers.mocks import MockCBAPI
 from tests.unit.stream_alert_alert_processor.helpers import get_alert

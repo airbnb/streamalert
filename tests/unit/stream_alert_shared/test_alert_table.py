@@ -21,7 +21,7 @@ from mock import ANY, MagicMock, patch
 from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_raises
 
-from stream_alert.shared import alert as alert_module, alert_table
+from streamalert.shared import alert as alert_module, alert_table
 from tests.unit.helpers.aws_mocks import setup_mock_alerts_table
 
 _ALERTS_TABLE = 'PREFIX_streamalert_alerts'

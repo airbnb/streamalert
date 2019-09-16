@@ -27,8 +27,8 @@ from nose.tools import (
     raises
 )
 
-from stream_alert.shared.athena import AthenaClient, AthenaQueryExecutionError
-from stream_alert.shared.config import load_config
+from streamalert.shared.athena import AthenaClient, AthenaQueryExecutionError
+from streamalert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
 

@@ -12,8 +12,8 @@ limitations under the License.
 """
 import json
 
-from stream_alert.shared import resources
-from stream_alert.shared.config import load_config
+from streamalert.shared import resources
+from streamalert.shared.config import load_config
 
 REGION = 'us-east-1'
 ACCOUNT_ID = '123456789012'

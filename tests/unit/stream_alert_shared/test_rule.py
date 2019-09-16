@@ -19,7 +19,7 @@ import hashlib
 from mock import patch
 from nose.tools import assert_equal, raises
 
-from stream_alert.shared import rule, rule_table
+from streamalert.shared import rule, rule_table
 
 
 # Rule to be used for checksum testing

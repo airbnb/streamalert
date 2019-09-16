@@ -18,7 +18,7 @@ from mock import Mock, patch
 from netaddr import IPNetwork
 from nose.tools import assert_equal
 
-from stream_alert.rules_engine.threat_intel import ThreatIntel
+from streamalert.rules_engine.threat_intel import ThreatIntel
 
 
 # Without this time.sleep patch, backoff performs sleep

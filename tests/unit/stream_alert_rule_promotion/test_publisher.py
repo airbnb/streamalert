@@ -18,9 +18,9 @@ from datetime import datetime, timedelta
 from mock import patch, PropertyMock
 from nose.tools import assert_equal, assert_raises
 
-from stream_alert.rule_promotion.publisher import StatsPublisher
-from stream_alert.rule_promotion.statistic import StagingStatistic
-from stream_alert.shared import athena, config
+from streamalert.rule_promotion.publisher import StatsPublisher
+from streamalert.rule_promotion.statistic import StagingStatistic
+from streamalert.shared import athena, config
 
 
 class TestStatsPublisher:

@@ -17,7 +17,7 @@ import json
 
 from nose.tools import assert_equal
 
-from stream_alert.classifier.payload.kinesis import KinesisPayload
+from streamalert.classifier.payload.kinesis import KinesisPayload
 
 
 class TestKinesisPayload:

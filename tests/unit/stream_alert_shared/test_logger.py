@@ -19,7 +19,7 @@ import os
 from mock import patch
 from nose.tools import assert_equal, assert_is_instance
 
-from stream_alert.shared.logger import get_logger, LogFormatter, set_formatter
+from streamalert.shared.logger import get_logger, LogFormatter, set_formatter
 
 
 def test_get_logger():

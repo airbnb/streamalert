@@ -15,8 +15,8 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import common, firehose
+from streamalert_cli.config import CLIConfig
+from streamalert_cli.terraform import common, firehose
 
 class TestFirehoseGenerate:
     """Class for testing firehose generation code"""

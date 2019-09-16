@@ -20,7 +20,7 @@ from mock import patch
 from nose.tools import assert_equal, assert_true, assert_false
 from pyfakefs import fake_filesystem_unittest
 
-from stream_alert_cli.config import CLIConfig
+from streamalert_cli.config import CLIConfig
 from tests.unit.helpers.config import basic_streamalert_config
 
 

@@ -26,7 +26,7 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout
 
-from stream_alert.apps._apps.salesforce import SalesforceApp, SalesforceAppError
+from streamalert.apps._apps.salesforce import SalesforceApp, SalesforceAppError
 from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
     get_salesforce_log_files,

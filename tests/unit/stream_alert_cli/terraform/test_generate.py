@@ -17,8 +17,8 @@ from mock import ANY, patch
 
 from nose.tools import assert_equal, assert_dict_equal, assert_false, assert_true
 
-from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import (
+from streamalert_cli.config import CLIConfig
+from streamalert_cli.terraform import (
     common,
     cloudtrail,
     cloudwatch,

@@ -1,5 +1,5 @@
 """Alert on resources made public"""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['cloudtrail:events'])

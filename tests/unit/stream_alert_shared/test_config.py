@@ -19,7 +19,7 @@ from mock import Mock
 from nose.tools import assert_equal, assert_count_equal, assert_raises
 from pyfakefs import fake_filesystem_unittest
 
-from stream_alert.shared.config import (
+from streamalert.shared.config import (
     _validate_config,
     load_config,
     parse_lambda_arn,

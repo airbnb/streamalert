@@ -26,7 +26,7 @@ Pulling keys from LookupTables is very easy!
 
 .. code-block:: python
 
-  from stream_alert.shared.lookup_tables.core import LookupTables
+  from streamalert.shared.lookup_tables.core import LookupTables
 
   value = LookupTables.get('my-table', 'my-key', 'default-value')
 

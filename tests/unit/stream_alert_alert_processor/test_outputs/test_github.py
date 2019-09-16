@@ -19,7 +19,7 @@ import base64
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_false, assert_true, assert_equal, assert_is_not_none
 
-from stream_alert.alert_processor.outputs.github import GithubOutput
+from streamalert.alert_processor.outputs.github import GithubOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 

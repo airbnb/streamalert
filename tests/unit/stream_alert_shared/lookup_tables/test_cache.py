@@ -17,7 +17,7 @@ from datetime import datetime
 
 from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.shared.lookup_tables.cache import DriverCache
+from streamalert.shared.lookup_tables.cache import DriverCache
 
 
 class TestDriverCache:

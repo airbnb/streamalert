@@ -19,7 +19,7 @@ from collections import namedtuple
 from mock import Mock, patch
 from nose.tools import assert_equal
 
-from stream_alert.shared import stats
+from streamalert.shared import stats
 
 
 class TestRuleStats:

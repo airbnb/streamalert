@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert_cli.athena import handler
+from streamalert_cli.athena import handler
 
 
 def test_construct_create_table_statement():

@@ -22,11 +22,11 @@ from nose.tools import (
     assert_is_none
 )
 
-from stream_alert.alert_processor.main import AlertProcessor, handler
-from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
-from stream_alert.shared.alert import Alert
-from stream_alert.shared.config import load_config
-from stream_alert.shared.normalize import Normalizer
+from streamalert.alert_processor.main import AlertProcessor, handler
+from streamalert.alert_processor.outputs.output_base import OutputDispatcher
+from streamalert.shared.alert import Alert
+from streamalert.shared.config import load_config
+from streamalert.shared.normalize import Normalizer
 from tests.unit.stream_alert_alert_processor import (
     ALERTS_TABLE,
     MOCK_ENV

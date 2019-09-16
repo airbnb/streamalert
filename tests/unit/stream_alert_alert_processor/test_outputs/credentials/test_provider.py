@@ -30,8 +30,8 @@ from nose.tools import (
     assert_is_none,
 )
 
-from stream_alert.alert_processor.outputs.output_base import OutputProperty
-from stream_alert.alert_processor.outputs.credentials.provider import (
+from streamalert.alert_processor.outputs.output_base import OutputProperty
+from streamalert.alert_processor.outputs.credentials.provider import (
     S3Driver,
     LocalFileDriver,
     Credentials,

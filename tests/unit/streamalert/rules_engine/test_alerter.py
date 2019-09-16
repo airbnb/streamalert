@@ -18,7 +18,7 @@ import os
 from botocore.exceptions import ClientError
 from mock import Mock, patch
 
-from stream_alert.rules_engine.alert_forwarder import AlertForwarder
+from streamalert.rules_engine.alert_forwarder import AlertForwarder
 
 _ALERTS_TABLE = 'corp-prefix_streamalert_alerts'
 

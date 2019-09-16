@@ -25,15 +25,15 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout as ReqTimeout
 
-from stream_alert.alert_processor.outputs.credentials.provider import \
+from streamalert.alert_processor.outputs.credentials.provider import \
     get_formatted_output_credentials_name
-from stream_alert.alert_processor.outputs.output_base import (
+from streamalert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
     OutputRequestFailure,
     StreamAlertOutput
 )
-from stream_alert.alert_processor.outputs.aws import S3Output
+from streamalert.alert_processor.outputs.aws import S3Output
 from tests.unit.stream_alert_alert_processor import (
     CONFIG,
     KMS_ALIAS,
