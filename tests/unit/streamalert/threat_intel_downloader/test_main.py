@@ -34,7 +34,7 @@ from streamalert.threat_intel_downloader.exceptions import (
 from streamalert.threat_intel_downloader.main import ThreatStream
 from tests.unit.streamalert.apps.test_helpers import MockLambdaClient
 from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
-from tests.unit.threat_intel_downloader.test_helpers import put_mock_params
+from tests.unit.streamalert.threat_intel_downloader.test_helpers import put_mock_params
 
 
 @patch('time.sleep', Mock())
