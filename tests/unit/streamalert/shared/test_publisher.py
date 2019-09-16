@@ -26,7 +26,7 @@ from streamalert.shared.publisher import (
     Register,
     WrappedFunctionPublisher,
 )
-from tests.unit.stream_alert_alert_processor.helpers import get_alert
+from tests.unit.streamalert.alert_processor..helpers import get_alert
 
 
 @Register

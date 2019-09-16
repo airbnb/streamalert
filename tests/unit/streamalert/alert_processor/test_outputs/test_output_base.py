@@ -34,13 +34,13 @@ from streamalert.alert_processor.outputs.output_base import (
     StreamAlertOutput
 )
 from streamalert.alert_processor.outputs.aws import S3Output
-from tests.unit.stream_alert_alert_processor import (
+from tests.unit.streamalert.alert_processor. import (
     CONFIG,
     KMS_ALIAS,
     MOCK_ENV,
     REGION
 )
-from tests.unit.stream_alert_alert_processor.helpers import (
+from tests.unit.streamalert.alert_processor..helpers import (
     put_mock_creds,
     remove_temp_secrets
 )

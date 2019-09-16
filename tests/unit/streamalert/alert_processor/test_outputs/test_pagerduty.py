@@ -25,7 +25,7 @@ from streamalert.alert_processor.outputs.pagerduty import (
     PagerDutyOutputV2,
     PagerDutyIncidentOutput,
     WorkContext, PagerDutyRestApiClient, JsonHttpProvider)
-from tests.unit.stream_alert_alert_processor.helpers import get_alert
+from tests.unit.streamalert.alert_processor..helpers import get_alert
 
 
 @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)

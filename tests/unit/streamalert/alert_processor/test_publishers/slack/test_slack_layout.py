@@ -24,7 +24,7 @@ from publishers.community.slack.slack_layout import (
     AttachStringTemplate,
     Summary
 )
-from tests.unit.stream_alert_alert_processor.helpers import get_alert
+from tests.unit.streamalert.alert_processor.helpers import get_alert
 
 
 class TestSummary:

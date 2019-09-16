@@ -27,7 +27,7 @@ from streamalert.alert_processor.outputs.output_base import OutputDispatcher
 from streamalert.shared.alert import Alert
 from streamalert.shared.config import load_config
 from streamalert.shared.normalize import Normalizer
-from tests.unit.stream_alert_alert_processor import (
+from tests.unit.streamalert.alert_processor. import (
     ALERTS_TABLE,
     MOCK_ENV
 )

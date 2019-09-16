@@ -35,12 +35,12 @@ from streamalert.alert_processor.outputs.aws import (
     SQSOutput,
     CloudwatchLogOutput
 )
-from tests.unit.stream_alert_alert_processor import (
+from tests.unit.streamalert.alert_processor. import (
     CONFIG,
     MOCK_ENV,
     REGION
 )
-from tests.unit.stream_alert_alert_processor.helpers import get_alert
+from tests.unit.streamalert.alert_processor..helpers import get_alert
 
 
 class TestAWSOutput:
