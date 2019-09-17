@@ -609,7 +609,7 @@ on any of your S3 buckets to invoke the StreamAlert classifier function. When th
 function receives this notification, it downloads the object from S3 and runs each record
 through the classification logic.
 
-This module is implemented by `terraform/modules/tf_stream_alert_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_s3_events>`_.
+This module is implemented by `terraform/modules/tf_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_s3_events>`_.
 
 Example: S3 Events Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
