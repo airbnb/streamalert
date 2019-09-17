@@ -55,7 +55,7 @@ def generate_firehose(logging_bucket, main_dict, config):
     # Add the Delivery Streams individually
     for log_stream_name, log_type_name in enabled_logs.items():
         module_dict = {
-            'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
+            'source': 'modules/tf_kinesis_firehose_delivery_stream',
             'buffer_size': (
                 config['global']['infrastructure']['firehose'].get('buffer_size', 64)
             ),

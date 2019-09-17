@@ -66,7 +66,7 @@ class TestFirehoseGenerate:
             'module': {
                 'kinesis_firehose_setup': self._default_firehose_config(),
                 'kinesis_firehose_json_embedded': {
-                    'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
+                    'source': 'modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
@@ -97,7 +97,7 @@ class TestFirehoseGenerate:
             'module': {
                 'kinesis_firehose_setup': self._default_firehose_config(),
                 'kinesis_firehose_json_embedded': {
-                    'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
+                    'source': 'modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
@@ -133,7 +133,7 @@ class TestFirehoseGenerate:
             'module': {
                 'kinesis_firehose_setup': self._default_firehose_config(),
                 'kinesis_firehose_json_embedded': {
-                    'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
+                    'source': 'modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
@@ -170,7 +170,7 @@ class TestFirehoseGenerate:
             'module': {
                 'kinesis_firehose_setup': self._default_firehose_config(),
                 'kinesis_firehose_json_embedded': {
-                    'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
+                    'source': 'modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
