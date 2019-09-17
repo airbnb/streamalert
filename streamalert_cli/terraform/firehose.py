@@ -35,7 +35,7 @@ def generate_firehose(logging_bucket, main_dict, config):
 
     # Firehose Setup module
     main_dict['module']['kinesis_firehose_setup'] = {
-        'source': 'modules/tf_stream_alert_kinesis_firehose_setup',
+        'source': 'modules/tf_kinesis_firehose_setup',
         'account_id': config['global']['account']['aws_account_id'],
         'prefix': config['global']['account']['prefix'],
         'region': config['global']['account']['region'],

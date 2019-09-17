@@ -29,7 +29,7 @@ class TestFirehoseGenerate:
 
     def _default_firehose_config(self):
         return {
-            'source': 'modules/tf_stream_alert_kinesis_firehose_setup',
+            'source': 'modules/tf_kinesis_firehose_setup',
             'account_id': "12345678910",
             'prefix': 'unit-testing',
             'region': 'us-west-1',
