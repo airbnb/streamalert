@@ -6,7 +6,7 @@
 ## Example
 ```
 module "kinesis" {
-  source                  = "../modules/tf_stream_alert_kinesis"
+  source                  = "../modules/tf_kinesis_streams"
   account_id              = "333333444444"
   region                  = "us-east-1"
   prefix                  = "company-name"
