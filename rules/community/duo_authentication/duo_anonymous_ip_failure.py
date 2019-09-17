@@ -1,5 +1,5 @@
 """Alert on any Duo auth logs marked as a failure due to an Anonymous IP."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['duo:authentication'])

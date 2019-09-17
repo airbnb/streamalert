@@ -21,9 +21,9 @@ from mock import Mock, patch, PropertyMock
 from nose.tools import assert_equal
 
 from publishers.community.generic import remove_internal_fields
-from stream_alert.shared.publisher import AlertPublisher, Register, DefaultPublisher
-import stream_alert.rules_engine.rules_engine as rules_engine_module
-from stream_alert.rules_engine.rules_engine import RulesEngine
+from streamalert.shared.publisher import AlertPublisher, Register, DefaultPublisher
+import streamalert.rules_engine.rules_engine as rules_engine_module
+from streamalert.rules_engine.rules_engine import RulesEngine
 
 
 def mock_conf():
@@ -66,7 +66,7 @@ class TestRulesEngine:
              patch.object(rules_engine_module, 'RuleTable'), \
              patch.object(rules_engine_module, 'ThreatIntel'), \
              patch.dict('os.environ', {'STREAMALERT_PREFIX': 'test_prefix'}), \
-             patch('stream_alert.rules_engine.rules_engine.load_config',
+             patch('streamalert.rules_engine.rules_engine.load_config',
                    Mock(return_value=mock_conf())):
             self._rules_engine = RulesEngine()
 
@@ -111,7 +111,7 @@ class TestRulesEngine:
 
         RulesEngine._RULE_TABLE_LAST_REFRESH = fake_date_now - timedelta(minutes=6)
         RulesEngine._rule_table = 'table'
-        with patch('stream_alert.rules_engine.rules_engine.datetime') as date_mock, \
+        with patch('streamalert.rules_engine.rules_engine.datetime') as date_mock, \
              patch.object(rules_engine_module, 'RuleTable') as rule_table_mock:
 
             rule_table_mock.return_value = 'new_table'
@@ -298,7 +298,7 @@ class TestRulesEngine:
             outputs_set={'slack:test', 'demisto:test'},
             description='rule description',
             publishers={
-                'demisto': 'stream_alert.shared.publisher.DefaultPublisher',
+                'demisto': 'streamalert.shared.publisher.DefaultPublisher',
                 'slack': [that_publisher],
                 'slack:test': [ThisPublisher],
             },
@@ -335,7 +335,7 @@ class TestRulesEngine:
                         'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
                     ],
                     'demisto:test': [
-                        'stream_alert.shared.publisher.DefaultPublisher'
+                        'streamalert.shared.publisher.DefaultPublisher'
                     ],
                 },
                 rule_description='rule description',
@@ -364,11 +364,11 @@ class TestRulesEngine:
         """RulesEngine - _configure_publishers, Single string"""
         rule = Mock(
             outputs_set={'slack:test'},
-            publishers='stream_alert.shared.publisher.DefaultPublisher'
+            publishers='streamalert.shared.publisher.DefaultPublisher'
         )
 
         publishers = self._rules_engine._configure_publishers(rule)
-        expectation = {'slack:test': ['stream_alert.shared.publisher.DefaultPublisher']}
+        expectation = {'slack:test': ['streamalert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
 
@@ -380,7 +380,7 @@ class TestRulesEngine:
         )
 
         publishers = self._rules_engine._configure_publishers(rule)
-        expectation = {'slack:test': ['stream_alert.shared.publisher.DefaultPublisher']}
+        expectation = {'slack:test': ['streamalert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
 
@@ -421,9 +421,9 @@ class TestRulesEngine:
 
         publishers = self._rules_engine._configure_publishers(rule)
         expectation = {
-            'slack:test': ['stream_alert.shared.publisher.DefaultPublisher'],
-            'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher'],
-            'pagerduty:test': ['stream_alert.shared.publisher.DefaultPublisher'],
+            'slack:test': ['streamalert.shared.publisher.DefaultPublisher'],
+            'demisto:test': ['streamalert.shared.publisher.DefaultPublisher'],
+            'pagerduty:test': ['streamalert.shared.publisher.DefaultPublisher'],
         }
 
         assert_equal(publishers, expectation)
@@ -437,7 +437,7 @@ class TestRulesEngine:
 
         publishers = self._rules_engine._configure_publishers(rule)
         expectation = {'slack:test': [
-            'stream_alert.shared.publisher.DefaultPublisher',
+            'streamalert.shared.publisher.DefaultPublisher',
             'publishers.community.generic.remove_internal_fields',
         ]}
 
@@ -448,7 +448,7 @@ class TestRulesEngine:
         rule = Mock(
             outputs_set={'slack:test', 'demisto:test'},
             publishers={
-                'demisto': 'stream_alert.shared.publisher.DefaultPublisher',
+                'demisto': 'streamalert.shared.publisher.DefaultPublisher',
                 'slack': [that_publisher],
                 'slack:test': [ThisPublisher],
             },
@@ -460,7 +460,7 @@ class TestRulesEngine:
                 'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
                 'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher'
             ],
-            'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher']
+            'demisto:test': ['streamalert.shared.publisher.DefaultPublisher']
         }
 
         assert_equal(publishers, expectation)
@@ -470,7 +470,7 @@ class TestRulesEngine:
         rule = Mock(
             outputs_set={'slack:test', 'demisto:test'},
             publishers={
-                'demisto': 'stream_alert.shared.publisher.DefaultPublisher',
+                'demisto': 'streamalert.shared.publisher.DefaultPublisher',
                 'slack': that_publisher,
                 'slack:test': ThisPublisher,
             },
@@ -482,7 +482,7 @@ class TestRulesEngine:
                 'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
                 'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
             ],
-            'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher']
+            'demisto:test': ['streamalert.shared.publisher.DefaultPublisher']
         }
 
         assert_equal(publishers, expectation)

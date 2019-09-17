@@ -20,7 +20,7 @@ import random
 import time
 import pathlib2
 
-from stream_alert.shared.utils import (  # pylint: disable=unused-import
+from streamalert.shared.utils import (  # pylint: disable=unused-import
     # Import some utility functions which are useful for rules as well
     get_first_key,
     get_keys,

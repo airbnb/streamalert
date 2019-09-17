@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert_cli.terraform import common, classifier
+from streamalert_cli.terraform import common, classifier
 
 
 class TestTerraformGenerateClassifier:
@@ -120,7 +120,7 @@ class TestTerraformGenerateClassifier:
                     'errors_alarm_threshold': 0,
                     'filename': 'classifier.zip',
                     'function_name': 'unit-test_streamalert_classifier_test',
-                    'handler': 'stream_alert.classifier.main.handler',
+                    'handler': 'streamalert.classifier.main.handler',
                     'log_retention_days': 14,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',

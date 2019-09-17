@@ -1,5 +1,5 @@
 """Github 'Require pull request reviews before merging' was disabled for a repo."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['ghe:general'])

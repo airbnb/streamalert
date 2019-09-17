@@ -1,5 +1,5 @@
 """An OAuth application was registered within Github."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['ghe:general'])

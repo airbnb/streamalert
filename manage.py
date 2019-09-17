@@ -26,9 +26,9 @@ terraform <cmd>
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 
-from stream_alert import __version__ as version
-from stream_alert_cli.runner import cli_runner, StreamAlertCLICommandRepository
-from stream_alert_cli.utils import generate_subparser
+from streamalert import __version__ as version
+from streamalert_cli.runner import cli_runner, StreamAlertCLICommandRepository
+from streamalert_cli.utils import generate_subparser
 
 
 def build_parser():

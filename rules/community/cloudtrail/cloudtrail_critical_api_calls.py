@@ -1,5 +1,5 @@
 """Alert on destructive AWS API calls."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 _CRITICAL_EVENTS = {
     # VPC Flow Logs (~netflow)

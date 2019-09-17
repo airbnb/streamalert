@@ -19,7 +19,7 @@ import json
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import JSONParser
+from streamalert.classifier.parsers import JSONParser
 
 
 class TestJSONParser:

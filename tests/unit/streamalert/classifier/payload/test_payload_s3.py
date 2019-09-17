@@ -25,7 +25,7 @@ from moto import mock_s3
 from nose.tools import assert_equal, assert_raises
 from pyfakefs import fake_filesystem_unittest
 
-from stream_alert.classifier.payload.s3 import S3Payload, S3PayloadError
+from streamalert.classifier.payload.s3 import S3Payload, S3PayloadError
 
 
 class TestS3Payload:

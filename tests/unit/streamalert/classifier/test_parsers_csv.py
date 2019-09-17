@@ -18,7 +18,7 @@ import json
 
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import CSVParser
+from streamalert.classifier.parsers import CSVParser
 
 
 class TestCSVParser:
