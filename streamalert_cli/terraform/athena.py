@@ -47,7 +47,7 @@ def generate_athena(config):
 
     athena_dict['module']['stream_alert_athena'] = {
         's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
-        'source': 'modules/tf_stream_alert_athena',
+        'source': 'modules/tf_athena',
         'database_name': database,
         'queue_name': queue_name,
         'results_bucket': results_bucket_name,

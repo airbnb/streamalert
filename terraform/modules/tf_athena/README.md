@@ -10,7 +10,7 @@ This Terraform module creates a Lambda function for refreshing Athena Partitions
 ## Example
 ```
 module "stream_alert_athena" {
-  source                       = "../modules/tf_stream_alert_athena"
+  source                       = "../modules/tf_athena"
   lambda_s3_bucket             = "my-source-bucket"
   lambda_s3_key                = "source/athena_partition_refresh_code.zip"
   athena_data_buckets          = ["my-org.streamalerts"]
