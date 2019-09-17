@@ -1,7 +1,7 @@
 # IAM Role: Allows CloudWatch Logs to put data into
 # this cluster's default Kinesis stream
 resource "aws_iam_role" "cloudwatch_subscription_role" {
-  name = "stream_alert_${var.cluster}_cw_sub_role_${var.region}"
+  name = "${var.prefix}_${var.cluster}_streamalert_cw_sub_role_${var.region}"
 
   assume_role_policy = "${data.aws_iam_policy_document.cloudwatch_logs_assume_role_policy.json}"
 }
