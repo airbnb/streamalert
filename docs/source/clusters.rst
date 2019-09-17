@@ -100,7 +100,7 @@ CloudTrail
 ----------
 StreamAlert has native support for enabling and monitoring `AWS CloudTrail <https://aws.amazon.com/cloudtrail/>`_.
 
-This module is implemented by `terraform/modules/tf_stream_alert_cloudtrail <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_cloudtrail>`_.
+This module is implemented by `terraform/modules/tf_cloudtrail <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudtrail>`_.
 
 Example: CloudTrail via S3 Events
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -207,7 +207,7 @@ from any AWS account. A common use case is to ingest and scan CloudTrail from mu
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_cloudwatch <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_cloudwatch>`_.
+This module is implemented by `terraform/modules/tf_cloudwatch <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch>`_.
 
 Example: CloudWatch Logs Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -281,7 +281,7 @@ To ensure data collection is running smoothly, we recommend enabling
 `CloudWatch metric alarms <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html#CloudWatchAlarms>`_
 to monitor the health the classifier Lambda function(s) and, if applicable, the respective Kinesis stream.
 
-This module is implemented by `terraform/modules/tf_stream_alert_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_monitoring>`_.
+This module is implemented by `terraform/modules/tf_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_monitoring>`_.
 
 Example: Enable CloudWatch Monitoring
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -383,6 +383,7 @@ as follows:
 
       "...": "..."
     }
+  }
 
 In either case, to receive metric alarms, simply `subscribe to the SNS topic <https://docs.aws.amazon.com/sns/latest/dg/SubscribeTopic.html>`_.
 
@@ -402,7 +403,7 @@ Each Kinesis stream is a set of *shards*, which in aggregate determine the total
 the stream. Indeed, this is the primary motivation for StreamAlert's cluster design - each cluster
 can have its own data stream whose shard counts can be configured individually.
 
-This module is implemented by `terraform/modules/tf_stream_alert_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_kinesis_streams>`_.
+This module is implemented by `terraform/modules/tf_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_kinesis_streams>`_.
 
 Example: Kinesis Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -508,7 +509,7 @@ The Kinesis Events module connects a Kinesis Stream to the classifier Lambda fun
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_kinesis_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_kinesis_events>`_.
+This module is implemented by `terraform/modules/tf_kinesis_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_kinesis_events>`_.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
@@ -533,7 +534,7 @@ When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_flow_logs <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_flow_logs>`_.
+This module is implemented by `terraform/modules/tf_flow_logs <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_flow_logs>`_.
 
 Example: Flow Logs Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -609,7 +610,7 @@ on any of your S3 buckets to invoke the StreamAlert classifier function. When th
 function receives this notification, it downloads the object from S3 and runs each record
 through the classification logic.
 
-This module is implemented by `terraform/modules/tf_stream_alert_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_s3_events>`_.
+This module is implemented by `terraform/modules/tf_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_s3_events>`_.
 
 Example: S3 Events Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

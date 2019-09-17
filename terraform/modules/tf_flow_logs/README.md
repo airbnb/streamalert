@@ -13,7 +13,7 @@ Creates the following:
 ```
 
 module "flow_logs_prod" {
-  source                 = "modules/tf_stream_alert_flow_logs"
+  source                 = "modules/tf_flow_logs"
   flow_log_group_name    = "prefix_cluster_streamalert_flow_logs"
   destination_stream_arn = "arn:aws:kinesis:region:account-id:stream/stream-name"
   vpcs                   = ["vpc"]

@@ -153,7 +153,7 @@ Copy the `pip.zip` file from the virtual machine to the local host.
 
 .. code-block:: bash
 
-  $ vagrant scp development_py3:/home/vagrant/pip_temp/pip.zip stream_alert/apps/_apps/boxsdk[jwt]==2.6.0_dependencies.zip
+  $ vagrant scp development_py3:/home/vagrant/pip_temp/pip.zip streamalert/apps/_apps/boxsdk[jwt]==2.6.0_dependencies.zip
 
 Destroy the VM
 ++++++++++++++

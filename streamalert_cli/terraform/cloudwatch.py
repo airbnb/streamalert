@@ -68,7 +68,7 @@ def generate_cloudwatch(cluster_name, cluster_dict, config):
 
     for region in regions:
         cluster_dict['module']['cloudwatch_{}_{}'.format(cluster_name, region)] = {
-            'source': 'modules/tf_stream_alert_cloudwatch',
+            'source': 'modules/tf_cloudwatch',
             'region': region,
             'cross_account_ids': cross_account_ids,
             'cluster': cluster_name,

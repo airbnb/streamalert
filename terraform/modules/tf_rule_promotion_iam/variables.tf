@@ -3,7 +3,7 @@ variable "digest_sns_topic" {
 }
 
 variable "rules_table_arn" {
-  description = "Rules DynamoDB Table arn, exported from the tf_stream_alert_globals module"
+  description = "Rules DynamoDB Table arn, exported from the tf_globals module"
 }
 
 variable "role_id" {

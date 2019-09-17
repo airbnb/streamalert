@@ -71,7 +71,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         return False
 
     module_info = {
-        'source': 'modules/tf_stream_alert_cloudtrail',
+        'source': 'modules/tf_cloudtrail',
         'primary_account_id': config['global']['account']['aws_account_id'],
         'account_ids': account_ids,
         'cluster': cluster_name,

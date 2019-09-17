@@ -48,7 +48,7 @@ metric across the entire StreamAlert deployment.
 
 Custom metrics are logged to a unique `StreamAlert` namespace within CloudWatch Logs. Navigate to AWS Console -> CloudWatch -> Metrics -> StreamAlert to view these metrics.
 
-Custom metrics definitions are found within ``stream_alert/shared/metrics.py``.
+Custom metrics definitions are found within ``streamalert/shared/metrics.py``.
 
 Classifier Custom Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~~

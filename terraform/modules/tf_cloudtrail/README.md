@@ -10,7 +10,7 @@ Configure CloudTrail to deliver AWS API calls to AWS Kinesis and Amazon S3.
 For users with no existing CloudTrail:
 ```
 module "cloudtrail" {
-  source         = "modules/tf_stream_alert_cloudtrail"
+  source         = "modules/tf_cloudtrail"
   prefix         = "streamalert"
   cluster        = "prod"
   enable_logging = true
@@ -22,7 +22,7 @@ module "cloudtrail" {
 To skip the creation of a CloudTrail, set the `existing_trail` option to `true`:
 ```
 module "cloudtrail" {
-  source         = "modules/tf_stream_alert_cloudtrail"
+  source         = "modules/tf_cloudtrail"
   prefix         = "streamalert"
   cluster        = "prod"
   enable_logging = true

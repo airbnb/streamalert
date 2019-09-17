@@ -32,7 +32,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
     shard_level_metrics = kinesis_module.get('shard_level_metrics', [])
 
     cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
-        'source': 'modules/tf_stream_alert_kinesis_streams',
+        'source': 'modules/tf_kinesis_streams',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['clusters'][cluster_name]['region'],
         'cluster_name': cluster_name,

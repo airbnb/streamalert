@@ -1,4 +1,4 @@
-"""Tests for stream_alert/shared/utils.py"""
+"""Tests for streamalert/shared/utils.py"""
 from nose.tools import assert_equal, assert_false
 
 from streamalert.shared import utils

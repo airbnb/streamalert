@@ -214,7 +214,7 @@ class Alert:
 
         (!) This method is deprecated. Going forward, try to use the method:
 
-            stream_alert.alert_processor.helpers.compose_alert
+            streamalert.alert_processor.helpers.compose_alert
 
         Returns:
             dict: An alert dictionary for sending to outputs.
