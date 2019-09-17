@@ -29,11 +29,7 @@ class LookupTablesCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         # FIXME (derek.wang) Refactor this into a more robust command-nesting framework
-        subcommands = cls._subcommands()
-        set_parser_epilog(
-            subparser,
-            epilog=(
-                '''\
+        template = '''\
 Available Sub-Commands:
 
 {}
@@ -41,7 +37,12 @@ Available Sub-Commands:
 Examples:
 
     manage.py lookup-tables [describe-tables|get|set]
-'''.format('\n'.join([
+'''
+        subcommands = cls._subcommands()
+        set_parser_epilog(
+            subparser,
+            epilog=(
+                template.format('\n'.join([
                     '\t{command: <{pad}}{description}'.format(
                         command=command,
                         pad=30,
