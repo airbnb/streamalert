@@ -383,6 +383,7 @@ as follows:
 
       "...": "..."
     }
+  }
 
 In either case, to receive metric alarms, simply `subscribe to the SNS topic <https://docs.aws.amazon.com/sns/latest/dg/SubscribeTopic.html>`_.
 
