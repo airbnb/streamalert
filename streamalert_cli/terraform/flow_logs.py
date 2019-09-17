@@ -41,7 +41,7 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
 
     if modules['flow_logs']['enabled']:
         cluster_dict['module']['flow_logs_{}'.format(cluster_name)] = {
-            'source': 'modules/tf_stream_alert_flow_logs',
+            'source': 'modules/tf_flow_logs',
             'cluster': cluster_name,
             'cross_account_ids': cross_account_ids,
             'destination_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),

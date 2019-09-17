@@ -533,7 +533,7 @@ When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_flow_logs <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_flow_logs>`_.
+This module is implemented by `terraform/modules/tf_flow_logs <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_flow_logs>`_.
 
 Example: Flow Logs Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
