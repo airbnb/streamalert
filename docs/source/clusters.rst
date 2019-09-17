@@ -100,7 +100,7 @@ CloudTrail
 ----------
 StreamAlert has native support for enabling and monitoring `AWS CloudTrail <https://aws.amazon.com/cloudtrail/>`_.
 
-This module is implemented by `terraform/modules/tf_stream_alert_cloudtrail <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_cloudtrail>`_.
+This module is implemented by `terraform/modules/tf_cloudtrail <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudtrail>`_.
 
 Example: CloudTrail via S3 Events
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

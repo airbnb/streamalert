@@ -306,7 +306,7 @@ class TestTerraformGenerate:
             'prefix': 'unit-testing',
             'enable_logging': True,
             'enable_kinesis': True,
-            'source': 'modules/tf_stream_alert_cloudtrail',
+            'source': 'modules/tf_cloudtrail',
             's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
             'existing_trail': False,
             'is_global_trail': True,
@@ -352,7 +352,7 @@ class TestTerraformGenerate:
             'region': 'us-west-1',
             'exclude_home_region_events': False,
             'send_to_cloudwatch': False,
-            'source': 'modules/tf_stream_alert_cloudtrail',
+            'source': 'modules/tf_cloudtrail',
             's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
             'event_pattern': '{"source": ["aws.ec2"], "account": "12345678910",'
                              ' "detail": {"state": ["running"]}}'
