@@ -42,7 +42,10 @@ class TestLookupTablesCore:
 
         self._put_mock_data()
 
-        self._lookup_tables = LookupTables.get_instance(self.config)
+        self._lookup_tables = LookupTables.get_instance(
+            config=self.config,
+            reset=True
+        )
 
     def _put_mock_data(self):
         # S3 mock data

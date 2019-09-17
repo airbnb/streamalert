@@ -54,7 +54,7 @@ class RulesEngine:
         RulesEngine._alert_forwarder = RulesEngine._alert_forwarder or AlertForwarder()
 
         # Load the lookup tables
-        RulesEngine._lookup_tables = LookupTables.get_instance(self.config)
+        RulesEngine._lookup_tables = LookupTables.get_instance(config=self.config)
 
         # If not rule import paths are specified, default to the config
         if not rule_paths:

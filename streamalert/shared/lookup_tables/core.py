@@ -16,19 +16,21 @@ class LookupTables:
     _instance = None  # type: LookupTablesCore
 
     @classmethod
-    def get_instance(cls, config=None):
+    def get_instance(cls, config=None, reset=False):
         """
         Returns a singleton instance of LookupTablesCore.
 
         Params:
-            config (dict) OPTIONAL. You can provide this to override default behavior or as an
+            config (dict) OPTIONAL: You can provide this to override default behavior or as an
                 optimization. Be careful; once loaded the LookupTables is cached statically
                 and future invocations will ignore this config parameter, even when provided.
+            reset (bool) OPTIONAL: Flag designating whether or not the cached instance of
+                LookupTablesCore should be re-instantiated. Default value is False.
 
         Returns:
             LookupTablesCore
         """
-        if not cls._instance:
+        if not cls._instance or reset:
             if config is None:
                 config = load_config()
 
