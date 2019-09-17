@@ -15,7 +15,7 @@ module "stream_alert_app" {
   function_name                = "testprefix_prod_duo_auth_duo_auth_app"
   function_role_id             = "testprefix_prod_duo_auth_duo_auth_app_role_id"
   destination_function_name    = "testprefix_prod_streamalert_classifier
-  source                       = "../modules/tf_stream_alert_app_iam"
+  source                       = "../modules/tf_app_iam"
 }
 ```
 
