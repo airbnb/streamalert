@@ -402,7 +402,7 @@ Each Kinesis stream is a set of *shards*, which in aggregate determine the total
 the stream. Indeed, this is the primary motivation for StreamAlert's cluster design - each cluster
 can have its own data stream whose shard counts can be configured individually.
 
-This module is implemented by `terraform/modules/tf_stream_alert_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_kinesis_streams>`_.
+This module is implemented by `terraform/modules/tf_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_kinesis_streams>`_.
 
 Example: Kinesis Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~

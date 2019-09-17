@@ -40,7 +40,7 @@ module "cloudwatch_prod_us-west-1" {
   </tr>
   <tr>
     <td>kinesis_stream_arn</td>
-    <td>ARN of the Kinesis Stream which receives the CloudWatch Logs. Output from the tf_stream_alert_kinesis_streams module</td>
+    <td>ARN of the Kinesis Stream which receives the CloudWatch Logs. Output from the tf_kinesis_streams module</td>
     <td>None</td>
     <td>True</td>
   </tr>

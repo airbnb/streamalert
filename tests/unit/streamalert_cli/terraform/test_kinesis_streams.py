@@ -31,7 +31,7 @@ def test_kinesis_streams():
     expected_result = {
         'module': {
             'kinesis_advanced': {
-                'source': 'modules/tf_stream_alert_kinesis_streams',
+                'source': 'modules/tf_kinesis_streams',
                 'account_id': '12345678910',
                 'shard_level_metrics': ["IncomingBytes"],
                 'region': 'us-west-1',
@@ -60,7 +60,7 @@ def test_kinesis_streams_with_trusted_account():
     expected_result = {
         'module': {
             'kinesis_trusted': {
-                'source': 'modules/tf_stream_alert_kinesis_streams',
+                'source': 'modules/tf_kinesis_streams',
                 'account_id': '12345678910',
                 'shard_level_metrics': [],
                 'region': 'us-west-1',
