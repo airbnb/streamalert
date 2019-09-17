@@ -16,7 +16,7 @@ Creates the following in _each region_:
 ## Example
 ```
 module "cloudwatch_prod_us-west-1" {
-  source                 = "modules/tf_stream_alert_cloudwatch"
+  source                 = "modules/tf_cloudwatch"
   cluster                = "prod"
   kinesis_stream_arn     = "${module.kinesis_advanced.arn}"
   cross_account_ids      = ["123456789012", "12345678910"]

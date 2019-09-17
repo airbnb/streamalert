@@ -207,7 +207,7 @@ from any AWS account. A common use case is to ingest and scan CloudTrail from mu
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_cloudwatch <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_cloudwatch>`_.
+This module is implemented by `terraform/modules/tf_cloudwatch <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch>`_.
 
 Example: CloudWatch Logs Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

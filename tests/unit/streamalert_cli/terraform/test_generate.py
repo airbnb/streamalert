@@ -390,7 +390,7 @@ class TestTerraformGenerate:
 
         expected_config = {
             'cluster': 'advanced',
-            'source': 'modules/tf_stream_alert_cloudwatch',
+            'source': 'modules/tf_cloudwatch',
             'region': 'eu-west-1',
             'kinesis_stream_arn': '${module.kinesis_advanced.arn}',
             'cross_account_ids': ['123456789012', '12345678910']
