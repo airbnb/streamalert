@@ -64,7 +64,7 @@ author = u''
 # built documents.
 
 # We want both the |version| and the |release| to be the full X.Y.Z version string.
-with open('../../stream_alert/__init__.py', 'r') as version_file:
+with open('../../streamalert/__init__.py', 'r') as version_file:
     release = re.search(
         r"^__version__ = ['\"]([^'\"]+)['\"]", version_file.read(), re.MULTILINE).group(1)
 
