@@ -51,6 +51,6 @@ resource "aws_s3_bucket" "streamalert_data" {
   }
 
   tags {
-    Name = "${var.s3_bucket_name}"
+    Name = "StreamAlert"
   }
 }

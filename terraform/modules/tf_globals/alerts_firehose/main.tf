@@ -18,4 +18,8 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
       log_stream_name = "S3Delivery"
     }
   }
+
+  tags {
+    Name = "StreamAlert"
+  }
 }

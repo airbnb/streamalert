@@ -1,8 +1,12 @@
 // IAM Role: Alert Firehose S3 Role
 resource "aws_iam_role" "firehose" {
-  name = "${var.prefix}_streamalert_delivery_firehose"
-
+  name               = "${var.prefix}_firehose_alert_delivery"
+  path               = "/streamalert/"
   assume_role_policy = "${data.aws_iam_policy_document.firehose_assume_role_policy.json}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // IAM Policy: Service AssumeRole
@@ -20,9 +24,8 @@ data "aws_iam_policy_document" "firehose_assume_role_policy" {
 
 // IAM Policy: Write data to S3
 resource "aws_iam_role_policy" "streamalert_firehose_s3" {
-  name = "S3PutAlerts"
-  role = "${aws_iam_role.firehose.id}"
-
+  name   = "S3PutAlerts"
+  role   = "${aws_iam_role.firehose.id}"
   policy = "${data.aws_iam_policy_document.firehose_s3.json}"
 }
 
@@ -52,6 +55,10 @@ data "aws_iam_policy_document" "firehose_s3" {
 resource "aws_cloudwatch_log_group" "firehose" {
   name              = "/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery"
   retention_in_days = "${var.cloudwatch_log_retention}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // CloudWatch Log Stream: S3Delivery
@@ -62,9 +69,8 @@ resource "aws_cloudwatch_log_stream" "s3_delivery" {
 
 // IAM Policy: Write logs to CloudWatch
 resource "aws_iam_role_policy" "firehose_logging" {
-  name = "CloudWatchPutLogs"
-  role = "${aws_iam_role.firehose.id}"
-
+  name   = "CloudWatchPutLogs"
+  role   = "${aws_iam_role.firehose.id}"
   policy = "${data.aws_iam_policy_document.firehose_cloudwatch.json}"
 }
 

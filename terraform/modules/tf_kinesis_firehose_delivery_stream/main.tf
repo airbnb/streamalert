@@ -17,6 +17,10 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
     compression_format = "${var.compression_format}"
     kms_key_arn        = "${var.kms_key_arn}"
   }
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // AWS CloudWatch Metric Alarm for this Firehose
@@ -35,5 +39,9 @@ resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
 
   dimensions {
     DeliveryStreamName = "${aws_kinesis_firehose_delivery_stream.streamalert_data.name}"
+  }
+
+  tags {
+    Name = "StreamAlert"
   }
 }

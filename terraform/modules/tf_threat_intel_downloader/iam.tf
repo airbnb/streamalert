@@ -1,7 +1,12 @@
 // IAM Role: Execution Role
 resource "aws_iam_role" "threat_intel_downloader" {
-  name               = "${var.prefix}_streamalert_threat_intel_downloader"
+  name               = "${var.prefix}_threat_intel_downloader"
+  path               = "/streamalert/"
   assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role_policy.json}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // IAM Policy Doc: Generic Lambda AssumeRole

@@ -1,8 +1,7 @@
 // AWS Lambda Function Policy
 resource "aws_iam_role_policy" "streamalert_lambda_kinesis" {
-  name = "KinesisGetRecords"
-  role = "${var.lambda_role_id}"
-
+  name   = "KinesisGetRecords"
+  role   = "${var.lambda_role_id}"
   policy = "${data.aws_iam_policy_document.kinesis_read.json}"
 }
 

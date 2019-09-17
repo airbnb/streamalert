@@ -6,7 +6,8 @@ resource "aws_kms_key" "sse" {
   policy = "${data.aws_iam_policy_document.kms_sse_allow_s3.json}"
 
   tags {
-    Name = "StreamAlert"
+    Name    = "StreamAlert"
+    AltName = "Athena"
   }
 }
 

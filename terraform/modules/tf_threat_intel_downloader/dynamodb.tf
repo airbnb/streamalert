@@ -22,7 +22,8 @@ resource "aws_dynamodb_table" "threat_intel_ioc" {
   }
 
   tags {
-    Name = "StreamAlert"
+    Name    = "StreamAlert"
+    AltName = "ThreatIntel"
   }
 }
 

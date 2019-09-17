@@ -22,7 +22,8 @@ resource "aws_lambda_function" "athena_partition_refresh" {
   }
 
   tags {
-    Name = "StreamAlert"
+    Name    = "StreamAlert"
+    AltName = "Athena"
   }
 }
 
@@ -62,7 +63,8 @@ resource "aws_s3_bucket" "athena_results_bucket" {
   force_destroy = false
 
   tags {
-    Name = "StreamAlert"
+    Name    = "StreamAlert"
+    AltName = "Athena"
   }
 
   versioning {
@@ -115,7 +117,8 @@ resource "aws_sqs_queue" "streamalert_athena_data_bucket_notifications" {
   kms_master_key_id = "${aws_kms_key.sse.arn}"
 
   tags {
-    Name = "StreamAlert"
+    Name    = "StreamAlert"
+    AltName = "Athena"
   }
 }
 
@@ -147,6 +150,11 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 resource "aws_cloudwatch_log_group" "athena" {
   name              = "/aws/lambda/${var.prefix}_streamalert_athena_partition_refresh"
   retention_in_days = 14
+
+  tags {
+    Name    = "StreamAlert"
+    AltName = "Athena"
+  }
 }
 
 // CloudWatch metric filters for the athena partition refresh function

@@ -7,6 +7,8 @@ resource "aws_cloudwatch_event_rule" "invocation_schedule" {
   name                = "${var.function_name}_schedule"
   description         = "Invokes ${var.function_name} at ${var.schedule_expression}"
   schedule_expression = "${var.schedule_expression}"
+
+  tags = "${local.tags}"
 }
 
 resource "aws_cloudwatch_event_target" "invoke_lambda_vpc" {
@@ -52,6 +54,10 @@ resource "aws_cloudwatch_metric_alarm" "lambda_invocation_errors" {
     FunctionName = "${var.function_name}"
     Resource     = "${var.function_name}:${var.alias_name}"
   }
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
@@ -71,6 +77,10 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
     FunctionName = "${var.function_name}"
     Resource     = "${var.function_name}:${var.alias_name}"
   }
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
@@ -89,5 +99,9 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
   dimensions {
     FunctionName = "${var.function_name}"
     Resource     = "${var.function_name}:${var.alias_name}"
+  }
+
+  tags {
+    Name = "StreamAlert"
   }
 }

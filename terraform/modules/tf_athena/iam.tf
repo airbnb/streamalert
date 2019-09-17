@@ -1,8 +1,13 @@
 // IAM Role: Lambda Execution Role
 resource "aws_iam_role" "athena_partition_role" {
-  name = "${var.prefix}_streamalert_athena_partition_refresh"
-
+  name               = "${var.prefix}_athena_partition_refresh"
+  path               = "/streamalert/"
   assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role_policy.json}"
+
+  tags {
+    Name    = "StreamAlert"
+    AltName = "Athena"
+  }
 }
 
 // IAM Policy Doc: Generic Lambda trust relationship policy
@@ -20,9 +25,8 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 
 // IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
 resource "aws_iam_role_policy" "cloudwatch" {
-  name = "CloudWatchPutLogs"
-  role = "${aws_iam_role.athena_partition_role.id}"
-
+  name   = "CloudWatchPutLogs"
+  role   = "${aws_iam_role.athena_partition_role.id}"
   policy = "${data.aws_iam_policy_document.cloudwatch.json}"
 }
 
@@ -45,9 +49,8 @@ data "aws_iam_policy_document" "cloudwatch" {
 
 // IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
 resource "aws_iam_role_policy" "sqs" {
-  name = "SQSReadDeleteMessages"
-  role = "${aws_iam_role.athena_partition_role.id}"
-
+  name   = "SQSReadDeleteMessages"
+  role   = "${aws_iam_role.athena_partition_role.id}"
   policy = "${data.aws_iam_policy_document.sqs.json}"
 }
 
@@ -97,9 +100,8 @@ data "aws_iam_policy_document" "sqs" {
 // IAM Role Policy: Allow the Lambda function to execute Athena queries
 // Ref: http://amzn.to/2tSyxUV
 resource "aws_iam_role_policy" "athena_query_permissions" {
-  name = "AthenaQuery"
-  role = "${aws_iam_role.athena_partition_role.id}"
-
+  name   = "AthenaQuery"
+  role   = "${aws_iam_role.athena_partition_role.id}"
   policy = "${data.aws_iam_policy_document.athena_permissions.json}"
 }
 
@@ -170,9 +172,8 @@ data "aws_iam_policy_document" "athena_permissions" {
 
 // IAM Role Policy: Allow the Lambda function to read data buckets
 resource "aws_iam_role_policy" "athena_query_data_bucket_permissions" {
-  name = "AthenaGetData"
-  role = "${aws_iam_role.athena_partition_role.id}"
-
+  name   = "AthenaGetData"
+  role   = "${aws_iam_role.athena_partition_role.id}"
   policy = "${data.aws_iam_policy_document.athena_data_bucket_read.json}"
 }
 

@@ -29,6 +29,11 @@ resource "aws_flow_log" "eni_flow_log" {
 resource "aws_cloudwatch_log_group" "flow_log_group" {
   name              = "${var.flow_log_group_name}"
   retention_in_days = "${var.log_retention}"
+
+  tags {
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster}"
+  }
 }
 
 // Note: When creating cross-account log destinations,

@@ -3,6 +3,11 @@ resource "aws_iam_user" "streamalert" {
   count = "${var.create_user ? 1 : 0}"
   name  = "${var.prefix}_${var.cluster}_streamalert_user"
   path  = "/streamalert/"
+
+  tags {
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster}"
+  }
 }
 
 // IAM Group: streamalert clustered group
@@ -15,7 +20,7 @@ resource "aws_iam_group" "streamalert" {
 // IAM Group Membership: Assign streamalert user to group
 resource "aws_iam_group_membership" "streamalert" {
   count = "${var.create_user ? 1 : 0}"
-  name  = "stream-alert-kinesis-user-membership"
+  name  = "streamalert-kinesis-user-membership"
 
   users = [
     "${aws_iam_user.streamalert.name}",
@@ -71,7 +76,13 @@ data "aws_iam_policy_document" "streamalert_assume_role_policy" {
 resource "aws_iam_role" "streamalert_write_role" {
   count              = "${length(var.trusted_accounts) > 0 ? 1 : 0}"
   name               = "${var.prefix}_${var.cluster}_streamalert_role"
+  path               = "/streamalert/"
   assume_role_policy = "${data.aws_iam_policy_document.streamalert_assume_role_policy.json}"
+
+  tags {
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster}"
+  }
 }
 
 // IAM Role Policy: policy to allow a role to send data to the stream

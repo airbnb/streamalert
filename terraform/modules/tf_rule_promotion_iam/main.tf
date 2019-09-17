@@ -8,6 +8,10 @@ resource "aws_cloudwatch_event_rule" "send_digest_invocation_schedule" {
   name                = "${var.function_name}_digest_schedule"
   description         = "Invokes ${var.function_name} at ${var.send_digest_schedule_expression}"
   schedule_expression = "${var.send_digest_schedule_expression}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 resource "aws_cloudwatch_event_target" "send_digest_invocation" {
