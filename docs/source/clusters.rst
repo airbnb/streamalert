@@ -281,7 +281,7 @@ To ensure data collection is running smoothly, we recommend enabling
 `CloudWatch metric alarms <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html#CloudWatchAlarms>`_
 to monitor the health the classifier Lambda function(s) and, if applicable, the respective Kinesis stream.
 
-This module is implemented by `terraform/modules/tf_stream_alert_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_monitoring>`_.
+This module is implemented by `terraform/modules/tf_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_monitoring>`_.
 
 Example: Enable CloudWatch Monitoring
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
