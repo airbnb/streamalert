@@ -45,6 +45,10 @@ Examples:
                     '\t{command: <{pad}}{description}'.format(
                         command=command,
                         pad=30,
+
+                        # FIXME (Derek.wang)
+                        #   Ryan suggested that we could implement a __str__ or __repr__ function
+                        #   for each of the CLICommand classes
                         description=subcommand.description
                     )
                     for command, subcommand
