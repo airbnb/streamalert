@@ -41,7 +41,7 @@ class TestRulePromotion:
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'source': 'modules/tf_rule_promotion_iam',
                     'send_digest_schedule_expression': 'cron(30 13 * * ? *)',
-                    'digest_sns_topic': 'staging_stats',
+                    'digest_sns_topic': 'unit-testing_streamalert_rule_staging_stats',
                     'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
                     'athena_data_buckets': [
                         'unit-testing.streamalert.data',

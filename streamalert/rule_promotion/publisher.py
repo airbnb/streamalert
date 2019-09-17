@@ -24,7 +24,7 @@ LOGGER = get_logger(__name__)
 class StatsPublisher:
     """Run queries to generate statistics on alerts."""
 
-    DEFAULT_STATS_SNS_TOPIC = 'staging_stats'
+    DEFAULT_STATS_SNS_TOPIC_SUFFIX = '{}_streamalert_rule_staging_stats'
 
     def __init__(self, config, athena_client, current_time):
         self._topic_arn = self.formatted_sns_topic_arn(config)
@@ -41,9 +41,10 @@ class StatsPublisher:
         Return:
             str: Formatted SNS topic arn using either the config option or default topic
         """
+        prefix = config['global']['account']['prefix']
         topic = config['lambda']['rule_promotion_config'].get(
             'digest_sns_topic',
-            cls.DEFAULT_STATS_SNS_TOPIC
+            cls.DEFAULT_STATS_SNS_TOPIC_SUFFIX.format(prefix)
         )
         return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
             region=config['global']['account']['region'],
