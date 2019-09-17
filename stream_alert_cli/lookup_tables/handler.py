@@ -41,7 +41,7 @@ Available Sub-Commands:
 Examples:
 
     manage.py lookup-tables [describe-tables|get|set]
-                '''.format('\n'.join([
+'''.format('\n'.join([
                     '\t{command: <{pad}}{description}'.format(
                         command=command,
                         pad=30,
@@ -55,7 +55,7 @@ Examples:
 
         lookup_tables_subparsers = subparser.add_subparsers()
 
-        for _, subcommand in subcommands.items():
+        for subcommand in subcommands.values():
             subcommand.setup_subparser(lookup_tables_subparsers)
 
     @classmethod
@@ -105,24 +105,21 @@ class LookupTablesListAddSubCommand(CLICommand):
             '-t',
             '--table',
             help='Name of the LookupTable',
-            required=True,
-            default=None
+            required=True
         )
 
         set_parser.add_argument(
             '-k',
             '--key',
             help='Key to modify on the LookupTable',
-            required=True,
-            default=None
+            required=True
         )
 
         set_parser.add_argument(
             '-v',
             '--value',
             help='Value to add to the key',
-            required=True,
-            default=None
+            required=True
         )
 
     # pylint: disable=protected-access
@@ -191,7 +188,7 @@ class LookupTablesDescribeTablesSubCommand(CLICommand):
         lookup_tables = LookupTables.get_instance(config=config)
 
         print('{} Tables:\n'.format(len(lookup_tables._tables)))
-        for _, table in lookup_tables._tables.items():
+        for table in lookup_tables._tables.values():
             print(' Table Name: {}'.format(table.table_name))
             print(' Driver Id: {}'.format(table.driver_id))
             print(' Driver Type: {}\n'.format(table.driver_type))
@@ -224,16 +221,14 @@ class LookupTablesGetKeySubCommand(CLICommand):
             '-t',
             '--table',
             help='Name of the LookupTable',
-            required=True,
-            default=None
+            required=True
         )
 
         get_parser.add_argument(
             '-k',
             '--key',
             help='Key to fetch on the LookupTable',
-            required=True,
-            default=None
+            required=True
         )
 
     @classmethod
@@ -283,24 +278,21 @@ class LookupTablesSetSubCommand(CLICommand):
             '-t',
             '--table',
             help='Name of the LookupTable',
-            required=True,
-            default=None
+            required=True
         )
 
         set_parser.add_argument(
             '-k',
             '--key',
             help='Key to set on the LookupTable',
-            required=True,
-            default=None
+            required=True
         )
 
         set_parser.add_argument(
             '-v',
             '--value',
             help='Value to save into LookupTable',
-            required=True,
-            default=None
+            required=True
         )
 
     # pylint: disable=protected-access
