@@ -584,7 +584,7 @@ def _generate_global_module(config):
     )
 
     global_module = {
-        'source': 'modules/tf_stream_alert_globals',
+        'source': 'modules/tf_globals',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],

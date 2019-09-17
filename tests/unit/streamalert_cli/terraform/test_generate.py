@@ -469,7 +469,7 @@ class TestTerraformGenerate:
 
         result = generate.generate_main(config=self.config, init=False)
 
-        assert_equal(result['module']['globals']['source'], 'modules/tf_stream_alert_globals')
+        assert_equal(result['module']['globals']['source'], 'modules/tf_globals')
         assert_true(result['module']['globals']['sqs_use_prefix'])
 
     def test_generate_main_with_sqs_url_true(self):
@@ -478,7 +478,7 @@ class TestTerraformGenerate:
 
         result = generate.generate_main(config=self.config, init=False)
 
-        assert_equal(result['module']['globals']['source'], 'modules/tf_stream_alert_globals')
+        assert_equal(result['module']['globals']['source'], 'modules/tf_globals')
         assert_true(result['module']['globals']['sqs_use_prefix'])
 
     def test_generate_main_with_sqs_url_false(self):
@@ -487,5 +487,5 @@ class TestTerraformGenerate:
 
         result = generate.generate_main(config=self.config, init=False)
 
-        assert_equal(result['module']['globals']['source'], 'modules/tf_stream_alert_globals')
+        assert_equal(result['module']['globals']['source'], 'modules/tf_globals')
         assert_false(result['module']['globals']['sqs_use_prefix'])
