@@ -33,11 +33,11 @@ resource "aws_cloudwatch_log_group" "flow_log_group" {
 
 // Note: When creating cross-account log destinations,
 //       the log group and the destination must be in the same AWS region.
-//       However, the AWS resource that the destination points to can be 
+//       However, the AWS resource that the destination points to can be
 //       located in a different region.
 // Source: http://amzn.to/2zF7CS0
 resource "aws_cloudwatch_log_destination" "kinesis" {
-  name       = "stream_alert_${var.cluster}_log_destination"
+  name       = "${var.prefix}_${var.cluster}_streamalert_log_destination"
   role_arn   = "${aws_iam_role.flow_log_subscription_role.arn}"
   target_arn = "${var.destination_stream_arn}"
 }

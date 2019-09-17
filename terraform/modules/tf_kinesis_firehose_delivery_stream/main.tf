@@ -4,7 +4,7 @@
 // Terraform handles list interpolation on resources.
 //
 // This is a less destructive approach to creating all of the Streams.
-resource "aws_kinesis_firehose_delivery_stream" "stream_alert_data" {
+resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
   name        = "streamalert_data_${var.log_name}"
   destination = "s3"
 
@@ -34,6 +34,6 @@ resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
   alarm_actions       = "${var.alarm_actions}"
 
   dimensions {
-    DeliveryStreamName = "${aws_kinesis_firehose_delivery_stream.stream_alert_data.name}"
+    DeliveryStreamName = "${aws_kinesis_firehose_delivery_stream.streamalert_data.name}"
   }
 }

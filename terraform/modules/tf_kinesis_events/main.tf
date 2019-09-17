@@ -1,5 +1,5 @@
 // AWS Lambda Function Policy
-resource "aws_iam_role_policy" "stream_alert_lambda_kinesis" {
+resource "aws_iam_role_policy" "streamalert_lambda_kinesis" {
   name = "KinesisGetRecords"
   role = "${var.lambda_role_id}"
 
@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "kinesis_read" {
   }
 }
 
-resource "aws_lambda_event_source_mapping" "stream_alert_kinesis_production_event_mapping" {
+resource "aws_lambda_event_source_mapping" "streamalert_kinesis_production_event_mapping" {
   enabled           = "${var.lambda_production_enabled}"
   batch_size        = "${var.batch_size}"
   event_source_arn  = "${var.kinesis_stream_arn}"

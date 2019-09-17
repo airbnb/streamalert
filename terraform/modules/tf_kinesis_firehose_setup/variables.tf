@@ -12,7 +12,7 @@ variable "prefix" {
 
 variable "cloudwatch_log_group" {
   type    = "string"
-  default = "/aws/kinesisfirehose/stream_alert"
+  default = "/aws/kinesisfirehose/streamalert"
 }
 
 variable "s3_bucket_name" {

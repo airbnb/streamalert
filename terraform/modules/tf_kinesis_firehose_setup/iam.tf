@@ -19,9 +19,9 @@ data "aws_iam_policy_document" "firehose_assume_role_policy" {
 }
 
 // IAM Policy: Write data to S3
-resource "aws_iam_role_policy" "stream_alert_firehose_s3" {
+resource "aws_iam_role_policy" "streamalert_firehose_s3" {
   name = "WriteDataToS3"
-  role = "${aws_iam_role.stream_alert_kinesis_firehose.id}"
+  role = "${aws_iam_role.streamalert_kinesis_firehose.id}"
 
   policy = "${data.aws_iam_policy_document.firehose_s3.json}"
 }
