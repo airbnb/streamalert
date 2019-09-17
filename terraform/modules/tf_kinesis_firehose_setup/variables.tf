@@ -1,15 +1,28 @@
-variable "account_id" {}
+variable "account_id" {
+  type = "string"
+}
+
+variable "region" {
+  type = "string"
+}
+
+variable "prefix" {
+  type = "string"
+}
 
 variable "cloudwatch_log_group" {
+  type    = "string"
   default = "/aws/kinesisfirehose/stream_alert"
 }
 
-variable "prefix" {}
+variable "s3_bucket_name" {
+  type = "string"
+}
 
-variable "region" {}
+variable "s3_logging_bucket" {
+  type = "string"
+}
 
-variable "s3_bucket_name" {}
-
-variable "s3_logging_bucket" {}
-
-variable "kms_key_id" {}
+variable "kms_key_id" {
+  type = "string"
+}
