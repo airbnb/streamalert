@@ -1,10 +1,16 @@
-variable "region" {}
+variable "account_id" {
+  type = "string"
+}
 
-variable "account_id" {}
+variable "region" {
+  type = "string"
+}
+
+variable "prefix" {
+  type = "string"
+}
 
 variable "lambda_handler" {}
-
-variable "lambda_function_arn" {}
 
 variable "lambda_memory" {
   type    = "string"
@@ -30,10 +36,6 @@ variable "enable_metrics" {
   default = false
 }
 
-variable "prefix" {
-  type = "string"
-}
-
 variable "interval" {
   type    = "string"
   default = "rate(1 day)"
@@ -53,14 +55,6 @@ variable "parameter_name" {
 }
 
 variable "monitoring_sns_topic" {}
-
-variable "ioc_filters" {}
-
-variable "ioc_keys" {}
-
-variable "ioc_types" {}
-
-variable "excluded_sub_types" {}
 
 variable "log_retention" {
   default = 14
