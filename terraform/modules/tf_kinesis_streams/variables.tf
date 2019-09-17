@@ -1,10 +1,22 @@
+variable "account_id" {
+  type = "string"
+}
+
+variable "region" {
+  type = "string"
+}
+
+variable "prefix" {
+  type = "string"
+}
+
+variable "cluster" {
+  type = "string"
+}
+
 variable "access_key_count" {
   default = 1
 }
-
-variable "account_id" {}
-
-variable "cluster_name" {}
 
 variable "create_user" {
   default = true
@@ -14,16 +26,12 @@ variable "trusted_accounts" {
   default = []
 }
 
-variable "prefix" {}
-
-variable "region" {}
-
 variable "retention" {
   default = 24
 }
 
 variable "stream_name" {
-  default = "stream_alert_stream"
+  type = "string"
 }
 
 variable "shards" {

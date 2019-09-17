@@ -8,6 +8,6 @@ resource "aws_kinesis_stream" "stream_alert_stream" {
 
   tags {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster_name}"
+    Cluster = "${var.cluster}"
   }
 }
