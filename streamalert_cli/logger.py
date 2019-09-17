@@ -27,7 +27,7 @@ def set_logger_levels(debug=False):
         if isinstance(logger, logging.PlaceHolder):
             continue
 
-        if debug and name.startswith('stream_alert'):
+        if debug and name.startswith('streamalert'):
             logger.setLevel(logging.DEBUG if debug else logging.INFO)
         elif name.startswith(__package__):
             logger.setLevel(logging.INFO)
