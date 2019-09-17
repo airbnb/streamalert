@@ -38,6 +38,11 @@ class LookupTables:
         return cls._instance
 
     @classmethod
+    def reset_singleton(cls):
+        """Utility function to destroy the singleton to remove statefulness in unit tests"""
+        cls._instance = None
+
+    @classmethod
     def get(cls, table_name, key, default=None):
         """
         Retrieves the key's value on the requested lookup table. If the given key does not exist
