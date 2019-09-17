@@ -1,3 +1,7 @@
+variable "primary_account_id" {
+  type = "string"
+}
+
 variable "region" {
   type = "string"
 }
@@ -9,8 +13,6 @@ variable "prefix" {
 variable "cluster" {
   type = "string"
 }
-
-variable "primary_account_id" {}
 
 variable "account_ids" {
   type = "list"

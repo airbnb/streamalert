@@ -81,7 +81,7 @@ class DynamoDBDriver(PersistenceDriver):
         return '{}:{}'.format(self.driver_type, self._dynamo_db_table)
 
     def initialize(self):
-        # Setup DynamoDb client
+        # Setup DynamoDB client
         LOGGER.info('LookupTable (%s): Running initialization routine', self.id)
 
         try:
@@ -142,7 +142,7 @@ class DynamoDBDriver(PersistenceDriver):
     def _reload_if_necessary(self, key):
         """
         Uses the "cache_refresh_minutes" option to determine whether or not the current LookupTable
-        should be re-fetched from DynamoDb.
+        should be re-fetched from DynamoDB.
 
         If it needs a reload, this method will appropriately call reload.
         """
@@ -222,7 +222,7 @@ class DynamoDBDriver(PersistenceDriver):
 
     def _convert_key_to_key_schema(self, key):
         """
-        For DynamoDb, a key can either be a single string or can be a composition of TWO keys--the
+        For DynamoDB, a key can either be a single string or can be a composition of TWO keys--the
         primary key + the sort key--that are delimited by a given delimiter.
 
         This function converts a given single string into a dict of pkey + sort key components.

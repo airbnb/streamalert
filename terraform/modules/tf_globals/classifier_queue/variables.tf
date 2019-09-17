@@ -1,8 +1,14 @@
-variable "account_id" {}
+variable "account_id" {
+  type = "string"
+}
 
-variable "region" {}
+variable "region" {
+  type = "string"
+}
 
-variable "prefix" {}
+variable "prefix" {
+  type = "string"
+}
 
 variable "rules_engine_timeout" {}
 

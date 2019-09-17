@@ -1,3 +1,7 @@
+variable "region" {
+  type = "string"
+}
+
 variable "prefix" {
   type = "string"
 }
@@ -7,10 +11,6 @@ variable "cluster" {
 }
 
 variable "kinesis_stream_arn" {
-  type = "string"
-}
-
-variable "region" {
   type = "string"
 }
 

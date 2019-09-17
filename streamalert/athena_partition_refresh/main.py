@@ -139,7 +139,7 @@ class AthenaRefresher:
                 location = '\'s3://{bucket}/{path}\''.format(bucket=bucket, path=path)
                 # By using the partition as the dict key, this ensures that
                 # Athena will not try to add the same partition twice.
-                # TODO(jacknagz): Write this dictionary to SSM/DynamoDb
+                # TODO(jacknagz): Write this dictionary to SSM/DynamoDB
                 # to increase idempotence of this Lambda function
                 partitions[athena_table][partition] = location
 

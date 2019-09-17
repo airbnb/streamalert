@@ -1,5 +1,5 @@
 resource "aws_iam_role_policy" "classifier_policy" {
-  name   = "${var.function_name}_policy"
+  name   = "WriteAndEncryptSQS"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.classifier_policy.json}"
 }

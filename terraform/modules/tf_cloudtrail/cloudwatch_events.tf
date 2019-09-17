@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "streamalert_cloudwatch_role_assume_role_policy" 
 // IAM Policy: Allow CloudWatch to write events to Kinesis Streams
 resource "aws_iam_role_policy" "streamalert_cloudwatch_policy" {
   count = "${var.enable_kinesis ? 1 : 0}"
-  name  = "${var.prefix}_${var.cluster}_streamalert_cloudwatch"
+  name  = "CloudWatchToKinesis"
   role  = "${aws_iam_role.streamalert_cloudwatch_role.id}"
 
   policy = "${data.aws_iam_policy_document.kinesis_put_records.json}"

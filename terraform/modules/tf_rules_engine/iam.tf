@@ -1,7 +1,7 @@
 // IAM Role Policy: Allow Rules Engine to read DynamoDB table (Threat Intel)
 resource "aws_iam_role_policy" "read_threat_intel_table" {
   count  = "${var.threat_intel_enabled ? 1 : 0}"
-  name   = "ReadDynamodb"
+  name   = "ReadDynamoDB"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.read_threat_intel_table.json}"
 }
@@ -74,7 +74,7 @@ data "aws_iam_policy_document" "rules_engine_policy" {
 }
 
 resource "aws_iam_role_policy" "rules_engine_policy" {
-  name   = "${var.prefix}_streamalert_rules_engine_policy"
+  name   = "SQSReadAndDecrypt"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.rules_engine_policy.json}"
 }

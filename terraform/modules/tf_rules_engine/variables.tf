@@ -2,11 +2,11 @@ variable "account_id" {
   type = "string"
 }
 
-variable "prefix" {
+variable "region" {
   type = "string"
 }
 
-variable "region" {
+variable "prefix" {
   type = "string"
 }
 
