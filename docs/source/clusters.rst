@@ -508,7 +508,7 @@ The Kinesis Events module connects a Kinesis Stream to the classifier Lambda fun
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_kinesis_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_kinesis_events>`_.
+This module is implemented by `terraform/modules/tf_kinesis_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_kinesis_events>`_.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
