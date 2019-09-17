@@ -2,7 +2,7 @@
 // http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-logs-iam
 // IAM Role: Clustered VPC Flow Log
 resource "aws_iam_role" "flow_log_role" {
-  name = "stream_alert_${var.cluster}_flow_log_role"
+  name = "${var.prefix}_${var.cluster}_streamalert_flow_log_role"
 
   assume_role_policy = "${data.aws_iam_policy_document.flow_log_assume_role_policy.json}"
 }
@@ -51,7 +51,7 @@ data "aws_iam_policy_document" "flow_log_put_cloudwatch_logs" {
 // http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
 // IAM Role: Clustered CloudWatch Flow Log Role
 resource "aws_iam_role" "flow_log_subscription_role" {
-  name = "stream_alert_${var.cluster}_flow_log_subscription_role"
+  name = "${var.prefix}_${var.cluster}_streamalert_flow_log_subscription_role"
 
   assume_role_policy = "${data.aws_iam_policy_document.cloudwatch_logs_assume_role_policy.json}"
 }
@@ -71,7 +71,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_assume_role_policy" {
 
 // IAM Policy: Write to Kinesis
 resource "aws_iam_role_policy" "flow_logs_kinesis_wo" {
-  name = "write_flow_logs_to_kinesis"
+  name = "WriteFlowLogsToKinesis"
   role = "${aws_iam_role.flow_log_subscription_role.id}"
 
   policy = "${data.aws_iam_policy_document.flow_logs_put_kinesis_events.json}"

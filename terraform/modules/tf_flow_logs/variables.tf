@@ -1,3 +1,12 @@
+variable "region" {
+  type    = "string"
+  default = "us-east-1"
+}
+
+variable "prefix" {
+  type = "string"
+}
+
 variable "cluster" {
   type = "string"
 }
@@ -26,11 +35,6 @@ variable "flow_log_group_name" {
 
 variable "log_retention" {
   default = 7
-}
-
-variable "region" {
-  type    = "string"
-  default = "us-east-1"
 }
 
 variable "subnets" {
