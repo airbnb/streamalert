@@ -77,8 +77,8 @@ class RollbackTest(unittest.TestCase):
             mock.call(mock.ANY, 'unit-testing_corp_box_admin_events_box_collector_app'),
             mock.call(mock.ANY, 'unit-testing_corp_duo_admin_duo_admin_collector_app'),
             mock.call(mock.ANY, 'unit-testing_streamalert_athena_partition_refresh'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_classifier_corp'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_classifier_prod'),
+            mock.call(mock.ANY, 'unit-testing_corp_streamalert_classifier'),
+            mock.call(mock.ANY, 'unit-testing_prod_streamalert_classifier'),
             mock.call(mock.ANY, 'unit-testing_streamalert_rules_engine'),
             mock.call(mock.ANY, 'unit-testing_streamalert_threat_intel_downloader')
         ])

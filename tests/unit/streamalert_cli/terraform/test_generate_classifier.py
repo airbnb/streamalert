@@ -104,7 +104,7 @@ class TestTerraformGenerateClassifier:
                 },
                 'classifier_test_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-east-1:123456789012:test_topic'],
-                    'description': 'Unit-Test Streamalert Classifier Test',
+                    'description': 'Unit-Test Test Streamalert Classifier',
                     'environment_variables': {
                         'CLUSTER': 'test',
                         'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
@@ -119,7 +119,7 @@ class TestTerraformGenerateClassifier:
                     'errors_alarm_period_secs': 120,
                     'errors_alarm_threshold': 0,
                     'filename': 'classifier.zip',
-                    'function_name': 'unit-test_streamalert_classifier_test',
+                    'function_name': 'unit-test_test_streamalert_classifier',
                     'handler': 'streamalert.classifier.main.handler',
                     'log_retention_days': 14,
                     'memory_size_mb': 128,

@@ -134,7 +134,7 @@ class RollbackCommand(CLICommand):
             for cluster in clusters:
                 success = success and _rollback_production(
                     client,
-                    '{}_streamalert_classifier_{}'.format(prefix, cluster)
+                    '{}_{}_streamalert_classifier'.format(prefix, cluster)
                 )
 
         if rollback_all or 'rule' in options.function:
