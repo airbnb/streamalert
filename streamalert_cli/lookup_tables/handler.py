@@ -18,6 +18,7 @@ import json
 
 from streamalert.shared.logger import get_logger
 from streamalert.shared.lookup_tables.core import LookupTables
+from streamalert.shared.lookup_tables.utils import LookupTablesMagic
 from streamalert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
 
 LOGGER = get_logger(__name__)
@@ -101,7 +102,8 @@ class LookupTablesSetFromFile(CLICommand):
                 '''\
                 Examples:
 
-                    manage.py lookup-tables set-from-json-file -t [table] -k [key] -f [path/to/file.json]
+                    manage.py lookup-tables set-from-json-file -t [table] -k [key] -f \
+[path/to/file.json]
                 '''
             )
         )
@@ -153,8 +155,7 @@ class LookupTablesSetFromFile(CLICommand):
             json.dumps(new_value, indent=2)
         ))
 
-        table._driver.set(key, new_value)
-        table._driver.commit()
+        LookupTablesMagic.set_table_value(table, key, new_value)
 
         return True
 
@@ -217,7 +218,6 @@ class LookupTablesListAddSubCommand(CLICommand):
             action='store_true'
         )
 
-    # pylint: disable=protected-access
     @classmethod
     def handler(cls, options, config):
         print('==== LookupTables; List Add Key ====')
@@ -251,8 +251,7 @@ class LookupTablesListAddSubCommand(CLICommand):
 
         print('  Value: {} --> {}'.format(old_value, new_value))
 
-        table._driver.set(key, new_value)
-        table._driver.commit()
+        LookupTablesMagic.set_table_value(table, key, new_value)
 
         return True
 
@@ -280,15 +279,14 @@ class LookupTablesDescribeTablesSubCommand(CLICommand):
             )
         )
 
-    # pylint: disable=protected-access
     @classmethod
     def handler(cls, options, config):
         print('==== LookupTables; Describe Tables ====\n')
 
-        lookup_tables = LookupTables.get_instance(config=config)
+        lookup_tables = LookupTablesMagic.get_all_tables(LookupTables.get_instance(config=config))
 
-        print('{} Tables:\n'.format(len(lookup_tables._tables)))
-        for table in lookup_tables._tables.values():
+        print('{} Tables:\n'.format(len(lookup_tables)))
+        for table in lookup_tables.values():
             print(' Table Name: {}'.format(table.table_name))
             print(' Driver Id: {}'.format(table.driver_id))
             print(' Driver Type: {}\n'.format(table.driver_type))
@@ -411,7 +409,6 @@ class LookupTablesSetSubCommand(CLICommand):
             action='store_true'
         )
 
-    # pylint: disable=protected-access
     @classmethod
     def handler(cls, options, config):
         print('==== LookupTables; Set Key ====')
@@ -439,7 +436,6 @@ class LookupTablesSetSubCommand(CLICommand):
 
         print('  Value: {} --> {}'.format(old_value, new_value))
 
-        table._driver.set(key, new_value)
-        table._driver.commit()
+        LookupTablesMagic.set_table_value(table, key, new_value)
 
         return True
