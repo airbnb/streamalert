@@ -1,5 +1,5 @@
 // AWS Firehose Stream for Alerts to S3
-resource "aws_kinesis_firehose_delivery_stream" "stream_alerts" {
+resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
   name        = "${var.prefix}_streamalert_alert_delivery"
   destination = "s3"
 
@@ -17,5 +17,9 @@ resource "aws_kinesis_firehose_delivery_stream" "stream_alerts" {
       log_group_name  = "/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery"
       log_stream_name = "S3Delivery"
     }
+  }
+
+  tags {
+    Name = "StreamAlert"
   }
 }

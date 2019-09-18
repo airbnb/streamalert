@@ -20,6 +20,10 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_invocation_errors" {
     FunctionName = "${element(var.lambda_functions, count.index)}"
     Resource     = "${element(var.lambda_functions, count.index)}:production"
   }
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // Lambda: Throttles
@@ -41,6 +45,10 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_throttles" {
   dimensions {
     FunctionName = "${element(var.lambda_functions, count.index)}"
     Resource     = "${element(var.lambda_functions, count.index)}:production"
+  }
+
+  tags {
+    Name = "StreamAlert"
   }
 }
 
@@ -64,6 +72,10 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
     FunctionName = "${element(var.lambda_functions, count.index)}"
     Resource     = "${element(var.lambda_functions, count.index)}:production"
   }
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // Kinesis: Iterator Age
@@ -85,6 +97,10 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_iterator_age" {
   dimensions {
     StreamName = "${var.kinesis_stream}"
   }
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // Kinesis: Write Throughput Exceeded
@@ -105,5 +121,9 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_write_exceeded" {
 
   dimensions {
     StreamName = "${var.kinesis_stream}"
+  }
+
+  tags {
+    Name = "StreamAlert"
   }
 }

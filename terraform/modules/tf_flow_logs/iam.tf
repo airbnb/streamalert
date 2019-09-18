@@ -2,9 +2,14 @@
 // http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-logs-iam
 // IAM Role: Clustered VPC Flow Log
 resource "aws_iam_role" "flow_log_role" {
-  name = "stream_alert_${var.cluster}_flow_log_role"
-
+  name               = "${var.prefix}_${var.cluster}_flow_log_role"
+  path               = "/streamalert/"
   assume_role_policy = "${data.aws_iam_policy_document.flow_log_assume_role_policy.json}"
+
+  tags {
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster}"
+  }
 }
 
 // IAM Policy Doc: AssumeRole for VPC Flow Logs
@@ -22,9 +27,8 @@ data "aws_iam_policy_document" "flow_log_assume_role_policy" {
 
 // IAM Policy: CloudWatch Put Events
 resource "aws_iam_role_policy" "flow_log_write" {
-  name = "CloudWatchPutEvents"
-  role = "${aws_iam_role.flow_log_role.id}"
-
+  name   = "CloudWatchPutEvents"
+  role   = "${aws_iam_role.flow_log_role.id}"
   policy = "${data.aws_iam_policy_document.flow_log_put_cloudwatch_logs.json}"
 }
 
@@ -51,9 +55,14 @@ data "aws_iam_policy_document" "flow_log_put_cloudwatch_logs" {
 // http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
 // IAM Role: Clustered CloudWatch Flow Log Role
 resource "aws_iam_role" "flow_log_subscription_role" {
-  name = "stream_alert_${var.cluster}_flow_log_subscription_role"
-
+  name               = "${var.prefix}_${var.cluster}_flow_log_subscription_role"
+  path               = "/streamalert/"
   assume_role_policy = "${data.aws_iam_policy_document.cloudwatch_logs_assume_role_policy.json}"
+
+  tags {
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster}"
+  }
 }
 
 // IAM Policy Doc: AssumeRole for CloudWatch Logs
@@ -71,9 +80,8 @@ data "aws_iam_policy_document" "cloudwatch_logs_assume_role_policy" {
 
 // IAM Policy: Write to Kinesis
 resource "aws_iam_role_policy" "flow_logs_kinesis_wo" {
-  name = "write_flow_logs_to_kinesis"
-  role = "${aws_iam_role.flow_log_subscription_role.id}"
-
+  name   = "WriteFlowLogsToKinesis"
+  role   = "${aws_iam_role.flow_log_subscription_role.id}"
   policy = "${data.aws_iam_policy_document.flow_logs_put_kinesis_events.json}"
 }
 

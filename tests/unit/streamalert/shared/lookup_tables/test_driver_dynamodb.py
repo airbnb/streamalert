@@ -112,7 +112,7 @@ class TestDynamoDBDriver:
 
     @patch('logging.Logger.info')
     def test_initialize(self, mock_logger):
-        """LookupTables - Drivers - DynamoDb Driver - Init"""
+        """LookupTables - Drivers - DynamoDB Driver - Init"""
         self._driver.initialize()
         mock_logger.assert_any_call(
             'LookupTable (%s): Running initialization routine',
@@ -120,22 +120,22 @@ class TestDynamoDBDriver:
         )
 
     def test_get(self):
-        """LookupTables - Drivers - DynamoDb Driver - Get Key"""
+        """LookupTables - Drivers - DynamoDB Driver - Get Key"""
         self._driver.initialize()
         assert_equal(self._driver.get('aaaa:1'), 'could_this_be_a_foo?')
 
     def test_get_2(self):
-        """LookupTables - Drivers - DynamoDb Driver - Get Key #2"""
+        """LookupTables - Drivers - DynamoDB Driver - Get Key #2"""
         self._driver.initialize()
         assert_equal(self._driver.get('aaaa:2'), 'or_is_this_just_fantasy?')
 
     def test_non_existent_key(self):
-        """LookupTables - Drivers - DynamoDb Driver - Get - Non-existent Key with default"""
+        """LookupTables - Drivers - DynamoDB Driver - Get - Non-existent Key with default"""
         self._driver.initialize()
         assert_equal(self._driver.get('key_????:2', 'default?'), 'default?')
 
     def test_non_existent_table_key(self):
-        """LookupTables - Drivers - DynamoDb Driver - Get - Non-existent Table"""
+        """LookupTables - Drivers - DynamoDB Driver - Get - Non-existent Table"""
         assert_raises(
             LookupTablesInitializationError,
             self._bad_driver.initialize
@@ -308,17 +308,17 @@ class TestDynamoDBDriver_MultiTable:
         self._dynamodb_mock.stop()
 
     def test_get_int(self):
-        """LookupTables - Drivers - DynamoDb Multi Driver - Integer - Get Key"""
+        """LookupTables - Drivers - DynamoDB Multi Driver - Integer - Get Key"""
         self._int_driver.initialize()
         assert_equal(self._int_driver.get('aaaa-bbbb-cccc'), 123)
 
     def test_get_string(self):
-        """LookupTables - Drivers - DynamoDb Multi Driver - String - Get Key"""
+        """LookupTables - Drivers - DynamoDB Multi Driver - String - Get Key"""
         self._string_driver.initialize()
         assert_equal(self._string_driver.get('aaaa-bbbb-cccc'), 'hello world!')
 
     def test_get_dict(self):
-        """LookupTables - Drivers - DynamoDb Multi Driver - Dict - Get Key"""
+        """LookupTables - Drivers - DynamoDB Multi Driver - Dict - Get Key"""
         self._dict_driver.initialize()
         data = self._dict_driver.get('aaaa-bbbb-cccc')
         assert_equal(data['message']['depth'], 'Will this work?')

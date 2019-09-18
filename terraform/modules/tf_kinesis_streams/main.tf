@@ -1,5 +1,5 @@
 // AWS Kinesis Stream
-resource "aws_kinesis_stream" "stream_alert_stream" {
+resource "aws_kinesis_stream" "streamalert_stream" {
   name             = "${var.stream_name}"
   shard_count      = "${var.shards}"
   retention_period = "${var.retention}"
@@ -8,6 +8,6 @@ resource "aws_kinesis_stream" "stream_alert_stream" {
 
   tags {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster_name}"
+    Cluster = "${var.cluster}"
   }
 }

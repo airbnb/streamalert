@@ -1,10 +1,18 @@
-variable "account_id" {}
+variable "account_id" {
+  type = "string"
+}
 
-variable "prefix" {}
+variable "region" {
+  type = "string"
+}
 
-variable "region" {}
+variable "prefix" {
+  type = "string"
+}
 
-variable "kms_key_arn" {}
+variable "kms_key_arn" {
+  type = "string"
+}
 
 variable "alerts_table_read_capacity" {}
 

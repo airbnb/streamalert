@@ -1,11 +1,21 @@
-variable "primary_account_id" {}
+variable "primary_account_id" {
+  type = "string"
+}
 
-variable "account_ids" {
-  type = "list"
+variable "region" {
+  type = "string"
+}
+
+variable "prefix" {
+  type = "string"
 }
 
 variable "cluster" {
   type = "string"
+}
+
+variable "account_ids" {
+  type = "list"
 }
 
 variable "enable_kinesis" {
@@ -34,10 +44,6 @@ variable "kinesis_arn" {
   default = ""
 }
 
-variable "prefix" {
-  type = "string"
-}
-
 variable "s3_logging_bucket" {
   type = "string"
 }
@@ -53,5 +59,3 @@ variable "send_to_cloudwatch" {
 variable "exclude_home_region_events" {
   default = false
 }
-
-variable "region" {}

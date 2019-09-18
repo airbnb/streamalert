@@ -24,18 +24,20 @@ resource "aws_dynamodb_table" "alerts_table" {
   range_key      = "AlertID"
 
   // Only the hash key and range key attributes need to be defined here.
-
   attribute {
     name = "RuleName"
     type = "S"
   }
+
   attribute {
     name = "AlertID"
     type = "S"
   }
+
   server_side_encryption {
     enabled = true
   }
+
   tags {
     Name = "StreamAlert"
   }

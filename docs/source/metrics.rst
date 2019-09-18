@@ -157,4 +157,4 @@ Example: TotalRecords Alarm on a Global Level
   --alarm-description 'Trigger this alarm if the total incoming records (aggregate) drops below 200000 for 3 consecutive 10 minute time periods in a row' \
   --statistic Sum
 
-The custom metric alarms will notify StreamAlert's default SNS topic for monitoring: ``stream_alert_monitoring``
+The custom metric alarms will notify StreamAlert's default SNS topic for monitoring: ``<prefix>_streamalert_monitoring``

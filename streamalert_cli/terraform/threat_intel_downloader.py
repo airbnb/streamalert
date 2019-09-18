@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert_cli.manage_lambda.package import ThreatIntelDownloaderPackage
-from streamalert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
+from streamalert_cli.terraform.common import infinitedict, monitoring_topic_name
 
 
 def generate_threat_intel_downloader(config):
@@ -27,11 +27,7 @@ def generate_threat_intel_downloader(config):
         dict: Athena dict to be marshalled to JSON
     """
     # Use the monitoring topic as a dead letter queue
-    infrastructure_config = config['global'].get('infrastructure')
-    dlq_topic = (DEFAULT_SNS_MONITORING_TOPIC
-                 if infrastructure_config.get('monitoring', {}).get('create_sns_topic')
-                 else infrastructure_config.get('monitoring', {}).get('sns_topic_name',
-                                                                      DEFAULT_SNS_MONITORING_TOPIC))
+    dlq_topic = monitoring_topic_name(config)
 
     # Threat Intel Downloader module
     ti_downloader_config = config['lambda']['threat_intel_downloader_config']
@@ -40,7 +36,6 @@ def generate_threat_intel_downloader(config):
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'source': 'modules/tf_threat_intel_downloader',
-        'lambda_function_arn': '${module.threat_intel_downloader.lambda_arn}',
         'lambda_handler': ThreatIntelDownloaderPackage.lambda_handler,
         'lambda_memory': ti_downloader_config.get('memory', '128'),
         'lambda_timeout': ti_downloader_config.get('timeout', '60'),
@@ -50,11 +45,6 @@ def generate_threat_intel_downloader(config):
         'monitoring_sns_topic': dlq_topic,
         'table_rcu': ti_downloader_config.get('table_rcu', '10'),
         'table_wcu': ti_downloader_config.get('table_wcu', '10'),
-        'ioc_keys': ti_downloader_config.get('ioc_keys',
-                                             ['expiration_ts', 'itype', 'source', 'type', 'value']),
-        'ioc_filters': ti_downloader_config.get('ioc_filters', ['crowdstrike', '@airbnb.com']),
-        'ioc_types': ti_downloader_config.get('ioc_types', ['domain', 'ip', 'md5']),
-        'excluded_sub_types': ti_downloader_config.get('excluded_sub_types'),
         'max_read_capacity': ti_downloader_config.get('max_read_capacity', '5'),
         'min_read_capacity': ti_downloader_config.get('min_read_capacity', '5'),
         'target_utilization': ti_downloader_config.get('target_utilization', '70')

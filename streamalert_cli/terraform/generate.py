@@ -20,9 +20,9 @@ import os
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
-    DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
     infinitedict,
+    monitoring_topic_name,
 )
 from streamalert_cli.terraform.alert_merger import generate_alert_merger
 from streamalert_cli.terraform.alert_processor import generate_alert_processor
@@ -256,8 +256,8 @@ def generate_main(config, init=False):
     infrastructure_config = config['global'].get('infrastructure')
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
-            main_dict['resource']['aws_sns_topic']['stream_alert_monitoring'] = {
-                'name': DEFAULT_SNS_MONITORING_TOPIC
+            main_dict['resource']['aws_sns_topic']['monitoring'] = {
+                'name': monitoring_topic_name(config)
             }
 
     return main_dict

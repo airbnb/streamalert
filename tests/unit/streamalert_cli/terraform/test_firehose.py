@@ -106,7 +106,9 @@ class TestFirehoseGenerate:
                     's3_bucket_name': 'unit-testing.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
-                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring']
+                    'alarm_actions': [
+                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                    ]
                 }
             }
         }
@@ -145,7 +147,9 @@ class TestFirehoseGenerate:
                     'evaluation_periods': 10,
                     'period_seconds': 3600,
                     'alarm_threshold': 100000,
-                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring']
+                    'alarm_actions': [
+                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                    ]
                 }
             }
         }

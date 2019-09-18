@@ -14,7 +14,10 @@ data "aws_iam_policy_document" "lambda_execution_policy" {
 resource "aws_iam_role" "role" {
   count              = "${var.enabled}"
   name               = "${var.function_name}_role"
+  path               = "/streamalert/"
   assume_role_policy = "${data.aws_iam_policy_document.lambda_execution_policy.json}"
+
+  tags = "${local.tags}"
 }
 
 // Attach write permissions for CloudWatch logs

@@ -1,5 +1,5 @@
 // Policy for S3 bucket
-data "aws_iam_policy_document" "stream_alert_data" {
+data "aws_iam_policy_document" "streamalert_data" {
   # Force SSL access only
   statement {
     sid = "ForceSSLOnlyAccess"
@@ -26,10 +26,10 @@ data "aws_iam_policy_document" "stream_alert_data" {
   }
 }
 
-resource "aws_s3_bucket" "stream_alert_data" {
+resource "aws_s3_bucket" "streamalert_data" {
   bucket        = "${var.s3_bucket_name}"
   acl           = "private"
-  policy        = "${data.aws_iam_policy_document.stream_alert_data.json}"
+  policy        = "${data.aws_iam_policy_document.streamalert_data.json}"
   force_destroy = false
 
   versioning {
@@ -51,6 +51,6 @@ resource "aws_s3_bucket" "stream_alert_data" {
   }
 
   tags {
-    Name = "${var.s3_bucket_name}"
+    Name = "StreamAlert"
   }
 }

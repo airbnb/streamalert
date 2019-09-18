@@ -9,7 +9,7 @@ This Terraform module creates the necessary IAM Permissions to coincide with the
 
 ## Example
 ```hcl
-module "stream_alert_app" {
+module "streamalert_app" {
   account_id                   = "123456789012"
   region                       = "us-east-1"
   function_name                = "testprefix_prod_duo_auth_duo_auth_app"

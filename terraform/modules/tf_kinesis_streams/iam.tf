@@ -1,45 +1,50 @@
-// IAM User: stream_alert user for systems to send data to the stream
-resource "aws_iam_user" "stream_alert" {
+// IAM User: streamalert user for systems to send data to the stream
+resource "aws_iam_user" "streamalert" {
   count = "${var.create_user ? 1 : 0}"
-  name  = "${var.prefix}_${var.cluster_name}_stream_alert_user"
+  name  = "${var.prefix}_${var.cluster}_streamalert_user"
   path  = "/streamalert/"
+
+  tags {
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster}"
+  }
 }
 
-// IAM Group: stream_alert clustered group
-resource "aws_iam_group" "stream_alert" {
+// IAM Group: streamalert clustered group
+resource "aws_iam_group" "streamalert" {
   count = "${var.create_user ? 1 : 0}"
-  name  = "${var.prefix}_${var.cluster_name}_stream_alert_users"
+  name  = "${var.prefix}_${var.cluster}_streamalert_users"
   path  = "/"
 }
 
-// IAM Group Membership: Assign stream_alert user to group
-resource "aws_iam_group_membership" "stream_alert" {
+// IAM Group Membership: Assign streamalert user to group
+resource "aws_iam_group_membership" "streamalert" {
   count = "${var.create_user ? 1 : 0}"
-  name  = "stream-alert-kinesis-user-membership"
+  name  = "streamalert-kinesis-user-membership"
 
   users = [
-    "${aws_iam_user.stream_alert.name}",
+    "${aws_iam_user.streamalert.name}",
   ]
 
-  group = "${aws_iam_group.stream_alert.name}"
+  group = "${aws_iam_group.streamalert.name}"
 }
 
 // IAM Group Policy: Allow users in the group to PutRecords to Kinesis
-resource "aws_iam_group_policy" "stream_alert_kinesis_put_records" {
+resource "aws_iam_group_policy" "streamalert_kinesis_put_records" {
   count  = "${var.create_user ? 1 : 0}"
   name   = "KinesisPutRecords"
-  group  = "${aws_iam_group.stream_alert.id}"
-  policy = "${data.aws_iam_policy_document.stream_alert_writeonly.json}"
+  group  = "${aws_iam_group.streamalert.id}"
+  policy = "${data.aws_iam_policy_document.streamalert_writeonly.json}"
 }
 
 // IAM Access Key: credentials for the above user
-resource "aws_iam_access_key" "stream_alert" {
+resource "aws_iam_access_key" "streamalert" {
   count = "${var.create_user ? var.access_key_count : 0}"
-  user  = "${aws_iam_user.stream_alert.name}"
+  user  = "${aws_iam_user.streamalert.name}"
 }
 
-// IAM Policy Doc: allow the stream_alert user to write to the generated Kinesis Stream
-data "aws_iam_policy_document" "stream_alert_writeonly" {
+// IAM Policy Doc: allow the streamalert user to write to the generated Kinesis Stream
+data "aws_iam_policy_document" "streamalert_writeonly" {
   count = "${var.create_user || length(var.trusted_accounts) > 0 ? 1 : 0}"
 
   statement {
@@ -50,13 +55,13 @@ data "aws_iam_policy_document" "stream_alert_writeonly" {
     ]
 
     resources = [
-      "${aws_kinesis_stream.stream_alert_stream.arn}",
+      "${aws_kinesis_stream.streamalert_stream.arn}",
     ]
   }
 }
 
 // IAM Policy Document: policy document to allow specified account to assume the role
-data "aws_iam_policy_document" "stream_alert_assume_role_policy" {
+data "aws_iam_policy_document" "streamalert_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRole"]
 
@@ -67,17 +72,23 @@ data "aws_iam_policy_document" "stream_alert_assume_role_policy" {
   }
 }
 
-// IAM Role: stream_alert role for systems in another account to send data to the stream
-resource "aws_iam_role" "stream_alert_write_role" {
+// IAM Role: streamalert role for systems in another account to send data to the stream
+resource "aws_iam_role" "streamalert_write_role" {
   count              = "${length(var.trusted_accounts) > 0 ? 1 : 0}"
-  name               = "${var.prefix}_${var.cluster_name}_stream_alert_role"
-  assume_role_policy = "${data.aws_iam_policy_document.stream_alert_assume_role_policy.json}"
+  name               = "${var.prefix}_${var.cluster}_streamalert_role"
+  path               = "/streamalert/"
+  assume_role_policy = "${data.aws_iam_policy_document.streamalert_assume_role_policy.json}"
+
+  tags {
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster}"
+  }
 }
 
 // IAM Role Policy: policy to allow a role to send data to the stream
-resource "aws_iam_role_policy" "stream_alert_kinesis_put_records" {
+resource "aws_iam_role_policy" "streamalert_kinesis_put_records" {
   count  = "${length(var.trusted_accounts) > 0 ? 1 : 0}"
   name   = "KinesisPutRecords"
-  role   = "${aws_iam_role.stream_alert_write_role.id}"
-  policy = "${data.aws_iam_policy_document.stream_alert_writeonly.json}"
+  role   = "${aws_iam_role.streamalert_write_role.id}"
+  policy = "${data.aws_iam_policy_document.streamalert_writeonly.json}"
 }

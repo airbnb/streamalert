@@ -6,9 +6,12 @@
 ## Example
 ```
 module "kinesis" {
-  source                  = "../modules/tf_stream_alert_kinesis"
+  source                  = "../modules/tf_kinesis_streams"
   account_id              = "333333444444"
   region                  = "us-east-1"
+  prefix                  = "company-name"
+  cluster                 = "cluster-name"
+  stream_name             = "name-for-kinesis-stream"
   shards                  = 10
   retention               = 72
 }
@@ -38,7 +41,7 @@ module "kinesis" {
     <td>True</td>
   </tr>
   <tr>
-    <td>cluster_name</td>
+    <td>cluster</td>
     <td>The StreamAlert cluster name</td>
     <td>None</td>
     <td>True</td>
@@ -46,8 +49,8 @@ module "kinesis" {
   <tr>
     <td>stream_name</td>
     <td>The name of the Kinesis Stream</td>
-    <td>stream_alert_stream</td>
-    <td>False</td>
+    <td>None</td>
+    <td>True</td>
   </tr>
   <tr>
     <td>shards</td>

@@ -366,7 +366,7 @@ The following options are available in the ``settings`` dictionary:
 
 Receiving CloudWatch Metric Alarms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-By default, StreamAlert automatically creates a ``stream_alert_monitoring`` SNS topic that receives
+By default, StreamAlert automatically creates a ``<prefix>_streamalert_monitoring`` SNS topic that receives
 CloudWatch metric alarm notifications. If you would instead like to use an existing SNS topic for
 metric alarms, edit the ``monitoring`` section of `conf/global.json <https://github.com/airbnb/streamalert/tree/stable/conf/global.json>`_
 as follows:

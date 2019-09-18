@@ -7,7 +7,7 @@
 ## Example
 ```
 module "kinesis_firehose" {
-  source                  = "../modules/tf_stream_alert_kinesis_firehose"
+  source                  = "../modules/tf_kinesis_firehose_setup"
   account_id              = "111111222222"
   region                  = "us-east-1"
   prefix                  = "my-company"
@@ -80,7 +80,7 @@ module "kinesis_firehose" {
   <tr>
     <td>cloudwatch_log_group</td>
     <td>The CloudWatch log group to write logs to</td>
-    <td>/aws/kinesisfirehose/stream_alert</td>
+    <td>/aws/kinesisfirehose/streamalert</td>
     <td>False</td>
   </tr>
   <tr>

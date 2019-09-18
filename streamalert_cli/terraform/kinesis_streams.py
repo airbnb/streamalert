@@ -35,7 +35,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
         'source': 'modules/tf_kinesis_streams',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['clusters'][cluster_name]['region'],
-        'cluster_name': cluster_name,
+        'cluster': cluster_name,
         'prefix': config['global']['account']['prefix'],
         'stream_name': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
         'shard_level_metrics': shard_level_metrics,

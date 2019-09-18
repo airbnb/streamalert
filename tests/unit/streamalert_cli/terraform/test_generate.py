@@ -221,8 +221,8 @@ class TestTerraformGenerate:
                     }
                 },
                 'aws_sns_topic': {
-                    'stream_alert_monitoring': {
-                        'name': 'stream_alert_monitoring'
+                    'monitoring': {
+                        'name': 'unit-testing_streamalert_monitoring'
                     }
                 }
             }
@@ -283,9 +283,22 @@ class TestTerraformGenerate:
             self.config
         )
 
-        flow_log_config = self.cluster_dict['module']['flow_logs_advanced']
-        assert_equal(flow_log_config['flow_log_group_name'], 'unit-test-advanced')
-        assert_equal(flow_log_config['vpcs'], ['vpc-id-1', 'vpc-id-2'])
+        expected = {
+            'module': {
+                'flow_logs_advanced': {
+                    'source': 'modules/tf_flow_logs',
+                    'prefix': 'unit-testing',
+                    'cluster': 'advanced',
+                    'cross_account_ids': ['12345678910'],
+                    'destination_stream_arn': '${module.kinesis_advanced.arn}',
+                    'flow_log_group_name': 'unit-test-advanced',
+                    'log_retention': 7,
+                    'vpcs': ['vpc-id-1', 'vpc-id-2']
+                }
+            }
+        }
+
+        assert_equal(self.cluster_dict, expected)
 
     def test_generate_cloudtrail_basic(self):
         """CLI - Terraform Generate Cloudtrail Module - Legacy"""

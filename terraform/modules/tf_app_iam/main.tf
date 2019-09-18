@@ -22,7 +22,7 @@ data "aws_iam_policy_document" "invoke_destination_function" {
 
 // IAM Role Policy: Allow the StreamAlert App function to create/update SSM Parameter Store Values
 resource "aws_iam_role_policy" "parameter_store" {
-  name   = "GetAndPutParameterStoreValues"
+  name   = "GetAndPutSSMParams"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.parameter_store.json}"
 }
@@ -59,7 +59,7 @@ data "aws_iam_policy_document" "parameter_store" {
 
 // IAM Role Policy: Allow the StreamAlert App function to invoke itself
 resource "aws_iam_role_policy" "invoke_self" {
-  name   = "InvokeSelf"
+  name   = "LambdaInvokeSelf"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.invoke_self.json}"
 }

@@ -1,3 +1,11 @@
+variable "account_id" {
+  type = "string"
+}
+
+variable "prefix" {
+  type = "string"
+}
+
 variable "lambda_handler" {
   type    = "string"
   default = "main.handler"
@@ -42,14 +50,6 @@ variable "s3_logging_bucket" {
 variable "database_name" {
   type    = "string"
   default = "streamalert"
-}
-
-variable "account_id" {
-  type = "string"
-}
-
-variable "prefix" {
-  type = "string"
 }
 
 variable "queue_name" {

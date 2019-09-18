@@ -41,7 +41,7 @@ class TestRulePromotion:
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'source': 'modules/tf_rule_promotion_iam',
                     'send_digest_schedule_expression': 'cron(30 13 * * ? *)',
-                    'digest_sns_topic': 'staging_stats',
+                    'digest_sns_topic': 'unit-testing_streamalert_rule_staging_stats',
                     'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
                     'athena_data_buckets': [
                         'unit-testing.streamalert.data',
@@ -50,7 +50,9 @@ class TestRulePromotion:
                     's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'rule_promotion_lambda': {
-                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
+                    'alarm_actions': [
+                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                    ],
                     'description': 'Unit-Testing Streamalert Rule Promotion',
                     'environment_variables': {
                         'ENABLE_METRICS': '0',

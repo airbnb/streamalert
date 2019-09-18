@@ -24,9 +24,8 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 
 // IAM Policy: Allow Lambda to GetObjects from S3
 resource "aws_iam_role_policy" "lambda_s3_permission" {
-  name = "S3GetObjects_${var.notification_id}"
-  role = "${var.lambda_role_id}"
-
+  name   = "S3GetObjects_${var.notification_id}"
+  role   = "${var.lambda_role_id}"
   policy = "${data.aws_iam_policy_document.s3_read_only.json}"
 }
 

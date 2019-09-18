@@ -51,18 +51,39 @@ class TestStatsPublisher:
             yield stat
 
 
-    def test_formatted_sns_topic_arn(self):
-        """StatsPublisher - Format SNS Topic"""
+    def test_formatted_sns_topic_arn_default(self):
+        """StatsPublisher - Format SNS Topic, Default"""
         test_config = {
             'global': {
                 'account': {
                     'aws_account_id': '123456789012',
+                    'prefix': 'unit-testing',
+                    'region': 'us-east-1'
+                }
+            },
+            'lambda': {
+                'rule_promotion_config': {}  # no digest_sns_topic here
+            }
+        }
+        topic = self.publisher.formatted_sns_topic_arn(test_config)
+        assert_equal(
+            topic,
+            'arn:aws:sns:us-east-1:123456789012:unit-testing_streamalert_rule_staging_stats'
+        )
+
+    def test_formatted_sns_topic_arn_hard_coded(self):
+        """StatsPublisher - Format SNS Topic, Hard-Coded"""
+        test_config = {
+            'global': {
+                'account': {
+                    'aws_account_id': '123456789012',
+                    'prefix': 'unit-testing',
                     'region': 'us-east-1'
                 }
             },
             'lambda': {
                 'rule_promotion_config': {
-                    'digest_sns_topic': 'foobar'
+                    'digest_sns_topic': 'foobar'  # should use digest_sns_topic here
                 }
             }
         }

@@ -11,4 +11,8 @@ resource "aws_cloudwatch_metric_alarm" "cloudwatch_metric_alarms" {
   alarm_actions       = ["${var.sns_topic_arn}"]
 
   namespace = "StreamAlert"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }

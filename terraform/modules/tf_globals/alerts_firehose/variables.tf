@@ -1,4 +1,14 @@
-variable "account_id" {}
+variable "account_id" {
+  type = "string"
+}
+
+variable "region" {
+  type = "string"
+}
+
+variable "prefix" {
+  type = "string"
+}
 
 variable "buffer_size" {
   default = 128
@@ -16,8 +26,6 @@ variable "compression_format" {
   default = "GZIP"
 }
 
-variable "kms_key_arn" {}
-
-variable "prefix" {}
-
-variable "region" {}
+variable "kms_key_arn" {
+  type = "string"
+}

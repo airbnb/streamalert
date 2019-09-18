@@ -1,8 +1,18 @@
-variable "cluster" {}
+variable "region" {
+  type = "string"
+}
 
-variable "kinesis_stream_arn" {}
+variable "prefix" {
+  type = "string"
+}
 
-variable "region" {}
+variable "cluster" {
+  type = "string"
+}
+
+variable "kinesis_stream_arn" {
+  type = "string"
+}
 
 variable "cross_account_ids" {
   type    = "list"
