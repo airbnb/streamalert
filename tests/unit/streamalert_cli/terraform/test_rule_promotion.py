@@ -50,7 +50,9 @@ class TestRulePromotion:
                     's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'rule_promotion_lambda': {
-                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
+                    'alarm_actions': [
+                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                    ],
                     'description': 'Unit-Testing Streamalert Rule Promotion',
                     'environment_variables': {
                         'ENABLE_METRICS': '0',

@@ -222,7 +222,7 @@ class TestTerraformGenerate:
                 },
                 'aws_sns_topic': {
                     'stream_alert_monitoring': {
-                        'name': 'stream_alert_monitoring'
+                        'name': 'unit-testing_streamalert_monitoring'
                     }
                 }
             }
