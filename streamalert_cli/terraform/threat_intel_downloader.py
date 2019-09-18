@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert_cli.manage_lambda.package import ThreatIntelDownloaderPackage
-from streamalert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
+from streamalert_cli.terraform.common import infinitedict, monitoring_topic_name
 
 
 def generate_threat_intel_downloader(config):
@@ -27,11 +27,7 @@ def generate_threat_intel_downloader(config):
         dict: Athena dict to be marshalled to JSON
     """
     # Use the monitoring topic as a dead letter queue
-    infrastructure_config = config['global'].get('infrastructure')
-    dlq_topic = (DEFAULT_SNS_MONITORING_TOPIC
-                 if infrastructure_config.get('monitoring', {}).get('create_sns_topic')
-                 else infrastructure_config.get('monitoring', {}).get('sns_topic_name',
-                                                                      DEFAULT_SNS_MONITORING_TOPIC))
+    dlq_topic = monitoring_topic_name(config)
 
     # Threat Intel Downloader module
     ti_downloader_config = config['lambda']['threat_intel_downloader_config']

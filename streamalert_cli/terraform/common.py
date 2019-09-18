@@ -16,7 +16,7 @@ limitations under the License.
 from collections import defaultdict
 
 
-DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
+DEFAULT_SNS_MONITORING_TOPIC_SUFFIX = '{}_streamalert_monitoring'
 
 
 class InvalidClusterName(Exception):
@@ -28,20 +28,24 @@ def infinitedict():
     return defaultdict(infinitedict)
 
 
+def monitoring_topic_name(config):
+    """Return the name of the monitoring SNS topic"""
+    infra_monitoring_config = config['global']['infrastructure']['monitoring']
+    prefix = config['global']['account']['prefix']
+    topic_name = (
+        DEFAULT_SNS_MONITORING_TOPIC_SUFFIX.format(prefix)
+        if infra_monitoring_config.get('create_sns_topic')
+        else infra_monitoring_config['sns_topic_name']
+    )
+    return topic_name
+
+
 def monitoring_topic_arn(config):
     """Return the ARN of the monitoring SNS topic"""
-    infrastructure_config = config['global']['infrastructure']
-
-    topic_name = (
-        DEFAULT_SNS_MONITORING_TOPIC
-        if infrastructure_config['monitoring'].get('create_sns_topic')
-        else infrastructure_config['monitoring']['sns_topic_name']
-    )
-
     return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
         region=config['global']['account']['region'],
         account_id=config['global']['account']['aws_account_id'],
-        topic=topic_name
+        topic=monitoring_topic_name(config)
     )
 
 
