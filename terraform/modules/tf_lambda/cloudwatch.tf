@@ -55,9 +55,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_invocation_errors" {
     Resource     = "${var.function_name}:${var.alias_name}"
   }
 
-  tags {
-    Name = "StreamAlert"
-  }
+  tags = "${local.tags}"
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
@@ -78,9 +76,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
     Resource     = "${var.function_name}:${var.alias_name}"
   }
 
-  tags {
-    Name = "StreamAlert"
-  }
+  tags = "${local.tags}"
 }
 
 resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
@@ -101,7 +97,5 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
     Resource     = "${var.function_name}:${var.alias_name}"
   }
 
-  tags {
-    Name = "StreamAlert"
-  }
+  tags = "${local.tags}"
 }
