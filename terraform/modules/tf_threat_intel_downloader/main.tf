@@ -53,7 +53,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_events_invocation" {
 
 // Cloudwatch Event Rule: Invoke the threat_intel_downloader once a day
 resource "aws_cloudwatch_event_rule" "invoke_threat_intel_downloader" {
-  name        = "invoke_threat_intel_downloader"
+  name        = "${var.prefix}_streamalert_invoke_threat_intel_downloader"
   description = "Invoke the Threat Intel Downloader Lambda function periodically"
 
   # https://amzn.to/2u5t0hS
@@ -76,7 +76,7 @@ resource "aws_cloudwatch_event_target" "threat_intel_downloader_lambda_function"
 
 // Log Retention Policy: lambda function
 resource "aws_cloudwatch_log_group" "threat_intel_downloader" {
-  name              = "/aws/lambda/${var.prefix}_streamalert_threat_intel_downloader"
+  name              = "/aws/lambda/${aws_lambda_function.threat_intel_downloader.function_name}"
   retention_in_days = "${var.log_retention}"
 
   tags {

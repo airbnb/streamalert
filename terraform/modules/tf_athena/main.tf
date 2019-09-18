@@ -148,7 +148,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 
 // Log Retention Policy
 resource "aws_cloudwatch_log_group" "athena" {
-  name              = "/aws/lambda/${var.prefix}_streamalert_athena_partition_refresh"
+  name              = "/aws/lambda/${aws_lambda_function.athena_partition_refresh.function_name}"
   retention_in_days = 14
 
   tags {
