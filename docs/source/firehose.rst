@@ -139,15 +139,15 @@ example above for how this should be performed.
 Alarms Options
 ~~~~~~~~~~~~~~
 
-============================  =======================================  ===========
-Key                           Default                                  Description
-----------------------------  ---------------------------------------  -----------
-``enable_alarm``              ``false``                                If set to ``true``, a CloudWatch Metric Alarm will be created for this log type
-``evaluation_periods``        ``1``                                    Consecutive periods the records count threshold must be breached before triggering an alarm
-``period_seconds``            ``86400``                                Period over which to count the IncomingRecords (default: 86400 seconds [1 day])
-``log_min_count_threshold``   ``1000``                                 Alarm if IncomingRecords count drops below this value in the specified period(s)
-``alarm_actions``             ``stream_alert_monitoring SNS topic``    Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)
-============================  =======================================  ===========
+============================  ===============================================  ===========
+Key                           Default                                          Description
+----------------------------  -----------------------------------------------  -----------
+``enable_alarm``              ``false``                                        If set to ``true``, a CloudWatch Metric Alarm will be created for this log type
+``evaluation_periods``        ``1``                                            Consecutive periods the records count threshold must be breached before triggering an alarm
+``period_seconds``            ``86400``                                        Period over which to count the IncomingRecords (default: 86400 seconds [1 day])
+``log_min_count_threshold``   ``1000``                                         Alarm if IncomingRecords count drops below this value in the specified period(s)
+``alarm_actions``             ``<prefix>_streamalert_monitoring SNS topic``    Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)
+============================  ===============================================  ===========
 
 Deploying
 ---------

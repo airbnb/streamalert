@@ -256,7 +256,7 @@ def generate_main(config, init=False):
     infrastructure_config = config['global'].get('infrastructure')
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
-            main_dict['resource']['aws_sns_topic']['stream_alert_monitoring'] = {
+            main_dict['resource']['aws_sns_topic']['monitoring'] = {
                 'name': monitoring_topic_name(config)
             }
 
