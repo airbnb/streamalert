@@ -16,9 +16,9 @@ limitations under the License.
 import copy
 import json
 
-from stream_alert.shared.logger import get_logger
-from stream_alert.shared.lookup_tables.core import LookupTables
-from stream_alert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
+from streamalert.shared.logger import get_logger
+from streamalert.shared.lookup_tables.core import LookupTables
+from streamalert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
 
 LOGGER = get_logger(__name__)
 
