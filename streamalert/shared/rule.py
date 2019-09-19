@@ -20,7 +20,8 @@ import inspect
 import json
 
 from streamalert.shared.logger import get_logger
-from streamalert.shared.stats import time_rule
+from streamalert.shared.stats import RuleStatisticTracker
+# from streamalert.shared.stats import time_rule
 
 
 LOGGER = get_logger(__name__)
@@ -139,7 +140,6 @@ class Rule:
 
         return rule_info.get('Staged', False)
 
-    @time_rule
     def process(self, record):
         """Process will call this rule's function on the passed record
 
