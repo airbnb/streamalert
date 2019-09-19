@@ -240,28 +240,16 @@ def _validate_config(config):
     if TopLevelConfigKeys.LOGS in config:
         for log, attrs in config[TopLevelConfigKeys.LOGS].items():
             if 'schema' not in attrs:
-                raise ConfigError('The \'schema\' is missing for {}'.format(log))
+                raise ConfigError("The 'schema' is missing for {}".format(log))
 
             if 'parser' not in attrs:
-                raise ConfigError('The \'parser\' is missing for {}'.format(log))
+                raise ConfigError("The 'parser' is missing for {}".format(log))
 
     # Check if the defined sources are supported and report any invalid entries
     if TopLevelConfigKeys.CLUSTERS in config:
-        for cluster, attrs in config[TopLevelConfigKeys.CLUSTERS].items():
-            if 'data_sources' in attrs:
-                data_sources = attrs['data_sources']
-                supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
-                if not set(data_sources).issubset(supported_sources):
-                    missing_sources = supported_sources - set(data_sources)
-                    raise ConfigError(
-                        'The data sources for cluster {} contain invalid source entries: {}. '
-                        'The following sources are supported: {}'.format(
-                            cluster,
-                            ', '.join('\'{}\''.format(source) for source in missing_sources),
-                            ', '.join('\'{}\''.format(source) for source in supported_sources)
-                        )
-                    )
-                _validate_sources(data_sources)
+        for cluster_name, cluster_attrs in config[TopLevelConfigKeys.CLUSTERS].items():
+            if 'data_sources' in cluster_attrs:
+                _validate_sources(cluster_name, cluster_attrs)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:
         if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
@@ -278,11 +266,11 @@ def _validate_config(config):
                            for log_keys in
                            list(config[TopLevelConfigKeys.NORMALIZED_TYPES].values())):
                     raise ConfigError(
-                        'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
-                        'one log type in normalized types'.format(normalized_key, ioc_type)
+                        "IOC key '{}' within IOC type '{}' must be defined for at least "
+                        "one log type in normalized types".format(normalized_key, ioc_type)
                     )
 
-def _validate_sources(data_sources):
+def _validate_sources(cluster_name, cluster_attrs):
     """ Validates the sources for a cluster
     Args:
         data_sources (dict): The sources to validate
@@ -290,12 +278,24 @@ def _validate_sources(data_sources):
         ConfigError: If the validation fails
     """
     # Iterate over each defined source and make sure the required subkeys exist
+    data_sources = cluster_attrs['data_sources']
+    supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
+    if not set(data_sources).issubset(supported_sources):
+        missing_sources = supported_sources - set(data_sources)
+        raise ConfigError(
+            'The data sources for cluster {} contain invalid source entries: {}. '
+            'The following sources are supported: {}'.format(
+                cluster_name,
+                ', '.join("'{}'".format(source) for source in missing_sources),
+                ', '.join("'{}'".format(source) for source in supported_sources)
+            )
+        )
     for attrs in data_sources.values():
         for entity, entity_attrs in attrs.items():
             if TopLevelConfigKeys.LOGS not in entity_attrs:
-                raise ConfigError('Missing \'logs\' key for entity: {}'.format(entity))
+                raise ConfigError("Missing 'logs' key for entity: {}".format(entity))
 
             if not entity_attrs[TopLevelConfigKeys.LOGS]:
-                raise ConfigError('List of \'logs\' is empty for entity: {}'.format(entity))
+                raise ConfigError("List of 'logs' is empty for entity: {}".format(entity))
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
