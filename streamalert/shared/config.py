@@ -271,7 +271,7 @@ def _validate_config(config):
                     )
 
 def _validate_sources(cluster_name, cluster_attrs):
-    """ Validates the sources for a cluster
+    """Validates the sources for a cluster
     Args:
         data_sources (dict): The sources to validate
     Raises:
