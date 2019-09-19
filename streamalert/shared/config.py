@@ -247,9 +247,9 @@ def _validate_config(config):
 
     # Check if the defined sources are supported and report any invalid entries
     if TopLevelConfigKeys.CLUSTERS in config:
-        for cluster in config[TopLevelConfigKeys.CLUSTERS].items():
-            if 'data_sources' in cluster[1]:
-                data_sources = cluster[1]['data_sources']
+        for cluster, attrs in config[TopLevelConfigKeys.CLUSTERS].items():
+            if 'data_sources' in attrs:
+                data_sources = attrs['data_sources']
                 supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
                 if not set(data_sources).issubset(supported_sources):
                     missing_sources = supported_sources - set(data_sources)
