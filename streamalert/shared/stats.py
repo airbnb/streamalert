@@ -31,10 +31,20 @@ class RuleStatisticTracker:
         self.enabled = enabled
         if clear_cache:
             self.__class__.STATS.clear()
-        # self._stats = defaultdict(lambda: RuleStatistic(0.0))
 
     def run_rule(self, rule, record):
-        """Timing function specifically for timing a rule function"""
+        """Timing function for timing a rule function's duration
+
+        Note: this function's timing aspect is a no-op if the RuleStatisticTracker
+            is disabled, and instead the rule just runs without timing
+
+        Args:
+            rule (rule.Rule): The rule being ran
+            record (dict): The record being processed
+
+        Returns:
+            bool: Result of rule processing
+        """
         if not self.enabled:
             return rule.process(record)
 

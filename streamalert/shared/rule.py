@@ -20,8 +20,6 @@ import inspect
 import json
 
 from streamalert.shared.logger import get_logger
-from streamalert.shared.stats import RuleStatisticTracker
-# from streamalert.shared.stats import time_rule
 
 
 LOGGER = get_logger(__name__)
