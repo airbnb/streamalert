@@ -402,6 +402,7 @@ class TestTerraformGenerate:
         assert_equal(count, 14)
 
         expected_config = {
+            'prefix': 'unit-testing',
             'cluster': 'advanced',
             'source': 'modules/tf_cloudwatch',
             'region': 'eu-west-1',

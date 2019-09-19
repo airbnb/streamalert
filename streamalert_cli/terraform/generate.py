@@ -50,7 +50,7 @@ from streamalert_cli.terraform.threat_intel_downloader import generate_threat_in
 from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.51.0'}}
+TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 2.28.1'}}
 LOGGER = get_logger(__name__)
 
 

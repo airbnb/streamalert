@@ -44,6 +44,7 @@ def generate_cloudwatch(cluster_name, cluster_dict, config):
         return False
 
     account_id = config['global']['account']['aws_account_id']
+    prefix = config['global']['account']['prefix']
     cross_account_ids = cloudwatch_module.get('cross_account_ids', []) + [account_id]
     excluded_regions = set(cloudwatch_module.get('excluded_regions', set()))
 
@@ -71,6 +72,7 @@ def generate_cloudwatch(cluster_name, cluster_dict, config):
             'source': 'modules/tf_cloudwatch',
             'region': region,
             'cross_account_ids': cross_account_ids,
+            'prefix': prefix,
             'cluster': cluster_name,
             'kinesis_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name)
         }
