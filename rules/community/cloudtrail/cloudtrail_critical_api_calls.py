@@ -49,9 +49,9 @@ def cloudtrail_critical_api_calls(rec):
         if not rec.get('requestParameters', {}).get('enable', True):
             return True
 
-    if rec['eventName'] == 'PutBucketPublicAccessBlock':
-        # The call to PutBucketPublicAccessBlock sets the policy for what to
-        # block for a bucket. We need to get the configuration and see if any
+    if rec['eventName'] in ['PutBucketPublicAccessBlock', 'PutAccountPublicAccessBlock']:
+        # These calls set the policy for what to block for a bucket.
+        # We need to get the configuration and see if any
         # of the items are set to False.
         config = rec.get('requestParameters', {}).get(
             'PublicAccessBlockConfiguration', {}
@@ -62,11 +62,5 @@ def cloudtrail_critical_api_calls(rec):
                 or config.get('IgnorePublicAcls', False) is False
            ):
             return True
-
-    # PutAccountPublicAccessBlock does not indicate if the account is
-    # enabling or disabling this feature so to reduce FPs,
-    # for now this is not being detected.
-    # This issue was reported to aws-security@amazon.com by spiper
-    # on 2019.07.09
 
     return False
