@@ -16,7 +16,6 @@ limitations under the License.
 from collections import OrderedDict
 import os
 
-import os
 from mock import Mock, patch
 from nose.tools import assert_equal
 
@@ -37,7 +36,7 @@ class TestClassifier:
              patch.object(classifier_module, 'FirehoseClient'), \
              patch.object(classifier_module, 'SQSClient'), \
              patch.dict(os.environ, {'CLUSTER': 'prod'}), \
-             patch('stream_alert.classifier.classifier.config.load_config',
+             patch('streamalert.classifier.classifier.config.load_config',
                    Mock(return_value=self._mock_conf())):
             self._classifier = Classifier()
 
