@@ -71,7 +71,7 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             contents='{"csv_log2": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
         )
 
-        # Create similar structure but with schemas folder instead of logs.json
+        # Create similar structure but with schemas folder instead of logs.json and 2 clusters.
         self.fs.create_file('conf_schemas/clusters/prod.json', contents='{}')
         self.fs.create_file('conf_schemas/clusters/dev.json', contents='{}')
         self.fs.create_file('conf_schemas/global.json', contents='{}')
@@ -281,4 +281,10 @@ class TestConfigValidation:
         if 'normalized_types' in config:
             del config['normalized_types']
 
+        assert_raises(ConfigError, _validate_config, config)
+
+    def test_config_duplicate_sources(self):
+        """Shared - Config Validator - Duplicate Data Sources in Cluster Configs"""
+        config = basic_streamalert_config()
+        config['clusters']['dev'] = config['clusters']['prod']
         assert_raises(ConfigError, _validate_config, config)

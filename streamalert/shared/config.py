@@ -247,9 +247,10 @@ def _validate_config(config):
 
     # Check if the defined sources are supported and report any invalid entries
     if TopLevelConfigKeys.CLUSTERS in config:
+        sources = set()
         for cluster_name, cluster_attrs in config[TopLevelConfigKeys.CLUSTERS].items():
             if 'data_sources' in cluster_attrs:
-                _validate_sources(cluster_name, cluster_attrs)
+                _validate_sources(cluster_name, cluster_attrs, sources)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:
         if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
@@ -270,7 +271,7 @@ def _validate_config(config):
                         "one log type in normalized types".format(normalized_key, ioc_type)
                     )
 
-def _validate_sources(cluster_name, cluster_attrs):
+def _validate_sources(cluster_name, cluster_attrs, sources):
     """Validates the sources for a cluster
     Args:
         data_sources (dict): The sources to validate
@@ -290,12 +291,16 @@ def _validate_sources(cluster_name, cluster_attrs):
                 ', '.join("'{}'".format(source) for source in supported_sources)
             )
         )
-    for attrs in data_sources.values():
-        for entity, entity_attrs in attrs.items():
+    for key in data_sources.keys():
+        for entity, entity_attrs in data_sources[key].items():
             if TopLevelConfigKeys.LOGS not in entity_attrs:
                 raise ConfigError("Missing 'logs' key for entity: {}".format(entity))
 
             if not entity_attrs[TopLevelConfigKeys.LOGS]:
                 raise ConfigError("List of 'logs' is empty for entity: {}".format(entity))
+        if key in sources:
+            raise ConfigError("Duplicate data_source in cluster configuration: {}".format(key))
+            i = 1
+        sources.add(key)
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
