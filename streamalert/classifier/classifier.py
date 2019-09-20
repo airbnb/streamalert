@@ -28,7 +28,7 @@ from streamalert.shared.normalize import Normalizer
 
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
-
+CLUSTER = os.environ['CLUSTER']
 
 class Classifier:
     """Classify, map source, and parse a raw record into its declared type."""
@@ -88,7 +88,7 @@ class Classifier:
         """
         # Get all logs for the configured service/entity (s3, kinesis, or sns)
 
-        resources = self._config['clusters'][os.environ['CLUSTER']]['data_sources'].get(service)
+        resources = self._config['clusters'][CLUSTER]['data_sources'].get(service)
         if not resources:
             LOGGER.error('Service [%s] not declared in sources configuration', service)
             return False
