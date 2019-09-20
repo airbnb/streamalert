@@ -30,9 +30,9 @@ def test_generate_cloudwatch_monitoring():
     # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
-        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring',
-        'lambda_functions': ['unit-testing_streamalert_classifier_test'],
-        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
+        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
+        'lambda_functions': ['unit-test_streamalert_classifier_test'],
+        'kinesis_stream': 'unit-test_test_stream_alert_kinesis',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True
     }
@@ -51,9 +51,9 @@ def test_generate_cloudwatch_monitoring_with_settings():
     # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
-        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring',
-        'lambda_functions': ['unit-testing_streamalert_classifier_advanced'],
-        'kinesis_stream': 'unit-testing_advanced_stream_alert_kinesis',
+        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
+        'lambda_functions': ['unit-test_streamalert_classifier_advanced'],
+        'kinesis_stream': 'unit-test_advanced_stream_alert_kinesis',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True,
         'kinesis_iterator_age_error_threshold': '3000000'
@@ -85,8 +85,8 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
     # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
-        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring',
-        'lambda_functions': ['unit-testing_streamalert_classifier_test'],
+        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
+        'lambda_functions': ['unit-test_streamalert_classifier_test'],
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': False
     }
@@ -107,8 +107,8 @@ def test_generate_cloudwatch_monitoring_no_lambda():
     # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
-        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring',
-        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
+        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
+        'kinesis_stream': 'unit-test_test_stream_alert_kinesis',
         'lambda_alarms_enabled': False,
         'kinesis_alarms_enabled': True
     }
@@ -133,8 +133,8 @@ def test_generate_cloudwatch_monitoring_custom_sns():
     expected_cloudwatch_tf_custom = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit_test_monitoring',
-        'lambda_functions': ['unit-testing_streamalert_classifier_test'],
-        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
+        'lambda_functions': ['unit-test_streamalert_classifier_test'],
+        'kinesis_stream': 'unit-test_test_stream_alert_kinesis',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True
     }
