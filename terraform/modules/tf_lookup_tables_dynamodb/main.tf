@@ -14,6 +14,7 @@ module "aws_iam_policy_module" {
 
   policy_json = "${data.aws_iam_policy_document.streamalert_read_items_from_lookup_tables_dynamodb.json}"
   roles       = "${var.roles}"
+  role_count  = "${var.role_count}"
   type        = "dynamodb"
   prefix      = "${var.prefix}"
 }

@@ -522,6 +522,7 @@ def _generate_lookup_tables_settings(config):
             'source': 'modules/tf_lookup_tables_dynamodb',
             'dynamodb_tables': sorted(dynamodb_tables),
             'roles': sorted(roles),
+            'role_count': len(roles),
             'account_id': config['global']['account']['aws_account_id'],
             'region': config['global']['account']['region'],
             'prefix': config['global']['account']['prefix'],
@@ -532,6 +533,7 @@ def _generate_lookup_tables_settings(config):
             'source': 'modules/tf_lookup_tables_s3',
             's3_buckets': sorted(s3_buckets),
             'roles': sorted(roles),
+            'role_count': len(roles),
             'prefix': config['global']['account']['prefix'],
         }
 
