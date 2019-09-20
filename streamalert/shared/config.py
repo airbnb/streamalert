@@ -300,7 +300,6 @@ def _validate_sources(cluster_name, cluster_attrs, sources):
                 raise ConfigError("List of 'logs' is empty for entity: {}".format(entity))
         if key in sources:
             raise ConfigError("Duplicate data_source in cluster configuration: {}".format(key))
-            i = 1
         sources.add(key)
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
