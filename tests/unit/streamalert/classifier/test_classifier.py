@@ -50,7 +50,7 @@ class TestClassifier:
         return {
             'logs': cls._mock_logs(),
             'clusters': {'prod': {'data_sources': cls._mock_sources()}},
-            'global': cls._mock_sources()
+            'global': cls._mock_global()
         }
 
     @classmethod
