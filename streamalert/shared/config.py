@@ -247,6 +247,7 @@ def _validate_config(config):
 
     # Check if the defined sources are supported and report any invalid entries
     if TopLevelConfigKeys.CLUSTERS in config:
+        # Used to track duplicate sources in separate cluster config files
         sources = set()
         for cluster_name, cluster_attrs in config[TopLevelConfigKeys.CLUSTERS].items():
             if 'data_sources' in cluster_attrs:
@@ -291,15 +292,19 @@ def _validate_sources(cluster_name, cluster_attrs, sources):
                 ', '.join("'{}'".format(source) for source in supported_sources)
             )
         )
-    for key in data_sources.keys():
-        for entity, entity_attrs in data_sources[key].items():
+    for attrs in data_sources.values():
+        for entity, entity_attrs in attrs.items():
+            print(entity)
             if TopLevelConfigKeys.LOGS not in entity_attrs:
                 raise ConfigError("Missing 'logs' key for entity: {}".format(entity))
 
             if not entity_attrs[TopLevelConfigKeys.LOGS]:
                 raise ConfigError("List of 'logs' is empty for entity: {}".format(entity))
-        if key in sources:
-            raise ConfigError("Duplicate data_source in cluster configuration: {}".format(key))
-        sources.add(key)
+
+            if entity in sources:
+                raise ConfigError(
+                    "Duplicate data_source in cluster configuration: {}".format(entity)
+                )
+            sources.add(entity)
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)

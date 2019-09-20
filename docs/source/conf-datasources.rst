@@ -1,5 +1,7 @@
 Datasource Configuration
 ========================
+.. note:: As of release 3.0.0 data source configuration has moved 
+          from sources.json into the ``data_sources`` top level key for each your clusters.
 
 For background on supported datasource types, read `datasources <datasources.html>`_.
 
@@ -21,37 +23,39 @@ Example:
 .. code-block:: json
 
   {
-    "kinesis": {
-      "abc_corporate_stream_alert_kinesis": {
-        "logs": [
-          "box",
-          "pan"
-        ]
+    "data_sources": {
+      "kinesis": {
+        "abc_corporate_stream_alert_kinesis": {
+          "logs": [
+            "box",
+            "pan"
+          ]
+        },
+        "abc_production_stream_stream_alert_kinesis": {
+          "logs": [
+            "inspec",
+            "osquery"
+          ]
+        }
       },
-      "abc_production_stream_stream_alert_kinesis": {
-        "logs": [
-          "inspec",
-          "osquery"
-        ]
-      }
-    },
-    "s3": {
-      "abc.webserver.logs": {
-        "logs": [
-          "nginx"
-        ]
+      "s3": {
+        "abc.webserver.logs": {
+          "logs": [
+            "nginx"
+          ]
+        },
+        "abc.hids.logs": {
+          "logs": [
+            "carbonblack"
+          ]
+        }
       },
-      "abc.hids.logs": {
-        "logs": [
-          "carbonblack"
-        ]
-      }
-    },
-    "sns": {
-      "abc_sns_topic": {
-        "logs": [
-          "logstash"
-        ]
+      "sns": {
+        "abc_sns_topic": {
+          "logs": [
+            "logstash"
+          ]
+        }
       }
     }
   }

@@ -171,12 +171,15 @@ Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look 
 Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look like this:
 
 .. code-block:: json
-  "data_sources": {
-    "sns": {
-      "streamalert-test-data": {
-        "logs": [
-          "cloudwatch"
-        ]
+
+  {
+    "data_sources": {
+      "sns": {
+        "streamalert-test-data": {
+          "logs": [
+            "cloudwatch"
+          ]
+        }
       }
     }
   }
