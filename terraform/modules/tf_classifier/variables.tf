@@ -6,6 +6,10 @@ variable "region" {
   type = "string"
 }
 
+variable "prefix" {
+  type = "string"
+}
+
 variable "function_role_id" {
   description = "Classifier function IAM Role ID, exported from the tf_lambda module"
 }

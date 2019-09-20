@@ -66,6 +66,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
         'source': 'modules/tf_classifier',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
+        'prefix': config['global']['account']['prefix'],
         'function_role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
         'function_alias_arn': '${{module.{}_lambda.function_alias_arn}}'.format(tf_module_prefix),
         'function_name': '${{module.{}_lambda.function_name}}'.format(tf_module_prefix),

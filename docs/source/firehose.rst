@@ -62,10 +62,10 @@ And the following schemas are defined across one or more files in the ``conf/sch
 
 The Firehose module will create four Delivery Streams, one for each type:
 
-- ``streamalert_data_cloudwatch_events``
-- ``streamalert_data_cloudwatch_flow_logs``
-- ``streamalert_data_osquery``
-- ``streamalert_data_cloudtrail``
+- ``<prefix>_streamalert_data_cloudwatch_events``
+- ``<prefix>_streamalert_data_cloudwatch_flow_logs``
+- ``<prefix>_streamalert_data_osquery``
+- ``<prefix>_streamalert_data_cloudtrail``
 
 Each Delivery Stream delivers data to the same S3 bucket created by the module in a prefix based on the corresponding log type:
 

@@ -17,7 +17,7 @@ data "aws_iam_policy_document" "classifier_firehose" {
     ]
 
     resources = [
-      "arn:aws:firehose:${var.region}:${var.account_id}:deliverystream/streamalert_data_*",
+      "arn:aws:firehose:${var.region}:${var.account_id}:deliverystream/${var.prefix}_streamalert_data_*",
     ]
   }
 }

@@ -41,19 +41,19 @@ class TestRulePromotion:
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'source': 'modules/tf_rule_promotion_iam',
                     'send_digest_schedule_expression': 'cron(30 13 * * ? *)',
-                    'digest_sns_topic': 'unit-testing_streamalert_rule_staging_stats',
+                    'digest_sns_topic': 'unit-test_streamalert_rule_staging_stats',
                     'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
                     'athena_data_buckets': [
-                        'unit-testing.streamalert.data',
-                        'unit-testing.streamalerts'
+                        'unit-test.streamalert.data',
+                        'unit-test.streamalerts'
                     ],
                     's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'rule_promotion_lambda': {
                     'alarm_actions': [
-                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                        'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                     ],
-                    'description': 'Unit-Testing Streamalert Rule Promotion',
+                    'description': 'Unit-Test Streamalert Rule Promotion',
                     'environment_variables': {
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
@@ -64,7 +64,7 @@ class TestRulePromotion:
                     'errors_alarm_period_secs': 2,
                     'errors_alarm_threshold': 3,
                     'filename': 'rule_promotion.zip',
-                    'function_name': 'unit-testing_streamalert_rule_promotion',
+                    'function_name': 'unit-test_streamalert_rule_promotion',
                     'handler': 'streamalert.rule_promotion.main.handler',
                     'log_retention_days': 10,
                     'memory_size_mb': 128,

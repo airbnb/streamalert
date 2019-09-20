@@ -26,7 +26,7 @@ from streamalert.rule_promotion.statistic import StagingStatistic
 from streamalert.shared import config, rule as rule_module
 from tests.unit.helpers.aws_mocks import MockAthenaClient, setup_mock_rules_table
 
-_RULES_TABLE = 'unit-testing_streamalert_rules'
+_RULES_TABLE = 'unit-test_streamalert_rules'
 
 
 def _mock_boto(name, **kwargs):

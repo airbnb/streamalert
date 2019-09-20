@@ -72,15 +72,15 @@ class RollbackTest(unittest.TestCase):
             True
         )
         mock_helper.assert_has_calls([
-            mock.call(mock.ANY, 'unit-testing_streamalert_alert_processor'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_alert_merger'),
-            mock.call(mock.ANY, 'unit-testing_corp_box_admin_events_box_collector_app'),
-            mock.call(mock.ANY, 'unit-testing_corp_duo_admin_duo_admin_collector_app'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_athena_partition_refresh'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_classifier_corp'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_classifier_prod'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_rules_engine'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_threat_intel_downloader')
+            mock.call(mock.ANY, 'unit-test_streamalert_alert_processor'),
+            mock.call(mock.ANY, 'unit-test_streamalert_alert_merger'),
+            mock.call(mock.ANY, 'unit-test_corp_box_admin_events_box_collector_app'),
+            mock.call(mock.ANY, 'unit-test_corp_duo_admin_duo_admin_collector_app'),
+            mock.call(mock.ANY, 'unit-test_streamalert_athena_partition_refresh'),
+            mock.call(mock.ANY, 'unit-test_streamalert_classifier_corp'),
+            mock.call(mock.ANY, 'unit-test_streamalert_classifier_prod'),
+            mock.call(mock.ANY, 'unit-test_streamalert_rules_engine'),
+            mock.call(mock.ANY, 'unit-test_streamalert_threat_intel_downloader')
         ])
 
     @mock.patch.object(rollback, 'terraform_generate_handler', mock.Mock())
@@ -96,7 +96,7 @@ class RollbackTest(unittest.TestCase):
             True
         )
         mock_helper.assert_has_calls([
-            mock.call(mock.ANY, 'unit-testing_corp_box_admin_events_box_collector_app'),
-            mock.call(mock.ANY, 'unit-testing_corp_duo_admin_duo_admin_collector_app'),
-            mock.call(mock.ANY, 'unit-testing_streamalert_rules_engine')
+            mock.call(mock.ANY, 'unit-test_corp_box_admin_events_box_collector_app'),
+            mock.call(mock.ANY, 'unit-test_corp_duo_admin_duo_admin_collector_app'),
+            mock.call(mock.ANY, 'unit-test_streamalert_rules_engine')
         ])

@@ -27,7 +27,7 @@ class TestFirehoseClient:
     def setup(self):
         """Setup before each method"""
         with patch('boto3.client'):  # patch to speed up unit tests slightly
-            self._client = FirehoseClient()
+            self._client = FirehoseClient(prefix='unit-test')
 
     def teardown(self):
         """Teardown after each method"""
@@ -381,12 +381,21 @@ class TestFirehoseClient:
     def test_load_from_config(self):
         """FirehoseClient - Load From Config"""
         with patch('boto3.client'):  # patch to speed up unit tests slightly
-            client = FirehoseClient.load_from_config({'enabled': True}, None)
+            client = FirehoseClient.load_from_config(
+                prefix='unit-test',
+                firehose_config={'enabled': True},
+                log_sources=None
+            )
             assert_equal(isinstance(client, FirehoseClient), True)
 
     def test_load_from_config_disabled(self):
         """FirehoseClient - Load From Config, Disabled"""
-        assert_equal(FirehoseClient.load_from_config({}, None), None)
+        client = FirehoseClient.load_from_config(
+            prefix='unit-test',
+            firehose_config={},
+            log_sources=None
+        )
+        assert_equal(client, None)
 
     @patch.object(FirehoseClient, '_send_batch')
     def test_send(self, send_batch_mock):
@@ -400,5 +409,5 @@ class TestFirehoseClient:
         ]
         self._client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
-            'streamalert_data_log_type_01_sub_type_01', expected_batch
+            'unit-test_streamalert_data_log_type_01_sub_type_01', expected_batch
         )

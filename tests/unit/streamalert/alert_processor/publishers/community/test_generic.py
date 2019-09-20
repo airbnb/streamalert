@@ -30,6 +30,7 @@ class TestPublishersForOutput:
 
     @staticmethod
     def test_publisher_for_output():
+        """AlertPublisher - Publisher for Output"""
         alert = get_alert(context={'context': 'value'})
         alert.created = datetime(2019, 1, 1)
         alert.publishers = {

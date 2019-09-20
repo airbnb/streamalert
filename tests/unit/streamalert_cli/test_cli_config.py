@@ -59,7 +59,7 @@ class TestCLIConfig:
 
     def test_load_config(self):
         """CLI - Load config"""
-        assert_equal(self.config['global']['account']['prefix'], 'unit-testing')
+        assert_equal(self.config['global']['account']['prefix'], 'unit-test')
 
     def test_toggle_metric(self):
         """CLI - Metric toggling"""
@@ -200,7 +200,7 @@ class TestCLIConfig:
 
         expected_config = {
             'enabled': True,
-            'dynamodb_table_name': 'unit-testing_streamalert_threat_intel_downloader',
+            'dynamodb_table_name': 'unit-test_streamalert_threat_intel_downloader',
             'excluded_iocs': {},
             'normalized_ioc_types': {
                 'ip': [

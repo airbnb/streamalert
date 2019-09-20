@@ -38,7 +38,9 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
         cluster_name
     )
     flow_log_group_name = modules['flow_logs'].get(
-        'log_group_name', flow_log_group_name_default)
+        'log_group_name',
+        flow_log_group_name_default
+    )
 
     if modules['flow_logs']['enabled']:
         cluster_dict['module']['flow_logs_{}'.format(cluster_name)] = {

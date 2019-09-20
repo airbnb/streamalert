@@ -5,7 +5,7 @@
 //
 // This is a less destructive approach to creating all of the Streams.
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
-  name        = "streamalert_data_${var.log_name}"
+  name        = "${var.prefix}_streamalert_data_${var.log_name}"
   destination = "s3"
 
   s3_configuration {
@@ -26,7 +26,7 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
 // AWS CloudWatch Metric Alarm for this Firehose
 resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
   count               = "${var.enable_alarm ? 1 : 0}"
-  alarm_name          = "streamalert_data_${var.log_name}_record_count"
+  alarm_name          = "${aws_kinesis_firehose_delivery_stream.streamalert_data.name}_record_count"
   namespace           = "AWS/Firehose"
   metric_name         = "IncomingRecords"
   statistic           = "Sum"
