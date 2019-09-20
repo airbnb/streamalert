@@ -48,8 +48,7 @@ variable "s3_logging_bucket" {
 }
 
 variable "database_name" {
-  type    = "string"
-  default = "streamalert"
+  type = "string"
 }
 
 variable "queue_name" {
