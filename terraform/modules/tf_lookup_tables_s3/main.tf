@@ -14,6 +14,7 @@ module "aws_iam_policy_module" {
   source      = "../tf_lookup_tables_policy"
   policy_json = "${data.aws_iam_policy_document.streamalert_read_items_from_lookup_tables_s3.json}"
   roles       = "${var.roles}"
+  role_count  = "${var.role_count}"
   type        = "s3"
   prefix      = "${var.prefix}"
 }
