@@ -37,7 +37,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
         'region': config['clusters'][cluster_name]['region'],
         'cluster': cluster_name,
         'prefix': config['global']['account']['prefix'],
-        'stream_name': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
+        'stream_name': '{}_{}_streamalert_kinesis'.format(prefix, cluster_name),
         'shard_level_metrics': shard_level_metrics,
         'shards': kinesis_module['shards'],
         'retention': kinesis_module['retention'],

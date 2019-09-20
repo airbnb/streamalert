@@ -22,13 +22,13 @@ Example:
 
   {
     "kinesis": {
-      "abc_corporate_stream_alert_kinesis": {
+      "abc_corporate_streamalert_kinesis": {
         "logs": [
           "box",
           "pan"
         ]
       },
-      "abc_production_stream_stream_alert_kinesis": {
+      "abc_production_stream_streamalert_kinesis": {
         "logs": [
           "inspec",
           "osquery"
