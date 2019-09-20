@@ -283,18 +283,17 @@ def _validate_sources(cluster_name, cluster_attrs, sources):
     data_sources = cluster_attrs['data_sources']
     supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
     if not set(data_sources).issubset(supported_sources):
-        missing_sources = supported_sources - set(data_sources)
+        invalid_sources = set(data_sources) - supported_sources
         raise ConfigError(
             'The data sources for cluster {} contain invalid source entries: {}. '
             'The following sources are supported: {}'.format(
                 cluster_name,
-                ', '.join("'{}'".format(source) for source in missing_sources),
+                ', '.join("'{}'".format(source) for source in invalid_sources),
                 ', '.join("'{}'".format(source) for source in supported_sources)
             )
         )
     for attrs in data_sources.values():
         for entity, entity_attrs in attrs.items():
-            print(entity)
             if TopLevelConfigKeys.LOGS not in entity_attrs:
                 raise ConfigError("Missing 'logs' key for entity: {}".format(entity))
 
