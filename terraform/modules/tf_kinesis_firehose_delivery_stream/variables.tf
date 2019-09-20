@@ -1,3 +1,7 @@
+variable "prefix" {
+  type = "string"
+}
+
 variable "buffer_size" {
   default = 5
 }
