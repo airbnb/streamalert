@@ -271,11 +271,7 @@ class TestClassifier:
 
     # Since we mock the Normalizer, we must also mock the class variable
     # referenced in the class methods.
-<<<<<<< HEAD
     @patch('streamalert.shared.normalize.Normalizer._types_config', dict())
-=======
-    @patch('stream_alert.shared.normalize.Normalizer._types_config', dict())
->>>>>>> Fix cluster env errors, detect duplicate data sources
     def test_classify_payload_bad_record(self):
         """Classifier - Classify Payload, Bad Record"""
         with patch.object(Classifier, '_process_log_schemas'), \
