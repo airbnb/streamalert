@@ -101,7 +101,7 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
 
         func = func.replace('_config', '')
 
-        for idx, name in enumerate(metric_alarms):
+        for idx, name in enumerate(sorted(metric_alarms)):
             alarm_settings = metric_alarms[name]
             alarm_settings['source'] = 'modules/tf_metric_alarms'
             alarm_settings['sns_topic_arn'] = sns_topic_arn
