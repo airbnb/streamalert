@@ -1,3 +1,11 @@
+variable "prefix" {
+  type = "string"
+}
+
+variable "use_prefix" {
+  description = "When true, prepends the StreamAlert prefix to the AWS Firehose resource name"
+}
+
 variable "buffer_size" {
   default = 5
 }
