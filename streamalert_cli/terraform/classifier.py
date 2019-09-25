@@ -58,6 +58,9 @@ def generate_classifier(cluster_name, cluster_dict, config):
         config['clusters'][cluster_name]['modules']['stream_alert']['classifier_config']
     )
 
+    firehose_config = config['global']['infrastructure'].get('firehose', {})
+    use_firehose_prefix = firehose_config.get('use_prefix', True)
+
     tf_module_prefix = 'classifier_{}'.format(cluster_name)
     iam_module = '{}_iam'.format(tf_module_prefix)
 
@@ -67,6 +70,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],
+        'firehose_use_prefix': use_firehose_prefix,
         'function_role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
         'function_alias_arn': '${{module.{}_lambda.function_alias_arn}}'.format(tf_module_prefix),
         'function_name': '${{module.{}_lambda.function_name}}'.format(tf_module_prefix),
