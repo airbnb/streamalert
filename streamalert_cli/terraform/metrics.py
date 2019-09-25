@@ -184,7 +184,7 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
         )
     ]
 
-    for idx, metric_alarm in enumerate(metric_alarms):
+    for idx, metric_alarm in enumerate(sorted(metric_alarms)):
         metric_alarm['source'] = 'modules/tf_metric_alarms'
         metric_alarm['sns_topic_arn'] = sns_topic_arn
         cluster_dict['module']['metric_alarm_{}_{}'.format(cluster_name, idx)] = metric_alarm
