@@ -25,8 +25,8 @@ def test_generate_athena():
 
     CONFIG['lambda']['athena_partition_refresh_config'] = {
         'buckets': {
-            'unit-testing.streamalerts': 'alerts',
-            'unit-testing.streamalert.data': 'data'
+            'unit-test.streamalerts': 'alerts',
+            'unit-test.streamalert.data': 'data'
         },
         'timeout': '60',
         'memory': '128',
@@ -49,20 +49,20 @@ def test_generate_athena():
                 'lambda_memory': '128',
                 'lambda_timeout': '60',
                 'athena_data_buckets': [
-                    'unit-testing.streamalerts',
-                    'unit-testing.streamalert.data'
+                    'unit-test.streamalerts',
+                    'unit-test.streamalert.data'
                 ],
-                'prefix': 'unit-testing',
+                'prefix': 'unit-test',
                 'account_id': '12345678910',
                 'concurrency_limit': 10
             },
             'athena_monitoring': {
                 'source': 'modules/tf_monitoring',
                 'sns_topic_arn': (
-                    'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                    'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                 ),
                 'kinesis_alarms_enabled': False,
-                'lambda_functions': ['unit-testing_streamalert_athena_partition_refresh']
+                'lambda_functions': ['unit-test_streamalert_athena_partition_refresh']
             },
             'athena_metric_filters': []
         }

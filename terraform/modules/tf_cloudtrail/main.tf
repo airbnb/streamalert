@@ -239,7 +239,7 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
 //   for suppression of logs that originated in this region.
 resource "aws_cloudwatch_log_subscription_filter" "cloudtrail_via_cloudwatch" {
   count           = "${var.send_to_cloudwatch ? 1 : 0}"
-  name            = "cloudtrail_delivery"
+  name            = "${var.prefix}_${var.cluster}_cloudtrail_delivery"
   log_group_name  = "${aws_cloudwatch_log_group.cloudtrail_logging.name}"
   filter_pattern  = "${var.exclude_home_region_events ? local.apply_filter_string : ""}"
   destination_arn = "${var.cloudwatch_destination_arn}"

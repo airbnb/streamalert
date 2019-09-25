@@ -44,7 +44,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'output_s3_buckets': ['unit.test.bucket.name'],
                     'output_sns_topics': ['unit_test_topic_name'],
                     'output_sqs_queues': ['unit_test_queue_name'],
-                    'prefix': 'unit-testing',
+                    'prefix': 'unit-test',
                     'region': 'us-west-1',
                     'role_id': '${module.alert_processor_lambda.role_id}',
                     'source': 'modules/tf_alert_processor_iam',
@@ -52,12 +52,12 @@ class TestAlertProcessor(unittest.TestCase):
                 },
                 'alert_processor_lambda': {
                     'alarm_actions': [
-                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                        'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                     ],
-                    'description': 'Unit-Testing Streamalert Alert Processor',
+                    'description': 'Unit-Test Streamalert Alert Processor',
                     'environment_variables': {
-                        'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
-                        'STREAMALERT_PREFIX': 'unit-testing',
+                        'ALERTS_TABLE': 'unit-test_streamalert_alerts',
+                        'STREAMALERT_PREFIX': 'unit-test',
                         'AWS_ACCOUNT_ID': '12345678910',
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
@@ -68,7 +68,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'errors_alarm_period_secs': 2,
                     'errors_alarm_threshold': 3,
                     'filename': 'alert_processor.zip',
-                    'function_name': 'unit-testing_streamalert_alert_processor',
+                    'function_name': 'unit-test_streamalert_alert_processor',
                     'handler': 'streamalert.alert_processor.main.handler',
                     'log_retention_days': 7,
                     'memory_size_mb': 128,
@@ -105,24 +105,24 @@ class TestAlertProcessor(unittest.TestCase):
                     'output_s3_buckets': [],
                     'output_sns_topics': [],
                     'output_sqs_queues': [],
-                    'prefix': 'unit-testing',
+                    'prefix': 'unit-test',
                     'region': 'us-west-1',
                     'role_id': '${module.alert_processor_lambda.role_id}',
                     'source': 'modules/tf_alert_processor_iam',
                     'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'alert_processor_lambda': {
-                    'description': 'Unit-Testing Streamalert Alert Processor',
+                    'description': 'Unit-Test Streamalert Alert Processor',
                     'environment_variables': {
-                        'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
-                        'STREAMALERT_PREFIX': 'unit-testing',
+                        'ALERTS_TABLE': 'unit-test_streamalert_alerts',
+                        'STREAMALERT_PREFIX': 'unit-test',
                         'AWS_ACCOUNT_ID': '12345678910',
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
                     'tags': {},
                     'filename': 'alert_processor.zip',
-                    'function_name': 'unit-testing_streamalert_alert_processor',
+                    'function_name': 'unit-test_streamalert_alert_processor',
                     'handler': 'streamalert.alert_processor.main.handler',
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',

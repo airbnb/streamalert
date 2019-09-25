@@ -31,10 +31,10 @@ class TestFirehoseGenerate:
         return {
             'source': 'modules/tf_kinesis_firehose_setup',
             'account_id': "12345678910",
-            'prefix': 'unit-testing',
+            'prefix': 'unit-test',
             'region': 'us-west-1',
             's3_logging_bucket': self._logging_bucket_name,
-            's3_bucket_name': 'unit-testing.streamalert.data',
+            's3_bucket_name': 'unit-test.streamalert.data',
             'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
         }
 
@@ -70,9 +70,11 @@ class TestFirehoseGenerate:
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
+                    'use_prefix': True,
+                    'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-testing.streamalert.data',
+                    's3_bucket_name': 'unit-test.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 }
             }
@@ -101,13 +103,15 @@ class TestFirehoseGenerate:
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
+                    'use_prefix': True,
+                    'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-testing.streamalert.data',
+                    's3_bucket_name': 'unit-test.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
                     'alarm_actions': [
-                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                        'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                     ]
                 }
             }
@@ -139,16 +143,18 @@ class TestFirehoseGenerate:
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
+                    'use_prefix': True,
+                    'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-testing.streamalert.data',
+                    's3_bucket_name': 'unit-test.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
                     'evaluation_periods': 10,
                     'period_seconds': 3600,
                     'alarm_threshold': 100000,
                     'alarm_actions': [
-                        'arn:aws:sns:us-west-1:12345678910:unit-testing_streamalert_monitoring'
+                        'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                     ]
                 }
             }
@@ -178,9 +184,11 @@ class TestFirehoseGenerate:
                     'buffer_size': 128,
                     'buffer_interval': 900,
                     'compression_format': 'GZIP',
+                    'use_prefix': True,
+                    'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-testing.streamalert.data',
+                    's3_bucket_name': 'unit-test.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
                     'alarm_actions': ['do something crazy']

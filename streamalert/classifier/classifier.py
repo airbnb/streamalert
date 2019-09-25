@@ -41,6 +41,7 @@ class Classifier:
         Classifier._config = Classifier._config or config.load_config(validate=True)
         Classifier._firehose_client = (
             Classifier._firehose_client or FirehoseClient.load_from_config(
+                prefix=self.config['global']['account']['prefix'],
                 firehose_config=self.config['global'].get('infrastructure', {}).get('firehose', {}),
                 log_sources=self.config['logs']
             )

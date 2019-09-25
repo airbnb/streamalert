@@ -48,7 +48,7 @@ class TestClassifier:
         return {
             'logs': cls._mock_logs(),
             'sources': cls._mock_sources(),
-            'global': cls._mock_sources()
+            'global': cls._mock_global()
         }
 
     @classmethod
@@ -87,6 +87,9 @@ class TestClassifier:
     @classmethod
     def _mock_global(cls):
         return {
+            'account': {
+                'prefix': 'unit-test'
+            },
             'infrastructure': {
                 'firehose': {
                     'enabled': True,

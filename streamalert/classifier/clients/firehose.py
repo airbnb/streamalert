@@ -51,8 +51,8 @@ class FirehoseClient:
     # The subtraction of 2 accounts for the newline at the end
     MAX_RECORD_SIZE = 1000 * 1000 - 2
 
-    # Default firehose name prefix
-    DEFAULT_FIREHOSE_PREFIX = 'streamalert_data_{}'
+    # Default firehose name format, should be formatted with deployment prefix
+    DEFAULT_FIREHOSE_FMT = '{}streamalert_data_{}'
 
     # Exception for which backoff operations should be performed
     EXCEPTIONS_TO_BACKOFF = (ClientError, BotocoreConnectionError, HTTPClientError)
@@ -60,7 +60,12 @@ class FirehoseClient:
     # Set of enabled log types for firehose, loaded from configs
     _ENABLED_LOGS = dict()
 
-    def __init__(self, firehose_config=None, log_sources=None):
+    def __init__(self, prefix, firehose_config=None, log_sources=None):
+        self._prefix = (
+            '{}_'.format(prefix)
+            if firehose_config and firehose_config.get('use_prefix')
+            else ''
+        )
         self._client = boto3.client('firehose', config=boto_helpers.default_config())
         self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
@@ -357,7 +362,7 @@ class FirehoseClient:
         return cls._ENABLED_LOGS
 
     @classmethod
-    def load_from_config(cls, firehose_config, log_sources):
+    def load_from_config(cls, prefix, firehose_config, log_sources):
         """Get a Firehose client for sending logs
 
         Args:
@@ -370,7 +375,7 @@ class FirehoseClient:
         """
         if not firehose_config.get('enabled'):
             return
-        return cls(firehose_config=firehose_config, log_sources=log_sources)
+        return cls(prefix=prefix, firehose_config=firehose_config, log_sources=log_sources)
 
     def send(self, payloads):
         """Send all classified records to a respective Firehose Delivery Stream
@@ -386,7 +391,7 @@ class FirehoseClient:
         for log_type, records in records.items():
             # This same substitution method is used when naming the Delivery Streams
             formatted_log_type = self.firehose_log_name(log_type)
-            stream_name = self.DEFAULT_FIREHOSE_PREFIX.format(formatted_log_type)
+            stream_name = self.DEFAULT_FIREHOSE_FMT.format(self._prefix, formatted_log_type)
 
             # Process each record batch in the categorized payload set
             for record_batch in self._record_batches(records):

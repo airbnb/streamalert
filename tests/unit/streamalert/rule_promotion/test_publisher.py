@@ -57,7 +57,7 @@ class TestStatsPublisher:
             'global': {
                 'account': {
                     'aws_account_id': '123456789012',
-                    'prefix': 'unit-testing',
+                    'prefix': 'unit-test',
                     'region': 'us-east-1'
                 }
             },
@@ -68,7 +68,7 @@ class TestStatsPublisher:
         topic = self.publisher.formatted_sns_topic_arn(test_config)
         assert_equal(
             topic,
-            'arn:aws:sns:us-east-1:123456789012:unit-testing_streamalert_rule_staging_stats'
+            'arn:aws:sns:us-east-1:123456789012:unit-test_streamalert_rule_staging_stats'
         )
 
     def test_formatted_sns_topic_arn_hard_coded(self):
@@ -77,7 +77,7 @@ class TestStatsPublisher:
             'global': {
                 'account': {
                     'aws_account_id': '123456789012',
-                    'prefix': 'unit-testing',
+                    'prefix': 'unit-test',
                     'region': 'us-east-1'
                 }
             },
