@@ -276,7 +276,7 @@ class TestRunner:
 
         dummy_configuration = {}
         mock_data = self._lookup_tables_mock
-        for table_name, table in rules_engine_instance._lookup_tables._tables.items():
+        for table_name in rules_engine_instance._lookup_tables._tables.keys():
             driver = EphemeralDriver(dummy_configuration)
             driver._cache = mock_data.get(table_name, {})
             ephemeral_table = LookupTable(table_name, driver, dummy_configuration)
