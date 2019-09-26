@@ -86,6 +86,7 @@ Examples:
 
 
 class LookupTablesSetFromFile(CLICommand):
+    description = 'Set a LookupTable key from a JSON file'
 
     @classmethod
     def setup_subparser(cls, subparser):
