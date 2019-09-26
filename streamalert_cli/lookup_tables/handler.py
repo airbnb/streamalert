@@ -18,6 +18,7 @@ import json
 
 from streamalert.shared.logger import get_logger
 from streamalert.shared.lookup_tables.core import LookupTables
+from streamalert.shared.lookup_tables.utils import LookupTablesMagic
 from streamalert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
 
 LOGGER = get_logger(__name__)
@@ -80,7 +81,80 @@ Examples:
             'get': LookupTablesGetKeySubCommand,
             'set': LookupTablesSetSubCommand,
             'list-add': LookupTablesListAddSubCommand,
+            'set-from-json-file': LookupTablesSetFromFile,
         }
+
+
+class LookupTablesSetFromFile(CLICommand):
+    description = 'Set a LookupTable key from a JSON file'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        set_parser = generate_subparser(
+            subparser,
+            'set-from-json-file',
+            description='Pushes the contents of a given json file into the LookupTable key',
+            subcommand=True
+        )
+
+        set_parser_epilog(
+            set_parser,
+            epilog=(
+                '''\
+                Examples:
+
+                    manage.py lookup-tables set-from-json-file -t [table] -k [key] -f \
+[path/to/file.json]
+                '''
+            )
+        )
+
+        set_parser.add_argument(
+            '-t',
+            '--table',
+            help='Name of the LookupTable',
+            required=True
+        )
+
+        set_parser.add_argument(
+            '-k',
+            '--key',
+            help='Key to modify on the LookupTable',
+            required=True
+        )
+
+        set_parser.add_argument(
+            '-f',
+            '--file',
+            help='Path to the json file, relative to the current working directory',
+            required=True
+        )
+
+    @classmethod
+    def handler(cls, options, config):
+        print('==== LookupTables; Set from JSON File ====')
+
+        core = LookupTables.get_instance(config=config)
+
+        print('  Table: {}'.format(options.table))
+        print('  Key:   {}'.format(options.key))
+        print('  File:  {}'.format(options.file))
+
+        table = core.table(options.table)
+
+        old_value = table.get(options.key)
+
+        with open(options.file, "r") as json_file_fp:
+            new_value = json.load(json_file_fp)
+
+        print('  Value: {} --> {}'.format(
+            json.dumps(old_value, indent=2, sort_keys=True),
+            json.dumps(new_value, indent=2, sort_keys=True)
+        ))
+
+        LookupTablesMagic.set_table_value(table, options.key, new_value)
+
+        return True
 
 
 class LookupTablesListAddSubCommand(CLICommand):
@@ -127,7 +201,20 @@ class LookupTablesListAddSubCommand(CLICommand):
             required=True
         )
 
-    # pylint: disable=protected-access
+        set_parser.add_argument(
+            '-u',
+            '--unique',
+            help='Remove duplicate values from the final list',
+            action='store_true'
+        )
+
+        set_parser.add_argument(
+            '-s',
+            '--sort',
+            help='Sort the final list',
+            action='store_true'
+        )
+
     @classmethod
     def handler(cls, options, config):
         print('==== LookupTables; List Add Key ====')
@@ -152,12 +239,16 @@ class LookupTablesListAddSubCommand(CLICommand):
 
         new_value = copy.copy(old_value)
         new_value.append(options.value)
-        sorted(new_value)
+
+        if options.unique:
+            new_value = list(set(new_value))
+
+        if options.sort:
+            new_value = sorted(new_value)
 
         print('  Value: {} --> {}'.format(old_value, new_value))
 
-        table._driver.set(key, new_value)
-        table._driver.commit()
+        LookupTablesMagic.set_table_value(table, key, new_value)
 
         return True
 
@@ -185,15 +276,14 @@ class LookupTablesDescribeTablesSubCommand(CLICommand):
             )
         )
 
-    # pylint: disable=protected-access
     @classmethod
     def handler(cls, options, config):
         print('==== LookupTables; Describe Tables ====\n')
 
-        lookup_tables = LookupTables.get_instance(config=config)
+        lookup_tables = LookupTablesMagic.get_all_tables(LookupTables.get_instance(config=config))
 
-        print('{} Tables:\n'.format(len(lookup_tables._tables)))
-        for table in lookup_tables._tables.values():
+        print('{} Tables:\n'.format(len(lookup_tables)))
+        for table in lookup_tables.values():
             print(' Table Name: {}'.format(table.table_name))
             print(' Driver Id: {}'.format(table.driver_id))
             print(' Driver Type: {}\n'.format(table.driver_type))
@@ -250,8 +340,17 @@ class LookupTablesGetKeySubCommand(CLICommand):
 
         value = LookupTables.get(table_name, key)
 
-        print('  Value: {}'.format(value))
+        print()
         print('  Type:  {}'.format(type(value)))
+
+        if isinstance(value, (list, dict)):
+            # Render lists and dicts a bit better to make them easier to read
+            print('  Value:')
+            print(json.dumps(value, indent=2, sort_keys=True))
+        else:
+            print('  Value: {}'.format(value))
+
+        print()
 
         return True
 
@@ -300,7 +399,13 @@ class LookupTablesSetSubCommand(CLICommand):
             required=True
         )
 
-    # pylint: disable=protected-access
+        set_parser.add_argument(
+            '-j',
+            '--json',
+            help='Interpret the value as a JSON-encoded string',
+            action='store_true'
+        )
+
     @classmethod
     def handler(cls, options, config):
         print('==== LookupTables; Set Key ====')
@@ -308,12 +413,15 @@ class LookupTablesSetSubCommand(CLICommand):
         table_name = options.table
         key = options.key
 
-        try:
-            new_value = json.loads(options.value)
-        except json.decoder.JSONDecodeError as e:
-            print('  ERROR: Input is not valid JSON:')
-            print(e)
-            return False
+        if options.json:
+            try:
+                new_value = json.loads(options.value)
+            except json.decoder.JSONDecodeError as e:
+                print('  ERROR: Input is not valid JSON:')
+                print(e)
+                return False
+        else:
+            new_value = options.value
 
         core = LookupTables.get_instance(config=config)
 
@@ -325,7 +433,6 @@ class LookupTablesSetSubCommand(CLICommand):
 
         print('  Value: {} --> {}'.format(old_value, new_value))
 
-        table._driver.set(key, new_value)
-        table._driver.commit()
+        LookupTablesMagic.set_table_value(table, key, new_value)
 
         return True
