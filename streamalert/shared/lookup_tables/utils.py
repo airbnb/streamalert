@@ -30,7 +30,7 @@ class LookupTablesMagic:
         Return all of the data in the given lookup table as a dict. Only works with S3, and you
         should DEFINITELY AVOID USING THIS.
 
-        Params:
+        Args:
             - table (LookupTable)
 
         Returns:
@@ -49,7 +49,7 @@ class LookupTablesMagic:
     def set_table_value(table, key, new_value):
         """Set a value into a LookupTable and then immediately commit it.
 
-        Params:
+        Args:
             - table (LookupTable)
             - key (str)
             - new_value (str|int|list|dict|mixed)
@@ -61,7 +61,7 @@ class LookupTablesMagic:
     def get_all_tables(lookup_tables_core):
         """Returns all lookup tables, keyed by their names
 
-        Params:
+        Args:
         - lookup_tables_core (LookupTablesCore)
 
         Returns:

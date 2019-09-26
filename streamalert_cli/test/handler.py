@@ -264,7 +264,6 @@ class TestRunner:
 
             return _rules_engine.run(records=record)
 
-    # pylint: disable=protected-access
     def _install_lookup_tables_mocks(self, rules_engine_instance):
         """
         Extremely gnarly, extremely questionable manner to install mocking data into our tables.
@@ -276,6 +275,8 @@ class TestRunner:
 
         dummy_configuration = {}
         mock_data = self._lookup_tables_mock
+
+        # pylint: disable=protected-access
         for table_name in rules_engine_instance._lookup_tables._tables.keys():
             driver = EphemeralDriver(dummy_configuration)
             driver._cache = mock_data.get(table_name, {})

@@ -133,29 +133,25 @@ class LookupTablesSetFromFile(CLICommand):
     def handler(cls, options, config):
         print('==== LookupTables; Set from JSON File ====')
 
-        table_name = options.table
-        key = options.key
-        file = options.file
-
         core = LookupTables.get_instance(config=config)
 
-        print('  Table: {}'.format(table_name))
-        print('  Key:   {}'.format(key))
-        print('  File:  {}'.format(file))
+        print('  Table: {}'.format(options.table))
+        print('  Key:   {}'.format(options.key))
+        print('  File:  {}'.format(options.file))
 
-        table = core.table(table_name)
+        table = core.table(options.table)
 
-        old_value = table.get(key)
+        old_value = table.get(options.key)
 
-        with open(file, "r") as json_file_fp:
+        with open(options.file, "r") as json_file_fp:
             new_value = json.load(json_file_fp)
 
         print('  Value: {} --> {}'.format(
-            json.dumps(old_value, indent=2),
-            json.dumps(new_value, indent=2)
+            json.dumps(old_value, indent=2, sort_keys=True),
+            json.dumps(new_value, indent=2, sort_keys=True)
         ))
 
-        LookupTablesMagic.set_table_value(table, key, new_value)
+        LookupTablesMagic.set_table_value(table, options.key, new_value)
 
         return True
 
@@ -244,7 +240,7 @@ class LookupTablesListAddSubCommand(CLICommand):
         new_value.append(options.value)
 
         if options.unique:
-            new_value = list(dict.fromkeys(new_value))
+            new_value = list(set(new_value))
 
         if options.sort:
             new_value = sorted(new_value)
@@ -349,7 +345,7 @@ class LookupTablesGetKeySubCommand(CLICommand):
         if isinstance(value, (list, dict)):
             # Render lists and dicts a bit better to make them easier to read
             print('  Value:')
-            print(json.dumps(value, indent=2))
+            print(json.dumps(value, indent=2, sort_keys=True))
         else:
             print('  Value: {}'.format(value))
 
