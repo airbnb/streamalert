@@ -31,6 +31,7 @@ from streamalert.classifier.parsers import ParserBase
 from streamalert.rules_engine import rules_engine
 from streamalert.shared import rule
 from streamalert.shared.logger import get_logger
+from streamalert.shared.lookup_tables.table import LookupTable
 from streamalert.shared.stats import get_rule_stats
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
@@ -271,22 +272,16 @@ class TestRunner:
         tables, which isn't a "normally" available feature but is required for some pre-existing
         StreamAlert users.
         """
-        from streamalert.shared.lookup_tables.driver_dynamodb import DynamoDBDriver
-        from streamalert.shared.lookup_tables.driver_s3 import S3Driver
+        from streamalert.shared.lookup_tables.drivers import EphemeralDriver
 
+        dummy_configuration = {}
         mock_data = self._lookup_tables_mock
         for table_name, table in rules_engine_instance._lookup_tables._tables.items():
-            table._initialized = True
-            driver = table._driver
-            data = mock_data.get(table_name, {})
-            if isinstance(driver, S3Driver):
-                driver._cache.setall(data, 999999)
-                driver._cache_clock.set(S3Driver._MAGIC_CACHE_TTL_KEY, True, 999999)
-                continue
+            driver = EphemeralDriver(dummy_configuration)
+            driver._cache = mock_data.get(table_name, {})
+            ephemeral_table = LookupTable(table_name, driver, dummy_configuration)
 
-            if isinstance(driver, DynamoDBDriver):
-                driver._cache.setall(data, 999999)
-                continue
+            rules_engine_instance._lookup_tables._tables[table_name] = ephemeral_table
 
     @staticmethod
     def _run_alerting(record):
