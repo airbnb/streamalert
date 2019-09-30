@@ -52,7 +52,6 @@ class RuleStatisticTracker:
         result = rule.process(record)
         time_end = time.time()
 
-        # self._add_result(rule.name, time_end - time_start)
         self.__class__.STATS[rule.name] += RuleStatistic((time_end - time_start) * 1000)
 
         return result
