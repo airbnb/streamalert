@@ -69,7 +69,7 @@ data "aws_iam_policy_document" "output_secrets" {
 
 // Allow the Alert Processor to send to default firehose and S3 outputs
 resource "aws_iam_role_policy" "default_outputs" {
-  name   = "SinkToDefaultOutputs"
+  name   = "DefaultOutputs"
   role   = "${var.role_id}"
   policy = "${data.aws_iam_policy_document.default_outputs.json}"
 }

@@ -52,7 +52,7 @@ class FirehoseClient:
     MAX_RECORD_SIZE = 1000 * 1000 - 2
 
     # Default firehose name format, should be formatted with deployment prefix
-    DEFAULT_FIREHOSE_FMT = '{}_streamalert_data_{}'
+    DEFAULT_FIREHOSE_FMT = '{}streamalert_data_{}'
 
     # Exception for which backoff operations should be performed
     EXCEPTIONS_TO_BACKOFF = (ClientError, BotocoreConnectionError, HTTPClientError)
@@ -61,7 +61,11 @@ class FirehoseClient:
     _ENABLED_LOGS = dict()
 
     def __init__(self, prefix, firehose_config=None, log_sources=None):
-        self._prefix = prefix
+        self._prefix = (
+            '{}_'.format(prefix)
+            if firehose_config and firehose_config.get('use_prefix')
+            else ''
+        )
         self._client = boto3.client('firehose', config=boto_helpers.default_config())
         self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
