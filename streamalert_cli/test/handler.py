@@ -33,6 +33,7 @@ from streamalert.shared import rule
 from streamalert.shared.logger import get_logger
 from streamalert.shared.lookup_tables.table import LookupTable
 from streamalert.shared.stats import get_rule_stats
+from streamalert.shared.utils import get_service_resource_from_record
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
 from streamalert_cli.test.format import format_green, format_red, format_underline, format_yellow
@@ -345,6 +346,7 @@ class TestRunner:
 
         print('\nRunning tests for files found in: {}'.format(self._files_dir))
 
+
         for event_file in self._get_test_files():
             test_event = TestEventFile(event_file.replace(self._files_dir, ''))
             # Iterate over the individual test events in the file
@@ -354,6 +356,13 @@ class TestRunner:
 
                 if not self._contains_filtered_rules(original_event):
                     continue
+
+                _, resource = get_service_resource_from_record(event)
+
+                for cluster_name, cluster_value in self._config['clusters'].items():
+                    for source in cluster_value['data_sources'].values():
+                        if resource in source.keys():
+                            os.environ['CLUSTER'] = cluster_name
 
                 classifier_result = self._run_classification(event)
 
