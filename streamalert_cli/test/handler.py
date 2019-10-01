@@ -359,8 +359,8 @@ class TestRunner:
                 resource = original_event['source']
 
                 for cluster_name, cluster_value in self._config['clusters'].items():
-                    for source in cluster_value['data_sources'].values():
-                        if resource in source.keys():
+                    for service in cluster_value['data_sources'].values():
+                        if resource in service:
                             os.environ['CLUSTER'] = cluster_name
 
                 classifier_result = self._run_classification(event)
