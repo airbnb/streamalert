@@ -19,7 +19,6 @@ import logging
 import os
 
 from streamalert.shared.logger import get_logger
-from streamalert.shared.utils import get_service_resource_from_record
 
 
 LOGGER = get_logger(__name__)
@@ -230,8 +229,13 @@ class StreamPayload(metaclass=ABCMeta):
 
     @classmethod
     def load_from_raw_record(cls, raw_record):
-        """Extracts the data source and service from the raw event and
-        encapsulates the event in a StreamPayload for classification.
+        """Extract the originating AWS service and resource from a raw record
+
+        Each raw record contains a set of keys that represent its source.
+        A Kinesis record will contain a 'kinesis' key, while a S3 record
+        contains 's3', and an SNS record contains an 'Sns' key, and so on
+
+        This method also supports loading an S3 event notification that is received via SNS.
 
         Args:
             raw_record (dict): A raw record as a dictionary
@@ -239,7 +243,39 @@ class StreamPayload(metaclass=ABCMeta):
         Returns:
             StreamPayload: Loaded subclass of StreamPayload for the proper payload type
         """
-        service, resource = get_service_resource_from_record(raw_record)
+        # Sns is capitalized below because this is how AWS stores it within the Record
+        # Other services above, like s3, are not stored like this. Do not alter it!
+        resource_mapper = {
+            'kinesis': lambda r: r['eventSourceARN'].split('/')[-1],
+            's3': lambda r: r['s3']['bucket']['name'],
+            'Sns': lambda r: r['Sns']['TopicArn'].split(':')[-1],
+            'stream_alert_app': lambda r: r['stream_alert_app']
+        }
+
+        service, resource = None, None
+        # check raw record for either kinesis, s3, or apps keys
+        for svc, map_function in resource_mapper.items():
+            if svc in raw_record:
+                # map the resource name from a record
+                resource = map_function(raw_record)
+                service = svc
+                break
+
+        # If this is an s3 event notification via SNS, extract the bucket from the record
+        if ('Sns' in raw_record and
+                raw_record['Sns'].get('Type') == 'Notification' and
+                raw_record['Sns'].get('Subject') == 'Amazon S3 Notification'):
+
+            service = 's3'
+
+            # Assign the s3 event notification data to the raw_record and extract the resource
+            raw_record = json.loads(raw_record['Sns']['Message'])['Records'][0]
+            resource = resource_mapper[service](raw_record)
+
+        if not (service and resource):
+            LOGGER.error('No valid service (%s) or resource (%s) found in payload\'s raw '
+                         'record, skipping: %s', service, resource, raw_record)
+            return False
 
         return RegisterInput.load_for_service(service.lower(), resource, raw_record)
 
