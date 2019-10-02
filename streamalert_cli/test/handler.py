@@ -362,6 +362,7 @@ class TestRunner:
                     for service in cluster_value['data_sources'].values():
                         if resource in service:
                             os.environ['CLUSTER'] = cluster_name
+                            break
 
                 classifier_result = self._run_classification(event)
 
