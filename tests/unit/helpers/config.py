@@ -163,12 +163,10 @@ def basic_streamalert_config():
                 'id': 'prod',
                 'data_sources': {
                     'kinesis': {
-                        'stream_1': {
-                            'logs': [
-                                'json_log',
-                                'csv_log'
-                            ]
-                        }
+                        'stream_1': [
+                            'json_log',
+                            'csv_log'
+                        ]
                     }
                 },
                 'modules': {

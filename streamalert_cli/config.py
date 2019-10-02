@@ -449,7 +449,7 @@ class CLIConfig:
         app_sources = self.config['clusters'][cluster_name]['data_sources'].get(
             'stream_alert_app', {}
         )
-        app_sources[func_name] = {'logs': [app.service()]}
+        app_sources[func_name] = [app.service()]
         self.config['clusters'][cluster_name]['data_sources']['stream_alert_app'] = app_sources
 
         LOGGER.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '

@@ -1,4 +1,34 @@
 {
+  "data_sources": {
+    "kinesis": {
+      "test_cloudtrail_bucket": [
+        "test_cloudtrail"
+      ],
+      "test_kinesis_stream": [
+        "test_log_type_json",
+        "test_log_type_json_2",
+        "test_log_type_json_nested",
+        "test_log_type_json_nested_with_data",
+        "test_log_type_csv",
+        "test_log_type_csv_nested",
+        "test_log_type_kv_auditd",
+        "cloudwatch"
+      ],
+      "test_stream_2": [
+        "test_multiple_schemas",
+        "test_log_type_json_2",
+        "test_log_type_json_nested_osquery",
+        "test_log_type_syslog"
+      ],
+      "test_stream_threat_intel": [
+        "test_log_threat_intel_custom"
+      ],
+      "unit_test_default_stream": [
+        "unit_test_simple_log",
+        "test_log_type_json_nested"
+      ]
+    }
+  },
   "id": "test",
   "modules": {
     "cloudwatch_monitoring": {

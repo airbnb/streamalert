@@ -182,7 +182,7 @@ logs
 
 ``logs`` define the log schema(s) supported by the rule.
 
-Log `sources <conf-datasources.html>`_ are defined under the data sources field for a cluster defined in ``conf/clusters/<cluster>.json``
+Log `sources <conf-datasources.html>`_ are defined under the ``data_sources`` field for a cluster defined in ``conf/clusters/<cluster>.json``
 and their `schemas <conf-schemas.html>`_ are defined in one or more files in the ``conf/schemas`` directory.
 
 .. note:: Either ``logs`` or ``datatypes`` must be specified for each rule

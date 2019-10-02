@@ -57,11 +57,9 @@ class TestClassifier:
     def _mock_sources(cls):
         return {
             cls._service_name: {
-                cls._resource_name: {
-                    'logs': [
-                        'log_type_01'
-                    ]
-                }
+                cls._resource_name: [
+                    'log_type_01'
+                ]
             }
         }
 

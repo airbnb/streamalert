@@ -21,6 +21,8 @@ from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
 
+SUPPORTED_SOURCES = {'kinesis', 's3', 'sns', 'stream_alert_app'}
+
 
 class TopLevelConfigKeys:
     """Define the available top level keys in the loaded config"""
@@ -248,10 +250,11 @@ def _validate_config(config):
     # Check if the defined sources are supported and report any invalid entries
     if TopLevelConfigKeys.CLUSTERS in config:
         # Used to track duplicate sources in separate cluster config files
-        sources = set()
+        existing_sources = set()
         for cluster_name, cluster_attrs in config[TopLevelConfigKeys.CLUSTERS].items():
-            if 'data_sources' in cluster_attrs:
-                _validate_sources(cluster_name, cluster_attrs, sources)
+            if 'data_sources' not in cluster_attrs:
+                raise ConfigError("'data_sources' missing for cluster {}".format(cluster_name))
+            _validate_sources(cluster_name, cluster_attrs['data_sources'], existing_sources)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:
         if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
@@ -272,38 +275,37 @@ def _validate_config(config):
                         "one log type in normalized types".format(normalized_key, ioc_type)
                     )
 
-def _validate_sources(cluster_name, cluster_attrs, sources):
+def _validate_sources(cluster_name, data_sources, existing_sources):
     """Validates the sources for a cluster
     Args:
+        cluster_name (str): The name of the cluster we are validating sources for
         data_sources (dict): The sources to validate
+        existing_sources(set): Aleady defined sources
     Raises:
         ConfigError: If the validation fails
     """
     # Iterate over each defined source and make sure the required subkeys exist
-    data_sources = cluster_attrs['data_sources']
-    supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
-    if not set(data_sources).issubset(supported_sources):
-        invalid_sources = set(data_sources) - supported_sources
+    if not set(data_sources).issubset(SUPPORTED_SOURCES):
+        invalid_sources = set(data_sources) - SUPPORTED_SOURCES
         raise ConfigError(
             'The data sources for cluster {} contain invalid source entries: {}. '
             'The following sources are supported: {}'.format(
                 cluster_name,
                 ', '.join("'{}'".format(source) for source in invalid_sources),
-                ', '.join("'{}'".format(source) for source in supported_sources)
+                ', '.join("'{}'".format(source) for source in SUPPORTED_SOURCES)
             )
         )
     for attrs in data_sources.values():
-        for entity, entity_attrs in attrs.items():
-            if TopLevelConfigKeys.LOGS not in entity_attrs:
-                raise ConfigError("Missing 'logs' key for entity: {}".format(entity))
+        for source, logs in attrs.items():
 
-            if not entity_attrs[TopLevelConfigKeys.LOGS]:
-                raise ConfigError("List of 'logs' is empty for entity: {}".format(entity))
+            if not logs:
+                raise ConfigError("List of logs is empty for source: {}".format(source))
 
-            if entity in sources:
+            if source in existing_sources:
                 raise ConfigError(
-                    "Duplicate data_source in cluster configuration: {}".format(entity)
+                    "Duplicate data_source in cluster configuration {} "
+                    "for cluster {}".format(source, cluster_name)
                 )
-            sources.add(entity)
+            existing_sources.add(source)
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)

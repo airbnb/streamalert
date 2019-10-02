@@ -52,8 +52,8 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         config_data = basic_streamalert_config()
 
         # Add config files which should be loaded
-        self.fs.create_file('conf/clusters/prod.json', contents='{}')
-        self.fs.create_file('conf/clusters/dev.json', contents='{}')
+        self.fs.create_file('conf/clusters/prod.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf/clusters/dev.json', contents='{"data_sources": {}}')
         self.fs.create_file('conf/global.json', contents='{}')
         self.fs.create_file('conf/lambda.json', contents='{}')
         self.fs.create_file('conf/logs.json', contents='{}')
@@ -72,8 +72,8 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         )
 
         # Create similar structure but with schemas folder instead of logs.json and 2 clusters.
-        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{}')
-        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{}')
+        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{"data_sources": {}}')
         self.fs.create_file('conf_schemas/global.json', contents='{}')
         self.fs.create_file('conf_schemas/lambda.json', contents='{}')
         self.fs.create_file('conf_schemas/outputs.json', contents='{}')
@@ -175,18 +175,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         # Logs.json is preferred over schemas for backwards compatibility.
         assert_equal(config['logs'], {})
 
-    #@staticmethod
-    #def test_load_sources_clusters():
-    #    """Shared - Config Loading - Sources from a Cluster JSON File"""
-    #    basic_config = basic_streamalert_config()
-    #    sources = basic_config['sources']
-    #    prod = basic_config['clusters']['prod']
-    #    prod["data_sources"] = sources
-    #    with open("conf/clusters/prod.json", "w") as f:
-    #        f.write(json.dumps(prod))
-    #    config = load_config()
-    #    assert_equal(config['sources'], basic_config['sources'])
-
 
 class TestConfigValidation:
     """Test config validation"""
@@ -230,7 +218,7 @@ class TestConfigValidation:
         config = basic_streamalert_config()
 
         # Set the logs key to an empty list
-        config['clusters']['prod']['data_sources']['kinesis']['stream_1']['logs'] = []
+        config['clusters']['prod']['data_sources']['kinesis']['stream_1'] = []
 
         assert_raises(ConfigError, _validate_config, config)
 

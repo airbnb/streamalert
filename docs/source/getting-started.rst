@@ -175,11 +175,9 @@ Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look
   {
     "data_sources": {
       "sns": {
-        "streamalert-test-data": {
-          "logs": [
-            "cloudwatch"
-          ]
-        }
+        "streamalert-test-data": [
+          "cloudwatch"
+        ]
       }
     }
   }
