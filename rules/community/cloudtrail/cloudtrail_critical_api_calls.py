@@ -56,17 +56,32 @@ def cloudtrail_critical_api_calls(rec):
         config = rec.get('requestParameters', {}).get(
             'PublicAccessBlockConfiguration', {}
         )
-        if (config.get('RestrictPublicBuckets', False) is False
-                or config.get('BlockPublicPolicy', False) is False
-                or config.get('BlockPublicAcls', False) is False
-                or config.get('IgnorePublicAcls', False) is False
-           ):
+        if (
+            config.get('RestrictPublicBuckets', True) is False
+            or config.get('BlockPublicPolicy', True) is False
+            or config.get('BlockPublicAcls', True) is False
+            or config.get('IgnorePublicAcls', True) is False
+        ):
             return True
 
-    # PutAccountPublicAccessBlock does not indicate if the account is
-    # enabling or disabling this feature so to reduce FPs,
-    # for now this is not being detected.
-    # This issue was reported to aws-security@amazon.com by spiper
-    # on 2019.07.09
+    # Detect important Organizations calls
+    if rec['eventSource'] == 'organizations.amazonaws.com' and rec['eventName'] in [
+        'AttachPolicy',
+        'CreateOrganizationUnit',
+        'CreatePolicy',
+        'DeletePolicy',
+        'DeleteOrganizationUnit',
+        'DetachPolicy',
+        'DisableAWSServiceAccess',
+        'DisablePolicyType',
+        'EnableAllFeatures',
+        'EnableAWSServiceAccess',
+        'EnablePolicyType',
+        'LeaveOrganization',
+        'MoveAccount',
+        'RemoveAccountFromOrganization',
+        'UpdatePolicy',
+    ]:
+        return True
 
     return False
