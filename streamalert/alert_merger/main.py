@@ -163,8 +163,7 @@ class AlertMerger:
         merged_alerts = []  # List of newly created merge alerts
         alerts_to_delete = []  # List of alerts which can be deleted
 
-        # TODO: Find a way to avoid a full table scan just to get rule names
-        for rule_name in self.table.rule_names():
+        for rule_name in self.table.rule_names_generator():
             merge_enabled_alerts = []
             for alert in self._alert_generator(rule_name):
                 if alert.remaining_outputs:

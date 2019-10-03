@@ -78,7 +78,7 @@ class TestAlertMerger:
         self.lambda_mock.stop()
 
     @patch.object(main, 'LOGGER')
-    def test_get_alerts(self, mock_logger):
+    def test_alert_generator(self, mock_logger):
         """Alert Merger - Sorted Alerts - Invalid Alerts are Logged"""
         records = [
             Alert('test_rule', {}, {'output'}).dynamo_record(),
@@ -86,7 +86,7 @@ class TestAlertMerger:
         ]
 
         with patch.object(self.merger.table, 'get_alert_records', return_value=records):
-            result = self.merger._get_alerts('test_rule')
+            result = list(self.merger._alert_generator('test_rule'))
             # Valid record is returned
             assert_equal(1, len(result))
             assert_equal(records[0]['AlertID'], result[0].alert_id)
