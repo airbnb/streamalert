@@ -74,7 +74,6 @@ class Normalizer:
 
         return result
 
-
     @classmethod
     def _extract_values(cls, record, keys_to_normalize):
         """Recursively extract lists of path parts from a dictionary
@@ -91,6 +90,7 @@ class Normalizer:
             if isinstance(value, dict):  # If this is a dict, look for nested
                 for nested_value in cls._extract_values(value, keys_to_normalize):
                     yield nested_value
+                continue
 
             if key not in keys_to_normalize:
                 continue
@@ -98,8 +98,9 @@ class Normalizer:
             if isinstance(value, list):  # If this is a list of values, return all of them
                 for item in value:
                     yield item
-            else:
-                yield value
+                continue
+
+            yield value
 
     @classmethod
     def normalize(cls, record, log_type):
