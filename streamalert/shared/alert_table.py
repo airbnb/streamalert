@@ -56,22 +56,6 @@ class AlertTable:
             else:
                 return
 
-    def rule_names(self):
-        """Find all of the distinct rule names in the table.
-
-        @deprecated
-          This method is deprecated due to requiring a full table scan prior to returning any
-          records.
-
-        Returns:
-            set: Set of string rule names
-        """
-        kwargs = {
-            'ProjectionExpression': 'RuleName',
-            'Select': 'SPECIFIC_ATTRIBUTES'
-        }
-        return set(item['RuleName'] for item in self._paginate(self._table.scan, kwargs))
-
     def rule_names_generator(self):
         """Returns a generator that yields unique rule_names of items on the table
 
