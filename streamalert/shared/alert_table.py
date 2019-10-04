@@ -59,6 +59,10 @@ class AlertTable:
     def rule_names(self):
         """Find all of the distinct rule names in the table.
 
+        @deprecated
+          This method is deprecated due to requiring a full table scan prior to returning any
+          records.
+
         Returns:
             set: Set of string rule names
         """
@@ -67,6 +71,36 @@ class AlertTable:
             'Select': 'SPECIFIC_ATTRIBUTES'
         }
         return set(item['RuleName'] for item in self._paginate(self._table.scan, kwargs))
+
+    def rule_names_generator(self):
+        """Returns a generator that yields unique rule_names of items on the table
+
+        Each unique name is yielded only once. Additionally, because the names materialized over
+        several paginated calls, it is not 100% guaranteed to return every possible rule_name on
+        the Alert Table; if there are other operations that are writing items to the DynamoDB table,
+        it is possible for certain names to get skipped.
+
+        Returns:
+            Generator[str]
+        """
+        kwargs = {
+            'ProjectionExpression': 'RuleName',
+            'Select': 'SPECIFIC_ATTRIBUTES',
+
+            # It is acceptable to use inconsistent reads here to reduce read capacity units
+            # consumed, as there is already no guarantee of consistent in the rule names due to
+            # pagination.
+            'ConsistentRead': False,
+        }
+
+        rule_names = set()
+        for item in self._paginate(self._table.scan, kwargs):
+            name = item['RuleName']
+            if name in rule_names:
+                continue
+
+            rule_names.add(name)
+            yield name
 
     def get_alert_records(self, rule_name, alert_proc_timeout_sec):
         """Find all alerts for the given rule which need to be dispatched to the alert processor.

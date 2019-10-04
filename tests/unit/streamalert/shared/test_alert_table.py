@@ -74,6 +74,10 @@ class TestAlertTable:
         """Alert Table - Rule Names From Table Scan"""
         assert_equal({'even', 'odd'}, self.alert_table.rule_names())
 
+    def test_rule_names_generator(self):
+        """Alert Table - Rule Names Generator From Table Scan"""
+        assert_equal({'even', 'odd'}, set(self.alert_table.rule_names_generator()))
+
     def test_get_alert_records(self):
         """Alert Table - Pending Alerts From Table Query"""
         result = list(self.alert_table.get_alert_records('odd', _ALERT_PROCESSOR_TIMEOUT_SEC))
