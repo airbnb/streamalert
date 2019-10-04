@@ -213,7 +213,8 @@ class TestAlertMerger:
     @patch.object(main, 'LOGGER')
     def test_dispatch_no_alerts(self, mock_logger):
         """Alert Merger - All Alerts Have Already Been Dispatched"""
-        with patch.object(self.merger.table, 'rule_names', return_value=['rule_name']):
+        with patch.object(self.merger.table, 'rule_names_generator',
+                          return_value=iter(['rule_name'])):
             self.merger.dispatch()
             mock_logger.assert_not_called()
 
