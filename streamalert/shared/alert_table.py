@@ -81,7 +81,7 @@ class AlertTable:
         it is possible for certain names to get skipped.
 
         Returns:
-            generator
+            Generator[str]
         """
         kwargs = {
             'ProjectionExpression': 'RuleName',

@@ -87,16 +87,15 @@ class AlertMerger:
         To limit memory consumption, the generator yields a maximum number of alerts, defined
         by self._alert_generator_limit.
         """
-        alert_count = 0
-        for record in self.table.get_alert_records(rule_name, self.alert_proc_timeout):
+        generator = self.table.get_alert_records(rule_name, self.alert_proc_timeout)
+        for idx, record in enumerate(generator, start=1):
             try:
                 yield Alert.create_from_dynamo_record(record)
-                alert_count += 1
             except AlertCreationError:
                 LOGGER.exception('Invalid alert record %s', record)
                 continue
 
-            if alert_count >= self._alert_generator_limit:
+            if idx >= self._alert_generator_limit:
                 LOGGER.warning(
                     'Alert Merger reached alert limit of %d for rule "%s"',
                     self._alert_generator_limit,
