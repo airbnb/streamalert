@@ -1,4 +1,4 @@
-# Stream Alert Athena Terraform Module
+# StreamAlert Athena Terraform Module
 This Terraform module creates a Lambda function for refreshing Athena Partitions once new data is written to S3
 
 ## Components

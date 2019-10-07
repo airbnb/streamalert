@@ -11,30 +11,21 @@ variable "cluster" {
   type = "string"
 }
 
-variable "cross_account_ids" {
-  type    = "list"
-  default = []
-}
-
-variable "destination_stream_arn" {
+variable "cloudwatch_log_destination_arn" {
   type = "string"
-}
-
-variable "enis" {
-  type    = "list"
-  default = []
 }
 
 variable "flow_log_filter" {
   default = "[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action, flowlogstatus]"
 }
 
-variable "flow_log_group_name" {
-  type = "string"
-}
-
 variable "log_retention" {
   default = 7
+}
+
+variable "enis" {
+  type    = "list"
+  default = []
 }
 
 variable "subnets" {

@@ -1,4 +1,4 @@
-# Stream Alert Globals
+# StreamAlert Globals
 * This Terraform module creates various global infrastructure components
 
 ## Components
