@@ -22,7 +22,8 @@
       "buffer_size": 128,
       "compression_format": "GZIP",
       "enabled": true,
-      "enabled_logs": {}
+      "enabled_logs": {},
+      "use_prefix": true
     },
     "monitoring": {
       "create_sns_topic": true

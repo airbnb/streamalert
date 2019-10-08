@@ -1,4 +1,4 @@
-# Stream Alert Kinesis Terraform Module
+# StreamAlert Kinesis Terraform Module
 
 * This Terraform module creates the following:
   * A Kinesis Stream to send logs to for rule matching against the StreamAlert lambda function.

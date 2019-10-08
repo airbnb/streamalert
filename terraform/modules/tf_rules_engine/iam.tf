@@ -1,7 +1,7 @@
 // IAM Role Policy: Allow Rules Engine to read DynamoDB table (Threat Intel)
 resource "aws_iam_role_policy" "read_threat_intel_table" {
   count  = "${var.threat_intel_enabled ? 1 : 0}"
-  name   = "ReadDynamoDB"
+  name   = "ReadThreatIntelDynamoDB"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.read_threat_intel_table.json}"
 }
@@ -25,7 +25,7 @@ data "aws_iam_policy_document" "read_threat_intel_table" {
 // Allow the Rules Engine to read the rules table
 resource "aws_iam_role_policy" "read_rules_table" {
   count  = "${var.rules_table_arn == "" ? 0 : 1}"
-  name   = "ReadRulesTable"
+  name   = "ReadRulesDynamoDB"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.read_rules_table.json}"
 }
@@ -81,7 +81,7 @@ resource "aws_iam_role_policy" "rules_engine_policy" {
 
 // IAM Role Policy: Allow the Rules Engine to save alerts to dynamo.
 resource "aws_iam_role_policy" "save_alerts_to_dynamo" {
-  name   = "SaveAlertsToDynamo"
+  name   = "WriteAlertsDynamoDB"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.save_alerts_to_dynamo.json}"
 }

@@ -37,12 +37,8 @@ variable "filename" {
   description = "Path to .zip deployment package"
 }
 
-// NOTE: Due to https://github.com/terraform-providers/terraform-provider-aws/issues/3803,
-// 0 is interpreted as "disable reserve concurrency," and is the default value in Terraform.
-// (You can set reserve concurrency to 0 in the AWS console to stop all invocations.)
-// This could change in a future release of the AWS provider.
 variable "concurrency_limit" {
-  default     = 0
+  default     = -1
   description = "Optional reserved concurrency. By default, there is no function-specific concurrency limit."
 }
 

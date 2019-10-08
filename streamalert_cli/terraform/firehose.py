@@ -65,6 +65,8 @@ def generate_firehose(logging_bucket, main_dict, config):
             'compression_format': (
                 config['global']['infrastructure']['firehose'].get('compression_format', 'GZIP')
             ),
+            'use_prefix': config['global']['infrastructure']['firehose'].get('use_prefix', True),
+            'prefix': config['global']['account']['prefix'],
             'log_name': log_stream_name,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,

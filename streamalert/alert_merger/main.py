@@ -60,6 +60,10 @@ class AlertMerger:
     # Set the max payload size to slightly under that to account for the rest of the message.
     MAX_LAMBDA_PAYLOAD_SIZE = 126000
 
+    # The maximum number of alerts that are loaded into memory for a single rule, during a single
+    # loop in the Alert Merger.
+    ALERT_GENERATOR_DEFAULT_LIMIT = 5000
+
     @classmethod
     def get_instance(cls):
         """Get an instance of the AlertMerger, using a cached version if possible."""
@@ -73,17 +77,31 @@ class AlertMerger:
         self.alert_proc_timeout = int(os.environ['ALERT_PROCESSOR_TIMEOUT_SEC'])
         self.lambda_client = boto3.client('lambda')
 
-    def _get_alerts(self, rule_name):
-        """Build a list of Alert instances triggered from the given rule name."""
-        alerts = []
+        # FIXME (derek.wang) Maybe make this configurable in the future
+        self._alert_generator_limit = self.ALERT_GENERATOR_DEFAULT_LIMIT
 
-        for record in self.table.get_alert_records(rule_name, self.alert_proc_timeout):
+    def _alert_generator(self, rule_name):
+        """
+        Returns a generator that yields Alert instances triggered from the given rule name.
+
+        To limit memory consumption, the generator yields a maximum number of alerts, defined
+        by self._alert_generator_limit.
+        """
+        generator = self.table.get_alert_records(rule_name, self.alert_proc_timeout)
+        for idx, record in enumerate(generator, start=1):
             try:
-                alerts.append(Alert.create_from_dynamo_record(record))
+                yield Alert.create_from_dynamo_record(record)
             except AlertCreationError:
                 LOGGER.exception('Invalid alert record %s', record)
+                continue
 
-        return alerts
+            if idx >= self._alert_generator_limit:
+                LOGGER.warning(
+                    'Alert Merger reached alert limit of %d for rule "%s"',
+                    self._alert_generator_limit,
+                    rule_name
+                )
+                return
 
     @staticmethod
     def _merge_groups(alerts):
@@ -144,14 +162,9 @@ class AlertMerger:
         merged_alerts = []  # List of newly created merge alerts
         alerts_to_delete = []  # List of alerts which can be deleted
 
-        # TODO: Find a way to avoid a full table scan just to get rule names
-        for rule_name in self.table.rule_names():
-            alerts = self._get_alerts(rule_name)
-            if not alerts:
-                continue
-
+        for rule_name in self.table.rule_names_generator():
             merge_enabled_alerts = []
-            for alert in alerts:
+            for alert in self._alert_generator(rule_name):
                 if alert.remaining_outputs:
                     # If an alert still has pending outputs, it needs to be sent immediately.
                     # For example, all alerts are sent to the default firehose now even if they will

@@ -5,7 +5,7 @@
 //
 // This is a less destructive approach to creating all of the Streams.
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
-  name        = "${var.prefix}_streamalert_data_${var.log_name}"
+  name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_data_${var.log_name}"
   destination = "s3"
 
   s3_configuration {

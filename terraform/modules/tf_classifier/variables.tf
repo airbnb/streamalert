@@ -35,3 +35,7 @@ variable "classifier_sqs_queue_arn" {
 variable "classifier_sqs_sse_kms_key_arn" {
   description = "ARN of the KMS key that handles server-side-encryption of classifier SQS frames"
 }
+
+variable "firehose_use_prefix" {
+  description = "When true, prepends the StreamAlert prefix to the AWS Firehose permissions"
+}
