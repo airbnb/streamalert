@@ -6,7 +6,7 @@ The end result will allow for sending VPC Flow Logs to the specified AWS Kinesis
 [via a CloudWatch Logs Subscription Filter](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CrossAccountSubscriptions.html).
 
 ## Submodules
-This folder contains the following two submodules: `defualt` and `internal`
+This folder contains the following two submodules: `default` and `internal`
 
 ### `default` Submodule
 The `default` submodule creates the default resources necessary to enable either local or
