@@ -1,4 +1,4 @@
-# Stream Alert Kinesis Event Terraform Module
+# StreamAlert Kinesis Event Terraform Module
 
 * This Terraform module configures a AWS Lambda function to read events from a speecific Kinesis Stream.
 

@@ -1,4 +1,4 @@
-# Stream Alert CloudTrail Terraform Module
+# StreamAlert CloudTrail Terraform Module
 Configure CloudTrail to deliver AWS API calls to AWS Kinesis and Amazon S3.
 
 ## Components
