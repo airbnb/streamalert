@@ -32,7 +32,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
     shard_level_metrics = kinesis_module.get('shard_level_metrics', [])
     stream_name = kinesis_module.get(
         'stream_name',
-        '{}_{}_streamalert_kinesis'.format(prefix, cluster_name)
+        '{}_{}_streamalert'.format(prefix, cluster_name)
     )
 
     cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {

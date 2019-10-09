@@ -21,7 +21,7 @@ For example, if the ``sources.json`` defines the following:
 
   {
     "kinesis": {
-      "example_prod_streamalert_kinesis": {
+      "example_prod_streamalert": {
         "logs": [
           "cloudwatch",
           "osquery"
