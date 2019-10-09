@@ -9,5 +9,3 @@ variable "lambda_role_id" {}
 variable "lambda_production_enabled" {}
 
 variable "lambda_function_alias_arn" {}
-
-variable "role_policy_prefix" {}
