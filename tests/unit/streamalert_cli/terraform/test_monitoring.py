@@ -31,7 +31,7 @@ def test_generate_cloudwatch_monitoring():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_test'],
+        'lambda_functions': ['unit-test_test_streamalert_classifier'],
         'kinesis_stream': '${module.kinesis_test.stream_name}',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True
@@ -53,7 +53,7 @@ def test_generate_cloudwatch_monitoring_with_settings():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_advanced'],
+        'lambda_functions': ['unit-test_advanced_streamalert_classifier'],
         'kinesis_stream': '${module.kinesis_advanced.stream_name}',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True,
@@ -88,7 +88,7 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_test'],
+        'lambda_functions': ['unit-test_test_streamalert_classifier'],
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': False
     }
@@ -137,7 +137,7 @@ def test_generate_cloudwatch_monitoring_custom_sns():
     expected_cloudwatch_tf_custom = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit_test_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_test'],
+        'lambda_functions': ['unit-test_test_streamalert_classifier'],
         'kinesis_stream': '${module.kinesis_test.stream_name}',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True

@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "classifier_queue" {
       variable = "aws:SourceArn"
 
       values = [
-        "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_streamalert_classifier_*",
+        "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_*_streamalert_classifier",
       ]
     }
   }
