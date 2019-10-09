@@ -47,6 +47,14 @@ def generate_rules_engine(config):
         'sqs_record_batch_size': min(config.get('sqs_record_batch_size', 10), 10)
     }
 
+    environment = {
+        'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
+        'STREAMALERT_PREFIX': prefix,
+    }
+
+    if 'log_rule_statistics' in config['lambda']['rules_engine_config']:
+        environment['STREAMALERT_TRACK_RULE_STATS'] = '1'
+
     # Set variables for the Lambda module
     result['module']['rules_engine_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(prefix, RULES_ENGINE_FUNCTION_NAME),
@@ -54,10 +62,7 @@ def generate_rules_engine(config):
         RulesEnginePackage.lambda_handler,
         config['lambda']['rules_engine_config'],
         config,
-        environment={
-            'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
-            'STREAMALERT_PREFIX': prefix
-        }
+        environment=environment,
     )
 
     return result

@@ -28,7 +28,7 @@ from streamalert.shared.lookup_tables.core import LookupTables
 from streamalert.shared.metrics import MetricLogger
 from streamalert.shared.rule import Rule
 from streamalert.shared.rule_table import RuleTable
-from streamalert.shared.stats import get_rule_stats
+from streamalert.shared.stats import RuleStatisticTracker
 
 
 LOGGER = get_logger(__name__)
@@ -56,14 +56,18 @@ class RulesEngine:
         # Load the lookup tables
         RulesEngine._lookup_tables = LookupTables.get_instance(config=self.config)
 
-        # If not rule import paths are specified, default to the config
-        if not rule_paths:
-            rule_paths = [item for location in {'rule_locations', 'matcher_locations'}
-                          for item in self.config['global']['general'][location]]
+        # If no rule import paths are specified, default to the config
+        rule_paths = rule_paths or [
+            item for location in {'rule_locations', 'matcher_locations'}
+            for item in self.config['global']['general'][location]
+        ]
 
         import_folders(*rule_paths)
 
-        self._in_lambda = 'LAMBDA_RUNTIME_DIR' in env
+        self._rule_stat_tracker = RuleStatisticTracker(
+            'STREAMALERT_TRACK_RULE_STATS' in env,
+            'LAMBDA_RUNTIME_DIR' in env
+        )
         self._required_outputs_set = resources.get_required_outputs()
         self._load_rule_table(self.config)
 
@@ -183,7 +187,8 @@ class RulesEngine:
             payload (dict): Representation of event to perform rule analysis against
             rule (rule.Rule): Attributes for the rule which triggered the alert
         """
-        rule_result = rule.process(payload['record'])
+        # Run the rule, using the statistic tracker in case stats are being tracked
+        rule_result = self._rule_stat_tracker.run_rule(rule, payload['record'])
         if not rule_result:
             return
 
@@ -378,11 +383,10 @@ class RulesEngine:
 
         self._alert_forwarder.send_alerts(alerts)
 
-        # Only log rule info here if this is deployed in Lambda
-        # During testing, this gets logged at the end and printing here could be confusing
-        # since stress testing calls this method multiple times
-        if self._in_lambda:
-            LOGGER.info(get_rule_stats(True))
+        # Only log rule info here if this is deployed in Lambda or explicitly enabled
+        # During testing, this gets logged at the very end
+        if self._rule_stat_tracker.enabled:
+            LOGGER.info(RuleStatisticTracker.statistics_info())
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TRIGGERED_ALERTS, len(alerts))
 

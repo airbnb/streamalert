@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,attribute-defined-outside-init
 from collections import namedtuple
 
 from mock import Mock, patch
@@ -23,31 +23,27 @@ from streamalert.shared import stats
 
 
 class TestRuleStats:
-    """TestTimeRule class"""
+    """TestRuleStats class"""
     def setup(self):
-        stats.RULE_STATS.clear()
-
-    def teardown(self):
-        stats.RULE_STATS.clear()
-
-    @staticmethod
-    def _timed_func_helper():
-        @stats.time_rule
-        def test_func(_):
-            pass
-
-        fake = namedtuple('Rule', ['name'])('test_rule')
-
-        test_func(fake)
+        stats.RuleStatisticTracker.STATS.clear()
+        self._fake_rule = namedtuple('Rule', ['name', 'process'])('test_rule', lambda r: False)
+        self._tracker = stats.RuleStatisticTracker(True)
 
     def test_time_rule(self):
-        """Stats - Time Rule, Decorator"""
-        self._timed_func_helper()
-        assert_equal(len(stats.RULE_STATS), 1)
-        assert_equal(stats.RULE_STATS['test_rule'].calls, 1)
+        """RuleStatisticTracker - Time Rule"""
+        self._tracker.run_rule(self._fake_rule, {})
+        assert_equal(len(self._tracker.STATS), 1)
+        assert_equal(self._tracker.STATS['test_rule'].calls, 1)
+
+    @patch('time.time')
+    def test_tracker_disabled(self, time_mock):
+        """RuleStatisticTracker - Disabled"""
+        tracker = stats.RuleStatisticTracker(False)
+        tracker.run_rule(self._fake_rule, {})
+        time_mock.assert_not_called()
 
     def test_rule_stats_add(self):
-        """Stats - Rule Statistics, Add"""
+        """RuleStatistic - Addition"""
         stat = stats.RuleStatistic(10.0)
         stat += stats.RuleStatistic(12.5)
 
@@ -55,7 +51,7 @@ class TestRuleStats:
         assert_equal(stat.tracked_time, 22.5)
 
     def test_rule_stats_compare(self):
-        """Stats - Rule Statistics, Compare"""
+        """RuleStatistic - Comparison"""
         stat_01 = stats.RuleStatistic(10.0)
         stat_02 = stats.RuleStatistic(12.0)
 
@@ -63,30 +59,37 @@ class TestRuleStats:
         assert_equal(stat_01 > stat_02, False)
 
     def test_rule_stats_string(self):
-        """Stats - Rule Statistics, To String"""
+        """RuleStatistic - Stringer"""
         stat = stats.RuleStatistic(10.0)
         stat.calls = 1
-
         assert_equal(str(stat), '   10.00000000 ms       1 calls     10.00000000 avg')
 
     @patch('logging.Logger.error')
     def test_get_rule_stats_empty(self, log_mock):
-        """Stats - Get Rule Stats, None"""
-        stats.get_rule_stats()
+        """RuleStatisticTracker - Statistics Info, None"""
+        stats.RuleStatisticTracker.statistics_info()
         log_mock.assert_called_with('No rule statistics to return')
 
     @patch('time.time', Mock(side_effect=[0.01, 0.02]))
     def test_get_rule_stats(self):
-        """Stats - Get Rule Stats"""
-        self._timed_func_helper()
-        result = stats.get_rule_stats()
+        """RuleStatisticTracker - Statistics Info"""
+        self._tracker.run_rule(self._fake_rule, {})
+        result = stats.RuleStatisticTracker.statistics_info()
         assert_equal(
             result,
             'Rule statistics:\n\ntest_rule       10.00000000 ms       1 calls     10.00000000 avg'
         )
 
+    def test_get_rule_stats_retain(self,):
+        """RuleStatisticTracker - Statistics Info, Retain Results"""
+        self._tracker.run_rule(self._fake_rule, {})
+        assert_equal(len(self._tracker.STATS), 1)
+        new_tracker = stats.RuleStatisticTracker(True, False)
+        assert_equal(len(new_tracker.STATS), 1)
+
     def test_get_rule_stats_reset(self,):
-        """Stats - Get Rule Stats, Reset"""
-        self._timed_func_helper()
-        _ = stats.get_rule_stats(True)
-        assert_equal(len(stats.RULE_STATS), 0)
+        """RuleStatisticTracker - Statistics Info, Reset"""
+        self._tracker.run_rule(self._fake_rule, {})
+        assert_equal(len(self._tracker.STATS), 1)
+        new_tracker = stats.RuleStatisticTracker(True, True)
+        assert_equal(len(new_tracker.STATS), 0)

@@ -66,7 +66,7 @@ def generate_monitoring(cluster_name, cluster_dict, config):
 
     if monitoring_config.get('lambda_alarms_enabled', True):
         cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)].update({
-            'lambda_functions': ['{}_streamalert_classifier_{}'.format(prefix, cluster_name)],
+            'lambda_functions': ['{}_{}_streamalert_classifier'.format(prefix, cluster_name)],
             'lambda_alarms_enabled': True
         })
 

@@ -31,8 +31,8 @@ from streamalert.classifier.parsers import ParserBase
 from streamalert.rules_engine import rules_engine
 from streamalert.shared import rule
 from streamalert.shared.logger import get_logger
+from streamalert.shared.stats import RuleStatisticTracker
 from streamalert.shared.lookup_tables.table import LookupTable
-from streamalert.shared.stats import get_rule_stats
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
 from streamalert_cli.test.format import format_green, format_red, format_underline, format_yellow
@@ -198,7 +198,7 @@ class TestCommand(CLICommand):
             result = result and TestRunner(options, config).run()
 
         if opts.get('stats'):
-            print(get_rule_stats())
+            print(RuleStatisticTracker.statistics_info())
         return result
 
 
@@ -228,14 +228,18 @@ class TestRunner:
         self._passed = 0
         self._failed = 0
         prefix = self._config['global']['account']['prefix']
+        env = {
+            'CLUSTER': 'local-test',
+            'STREAMALERT_PREFIX': prefix,
+            'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
+            'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
+        }
+        if options.stats:
+            env['STREAMALERT_TRACK_RULE_STATS'] = '1'
+
         patch.dict(
             os.environ,
-            {
-                'CLUSTER': 'local-test',
-                'STREAMALERT_PREFIX': prefix,
-                'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
-                'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
-            }
+            env
         ).start()
 
     @staticmethod
