@@ -1,0 +1,21 @@
+{
+  "enabled": false,
+  "tables": {
+    "dynamo-backed-table": {
+      "driver": "dynamodb",
+      "table": "dynamodb-table-name",
+      "partition_key": "partition-key",
+      "value_key": "value-column",
+      "cache_maximum_key_count": 3,
+      "cache_refresh_minutes": 3,
+      "consistent_read": false
+    },
+    "s3-backed-table": {
+      "driver": "s3",
+      "bucket": "s3-bucket-name",
+      "key": "file.json",
+      "compression": false,
+      "cache_refresh_minutes": 10
+    }
+  }
+}
