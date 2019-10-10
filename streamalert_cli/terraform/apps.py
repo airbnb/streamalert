@@ -51,7 +51,7 @@ def generate_apps(cluster_name, cluster_dict, config):
             'function_name': function_name,
             'region': config['global']['account']['region'],
             'function_role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
-            'source': 'modules/tf_app_iam'
+            'source': './modules/tf_app_iam'
         }
 
         # Format the lambda module with 'app_<app_name_<cluster>_lambda'

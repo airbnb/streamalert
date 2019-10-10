@@ -1,13 +1,13 @@
 variable "account_id" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "function_role_id" {
@@ -45,3 +45,4 @@ variable "classifier_sqs_sse_kms_key_arn" {
 variable "sqs_record_batch_size" {
   description = "Number of records the Lambda function should read from the SQS queue each time (max=10)"
 }
+

@@ -47,7 +47,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'prefix': 'unit-test',
                     'region': 'us-west-1',
                     'role_id': '${module.alert_processor_lambda.role_id}',
-                    'source': 'modules/tf_alert_processor_iam',
+                    'source': './modules/tf_alert_processor_iam',
                     'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'alert_processor_lambda': {
@@ -72,7 +72,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'handler': 'streamalert.alert_processor.main.handler',
                     'log_retention_days': 7,
                     'memory_size_mb': 128,
-                    'source': 'modules/tf_lambda',
+                    'source': './modules/tf_lambda',
                     'throttles_alarm_enabled': True,
                     'throttles_alarm_evaluation_periods': 4,
                     'throttles_alarm_period_secs': 5,
@@ -108,7 +108,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'prefix': 'unit-test',
                     'region': 'us-west-1',
                     'role_id': '${module.alert_processor_lambda.role_id}',
-                    'source': 'modules/tf_alert_processor_iam',
+                    'source': './modules/tf_alert_processor_iam',
                     'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'alert_processor_lambda': {
@@ -125,7 +125,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'function_name': 'unit-test_streamalert_alert_processor',
                     'handler': 'streamalert.alert_processor.main.handler',
                     'memory_size_mb': 128,
-                    'source': 'modules/tf_lambda',
+                    'source': './modules/tf_lambda',
                     'timeout_sec': 60,
                 }
             }

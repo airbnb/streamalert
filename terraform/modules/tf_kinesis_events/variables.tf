@@ -2,10 +2,16 @@ variable "batch_size" {
   default = 100
 }
 
-variable "kinesis_stream_arn" {}
+variable "kinesis_stream_arn" {
+}
 
-variable "lambda_role_id" {}
+variable "lambda_role_id" {
+}
 
-variable "lambda_production_enabled" {}
+variable "lambda_production_enabled" {
+}
+
+variable "lambda_function_alias_arn" {
+}
 
 variable "lambda_function_alias_arn" {}

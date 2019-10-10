@@ -1,22 +1,24 @@
 variable "account_id" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "kms_key_arn" {
-  type = "string"
+  type = string
 }
 
-variable "alerts_table_read_capacity" {}
+variable "alerts_table_read_capacity" {
+}
 
-variable "alerts_table_write_capacity" {}
+variable "alerts_table_write_capacity" {
+}
 
 variable "enable_rule_staging" {
   default = false
@@ -37,3 +39,4 @@ variable "rules_engine_timeout" {
 variable "sqs_use_prefix" {
   default = false
 }
+
