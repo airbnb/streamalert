@@ -14,7 +14,7 @@ resource "aws_iam_user" "streamalert" {
 resource "aws_iam_group" "streamalert" {
   count = "${var.create_user ? 1 : 0}"
   name  = "${var.prefix}_${var.cluster}_streamalert_users"
-  path  = "/"
+  path  = "/streamalert/"
 }
 
 // IAM Group Membership: Assign streamalert user to group
