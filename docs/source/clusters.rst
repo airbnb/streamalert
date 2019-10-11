@@ -461,15 +461,16 @@ Configuration Options
 The ``kinesis`` module expects a single key (``streams``) whose value is a dictionary with the
 following options:
 
-=======================  ============  ===============
-**Key**                  **Default**   **Description**
------------------------  ------------  ---------------
-``create_user``          ``false``     Create an IAM user authorized to ``PutRecords`` on the stream
-``retention``            ---           Length of time (hours) data records remain in the stream
-``shard_level_metrics``  ``[]``        Enable these `enhanced shard-level metrics <https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-shard>`_
-``shards``               ---           Number of shards (determines stream data capacity)
-``trusted_accounts``     ``[]``        Authorize these account IDs to assume an IAM role which can write to the stream
-=======================  ============  ===============
+=======================  ==============================  ===============
+**Key**                  **Default**                     **Description**
+-----------------------  ------------------------------  ---------------
+``create_user``          ``false``                       Create an IAM user authorized to ``PutRecords`` on the stream
+``retention``            ---                             Length of time (hours) data records remain in the stream
+``shard_level_metrics``  ``[]``                          Enable these `enhanced shard-level metrics <https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-shard>`_
+``shards``               ---                             Number of shards (determines stream data capacity)
+``trusted_accounts``     ``[]``                          Authorize these account IDs to assume an IAM role which can write to the stream
+``stream_name``          ``PREFIX_CLUSTER_streamalert``  [optional] Custom name for the stream that will be created
+=======================  ==============================  ===============
 
 Scaling
 ~~~~~~~
