@@ -481,7 +481,7 @@ First, update the Kinesis Stream shard count with the following command:
 .. code-block:: bash
 
   $ aws kinesis update-shard-count \
-    --stream-name <prefix>_<cluster>_stream_alert_kinesis \
+    --stream-name <prefix>_<cluster>_streamalert_kinesis \
     --target-shard-count <new_shard_count> \
     --scaling-type UNIFORM_SCALING
 

@@ -41,7 +41,6 @@ def generate_kinesis_events(cluster_name, cluster_dict, config):
             cluster_name
         ),
         'kinesis_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
-        'role_policy_prefix': cluster_name
     }
 
     return True

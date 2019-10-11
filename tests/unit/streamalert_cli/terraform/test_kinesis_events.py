@@ -37,7 +37,6 @@ def test_kinesis_events():
                     '${module.classifier_advanced_lambda.function_alias_arn}'
                 ),
                 'kinesis_stream_arn': '${module.kinesis_advanced.arn}',
-                'role_policy_prefix': 'advanced'
             }
         }
     }

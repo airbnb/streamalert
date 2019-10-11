@@ -40,13 +40,4 @@
     <td>None</td>
     <td>True</td>
   </tr>
-  <tr>
-    <td>role_policy_prefix</td>
-    <td>The prefix string for AWS IAM roles</td>
-    <td>None</td>
-    <td>False</td>
-  </tr>
 </table>
-
-## Outputs
-None
