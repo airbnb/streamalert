@@ -52,7 +52,7 @@ def generate_rules_engine(config):
         'STREAMALERT_PREFIX': prefix,
     }
 
-    if 'log_rule_statistics' in config['lambda']['rules_engine_config']:
+    if config['lambda']['rules_engine_config'].get('log_rule_statistics'):
         environment['STREAMALERT_TRACK_RULE_STATS'] = '1'
 
     # Set variables for the Lambda module
