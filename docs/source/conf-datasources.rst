@@ -33,6 +33,7 @@ Example:
           "inspec",
           "osquery"
         ]
+      },
       "s3": {
         "abc.webserver.logs": [
             "nginx"
