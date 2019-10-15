@@ -1,4 +1,4 @@
-# Stream Alert Kinesis Firehose Module
+# StreamAlert Kinesis Firehose Module
 
 * This Terraform module creates the following:
   * A Firehose Delivery Stream for each configured log type

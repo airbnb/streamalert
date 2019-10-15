@@ -17,6 +17,8 @@ from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
 
+DEFAULT_FLOW_LOG_TYPES = ['vpcs', 'subnets', 'enis']
+
 
 def generate_flow_logs(cluster_name, cluster_dict, config):
     """Add the VPC Flow Logs module to the Terraform cluster dict.
@@ -30,35 +32,56 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
         bool: Result of applying the flow_logs module
     """
     modules = config['clusters'][cluster_name]['modules']
-    account_id = config['global']['account']['aws_account_id']
-    prefix = config['global']['account']['prefix']
-    cross_account_ids = modules['flow_logs'].get('cross_account_ids', []) + [account_id]
-    flow_log_group_name_default = '{}_{}_streamalert_flow_logs'.format(
-        config['global']['account']['prefix'],
-        cluster_name
-    )
-    flow_log_group_name = modules['flow_logs'].get(
-        'log_group_name',
-        flow_log_group_name_default
-    )
+    if not modules['flow_logs']['enabled']:
+        LOGGER.info('Flow logs disabled, nothing to do')
+        return False
 
-    if modules['flow_logs']['enabled']:
-        cluster_dict['module']['flow_logs_{}'.format(cluster_name)] = {
-            'source': 'modules/tf_flow_logs',
+    prefix = config['global']['account']['prefix']
+    region = config['global']['account']['region']
+    all_account_ids = modules['flow_logs'].get('cross_account_ids', [])
+
+    # If 'vpcs', 'subnets', or 'enis' is defined within the config, we should create
+    # flow logs for these values
+    create_internal_flow_logs = any(
+        modules['flow_logs'].get(flow_log_type)
+        for flow_log_type in DEFAULT_FLOW_LOG_TYPES
+    )
+    if create_internal_flow_logs:
+        flow_logs_settings = {
+            'source': 'modules/tf_flow_logs/modules/internal',
+            'region': region,
             'prefix': prefix,
             'cluster': cluster_name,
-            'cross_account_ids': cross_account_ids,
-            'destination_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
-            'flow_log_group_name': flow_log_group_name,
-            'log_retention': modules['flow_logs'].get('log_retention', 7)}
+            'cloudwatch_log_destination_arn': (
+                '${{module.flow_logs_default_{}.cloudwatch_log_destination_arn}}'.format(
+                    cluster_name
+                )
+            ),
+        }
 
-        for flow_log_input in ('vpcs', 'subnets', 'enis'):
-            input_data = modules['flow_logs'].get(flow_log_input)
-            if input_data:
-                module_name = 'flow_logs_{}'.format(cluster_name)
-                cluster_dict['module'][module_name][flow_log_input] = input_data
+        variables_with_defaults = ['log_retention', 'flow_log_filter']
+        for variable in variables_with_defaults:
+            if variable in modules['flow_logs']:
+                flow_logs_settings[variable] = modules['flow_logs'][variable]
 
-        return True
+        for flow_log_type in DEFAULT_FLOW_LOG_TYPES:
+            values = modules['flow_logs'].get(flow_log_type)
+            if values:
+                flow_logs_settings[flow_log_type] = values
 
-    LOGGER.info('Flow logs disabled, nothing to do')
-    return False
+        cluster_dict['module']['flow_logs_internal_{}'.format(cluster_name)] = flow_logs_settings
+
+        # Append the home account id
+        all_account_ids.append(config['global']['account']['aws_account_id'])
+
+    # Add the default settings to allow for internal and cross-account flow log sending
+    cluster_dict['module']['flow_logs_default_{}'.format(cluster_name)] = {
+        'source': 'modules/tf_flow_logs/modules/default',
+        'region': region,
+        'prefix': prefix,
+        'cluster': cluster_name,
+        'account_ids': all_account_ids,
+        'destination_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
+    }
+
+    return True

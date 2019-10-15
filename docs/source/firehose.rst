@@ -22,7 +22,7 @@ For example, if the data_sources for a cluster named prod defined in ``conf/clus
   {
     "data_sources": {
       "kinesis": {
-        "example_prod_stream_alert_kinesis": [
+        "example_prod_streamalert": [
           "cloudwatch",
           "osquery"
         ]

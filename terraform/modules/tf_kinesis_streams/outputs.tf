@@ -2,6 +2,10 @@ output "arn" {
   value = "${aws_kinesis_stream.streamalert_stream.arn}"
 }
 
+output "stream_name" {
+  value = "${aws_kinesis_stream.streamalert_stream.name}"
+}
+
 output "username" {
   value = "${aws_iam_access_key.streamalert.*.user}"
 }

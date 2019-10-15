@@ -24,9 +24,11 @@ CONFIG = CLIConfig(config_path='tests/unit/conf')
 def test_kinesis_streams():
     """CLI - Terraform Generate Kinesis Streams"""
     cluster_dict = common.infinitedict()
-    result = kinesis_streams.generate_kinesis_streams('advanced',
-                                                      cluster_dict,
-                                                      CONFIG)
+    result = kinesis_streams.generate_kinesis_streams(
+        'advanced',
+        cluster_dict,
+        CONFIG
+    )
 
     expected_result = {
         'module': {
@@ -37,7 +39,7 @@ def test_kinesis_streams():
                 'region': 'us-west-1',
                 'prefix': 'unit-test',
                 'cluster': 'advanced',
-                'stream_name': 'unit-test_advanced_stream_alert_kinesis',
+                'stream_name': 'unit-test_advanced_streamalert',
                 'shards': 1,
                 'retention': 24,
                 'create_user': True,
@@ -53,9 +55,11 @@ def test_kinesis_streams():
 def test_kinesis_streams_with_trusted_account():
     """CLI - Terraform Generate Kinesis Streams with trusted account"""
     cluster_dict = common.infinitedict()
-    result = kinesis_streams.generate_kinesis_streams('trusted',
-                                                      cluster_dict,
-                                                      CONFIG)
+    result = kinesis_streams.generate_kinesis_streams(
+        'trusted',
+        cluster_dict,
+        CONFIG
+    )
 
     expected_result = {
         'module': {
@@ -66,13 +70,47 @@ def test_kinesis_streams_with_trusted_account():
                 'region': 'us-west-1',
                 'prefix': 'unit-test',
                 'cluster': 'trusted',
-                'stream_name': 'unit-test_trusted_stream_alert_kinesis',
+                'stream_name': 'unit-test_trusted_streamalert',
                 'shards': 1,
                 'retention': 24,
                 'create_user': True,
                 'trusted_accounts': [
                     '98765432100'
                 ]
+            }
+        }
+    }
+
+    assert_true(result)
+    assert_equal(cluster_dict, expected_result)
+
+
+def test_kinesis_streams_with_custom_name():
+    """CLI - Terraform Generate Kinesis Streams with Custom Name"""
+    cluster_dict = common.infinitedict()
+    stream_name = 'test-stream-name'
+    cluster = 'advanced'
+    CONFIG['clusters'][cluster]['modules']['kinesis']['streams']['stream_name'] = stream_name
+    result = kinesis_streams.generate_kinesis_streams(
+        cluster,
+        cluster_dict,
+        CONFIG
+    )
+
+    expected_result = {
+        'module': {
+            'kinesis_advanced': {
+                'source': 'modules/tf_kinesis_streams',
+                'account_id': '12345678910',
+                'shard_level_metrics': ["IncomingBytes"],
+                'region': 'us-west-1',
+                'prefix': 'unit-test',
+                'cluster': cluster,
+                'stream_name': stream_name,
+                'shards': 1,
+                'retention': 24,
+                'create_user': True,
+                'trusted_accounts': []
             }
         }
     }

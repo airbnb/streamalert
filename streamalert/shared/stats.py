@@ -21,7 +21,56 @@ from streamalert.shared.logger import get_logger
 
 
 LOGGER = get_logger(__name__)
-RULE_STATS = defaultdict(lambda: RuleStatistic(0.0))
+
+
+class RuleStatisticTracker:
+
+    STATS = defaultdict(lambda: RuleStatistic(0.0))
+
+    def __init__(self, enabled, clear_cache=False):
+        self.enabled = enabled
+        if clear_cache:
+            self.__class__.STATS.clear()
+
+    def run_rule(self, rule, record):
+        """Timing function for timing a rule function's duration
+
+        Note: this function's timing aspect is a no-op if the RuleStatisticTracker
+            is disabled, and instead the rule just runs without timing
+
+        Args:
+            rule (rule.Rule): The rule being ran
+            record (dict): The record being processed
+
+        Returns:
+            bool: Result of rule processing
+        """
+        if not self.enabled:
+            return rule.process(record)
+
+        time_start = time.time()
+        result = rule.process(record)
+        time_end = time.time()
+
+        self.__class__.STATS[rule.name] += RuleStatistic((time_end - time_start) * 1000)
+
+        return result
+
+    @classmethod
+    def statistics_info(cls):
+        """Return human-readable information on rule stats"""
+        if not cls.STATS:
+            LOGGER.error('No rule statistics to return')
+            return
+
+        max_rule_name_len = max([len(rule) for rule in cls.STATS])
+
+        stat_lines = [
+            '{rule: <{pad}}{stat}'.format(rule=rule, pad=max_rule_name_len+4, stat=stat)
+            for rule, stat in sorted(iter(cls.STATS.items()), key=lambda k_v: (k_v[1], k_v[0]))
+        ]
+
+        return 'Rule statistics:\n\n{}'.format('\n'.join(stat_lines))
 
 
 class RuleStatistic:
@@ -64,43 +113,3 @@ def time_me(func):
         return result
 
     return timed
-
-
-def time_rule(rule_func):
-    """Timing decorator for specifically timing a rule function"""
-    def timed(self, *args, **kwargs):
-        """Wrapping function"""
-        time_start = time.time()
-        result = rule_func(self, *args, **kwargs)
-        time_end = time.time()
-
-        RULE_STATS[self.name] += RuleStatistic((time_end - time_start) * 1000)
-
-        return result
-
-    return timed
-
-
-def get_rule_stats(reset=False):
-    """Print some additional rule stats
-
-    Args:
-        reset (bool): Optional flag to reset the tracking statistics after printing
-    """
-    if not RULE_STATS:
-        LOGGER.error('No rule statistics to return')
-        return
-
-    max_rule_name_len = max([len(rule) for rule in RULE_STATS])
-
-    stat_lines = []
-    for rule, stat in sorted(iter(RULE_STATS.items()), key=lambda k_v: (k_v[1], k_v[0])):
-        stat_lines.append(
-            '{rule: <{pad}}{stat}'.format(rule=rule, pad=max_rule_name_len+4, stat=stat))
-
-    # Clear the dictionary that is storing statistics
-    # This allows for resetting when cumulative stats are not wanted
-    if reset:
-        RULE_STATS.clear()
-
-    return 'Rule statistics:\n\n{}'.format('\n'.join(stat_lines))

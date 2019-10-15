@@ -285,15 +285,23 @@ class TestTerraformGenerate:
 
         expected = {
             'module': {
-                'flow_logs_advanced': {
-                    'source': 'modules/tf_flow_logs',
+                'flow_logs_default_advanced': {
+                    'source': 'modules/tf_flow_logs/modules/default',
+                    'region': 'us-west-1',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
-                    'cross_account_ids': ['12345678910'],
+                    'account_ids': ['12345678910'],
                     'destination_stream_arn': '${module.kinesis_advanced.arn}',
-                    'flow_log_group_name': 'unit-test-advanced',
-                    'log_retention': 7,
-                    'vpcs': ['vpc-id-1', 'vpc-id-2']
+                },
+                'flow_logs_internal_advanced': {
+                    'source': 'modules/tf_flow_logs/modules/internal',
+                    'region': 'us-west-1',
+                    'prefix': 'unit-test',
+                    'cluster': 'advanced',
+                    'cloudwatch_log_destination_arn': (
+                        '${module.flow_logs_default_advanced.cloudwatch_log_destination_arn}'
+                    ),
+                    'vpcs': ['vpc-id-1', 'vpc-id-2'],
                 }
             }
         }
@@ -468,7 +476,8 @@ class TestTerraformGenerate:
             'cloudwatch_monitoring_advanced',
             'kinesis_advanced',
             'kinesis_events_advanced',
-            'flow_logs_advanced',
+            'flow_logs_default_advanced',
+            'flow_logs_internal_advanced',
             'cloudtrail_advanced',
             's3_events_unit-test_advanced_1',
             's3_events_unit-test_advanced_0'

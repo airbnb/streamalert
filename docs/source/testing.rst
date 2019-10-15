@@ -120,7 +120,7 @@ Key                        Type                    Required  Description
                                                              provided in the ``data_sources`` field defined within a cluster in ``conf/clusters/<cluster>.json``
 ``trigger_rules``          ``list``                No        A list of zero or more rule names that this test record should trigger.
                                                              An empty list implies this record should not trigger any alerts
-``validate_schemas_only``  ``boolean``             No        Whether or not the test record should go through the rule processing engine.
+``validate_schema_only``   ``boolean``             No        Whether or not the test record should go through the rule processing engine.
                                                              If set to ``true``, this record will only have validation performed
 =========================  ======================  ========  ===========
 

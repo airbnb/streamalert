@@ -56,7 +56,7 @@
     "description": "A Network ACL that allows ingress from anywhere should create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "cloudtrail_network_acl_ingress_anywhere"
     ]
@@ -118,7 +118,7 @@
     "description": "A Network ACL that denies internet ingress should not create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

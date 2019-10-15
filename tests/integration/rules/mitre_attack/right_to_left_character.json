@@ -75,7 +75,7 @@
     "description": "Running a binary that does not have the right-to-left-override character, should not create an alert.",
     "log": "osquery:differential",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   },
   {
@@ -100,7 +100,7 @@
     "description": "Running a binary that does have the right-to-left-override character, should create an alert.",
     "log": "osquery:differential",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "right_to_left_character"
     ]

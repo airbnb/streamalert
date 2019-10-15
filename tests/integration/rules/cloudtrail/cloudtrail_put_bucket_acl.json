@@ -99,7 +99,7 @@
     "description": "Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "cloudtrail_put_bucket_acl"
     ]
@@ -204,7 +204,7 @@
     "description": "Modifying an S3 bucket ACL without use of AllUsers or AuthenticatedUsers should not create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

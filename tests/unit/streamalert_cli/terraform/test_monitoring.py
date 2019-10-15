@@ -31,8 +31,8 @@ def test_generate_cloudwatch_monitoring():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_test'],
-        'kinesis_stream': 'unit-test_test_stream_alert_kinesis',
+        'lambda_functions': ['unit-test_test_streamalert_classifier'],
+        'kinesis_stream': '${module.kinesis_test.stream_name}',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True
     }
@@ -40,7 +40,8 @@ def test_generate_cloudwatch_monitoring():
     assert_true(result)
     assert_equal(
         cluster_dict['module']['cloudwatch_monitoring_test'],
-        expected_cloudwatch_tf)
+        expected_cloudwatch_tf
+    )
 
 
 def test_generate_cloudwatch_monitoring_with_settings():
@@ -52,8 +53,8 @@ def test_generate_cloudwatch_monitoring_with_settings():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_advanced'],
-        'kinesis_stream': 'unit-test_advanced_stream_alert_kinesis',
+        'lambda_functions': ['unit-test_advanced_streamalert_classifier'],
+        'kinesis_stream': '${module.kinesis_advanced.stream_name}',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True,
         'kinesis_iterator_age_error_threshold': '3000000'
@@ -62,7 +63,8 @@ def test_generate_cloudwatch_monitoring_with_settings():
     assert_true(result)
     assert_equal(
         cluster_dict['module']['cloudwatch_monitoring_advanced'],
-        expected_cloudwatch_tf)
+        expected_cloudwatch_tf
+    )
 
 
 def test_generate_cloudwatch_monitoring_disabled():
@@ -86,7 +88,7 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_test'],
+        'lambda_functions': ['unit-test_test_streamalert_classifier'],
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': False
     }
@@ -94,7 +96,8 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
     assert_true(result)
     assert_equal(
         cluster_dict['module']['cloudwatch_monitoring_test'],
-        expected_cloudwatch_tf)
+        expected_cloudwatch_tf
+    )
 
 
 def test_generate_cloudwatch_monitoring_no_lambda():
@@ -108,7 +111,7 @@ def test_generate_cloudwatch_monitoring_no_lambda():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring',
-        'kinesis_stream': 'unit-test_test_stream_alert_kinesis',
+        'kinesis_stream': '${module.kinesis_test.stream_name}',
         'lambda_alarms_enabled': False,
         'kinesis_alarms_enabled': True
     }
@@ -116,7 +119,8 @@ def test_generate_cloudwatch_monitoring_no_lambda():
     assert_true(result)
     assert_equal(
         cluster_dict['module']['cloudwatch_monitoring_test'],
-        expected_cloudwatch_tf)
+        expected_cloudwatch_tf
+    )
 
 
 def test_generate_cloudwatch_monitoring_custom_sns():
@@ -133,8 +137,8 @@ def test_generate_cloudwatch_monitoring_custom_sns():
     expected_cloudwatch_tf_custom = {
         'source': 'modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit_test_monitoring',
-        'lambda_functions': ['unit-test_streamalert_classifier_test'],
-        'kinesis_stream': 'unit-test_test_stream_alert_kinesis',
+        'lambda_functions': ['unit-test_test_streamalert_classifier'],
+        'kinesis_stream': '${module.kinesis_test.stream_name}',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True
     }
@@ -142,7 +146,8 @@ def test_generate_cloudwatch_monitoring_custom_sns():
     assert_true(result)
     assert_equal(
         cluster_dict['module']['cloudwatch_monitoring_test'],
-        expected_cloudwatch_tf_custom)
+        expected_cloudwatch_tf_custom
+    )
 
 
 @patch('streamalert_cli.terraform.monitoring.LOGGER')

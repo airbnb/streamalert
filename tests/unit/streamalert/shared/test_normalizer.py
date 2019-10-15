@@ -131,6 +131,41 @@ class TestNormalizer:
 
         assert_equal(record, expected_record)
 
+    def test_normalize_corner_case(self):
+        """Normalizer - Normalize - Corner Case"""
+        log_type = 'cloudtrail'
+        Normalizer._types_config = {
+            log_type: {
+                'normalized_key': {
+                    'normalized_key',
+                    'original_key'
+                },
+                'sourceAccount': {
+                    'account',
+                    'accountId'
+                }
+            }
+        }
+        record = {
+            'unrelated_key': 'foobar',
+            'original_key': {
+                'original_key': 'fizzbuzz',
+            }
+        }
+        Normalizer.normalize(record, log_type)
+
+        expected_record = {
+            'unrelated_key': 'foobar',
+            'original_key': {
+                'original_key': 'fizzbuzz',
+            },
+            'streamalert:normalization': {
+                'normalized_key': ['fizzbuzz']
+            }
+        }
+
+        assert_equal(record, expected_record)
+
     @patch('logging.Logger.debug')
     def test_normalize_none_defined(self, log_mock):
         """Normalizer - Normalize, No Types Defined"""

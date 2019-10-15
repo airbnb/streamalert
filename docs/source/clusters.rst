@@ -461,15 +461,16 @@ Configuration Options
 The ``kinesis`` module expects a single key (``streams``) whose value is a dictionary with the
 following options:
 
-=======================  ============  ===============
-**Key**                  **Default**   **Description**
------------------------  ------------  ---------------
-``create_user``          ``false``     Create an IAM user authorized to ``PutRecords`` on the stream
-``retention``            ---           Length of time (hours) data records remain in the stream
-``shard_level_metrics``  ``[]``        Enable these `enhanced shard-level metrics <https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-shard>`_
-``shards``               ---           Number of shards (determines stream data capacity)
-``trusted_accounts``     ``[]``        Authorize these account IDs to assume an IAM role which can write to the stream
-=======================  ============  ===============
+=======================  ==================================  ===============
+**Key**                  **Default**                         **Description**
+-----------------------  ----------------------------------  ---------------
+``create_user``          ``false``                           Create an IAM user authorized to ``PutRecords`` on the stream
+``retention``            ---                                 Length of time (hours) data records remain in the stream
+``shard_level_metrics``  ``[]``                              Enable these `enhanced shard-level metrics <https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-shard>`_
+``shards``               ---                                 Number of shards (determines stream data capacity)
+``trusted_accounts``     ``[]``                              Authorize these account IDs to assume an IAM role which can write to the stream
+``stream_name``          ``<prefix>_<cluster>_streamalert``  [optional] Custom name for the stream that will be created
+=======================  ==================================  ===============
 
 Scaling
 ~~~~~~~
@@ -481,7 +482,7 @@ First, update the Kinesis Stream shard count with the following command:
 .. code-block:: bash
 
   $ aws kinesis update-shard-count \
-    --stream-name <prefix>_<cluster>_stream_alert_kinesis \
+    --stream-name <prefix>_<cluster>_streamalert_kinesis \
     --target-shard-count <new_shard_count> \
     --scaling-type UNIFORM_SCALING
 
@@ -588,16 +589,16 @@ for StreamAlert consumption.
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
 
-=====================  ==========================================  ===============
-**Key**                **Default**                                 **Description**
----------------------  ------------------------------------------  ---------------
-``cross_account_ids``  ``[]``                                      Authorize flow log delivery from these accounts
-``enabled``            ---                                         Toggle flow log creation
-``enis``               ``[]``                                      Add flow logs for these ENIs
-``log_group_name``     ``"PREFIX_CLUSTER_streamalert_flow_logs"``  Flow logs are directed to this log group
-``subnets``            ``[]``                                      Add flow logs for these VPC subnet IDs
-``vpcs``               ``[]``                                      Add flow logs for these VPC IDs
-=====================  ==========================================  ===============
+=====================  ============================================  ===============
+**Key**                **Default**                                   **Description**
+---------------------  --------------------------------------------  ---------------
+``cross_account_ids``  ``[]``                                        Authorize flow log delivery from these accounts
+``enabled``            ---                                           Toggle flow log creation
+``enis``               ``[]``                                        Add flow logs for these ENIs
+``log_group_name``     ``<prefix>_<cluster>_streamalert_flow_logs``  Flow logs are directed to this log group
+``subnets``            ``[]``                                        Add flow logs for these VPC subnet IDs
+``vpcs``               ``[]``                                        Add flow logs for these VPC IDs
+=====================  ============================================  ===============
 
 
 .. _s3_events:

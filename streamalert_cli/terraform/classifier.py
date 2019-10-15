@@ -90,7 +90,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
 
     # Set variables for the Lambda module
     cluster_dict['module']['{}_lambda'.format(tf_module_prefix)] = generate_lambda(
-        '{}_streamalert_classifier_{}'.format(config['global']['account']['prefix'], cluster_name),
+        '{}_{}_streamalert_classifier'.format(config['global']['account']['prefix'], cluster_name),
         ClassifierPackage.package_name + '.zip',
         ClassifierPackage.lambda_handler,
         classifier_config,
