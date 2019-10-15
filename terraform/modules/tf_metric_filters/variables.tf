@@ -23,4 +23,3 @@ variable "log_group_name" {
   description = "CloudWatch Log Group name to which the filter should be applied"
   type        = string
 }
-

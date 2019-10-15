@@ -5,4 +5,3 @@ output "data_bucket_arn" {
 output "firehose_role_arn" {
   value = aws_iam_role.streamalert_kinesis_firehose.arn
 }
-

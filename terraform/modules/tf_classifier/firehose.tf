@@ -25,4 +25,3 @@ data "aws_iam_policy_document" "classifier_firehose" {
     ]
   }
 }
-

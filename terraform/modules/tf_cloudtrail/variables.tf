@@ -59,4 +59,3 @@ variable "send_to_cloudwatch" {
 variable "exclude_home_region_events" {
   default = false
 }
-

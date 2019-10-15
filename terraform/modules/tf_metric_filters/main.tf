@@ -12,4 +12,3 @@ resource "aws_cloudwatch_log_metric_filter" "cloudwatch_metric_filters" {
     namespace = "StreamAlert"
   }
 }
-

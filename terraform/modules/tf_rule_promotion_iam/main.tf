@@ -122,4 +122,3 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
     resources = formatlist("arn:aws:s3:::%s*", var.athena_data_buckets)
   }
 }
-

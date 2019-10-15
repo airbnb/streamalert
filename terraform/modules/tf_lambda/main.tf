@@ -115,4 +115,3 @@ resource "aws_lambda_permission" "sns_inputs" {
     aws_lambda_alias.alias_no_vpc,
   ]
 }
-

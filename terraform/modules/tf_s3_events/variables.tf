@@ -28,4 +28,3 @@ variable "lambda_role_id" {
 
 variable "notification_id" {
 }
-

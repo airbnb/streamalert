@@ -86,4 +86,3 @@ variable "kinesis_write_throughput_exceeded_evaluation_periods" {
 variable "kinesis_write_throughput_exceeded_period" {
   default = "300"
 }
-

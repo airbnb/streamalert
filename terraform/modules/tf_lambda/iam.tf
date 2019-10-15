@@ -33,4 +33,3 @@ resource "aws_iam_role_policy_attachment" "vpc_access" {
   role       = aws_iam_role.role[0].id
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
-

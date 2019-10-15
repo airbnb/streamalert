@@ -92,4 +92,3 @@ resource "aws_iam_role_policy" "streamalert_kinesis_put_records" {
   role   = aws_iam_role.streamalert_write_role[0].id
   policy = data.aws_iam_policy_document.streamalert_writeonly[0].json
 }
-

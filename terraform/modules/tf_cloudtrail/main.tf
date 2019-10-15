@@ -1,5 +1,5 @@
 locals {
-  apply_filter_string    = "{ $.awsRegion != \"${var.region}\" }"
+  apply_filter_string    = "{ $$.awsRegion != \"${var.region}\" }"
   cloudtrail_bucket_name = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
 }
 
@@ -127,7 +127,7 @@ resource "aws_cloudtrail" "streamalert" {
 
 // StreamAlert CloudTrail, not sending to CloudWatch
 resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
-  count                         = false == var.send_to_cloudwatch && false == var.existing_trail ? 1 : 0
+  count                         = var.send_to_cloudwatch == false && var.existing_trail == false ? 1 : 0
   name                          = local.cloudtrail_bucket_name
   s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].id
   enable_log_file_validation    = true
@@ -349,4 +349,3 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     }
   }
 }
-

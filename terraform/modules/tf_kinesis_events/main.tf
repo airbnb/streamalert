@@ -39,4 +39,3 @@ resource "aws_lambda_event_source_mapping" "streamalert_kinesis_production_event
   function_name     = var.lambda_function_alias_arn
   starting_position = "TRIM_HORIZON"
 }
-

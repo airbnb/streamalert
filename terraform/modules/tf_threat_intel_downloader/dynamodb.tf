@@ -52,4 +52,3 @@ resource "aws_appautoscaling_policy" "dynamodb_table_read_policy" {
     target_value = var.target_utilization
   }
 }
-

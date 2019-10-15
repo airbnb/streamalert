@@ -196,4 +196,3 @@ data "aws_iam_policy_document" "send_to_sqs_queues" {
     resources = ["${local.sqs_arn_prefix}:${element(local.sqs_outputs, count.index)}"]
   }
 }
-

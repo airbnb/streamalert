@@ -60,4 +60,3 @@ variable "alarm_actions" {
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
 }
-

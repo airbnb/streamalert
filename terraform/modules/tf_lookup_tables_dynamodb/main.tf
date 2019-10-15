@@ -36,4 +36,3 @@ locals {
     var.dynamodb_tables,
   )
 }
-

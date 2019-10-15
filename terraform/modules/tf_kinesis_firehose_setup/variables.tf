@@ -26,4 +26,3 @@ variable "s3_logging_bucket" {
 variable "kms_key_id" {
   type = string
 }
-

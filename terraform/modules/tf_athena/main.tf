@@ -171,4 +171,3 @@ resource "aws_cloudwatch_log_metric_filter" "athena_partition_refresh_cw_metric_
     value     = element(split(",", var.athena_metric_filters[count.index]), 2)
   }
 }
-

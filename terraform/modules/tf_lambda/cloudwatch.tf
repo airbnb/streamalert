@@ -99,4 +99,3 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
 
   tags = local.tags
 }
-

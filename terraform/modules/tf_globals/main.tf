@@ -64,4 +64,3 @@ resource "aws_dynamodb_table" "rules_table" {
     Name = "StreamAlert"
   }
 }
-

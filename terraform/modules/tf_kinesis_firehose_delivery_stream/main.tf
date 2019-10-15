@@ -45,4 +45,3 @@ resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
     Name = "StreamAlert"
   }
 }
-

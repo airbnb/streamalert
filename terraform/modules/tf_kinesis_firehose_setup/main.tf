@@ -54,4 +54,3 @@ resource "aws_s3_bucket" "streamalert_data" {
     Name = "StreamAlert"
   }
 }
-

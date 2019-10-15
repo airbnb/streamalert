@@ -147,4 +147,3 @@ data "aws_iam_policy_document" "theat_intel_downloader_publish_sns" {
     ]
   }
 }
-

@@ -39,4 +39,3 @@ variable "classifier_sqs_sse_kms_key_arn" {
 variable "firehose_use_prefix" {
   description = "When true, prepends the StreamAlert prefix to the AWS Firehose permissions"
 }
-

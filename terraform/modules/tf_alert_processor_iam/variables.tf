@@ -45,4 +45,3 @@ variable "output_sqs_queues" {
   default     = []
   description = "Optional list of configured SQS outputs (queue names)"
 }
-

@@ -84,4 +84,3 @@ resource "aws_cloudwatch_log_group" "threat_intel_downloader" {
     AltName = "ThreatIntel"
   }
 }
-

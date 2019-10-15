@@ -39,4 +39,3 @@ variable "rules_engine_timeout" {
 variable "sqs_use_prefix" {
   default = false
 }
-

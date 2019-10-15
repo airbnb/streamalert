@@ -179,4 +179,3 @@ variable "input_sns_topics" {
   type        = list(string)
   default     = []
 }
-

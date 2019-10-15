@@ -23,4 +23,3 @@ data "aws_iam_policy_document" "classifier_policy" {
     resources = [var.classifier_sqs_queue_arn]
   }
 }
-

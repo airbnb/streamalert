@@ -260,4 +260,3 @@ data "aws_iam_policy_document" "kms_sse_allow_s3" {
     resources = ["*"]
   }
 }
-

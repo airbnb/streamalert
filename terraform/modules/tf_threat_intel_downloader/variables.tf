@@ -73,4 +73,3 @@ variable "min_read_capacity" {
 variable "target_utilization" {
   default = 70
 }
-

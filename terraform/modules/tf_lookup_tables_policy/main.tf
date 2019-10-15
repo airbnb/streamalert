@@ -8,4 +8,3 @@ resource "aws_iam_role_policy_attachment" "streamalert_read_from_lookup_tables" 
   role       = element(var.roles, count.index)
   policy_arn = aws_iam_policy.streamalert_read_from_lookup_tables.arn
 }
-

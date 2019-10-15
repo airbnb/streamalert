@@ -127,4 +127,3 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_write_exceeded" {
     Name = "StreamAlert"
   }
 }
-

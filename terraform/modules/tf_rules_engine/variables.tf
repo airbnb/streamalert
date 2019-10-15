@@ -45,4 +45,3 @@ variable "classifier_sqs_sse_kms_key_arn" {
 variable "sqs_record_batch_size" {
   description = "Number of records the Lambda function should read from the SQS queue each time (max=10)"
 }
-

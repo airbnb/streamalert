@@ -42,4 +42,3 @@ variable "sns_topic_arn" {
   description = "SNS topic arn to use for alarm actions"
   type        = string
 }
-

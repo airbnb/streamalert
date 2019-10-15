@@ -35,4 +35,3 @@ data "aws_iam_policy_document" "invoke_alert_processor" {
     resources = ["arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_streamalert_alert_processor"]
   }
 }
-

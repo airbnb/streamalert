@@ -68,4 +68,3 @@ variable "namespace" {
 variable "concurrency_limit" {
   default = 10
 }
-

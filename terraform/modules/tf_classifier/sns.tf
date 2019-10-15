@@ -5,4 +5,3 @@ resource "aws_sns_topic_subscription" "input_topic_subscriptions" {
   endpoint  = var.function_alias_arn
   protocol  = "lambda"
 }
-

@@ -15,4 +15,3 @@ resource "aws_kms_alias" "sse" {
   name          = "alias/${var.prefix}_streamalert_sqs_sse"
   target_key_id = aws_kms_key.sse.key_id
 }
-

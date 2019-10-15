@@ -13,4 +13,3 @@ variable "prefix" {
 variable "role_id" {
   description = "Alert processor IAM Role ID"
 }
-

@@ -67,4 +67,3 @@ data "aws_iam_policy_document" "kinesis_put_records" {
     ]
   }
 }
-

@@ -11,4 +11,3 @@ resource "aws_kinesis_stream" "streamalert_stream" {
     Cluster = var.cluster
   }
 }
-

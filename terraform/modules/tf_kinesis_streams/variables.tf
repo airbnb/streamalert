@@ -43,4 +43,3 @@ variable "shard_level_metrics" {
   type    = list(string)
   default = []
 }
-

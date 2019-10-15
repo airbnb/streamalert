@@ -34,4 +34,3 @@ variable "athena_data_buckets" {
 variable "s3_kms_key_arn" {
   description = "KMS key ARN used for server-side encryption"
 }
-

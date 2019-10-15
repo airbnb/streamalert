@@ -93,4 +93,3 @@ data "aws_iam_policy_document" "save_alerts_to_dynamo" {
     resources = ["arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_alerts"]
   }
 }
-

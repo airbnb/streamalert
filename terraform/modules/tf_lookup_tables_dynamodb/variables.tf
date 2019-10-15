@@ -29,4 +29,3 @@ variable "roles" {
 variable "role_count" {
   description = "Count of role ids to grant LookupTable access to. Note: this is a workaround until terraform v0.12.0 is supported"
 }
-
