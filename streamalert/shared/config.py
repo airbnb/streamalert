@@ -21,6 +21,8 @@ from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
 
+SUPPORTED_SOURCES = {'kinesis', 's3', 'sns', 'stream_alert_app'}
+
 
 class TopLevelConfigKeys:
     """Define the available top level keys in the loaded config"""
@@ -31,7 +33,6 @@ class TopLevelConfigKeys:
     NORMALIZED_TYPES = 'normalized_types'
     OUTPUTS = 'outputs'
     SCHEMAS = 'schemas'
-    SOURCES = 'sources'
     THREAT_INTEL = 'threat_intel'
     LOOKUP_TABLES = 'lookup_tables'
 
@@ -128,8 +129,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
                 'global': <global.json contents>,
                 'lambda': <lambda.json contents>,
                 'logs': <logs.json contents>,
-                'outputs': <outputs.json contents>,
-                'sources': <sources.json contents>
+                'outputs': <outputs.json contents>
             }
     """
     default_files = {file for file in os.listdir(conf_dir) if file.endswith('.json')}
@@ -228,7 +228,7 @@ def _validate_config(config):
 
     Checks for `logs.json`:
         - each log has a schema and parser declared
-    Checks for `sources.json`
+    Checks for `cluster.json` data_sources:
         - the sources contains either kinesis or s3 keys
         - each sources has a list of logs declared
 
@@ -242,32 +242,19 @@ def _validate_config(config):
     if TopLevelConfigKeys.LOGS in config:
         for log, attrs in config[TopLevelConfigKeys.LOGS].items():
             if 'schema' not in attrs:
-                raise ConfigError('The \'schema\' is missing for {}'.format(log))
+                raise ConfigError("The 'schema' is missing for {}".format(log))
 
             if 'parser' not in attrs:
-                raise ConfigError('The \'parser\' is missing for {}'.format(log))
+                raise ConfigError("The 'parser' is missing for {}".format(log))
 
     # Check if the defined sources are supported and report any invalid entries
-    if TopLevelConfigKeys.SOURCES in config:
-        supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
-        if not set(config[TopLevelConfigKeys.SOURCES]).issubset(supported_sources):
-            missing_sources = supported_sources - set(config[TopLevelConfigKeys.SOURCES])
-            raise ConfigError(
-                'The \'sources.json\' file contains invalid source entries: {}. '
-                'The following sources are supported: {}'.format(
-                    ', '.join('\'{}\''.format(source) for source in missing_sources),
-                    ', '.join('\'{}\''.format(source) for source in supported_sources)
-                )
-            )
-
-        # Iterate over each defined source and make sure the required subkeys exist
-        for attrs in list(config[TopLevelConfigKeys.SOURCES].values()):
-            for entity, entity_attrs in attrs.items():
-                if TopLevelConfigKeys.LOGS not in entity_attrs:
-                    raise ConfigError('Missing \'logs\' key for entity: {}'.format(entity))
-
-                if not entity_attrs[TopLevelConfigKeys.LOGS]:
-                    raise ConfigError('List of \'logs\' is empty for entity: {}'.format(entity))
+    if TopLevelConfigKeys.CLUSTERS in config:
+        # Used to track duplicate sources in separate cluster config files
+        existing_sources = set()
+        for cluster_name, cluster_attrs in config[TopLevelConfigKeys.CLUSTERS].items():
+            if 'data_sources' not in cluster_attrs:
+                raise ConfigError("'data_sources' missing for cluster {}".format(cluster_name))
+            _validate_sources(cluster_name, cluster_attrs['data_sources'], existing_sources)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:
         if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
@@ -284,8 +271,41 @@ def _validate_config(config):
                            for log_keys in
                            list(config[TopLevelConfigKeys.NORMALIZED_TYPES].values())):
                     raise ConfigError(
-                        'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
-                        'one log type in normalized types'.format(normalized_key, ioc_type)
+                        "IOC key '{}' within IOC type '{}' must be defined for at least "
+                        "one log type in normalized types".format(normalized_key, ioc_type)
                     )
 
-    # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
+def _validate_sources(cluster_name, data_sources, existing_sources):
+    """Validates the sources for a cluster
+    Args:
+        cluster_name (str): The name of the cluster we are validating sources for
+        data_sources (dict): The sources to validate
+        existing_sources(set): Aleady defined sources
+    Raises:
+        ConfigError: If the validation fails
+    """
+    # Iterate over each defined source and make sure the required subkeys exist
+    if not set(data_sources).issubset(SUPPORTED_SOURCES):
+        invalid_sources = set(data_sources) - SUPPORTED_SOURCES
+        raise ConfigError(
+            'The data sources for cluster {} contain invalid source entries: {}. '
+            'The following sources are supported: {}'.format(
+                cluster_name,
+                ', '.join("'{}'".format(source) for source in invalid_sources),
+                ', '.join("'{}'".format(source) for source in SUPPORTED_SOURCES)
+            )
+        )
+    for attrs in data_sources.values():
+        for source, logs in attrs.items():
+
+            if not logs:
+                raise ConfigError("List of logs is empty for source: {}".format(source))
+
+            if source in existing_sources:
+                raise ConfigError(
+                    "Duplicate data_source in cluster configuration {} "
+                    "for cluster {}".format(source, cluster_name)
+                )
+            existing_sources.add(source)
+
+# FIXME (derek.wang) write a configuration validator for lookuptables (new one)

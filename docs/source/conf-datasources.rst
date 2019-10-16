@@ -1,14 +1,16 @@
 Datasource Configuration
 ========================
+.. note:: As of release 3.0.0 data source configuration has moved 
+          from sources.json into the ``data_sources`` top level key for each your clusters.
 
-For background on supported datasource types, read `datasources <datasources.html>`_.
+For background on supported data source types, read `data sources <datasources.html>`_.
 
 Overview
 --------
 
-Datasources defined in ``conf/sources.json`` control which datasources can send to and be analyzed by StreamAlert.
+Data sources defined in each cluster file in the ``conf/clusters`` directory under the ``data_sources`` top level key control which data sources can send to and be analyzed by StreamAlert. 
 
-Each datasource (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific resource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
+Each data source (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific resource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
 
 Log schemas are defined in one or more files in the ``conf/schemas`` directory.
 
@@ -21,39 +23,31 @@ Example:
 .. code-block:: json
 
   {
-    "kinesis": {
-      "abc_corporate_streamalert": {
-        "logs": [
+    "data_sources": {
+      "kinesis": {
+        "abc_corporate_streamalert": [
           "box",
           "pan"
-        ]
-      },
-      "abc_production_stream_streamalert": {
-        "logs": [
+        ],
+        "abc_production_stream_streamalert": [
           "inspec",
           "osquery"
         ]
-      }
-    },
-    "s3": {
-      "abc.webserver.logs": {
-        "logs": [
-          "nginx"
-        ]
       },
-      "abc.hids.logs": {
-        "logs": [
+      "s3": {
+        "abc.webserver.logs": [
+            "nginx"
+        ],
+        "abc.hids.logs": [
           "carbonblack"
         ]
-      }
-    },
-    "sns": {
-      "abc_sns_topic": {
-        "logs": [
+      },
+      "sns": {
+        "abc_sns_topic": [
           "logstash"
         ]
       }
     }
   }
 
-Once datasources are defined, associated ``logs`` must have defined `schemas <conf-schemas.html>`_
+Once data sources are defined, associated ``logs`` must have defined `schemas <conf-schemas.html>`_

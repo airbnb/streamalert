@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
+import os
 import logging
 
 from streamalert.classifier.clients import FirehoseClient, SQSClient
@@ -50,7 +51,7 @@ class Classifier:
 
         # Setup the normalization logic
         Normalizer.load_from_config(self.config)
-
+        self._cluster = os.environ['CLUSTER']
         self._payloads = []
         self._failed_record_count = 0
         self._processed_size = 0
@@ -86,7 +87,8 @@ class Classifier:
             bool: True if the resource's log sources loaded properly
         """
         # Get all logs for the configured service/entity (s3, kinesis, or sns)
-        resources = self._config['sources'].get(service)
+
+        resources = self._config['clusters'][self._cluster]['data_sources'].get(service)
         if not resources:
             LOGGER.error('Service [%s] not declared in sources configuration', service)
             return False
@@ -103,7 +105,7 @@ class Classifier:
         return OrderedDict(
             (source, self.config['logs'][source])
             for source in self.config['logs'].keys()
-            if source.split(':')[0] in source_config['logs']
+            if source.split(':')[0] in source_config
         )
 
     @classmethod

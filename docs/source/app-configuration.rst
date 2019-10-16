@@ -135,7 +135,7 @@ Once the above is completed, a logger statement similar to the following will co
   StreamAlertCLI [INFO]: Successfully added 'duo_prod_collector' app integration to 'conf/clusters/prod.json' for service 'duo_auth'.
 
 
-Your configuration files (``conf/clusters/<cluster>.json`` and ``conf/sources.json``) have now been updated and are ready to be deployed.
+Your configuration file ``conf/clusters/<cluster>.json`` has now been updated and is ready to be deployed.
 
 3. Deploy the new App and the Classifier
 ````````````````````````````````````````````

@@ -52,13 +52,12 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         config_data = basic_streamalert_config()
 
         # Add config files which should be loaded
-        self.fs.create_file('conf/clusters/prod.json', contents='{}')
-        self.fs.create_file('conf/clusters/dev.json', contents='{}')
+        self.fs.create_file('conf/clusters/prod.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf/clusters/dev.json', contents='{"data_sources": {}}')
         self.fs.create_file('conf/global.json', contents='{}')
         self.fs.create_file('conf/lambda.json', contents='{}')
         self.fs.create_file('conf/logs.json', contents='{}')
         self.fs.create_file('conf/outputs.json', contents='{}')
-        self.fs.create_file('conf/sources.json', contents='{}')
         self.fs.create_file(
             'conf/threat_intel.json',
             contents=json.dumps(config_data['threat_intel'])
@@ -72,13 +71,12 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             contents='{"csv_log2": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
         )
 
-        # Create similar structure but with schemas folder instead of logs.json
-        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{}')
-        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{}')
+        # Create similar structure but with schemas folder instead of logs.json and 2 clusters.
+        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{"data_sources": {}}')
         self.fs.create_file('conf_schemas/global.json', contents='{}')
         self.fs.create_file('conf_schemas/lambda.json', contents='{}')
         self.fs.create_file('conf_schemas/outputs.json', contents='{}')
-        self.fs.create_file('conf_schemas/sources.json', contents='{}')
         self.fs.create_file(
             'conf_schemas/schemas/csv.json',
             contents='{"csv_log": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
@@ -108,7 +106,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'lambda',
             'logs',
             'outputs',
-            'sources',
             'threat_intel',
             'normalized_types'
         }
@@ -122,7 +119,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'clusters',
             'lambda',
             'outputs',
-            'sources',
             'threat_intel',
             'normalized_types'
         }
@@ -137,7 +133,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'lambda',
             'logs',
             'outputs',
-            'sources',
             'threat_intel',
             'normalized_types'
         }
@@ -152,7 +147,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'global',
             'lambda',
             'outputs',
-            'sources',
         }
         assert_equal(set(config), expected_keys)
 
@@ -214,7 +208,7 @@ class TestConfigValidation:
         config = basic_streamalert_config()
 
         # Remove everything from the sources entry
-        config['sources']['kinesis']['stream_1'] = {}
+        config['clusters']['prod']['data_sources']['kinesis']['stream_1'] = {}
 
         assert_raises(ConfigError, _validate_config, config)
 
@@ -224,7 +218,7 @@ class TestConfigValidation:
         config = basic_streamalert_config()
 
         # Set the logs key to an empty list
-        config['sources']['kinesis']['stream_1']['logs'] = []
+        config['clusters']['prod']['data_sources']['kinesis']['stream_1'] = []
 
         assert_raises(ConfigError, _validate_config, config)
 
@@ -234,7 +228,7 @@ class TestConfigValidation:
         config = basic_streamalert_config()
 
         # Set the sources value to contain an invalid data source ('sqs')
-        config['sources'] = {'sqs': {'queue_1': {}}}
+        config['clusters']['prod']['data_sources'] = {'sqs': {'queue_1': {}}}
 
         assert_raises(ConfigError, _validate_config, config)
 
@@ -275,4 +269,10 @@ class TestConfigValidation:
         if 'normalized_types' in config:
             del config['normalized_types']
 
+        assert_raises(ConfigError, _validate_config, config)
+
+    def test_config_duplicate_sources(self):
+        """Shared - Config Validator - Duplicate Data Sources in Cluster Configs"""
+        config = basic_streamalert_config()
+        config['clusters']['dev'] = config['clusters']['prod']
         assert_raises(ConfigError, _validate_config, config)

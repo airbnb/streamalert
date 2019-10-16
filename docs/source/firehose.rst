@@ -15,22 +15,20 @@ Configuration
 
 When enabling the Kinesis Firehose module, a dedicated Delivery Stream is created per each log type.
 
-For example, if the ``sources.json`` defines the following:
+For example, if the data_sources for a cluster named prod defined in ``conf/clusters/prod.json`` contains the following:
 
 .. code-block:: json
 
   {
-    "kinesis": {
-      "example_prod_streamalert": {
-        "logs": [
+    "data_sources": {
+      "kinesis": {
+        "example_prod_streamalert": [
           "cloudwatch",
           "osquery"
         ]
-      }
-    },
-    "s3": {
-      "example.prod.streamalert.cloudtrail": {
-        "logs": [
+      },
+      "s3": {
+        "example.prod.streamalert.cloudtrail": [
           "cloudtrail"
         ]
       }

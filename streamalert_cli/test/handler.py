@@ -229,7 +229,7 @@ class TestRunner:
         self._failed = 0
         prefix = self._config['global']['account']['prefix']
         env = {
-            'CLUSTER': 'local-test',
+            'CLUSTER': 'prod',
             'STREAMALERT_PREFIX': prefix,
             'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
             'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
@@ -349,6 +349,7 @@ class TestRunner:
 
         print('\nRunning tests for files found in: {}'.format(self._files_dir))
 
+
         for event_file in self._get_test_files():
             test_event = TestEventFile(event_file.replace(self._files_dir, ''))
             # Iterate over the individual test events in the file
@@ -358,6 +359,14 @@ class TestRunner:
 
                 if not self._contains_filtered_rules(original_event):
                     continue
+
+                resource = original_event['source']
+
+                for cluster_name, cluster_value in self._config['clusters'].items():
+                    for service in cluster_value['data_sources'].values():
+                        if resource in service:
+                            os.environ['CLUSTER'] = cluster_name
+                            break
 
                 classifier_result = self._run_classification(event)
 

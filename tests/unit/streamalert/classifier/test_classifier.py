@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
+import os
 
 from mock import Mock, patch
 from nose.tools import assert_equal
@@ -34,6 +35,7 @@ class TestClassifier:
         with patch.object(classifier_module, 'Normalizer'), \
              patch.object(classifier_module, 'FirehoseClient'), \
              patch.object(classifier_module, 'SQSClient'), \
+             patch.dict(os.environ, {'CLUSTER': 'prod'}), \
              patch('streamalert.classifier.classifier.config.load_config',
                    Mock(return_value=self._mock_conf())):
             self._classifier = Classifier()
@@ -47,7 +49,7 @@ class TestClassifier:
     def _mock_conf(cls):
         return {
             'logs': cls._mock_logs(),
-            'sources': cls._mock_sources(),
+            'clusters': {'prod': {'data_sources': cls._mock_sources()}},
             'global': cls._mock_global()
         }
 
@@ -55,11 +57,9 @@ class TestClassifier:
     def _mock_sources(cls):
         return {
             cls._service_name: {
-                cls._resource_name: {
-                    'logs': [
-                        'log_type_01'
-                    ]
-                }
+                cls._resource_name: [
+                    'log_type_01'
+                ]
             }
         }
 

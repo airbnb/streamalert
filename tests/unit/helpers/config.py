@@ -104,16 +104,6 @@ def basic_streamalert_config():
                 'parser': 'csv'
             }
         },
-        'sources': {
-            'kinesis': {
-                'stream_1': {
-                    'logs': [
-                        'json_log',
-                        'csv_log'
-                    ]
-                }
-            }
-        },
         'lambda': {
             'alert_merger_config': {
                 'memory': 128,
@@ -171,6 +161,14 @@ def basic_streamalert_config():
         'clusters': {
             'prod': {
                 'id': 'prod',
+                'data_sources': {
+                    'kinesis': {
+                        'stream_1': [
+                            'json_log',
+                            'csv_log'
+                        ]
+                    }
+                },
                 'modules': {
                     'cloudwatch_monitoring': {
                         'enabled': True

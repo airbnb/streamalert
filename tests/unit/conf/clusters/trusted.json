@@ -1,4 +1,5 @@
 {
+  "data_sources": {},
   "id": "trusted",
   "modules": {
     "cloudwatch_monitoring": {

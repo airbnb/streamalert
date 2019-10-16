@@ -1,4 +1,5 @@
 {
+  "data_sources": {},
   "id": "advanced",
   "modules": {
     "cloudtrail": {

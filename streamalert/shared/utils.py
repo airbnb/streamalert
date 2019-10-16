@@ -10,7 +10,6 @@ from streamalert.shared.normalize import Normalizer
 
 LOGGER = get_logger(__name__)
 
-
 def valid_ip(ip_address):
     """Verify that a ip_address string is valid
 
