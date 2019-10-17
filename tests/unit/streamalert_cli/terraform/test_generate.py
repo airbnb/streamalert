@@ -298,8 +298,8 @@ class TestTerraformGenerate:
                     'region': 'us-west-1',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
-                    'cloudwatch_log_destination_arn': (
-                        '${module.flow_logs_default_advanced.cloudwatch_log_destination_arn}'
+                    'cloudwatch_logs_destination_arn': (
+                        '${module.flow_logs_default_advanced.cloudwatch_logs_destination_arn}'
                     ),
                     'vpcs': ['vpc-id-1', 'vpc-id-2'],
                 }
