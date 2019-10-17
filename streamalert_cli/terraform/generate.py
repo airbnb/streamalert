@@ -50,8 +50,24 @@ from streamalert_cli.terraform.threat_intel_downloader import generate_threat_in
 from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 2.28.1'}}
+TERRAFORM_VERSION = '~> 0.11.7'
+TERRAFORM_PROVIDER_VERSION = '~> 2.28.1'
+
 LOGGER = get_logger(__name__)
+
+
+def _terraform_defaults(region):
+    return infinitedict({
+        'terraform': {
+            'required_version': TERRAFORM_VERSION,
+        },
+        'provider': {
+            'aws': {
+                'region': region,
+                'version': TERRAFORM_PROVIDER_VERSION,
+            },
+        },
+    })
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
@@ -135,16 +151,7 @@ def generate_main(config, init=False):
     Returns:
         dict: main.tf.json Terraform dict
     """
-    main_dict = infinitedict()
-
-    # Configure provider along with the minimum version
-    main_dict['provider']['aws'] = {
-        'version': TERRAFORM_VERSIONS['provider']['aws'],
-        'region': config['global']['account']['region']
-    }
-
-    # Configure Terraform version requirement
-    main_dict['terraform']['required_version'] = TERRAFORM_VERSIONS['application']
+    main_dict = _terraform_defaults(config['global']['account']['region'])
 
     # Setup the Backend depending on the deployment phase.
     # When first setting up StreamAlert, the Terraform statefile
@@ -152,7 +159,8 @@ def generate_main(config, init=False):
     # this moves to S3.
     if init:
         main_dict['terraform']['backend']['local'] = {
-            'path': 'terraform.tfstate'}
+            'path': 'terraform.tfstate',
+        }
     else:
         main_dict['terraform']['backend']['s3'] = {
             'bucket': config['global']['terraform']['tfstate_bucket'],
@@ -160,7 +168,8 @@ def generate_main(config, init=False):
             'region': config['global']['account']['region'],
             'encrypt': True,
             'acl': 'private',
-            'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias'])}
+            'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
+        }
 
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {

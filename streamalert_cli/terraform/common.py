@@ -23,9 +23,16 @@ class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
 
 
-def infinitedict():
+def infinitedict(initial_value=None):
     """Create arbitrary levels of dictionary key/values"""
-    return defaultdict(infinitedict)
+    initial_value = initial_value or {}
+
+    # Recursively cast any subdictionary entries in the initial value to infinitedicts
+    for key, value in initial_value.items():
+        if isinstance(value, dict):
+            initial_value[key] = infinitedict(value)
+
+    return defaultdict(infinitedict, initial_value)
 
 
 def monitoring_topic_name(config):
