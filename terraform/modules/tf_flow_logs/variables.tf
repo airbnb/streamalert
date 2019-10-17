@@ -1,8 +1,3 @@
-variable "region" {
-  type    = "string"
-  default = "us-east-1"
-}
-
 variable "prefix" {
   type = "string"
 }
@@ -11,7 +6,7 @@ variable "cluster" {
   type = "string"
 }
 
-variable "cloudwatch_log_destination_arn" {
+variable "cloudwatch_logs_destination_arn" {
   type = "string"
 }
 
