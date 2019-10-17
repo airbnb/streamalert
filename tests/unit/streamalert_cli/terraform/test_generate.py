@@ -85,12 +85,12 @@ class TestTerraformGenerate:
         tf_main_expected = {
             'provider': {
                 'aws': {
-                    'version': generate.TERRAFORM_VERSIONS['provider']['aws'],
+                    'version': '~> 2.28.1',  # Changes to this should require unit test update
                     'region': 'us-west-1'
                 }
             },
             'terraform': {
-                'required_version': generate.TERRAFORM_VERSIONS['application'],
+                'required_version': '~> 0.11.7', # Changes to this should require unit test update
                 'backend': {
                     's3': {
                         'bucket': 'unit-test.streamalert.terraform.state',
