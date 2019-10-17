@@ -16,6 +16,7 @@ limitations under the License.
 import json
 
 from streamalert.shared.logger import get_logger
+from streamalert_cli.terraform.cloudwatch import generate_cloudwatch_destinations_internal
 
 LOGGER = get_logger(__name__)
 
@@ -34,26 +35,13 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     modules = config['clusters'][cluster_name]['modules']
     cloudtrail_module = 'cloudtrail_{}'.format(cluster_name)
 
-    enabled_legacy = modules['cloudtrail'].get('enabled')
-
     cloudtrail_enabled = modules['cloudtrail'].get('enable_logging', True)
     kinesis_enabled = modules['cloudtrail'].get('enable_kinesis', True)
     send_to_cloudwatch = modules['cloudtrail'].get('send_to_cloudwatch', False)
     exclude_home_region = modules['cloudtrail'].get('exclude_home_region_events', False)
 
-    account_ids = list(
-        set([config['global']['account']['aws_account_id']] + modules['cloudtrail'].get(
-            'cross_account_ids', [])))
-
-    # Allow for backwards compatibility
-    if enabled_legacy:
-        del config['clusters'][cluster_name]['modules']['cloudtrail']['enabled']
-        config['clusters'][cluster_name]['modules']['cloudtrail']['enable_logging'] = True
-        config['clusters'][cluster_name]['modules']['cloudtrail']['enable_kinesis'] = True
-        LOGGER.info('Converting legacy CloudTrail config')
-        config.write()
-        kinesis_enabled = True
-        cloudtrail_enabled = True
+    account_ids = set(modules['cloudtrail'].get('cross_account_ids', []))
+    account_ids.add(config['global']['account']['aws_account_id'])
 
     existing_trail = modules['cloudtrail'].get('existing_trail', False)
     is_global_trail = modules['cloudtrail'].get('is_global_trail', True)
@@ -73,7 +61,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     module_info = {
         'source': 'modules/tf_cloudtrail',
         'primary_account_id': config['global']['account']['aws_account_id'],
-        'account_ids': account_ids,
+        'account_ids': sorted(account_ids),
         'cluster': cluster_name,
         'prefix': config['global']['account']['prefix'],
         'enable_logging': cloudtrail_enabled,
@@ -92,11 +80,13 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         module_info['event_pattern'] = json.dumps(event_pattern)
 
     if send_to_cloudwatch:
-        destination_arn = modules['cloudtrail'].get(
-            'cloudwatch_destination_arn',
-            '${{module.cloudwatch_{}_{}.cloudwatch_destination_arn}}'.format(cluster_name,
-                                                                             region)
-        )
+        destination_arn = modules['cloudtrail'].get('cloudwatch_destination_arn')
+        if not destination_arn:
+            fmt = '${{module.cloudwatch_logs_destination_{}_{}.cloudwatch_logs_destination_arn}}'
+            destination_arn = fmt.format(cluster_name, region)
+            if not generate_cloudwatch_destinations_internal(cluster_name, cluster_dict, config):
+                return False
+
         module_info['cloudwatch_destination_arn'] = destination_arn
 
     cluster_dict['module'][cloudtrail_module] = module_info
