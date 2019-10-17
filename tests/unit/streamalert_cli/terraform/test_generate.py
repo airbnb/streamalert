@@ -308,35 +308,6 @@ class TestTerraformGenerate:
 
         assert_equal(self.cluster_dict, expected)
 
-    def test_generate_cloudtrail_basic(self):
-        """CLI - Terraform Generate Cloudtrail Module - Legacy"""
-        cluster_name = 'advanced'
-        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
-            'enabled': True
-        }
-        result = cloudtrail.generate_cloudtrail(cluster_name, self.cluster_dict, self.config)
-
-        assert_true(result)
-        assert_equal(set(self.config['clusters']['advanced']['modules']['cloudtrail'].keys()),
-                     {'enable_logging', 'enable_kinesis'})
-        assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
-            'account_ids': ['12345678910'],
-            'primary_account_id': '12345678910',
-            'cluster': 'advanced',
-            'kinesis_arn': '${module.kinesis_advanced.arn}',
-            'prefix': 'unit-test',
-            'enable_logging': True,
-            'enable_kinesis': True,
-            'source': 'modules/tf_cloudtrail',
-            's3_logging_bucket': 'unit-test.streamalert.s3-logging',
-            'existing_trail': False,
-            'is_global_trail': True,
-            'region': 'us-west-1',
-            'exclude_home_region_events': False,
-            'send_to_cloudwatch': False,
-            'event_pattern': '{"account": ["12345678910"]}'
-        })
-
     def test_generate_cloudtrail_all_options(self):
         """CLI - Terraform Generate Cloudtrail Module - All Options"""
         cluster_name = 'advanced'
