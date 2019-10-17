@@ -285,23 +285,41 @@ class TestTerraformGenerate:
 
         expected = {
             'module': {
-                'flow_logs_default_advanced': {
-                    'source': 'modules/tf_flow_logs/modules/default',
-                    'region': 'us-west-1',
-                    'prefix': 'unit-test',
-                    'cluster': 'advanced',
-                    'account_ids': ['12345678910'],
-                    'destination_stream_arn': '${module.kinesis_advanced.arn}',
-                },
-                'flow_logs_internal_advanced': {
-                    'source': 'modules/tf_flow_logs/modules/internal',
+                'flow_logs_advanced': {
+                    'source': 'modules/tf_flow_logs',
                     'region': 'us-west-1',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
                     'cloudwatch_logs_destination_arn': (
-                        '${module.flow_logs_default_advanced.cloudwatch_logs_destination_arn}'
+                        '${module.cloudwatch_logs_destination_advanced_us-west-1.'
+                        'cloudwatch_logs_destination_arn}'
                     ),
                     'vpcs': ['vpc-id-1', 'vpc-id-2'],
+                },
+                'cloudwatch_logs_destination_advanced': {
+                    'source': 'modules/tf_cloudwatch_logs_destination',
+                    'prefix': 'unit-test',
+                    'cluster': 'advanced',
+                    'regions': [
+                        'us-west-1'
+                    ],
+                    'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}'
+                },
+                'cloudwatch_logs_destination_advanced_us-west-1': {
+                    'source': 'modules/tf_cloudwatch_logs_destination/modules/destination',
+                    'prefix': 'unit-test',
+                    'cluster': 'advanced',
+                    'account_ids': [
+                        '12345678910'
+                    ],
+                    'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}',
+                    'cloudwatch_logs_subscription_role_arn': (
+                        '${module.cloudwatch_logs_destination_advanced.'
+                        'cloudwatch_logs_subscription_role_arn}'
+                    ),
+                    'providers': {
+                        'aws': 'aws.us-west-1'
+                    }
                 }
             }
         }
@@ -368,29 +386,59 @@ class TestTerraformGenerate:
         assert_true(mock_logging.error.called)
 
     def test_generate_cloudwatch(self):
-        """CLI - Terraform Generate CloudWatch"""
-        cloudwatch.generate_cloudwatch(
+        """CLI - Terraform Generate CloudWatch Destinations"""
+        cloudwatch.generate_cloudwatch_destinations(
             'advanced',
             self.cluster_dict,
             self.config
         )
 
-        # Count the modules for each region - there should be 14 since 1 is excluded
-        count = sum(1 for name in self.cluster_dict['module']
-                    if name.startswith('cloudwatch_advanced'))
-        assert_equal(count, 14)
-
-        expected_config = {
-            'prefix': 'unit-test',
-            'cluster': 'advanced',
-            'source': 'modules/tf_cloudwatch',
-            'region': 'eu-west-1',
-            'kinesis_stream_arn': '${module.kinesis_advanced.arn}',
-            'cross_account_ids': ['123456789012', '12345678910']
+        expected = {
+            'cloudwatch_logs_destination_advanced': {
+                'source': 'modules/tf_cloudwatch_logs_destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'regions': [
+                    'us-east-2',
+                    'us-west-2'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}'
+            },
+            'cloudwatch_logs_destination_advanced_us-east-2': {
+                'source': 'modules/tf_cloudwatch_logs_destination/modules/destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'account_ids': [
+                    '123456789012'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}',
+                'cloudwatch_logs_subscription_role_arn': (
+                    '${module.cloudwatch_logs_destination_advanced.'
+                    'cloudwatch_logs_subscription_role_arn}'
+                ),
+                'providers': {
+                    'aws': 'aws.us-east-2'
+                }
+            },
+            'cloudwatch_logs_destination_advanced_us-west-2': {
+                'source': 'modules/tf_cloudwatch_logs_destination/modules/destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'account_ids': [
+                    '123456789012'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}',
+                'cloudwatch_logs_subscription_role_arn': (
+                    '${module.cloudwatch_logs_destination_advanced.'
+                    'cloudwatch_logs_subscription_role_arn}'
+                ),
+                'providers': {
+                    'aws': 'aws.us-west-2'
+                }
+            }
         }
 
-        eu_west_config = self.cluster_dict['module']['cloudwatch_advanced_eu-west-1']
-        assert_equal(expected_config, eu_west_config)
+        assert_equal(expected, self.cluster_dict['module'])
 
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
@@ -430,25 +478,17 @@ class TestTerraformGenerate:
         advanced_modules = {
             'classifier_advanced_lambda',
             'classifier_advanced_iam',
-            'cloudwatch_advanced_eu-west-1',
-            'cloudwatch_advanced_eu-west-2',
-            'cloudwatch_advanced_eu-west-3',
-            'cloudwatch_advanced_us-west-2',
-            'cloudwatch_advanced_sa-east-1',
-            'cloudwatch_advanced_eu-central-1',
-            'cloudwatch_advanced_ap-northeast-2',
-            'cloudwatch_advanced_ap-northeast-1',
-            'cloudwatch_advanced_ap-southeast-1',
-            'cloudwatch_advanced_ca-central-1',
-            'cloudwatch_advanced_ap-southeast-2',
-            'cloudwatch_advanced_us-east-1',
-            'cloudwatch_advanced_us-east-2',
-            'cloudwatch_advanced_ap-south-1',
+            'cloudwatch_logs_destination_advanced',
+            # us-west-1 because of the flow logs module in the default (us-west-1) region
+            'cloudwatch_logs_destination_advanced_us-west-1',
+            # us-east-2 and us-west-2 because of the explicit cloudwatch_destinations
+            # in these regions
+            'cloudwatch_logs_destination_advanced_us-east-2',
+            'cloudwatch_logs_destination_advanced_us-west-2',
             'cloudwatch_monitoring_advanced',
             'kinesis_advanced',
             'kinesis_events_advanced',
-            'flow_logs_default_advanced',
-            'flow_logs_internal_advanced',
+            'flow_logs_advanced',
             'cloudtrail_advanced',
             's3_events_unit-test_advanced_1',
             's3_events_unit-test_advanced_0'

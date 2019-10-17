@@ -98,6 +98,7 @@ def _generate(cluster_name, cluster_dict, config, account_ids, regions):
                 '${{module.{}.cloudwatch_logs_subscription_role_arn}}'.format(parent_module_name)
             ),
             'providers': {
+                # use the aliased provider for this region from providers.tf
                 'aws': 'aws.{}'.format(region)
             },
         }
