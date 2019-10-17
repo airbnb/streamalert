@@ -143,9 +143,6 @@ Example: CloudTrail via CloudWatch Logs
     {
       "id": "cloudtrail-via-cloudwatch",
       "modules": {
-        "cloudwatch": {
-          "enabled": true
-        },
         "cloudtrail": {
           "enable_kinesis": true,
           "enable_logging": true,
@@ -175,9 +172,9 @@ Example: CloudTrail via CloudWatch Logs
     }
 
 This also creates the CloudTrail and S3 bucket, but now the CloudTrail logs are also delivered to
-CloudWatch Logs and then to a Kinesis subscription which feeds the classifier function. This can scale to
-higher throughput, since StreamAlert does not have to download potentially very large files from
-S3. In this case, rules should be written against the ``cloudwatch:events`` log type.
+CloudWatch Logs and then to a Kinesis stream via a CloudWatch Logs Subscription Filter.
+This can scale to higher throughput, since StreamAlert does not have to download potentially very
+large files from S3. In this case, rules should be written against the ``cloudwatch:cloudtrail`` log type.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
@@ -207,7 +204,7 @@ from any AWS account. A common use case is to ingest and scan CloudTrail from mu
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_cloudwatch <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch>`_.
+This module is implemented by `terraform/modules/tf_cloudwatch_logs_destination <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch_logs_destination>`_.
 
 Example: CloudWatch Logs Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,16 +213,14 @@ Example: CloudWatch Logs Cluster
   {
     "id": "cloudwatch-logs-example",
     "modules": {
-      "cloudwatch": {
+      "cloudwatch_destinations": {
         "cross_account_ids": [
           "111111111111"
         ],
         "enabled": true,
-        "excluded_regions": [
+        "regions": [
           "ap-northeast-1",
           "ap-northeast-2",
-          "ap-south-1",
-          "ap-southeast-1",
           "ap-southeast-2"
         ]
       },
@@ -546,12 +541,8 @@ Example: Flow Logs Cluster
       "id": "prod",
       "modules": {
         "flow_logs": {
-          "cross_account_ids": [
-            "111111111111"
-          ],
           "enis": [],
           "enabled": true,
-          "log_group_name": "flow-logs-test",
           "subnets": [
             "subnet-12345678"
           ],
@@ -582,24 +573,25 @@ Example: Flow Logs Cluster
       "region": "us-east-1"
     }
 
-This creates the ``flow-logs-test`` CloudWatch Log group, adds flow logs to the specified subnet
-and vpc IDs with the log group as their target, and adds a Kinesis subscription to that log group
-for StreamAlert consumption.
+This creates the ``<prefix>_prod_streamalert_flow_logs`` CloudWatch Log Group, adds flow logs
+to the specified subnet, eni, and vpc IDs with the log group as their target, and adds a CloudWatch
+Logs Subscription Filter to that log group to send to Kinesis for consumption by StreamAlert.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
 
-=====================  ============================================  ===============
-**Key**                **Default**                                   **Description**
----------------------  --------------------------------------------  ---------------
-``cross_account_ids``  ``[]``                                        Authorize flow log delivery from these accounts
-``enabled``            ---                                           Toggle flow log creation
-``enis``               ``[]``                                        Add flow logs for these ENIs
-``log_group_name``     ``<prefix>_<cluster>_streamalert_flow_logs``  Flow logs are directed to this log group
-``subnets``            ``[]``                                        Add flow logs for these VPC subnet IDs
-``vpcs``               ``[]``                                        Add flow logs for these VPC IDs
-=====================  ============================================  ===============
+=====================  =============================================================================================================================================  ===============
+**Key**                **Default**                                                                                                                                    **Description**
+---------------------  ---------------------------------------------------------------------------------------------------------------------------------------------  ---------------
+``enabled``            ---                                                                                                                                            Toggle flow log creation
+``flow_log_filter``    ``[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action, flowlogstatus]``   Toggle flow log creation
+``log_retention``      ``7``                                                                                                                                          Day for which logs should be retained in the log group
+``enis``               ``[]``                                                                                                                                         Add flow logs for these ENIs
+``subnets``            ``[]``                                                                                                                                         Add flow logs for these VPC subnet IDs
+``vpcs``               ``[]``                                                                                                                                         Add flow logs for these VPC IDs
+=====================  =============================================================================================================================================  ===============
 
+.. note:: One of the following **must** be set for this module to have any result: ``enis``, ``subnets``, or ``vpcs``
 
 .. _s3_events:
 
