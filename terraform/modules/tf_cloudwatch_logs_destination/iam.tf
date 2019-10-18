@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_assume_role_policy" {
 
     principals {
       type        = "Service"
-      identifiers = ["${formatlist("logs.*.amazonaws.com", var.regions)}"]
+      identifiers = ["${formatlist("logs.%s.amazonaws.com", var.regions)}"]
     }
   }
 }
