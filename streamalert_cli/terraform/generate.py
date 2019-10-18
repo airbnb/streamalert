@@ -334,7 +334,7 @@ def generate_cluster(config, cluster_name):
         if not generate_cloudtrail(cluster_name, cluster_dict, config):
             return
 
-    if modules.get('cloudwatch_destinations'):
+    if modules.get('cloudwatch_logs_destination'):
         if not generate_cloudwatch_destinations(cluster_name, cluster_dict, config):
             return
 

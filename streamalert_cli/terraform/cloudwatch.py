@@ -19,7 +19,23 @@ LOGGER = get_logger(__name__)
 
 
 def generate_cloudwatch_destinations(cluster_name, cluster_dict, config):
-    cloudwatch_module = config['clusters'][cluster_name]['modules']['cloudwatch_destinations']
+    """Add any CloudWatch Logs destinations for explicitly specified regions
+
+    These configuration options will be merged with any other options set
+    for use with various other modules that utilize CloudWatch Logs destinations:
+        tf_flow_logs
+        tf_cloudtrail
+
+    Args:
+        cluster_name (str): The name of the current cluster being generated
+        cluster_dict (defaultdict): The dict containing all Terraform config for
+            a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        bool: True if this module was applied successfully, False otherwise
+    """
+    cloudwatch_module = config['clusters'][cluster_name]['modules']['cloudwatch_logs_destination']
     if not cloudwatch_module.get('enabled'):
         LOGGER.debug('CloudWatch destinations module is not enabled')
         return True  # not an error
@@ -38,6 +54,24 @@ def generate_cloudwatch_destinations(cluster_name, cluster_dict, config):
 
 
 def generate_cloudwatch_destinations_internal(cluster_name, cluster_dict, config):
+    """Add any CloudWatch Logs destinations needed for internal usage (non-cross-account)
+
+    This is currently used to configure additional settings for the following modules:
+        tf_flow_logs
+        tf_cloudtrail
+
+    These configuration options will be merged with any other options set for use in
+    the tf_cloudwatch_logs_destination module.
+
+    Args:
+        cluster_name (str): The name of the current cluster being generated
+        cluster_dict (defaultdict): The dict containing all Terraform config for
+            a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        bool: True if this module was applied successfully, False otherwise
+    """
     account_ids = [config['global']['account']['aws_account_id']]
     regions = [config['global']['account']['region']]
     return _generate(cluster_name, cluster_dict, config, account_ids, regions)
@@ -47,13 +81,13 @@ def _generate(cluster_name, cluster_dict, config, account_ids, regions):
     """Add the CloudWatch destinations, mapping to the configured kinesis stream
 
     Args:
-        cluster_name (str): The name of the currently generating cluster
+        cluster_name (str): The name of the current cluster being generated
         cluster_dict (defaultdict): The dict containing all Terraform config for
-                                    a given cluster.
+            a given cluster.
         config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        bool: Result of applying the cloudwatch module
+        bool: True if this module was applied successfully, False otherwise
     """
     # Ensure that the kinesis module is enabled for this cluster since the
     # cloudwatch module will utilize the created stream for sending data

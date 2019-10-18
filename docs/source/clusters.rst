@@ -213,7 +213,7 @@ Example: CloudWatch Logs Cluster
   {
     "id": "cloudwatch-logs-example",
     "modules": {
-      "cloudwatch_destinations": {
+      "cloudwatch_logs_destination": {
         "cross_account_ids": [
           "111111111111"
         ],
