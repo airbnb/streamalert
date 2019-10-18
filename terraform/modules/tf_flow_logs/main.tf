@@ -36,5 +36,5 @@ resource "aws_cloudwatch_log_subscription_filter" "flow_logs" {
   name            = "${aws_cloudwatch_log_group.flow_log_group.name}_to_kinesis"
   log_group_name  = "${aws_cloudwatch_log_group.flow_log_group.name}"
   filter_pattern  = "${var.flow_log_filter}"
-  destination_arn = "${var.cloudwatch_log_destination_arn}"
+  destination_arn = "${var.cloudwatch_logs_destination_arn}"
 }

@@ -6,13 +6,14 @@
       "enable_kinesis": true,
       "enable_logging": true
     },
-    "cloudwatch": {
+    "cloudwatch_logs_destination": {
       "cross_account_ids": [
         "123456789012"
       ],
       "enabled": true,
-      "excluded_regions": [
-        "us-west-1"
+      "regions": [
+        "us-west-2",
+        "us-east-2"
       ]
     },
     "cloudwatch_monitoring": {
