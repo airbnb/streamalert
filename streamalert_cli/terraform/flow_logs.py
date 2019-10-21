@@ -58,7 +58,6 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
     dest_fmt = '${{module.cloudwatch_logs_destination_{}_{}.cloudwatch_logs_destination_arn}}'
     flow_logs_settings = {
         'source': 'modules/tf_flow_logs',
-        'region': region,
         'prefix': prefix,
         'cluster': cluster_name,
         'cloudwatch_logs_destination_arn': dest_fmt.format(cluster_name, region),

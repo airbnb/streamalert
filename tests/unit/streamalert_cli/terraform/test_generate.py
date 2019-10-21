@@ -287,7 +287,6 @@ class TestTerraformGenerate:
             'module': {
                 'flow_logs_advanced': {
                     'source': 'modules/tf_flow_logs',
-                    'region': 'us-west-1',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
                     'cloudwatch_logs_destination_arn': (
