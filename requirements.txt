@@ -38,7 +38,7 @@ docker==3.5.1
 docker-pycreds==0.3.0
 docopt==0.6.2
 docutils==0.14
-ecdsa==0.13
+ecdsa==0.13.3
 enum34==1.1.6
 funcsigs==1.0.2
 functools32==3.2.3.post2
