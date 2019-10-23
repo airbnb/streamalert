@@ -234,8 +234,13 @@ class TestRunner:
             'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
             'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
         }
-        if options.stats:
-            env['STREAMALERT_TRACK_RULE_STATS'] = '1'
+        try:
+            if options.stats:
+                env['STREAMALERT_TRACK_RULE_STATS'] = '1'
+        except AttributeError:
+            # "stats" attribute only exists when doing integration test on rules.
+            # We do nothing for other test options, e.g. classifier
+            pass
 
         patch.dict(
             os.environ,
