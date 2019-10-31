@@ -49,16 +49,19 @@ class TestStreamAlertApp:
             'box_admin_events',
             'duo_admin',
             'duo_auth',
+            'gsuite_access_transparency',
             'gsuite_admin',
             'gsuite_calendar',
             'gsuite_drive',
             'gsuite_gplus',
-            'gsuite_groups',
+            'gsuite_group',
+            'gsuite_groups_enterprise',
             'gsuite_login',
             'gsuite_mobile',
             'gsuite_rules',
             'gsuite_saml',
             'gsuite_token',
+            'gsuite_user_accounts',
             'intercom_admin_activity_logs',
             'onelogin_events',
             'salesforce_console',
@@ -71,7 +74,7 @@ class TestStreamAlertApp:
             'aliyun_actiontrail'
         }
 
-        assert_count_equal(expected_apps, StreamAlertApp.get_all_apps())
+        assert_equal(expected_apps, set(StreamAlertApp.get_all_apps()))
 
     @patch('streamalert.apps.app_base.Batcher', Mock())
     def test_get_app(self):

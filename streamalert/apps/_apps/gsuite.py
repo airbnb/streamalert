@@ -230,6 +230,15 @@ class GSuiteReportsApp(AppIntegration):
 
 
 @StreamAlertApp
+class GSuiteAccessTransparencyReports(GSuiteReportsApp):
+    """G Suite Access Transparency  Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'access_transparency'
+
+
+@StreamAlertApp
 class GSuiteAdminReports(GSuiteReportsApp):
     """G Suite Admin Activity Report app integration"""
 
@@ -257,12 +266,21 @@ class GSuiteDriveReports(GSuiteReportsApp):
 
 
 @StreamAlertApp
-class GSuiteGroupsReports(GSuiteReportsApp):
-    """G Suite Groups Activity Report app integration"""
+class GSuiteGroupReports(GSuiteReportsApp):
+    """G Suite Group Activity Report app integration"""
 
     @classmethod
     def _type(cls):
-        return 'groups'
+        return 'group'
+
+
+@StreamAlertApp
+class GSuiteGroupEnterpriseReports(GSuiteReportsApp):
+    """G Suite Groups Enterprise Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'groups_enterprise'
 
 
 @StreamAlertApp
@@ -317,3 +335,12 @@ class GSuiteTokenReports(GSuiteReportsApp):
     @classmethod
     def _type(cls):
         return 'token'
+
+
+@StreamAlertApp
+class GSuiteUserAccountsReports(GSuiteReportsApp):
+    """G Suite User Accounts Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'user_accounts'
