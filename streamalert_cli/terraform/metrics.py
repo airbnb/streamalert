@@ -74,7 +74,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
             for metric, filter_settings in current_metrics[function].items():
                 module_name = 'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
                 result['module'][module_name] = {
-                    'source': 'modules/tf_metric_filters',
+                    'source': './modules/tf_metric_filters',
                     'log_group_name': log_group_name,
                     'metric_name': '{}-{}'.format(metric_prefix, metric),
                     'metric_pattern': filter_settings[0],
@@ -103,7 +103,7 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
 
         for idx, name in enumerate(sorted(metric_alarms)):
             alarm_settings = metric_alarms[name]
-            alarm_settings['source'] = 'modules/tf_metric_alarms'
+            alarm_settings['source'] = './modules/tf_metric_alarms'
             alarm_settings['sns_topic_arn'] = sns_topic_arn
             alarm_settings['alarm_name'] = name
             result['module']['metric_alarm_{}_{}'.format(func, idx)] = alarm_settings
@@ -148,7 +148,7 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
                 metric,
                 cluster_name
             )] = {
-                'source': 'modules/tf_metric_filters',
+                'source': './modules/tf_metric_filters',
                 'log_group_name': log_group_name,
                 'metric_name': '{}-{}-{}'.format(metric_prefix, metric, cluster_name),
                 'metric_pattern': filter_settings[0],
@@ -185,6 +185,6 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
     ]
 
     for idx, metric_alarm in enumerate(sorted(metric_alarms)):
-        metric_alarm['source'] = 'modules/tf_metric_alarms'
+        metric_alarm['source'] = './modules/tf_metric_alarms'
         metric_alarm['sns_topic_arn'] = sns_topic_arn
         cluster_dict['module']['metric_alarm_{}_{}'.format(cluster_name, idx)] = metric_alarm

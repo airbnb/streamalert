@@ -45,7 +45,7 @@ def test_generate_s3_events():
     expected_config = {
         'module': {
             's3_events_unit-test_advanced_0': {
-                'source': 'modules/tf_s3_events',
+                'source': './modules/tf_s3_events',
                 'lambda_function_alias': (
                     '${module.classifier_advanced_lambda.function_alias}'
                 ),
@@ -63,7 +63,7 @@ def test_generate_s3_events():
                 'filter_prefix': 'AWSLogs/123456789/CloudTrail/us-east-1/'
             },
             's3_events_unit-test_advanced_1': {
-                'source': 'modules/tf_s3_events',
+                'source': './modules/tf_s3_events',
                 'lambda_function_alias': (
                     '${module.classifier_advanced_lambda.function_alias}'
                 ),

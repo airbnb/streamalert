@@ -1,8 +1,8 @@
 // IAM Role Policy: Allow the Classifier to send data to Firehose
 resource "aws_iam_role_policy" "classifier_firehose" {
   name   = "FirehoseWriteData"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.classifier_firehose.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.classifier_firehose.json
 }
 
 locals {

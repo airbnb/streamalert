@@ -90,7 +90,7 @@ class TestTerraformGenerate:
                 }
             },
             'terraform': {
-                'required_version': '~> 0.11.7', # Changes to this should require unit test update
+                'required_version': '~> 0.12.9', # Changes to this should require unit test update
                 'backend': {
                     's3': {
                         'bucket': 'unit-test.streamalert.terraform.state',
@@ -286,7 +286,7 @@ class TestTerraformGenerate:
         expected = {
             'module': {
                 'flow_logs_advanced': {
-                    'source': 'modules/tf_flow_logs',
+                    'source': './modules/tf_flow_logs',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
                     'cloudwatch_logs_destination_arn': (
@@ -296,7 +296,7 @@ class TestTerraformGenerate:
                     'vpcs': ['vpc-id-1', 'vpc-id-2'],
                 },
                 'cloudwatch_logs_destination_advanced': {
-                    'source': 'modules/tf_cloudwatch_logs_destination',
+                    'source': './modules/tf_cloudwatch_logs_destination',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
                     'regions': [
@@ -305,7 +305,7 @@ class TestTerraformGenerate:
                     'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}'
                 },
                 'cloudwatch_logs_destination_advanced_us-west-1': {
-                    'source': 'modules/tf_cloudwatch_logs_destination/modules/destination',
+                    'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
                     'account_ids': [
@@ -361,7 +361,7 @@ class TestTerraformGenerate:
             'region': 'us-west-1',
             'exclude_home_region_events': False,
             'send_to_cloudwatch': False,
-            'source': 'modules/tf_cloudtrail',
+            'source': './modules/tf_cloudtrail',
             's3_logging_bucket': 'unit-test.streamalert.s3-logging',
             'event_pattern': '{"source": ["aws.ec2"], "account": "12345678910",'
                              ' "detail": {"state": ["running"]}}'
@@ -394,7 +394,7 @@ class TestTerraformGenerate:
 
         expected = {
             'cloudwatch_logs_destination_advanced': {
-                'source': 'modules/tf_cloudwatch_logs_destination',
+                'source': './modules/tf_cloudwatch_logs_destination',
                 'prefix': 'unit-test',
                 'cluster': 'advanced',
                 'regions': [
@@ -404,7 +404,7 @@ class TestTerraformGenerate:
                 'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}'
             },
             'cloudwatch_logs_destination_advanced_us-east-2': {
-                'source': 'modules/tf_cloudwatch_logs_destination/modules/destination',
+                'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
                 'prefix': 'unit-test',
                 'cluster': 'advanced',
                 'account_ids': [
@@ -420,7 +420,7 @@ class TestTerraformGenerate:
                 }
             },
             'cloudwatch_logs_destination_advanced_us-west-2': {
-                'source': 'modules/tf_cloudwatch_logs_destination/modules/destination',
+                'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
                 'prefix': 'unit-test',
                 'cluster': 'advanced',
                 'account_ids': [
@@ -502,7 +502,7 @@ class TestTerraformGenerate:
 
         result = generate.generate_main(config=self.config, init=False)
 
-        assert_equal(result['module']['globals']['source'], 'modules/tf_globals')
+        assert_equal(result['module']['globals']['source'], './modules/tf_globals')
         assert_true(result['module']['globals']['sqs_use_prefix'])
 
     def test_generate_main_with_sqs_url_true(self):
@@ -511,7 +511,7 @@ class TestTerraformGenerate:
 
         result = generate.generate_main(config=self.config, init=False)
 
-        assert_equal(result['module']['globals']['source'], 'modules/tf_globals')
+        assert_equal(result['module']['globals']['source'], './modules/tf_globals')
         assert_true(result['module']['globals']['sqs_use_prefix'])
 
     def test_generate_main_with_sqs_url_false(self):
@@ -520,5 +520,5 @@ class TestTerraformGenerate:
 
         result = generate.generate_main(config=self.config, init=False)
 
-        assert_equal(result['module']['globals']['source'], 'modules/tf_globals')
+        assert_equal(result['module']['globals']['source'], './modules/tf_globals')
         assert_false(result['module']['globals']['sqs_use_prefix'])

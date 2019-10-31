@@ -1,5 +1,5 @@
 output "arn" {
-  value = "${aws_kinesis_stream.streamalert_stream.arn}"
+  value = aws_kinesis_stream.streamalert_stream.arn
 }
 
 output "stream_name" {
@@ -7,13 +7,13 @@ output "stream_name" {
 }
 
 output "username" {
-  value = "${aws_iam_access_key.streamalert.*.user}"
+  value = aws_iam_access_key.streamalert.*.user
 }
 
 output "access_key_id" {
-  value = "${aws_iam_access_key.streamalert.*.id}"
+  value = aws_iam_access_key.streamalert.*.id
 }
 
 output "secret_key" {
-  value = "${aws_iam_access_key.streamalert.*.secret}"
+  value = aws_iam_access_key.streamalert.*.secret
 }

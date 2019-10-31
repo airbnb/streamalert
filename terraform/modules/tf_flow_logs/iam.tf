@@ -17,19 +17,19 @@ data "aws_iam_policy_document" "flow_log_assume_role_policy" {
 resource "aws_iam_role" "flow_log_role" {
   name               = "${var.prefix}_${var.cluster}_flow_log_role"
   path               = "/streamalert/"
-  assume_role_policy = "${data.aws_iam_policy_document.flow_log_assume_role_policy.json}"
+  assume_role_policy = data.aws_iam_policy_document.flow_log_assume_role_policy.json
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster}"
+    Cluster = var.cluster
   }
 }
 
 // IAM Policy: CloudWatch Put Events
 resource "aws_iam_role_policy" "flow_logs_write_to_cloudwatch_logs" {
   name   = "CloudWatchPutEvents"
-  role   = "${aws_iam_role.flow_log_role.id}"
-  policy = "${data.aws_iam_policy_document.flow_logs_write_to_cloudwatch_logs.json}"
+  role   = aws_iam_role.flow_log_role.id
+  policy = data.aws_iam_policy_document.flow_logs_write_to_cloudwatch_logs.json
 }
 
 // IAM Policy Doc: CloudWatch Put Events
@@ -50,3 +50,4 @@ data "aws_iam_policy_document" "flow_logs_write_to_cloudwatch_logs" {
     ]
   }
 }
+

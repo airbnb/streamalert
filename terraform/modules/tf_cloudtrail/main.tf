@@ -6,12 +6,12 @@ locals {
 // KMS key for encrypting CloudTrail logs
 resource "aws_kms_key" "cloudtrail_encryption" {
   description         = "Encrypt Cloudtrail logs for ${local.cloudtrail_bucket_name}"
-  policy              = "${data.aws_iam_policy_document.cloudtrail_encryption.json}"
+  policy              = data.aws_iam_policy_document.cloudtrail_encryption.json
   enable_key_rotation = true
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster}"
+    Cluster = var.cluster
   }
 }
 
@@ -77,7 +77,7 @@ data "aws_iam_policy_document" "cloudtrail_encryption" {
     condition {
       test     = "StringEquals"
       variable = "kms:CallerAccount"
-      values   = ["${var.primary_account_id}"]
+      values   = [var.primary_account_id]
     }
 
     condition {
@@ -90,21 +90,21 @@ data "aws_iam_policy_document" "cloudtrail_encryption" {
 
 resource "aws_kms_alias" "cloudtrail_encryption" {
   name          = "alias/${var.prefix}-${var.cluster}-streamalert-cloudtrail"
-  target_key_id = "${aws_kms_key.cloudtrail_encryption.key_id}"
+  target_key_id = aws_kms_key.cloudtrail_encryption.key_id
 }
 
 // StreamAlert CloudTrail, also sending to CloudWatch Logs group
 resource "aws_cloudtrail" "streamalert" {
-  count                         = "${var.send_to_cloudwatch && !var.existing_trail ? 1 : 0}"
-  name                          = "${local.cloudtrail_bucket_name}"
-  s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
-  cloud_watch_logs_role_arn     = "${aws_iam_role.cloudtrail_to_cloudwatch_role.arn}"
-  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail_logging.arn}"
+  count                         = var.send_to_cloudwatch && false == var.existing_trail ? 1 : 0
+  name                          = local.cloudtrail_bucket_name
+  s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].id
+  cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail_to_cloudwatch_role[0].arn
+  cloud_watch_logs_group_arn    = aws_cloudwatch_log_group.cloudtrail_logging[0].arn
   enable_log_file_validation    = true
-  enable_logging                = "${var.enable_logging}"
+  enable_logging                = var.enable_logging
   include_global_service_events = true
-  is_multi_region_trail         = "${var.is_global_trail}"
-  kms_key_id                    = "${aws_kms_key.cloudtrail_encryption.arn}"
+  is_multi_region_trail         = var.is_global_trail
+  kms_key_id                    = aws_kms_key.cloudtrail_encryption.arn
 
   event_selector {
     read_write_type           = "All"
@@ -119,22 +119,22 @@ resource "aws_cloudtrail" "streamalert" {
     }
   }
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster}"
+    Cluster = var.cluster
   }
 }
 
 // StreamAlert CloudTrail, not sending to CloudWatch
 resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
-  count                         = "${!var.send_to_cloudwatch && !var.existing_trail ? 1 : 0}"
-  name                          = "${local.cloudtrail_bucket_name}"
-  s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
+  count                         = var.send_to_cloudwatch == false && var.existing_trail == false ? 1 : 0
+  name                          = local.cloudtrail_bucket_name
+  s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].id
   enable_log_file_validation    = true
-  enable_logging                = "${var.enable_logging}"
+  enable_logging                = var.enable_logging
   include_global_service_events = true
-  is_multi_region_trail         = "${var.is_global_trail}"
-  kms_key_id                    = "${aws_kms_key.cloudtrail_encryption.arn}"
+  is_multi_region_trail         = var.is_global_trail
+  kms_key_id                    = aws_kms_key.cloudtrail_encryption.arn
 
   event_selector {
     read_write_type           = "All"
@@ -149,40 +149,40 @@ resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
     }
   }
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster}"
+    Cluster = var.cluster
   }
 }
 
 // CloudWatch Log group to send all CloudTrail logs to
 resource "aws_cloudwatch_log_group" "cloudtrail_logging" {
-  count             = "${var.send_to_cloudwatch ? 1 : 0}"
+  count             = var.send_to_cloudwatch ? 1 : 0
   name              = "CloudTrail/DefaultLogGroup"
   retention_in_days = 1
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster}"
+    Cluster = var.cluster
   }
 }
 
 // IAM Role: Allow CloudTrail logs to send logs to CloudWatch Logs
 resource "aws_iam_role" "cloudtrail_to_cloudwatch_role" {
-  count              = "${var.send_to_cloudwatch ? 1 : 0}"
+  count              = var.send_to_cloudwatch ? 1 : 0
   name               = "${var.prefix}_${var.cluster}_cloudtrail_to_cloudwatch_role"
   path               = "/streamalert/"
-  assume_role_policy = "${data.aws_iam_policy_document.cloudtrail_to_cloudwatch_assume_role_policy.json}"
+  assume_role_policy = data.aws_iam_policy_document.cloudtrail_to_cloudwatch_assume_role_policy[0].json
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster}"
+    Cluster = var.cluster
   }
 }
 
 // IAM Policy Document: Allow CloudTrail to AssumeRole
 data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_assume_role_policy" {
-  count = "${var.send_to_cloudwatch ? 1 : 0}"
+  count = var.send_to_cloudwatch ? 1 : 0
 
   statement {
     actions = ["sts:AssumeRole"]
@@ -196,28 +196,28 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_assume_role_policy" {
 
 // IAM Role Policy: Allow CloudTrail logs to create log streams and put logs to CloudWatch Logs
 resource "aws_iam_role_policy" "cloudtrail_to_cloudwatch_create_logs" {
-  count  = "${var.send_to_cloudwatch ? 1 : 0}"
+  count  = var.send_to_cloudwatch ? 1 : 0
   name   = "CloudTrailToCloudWatchCreateLogs"
-  role   = "${aws_iam_role.cloudtrail_to_cloudwatch_role.id}"
-  policy = "${data.aws_iam_policy_document.cloudtrail_to_cloudwatch_create_logs.json}"
+  role   = aws_iam_role.cloudtrail_to_cloudwatch_role[0].id
+  policy = data.aws_iam_policy_document.cloudtrail_to_cloudwatch_create_logs[0].json
 }
 
 // IAM Policy Document: Allow CloudTrail logs to create log streams and put logs to CloudWatch Logs
 data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
-  count = "${var.send_to_cloudwatch ? 1 : 0}"
+  count = var.send_to_cloudwatch ? 1 : 0
 
   statement {
     sid       = "AWSCloudTrailCreateLogStream"
     effect    = "Allow"
     actions   = ["logs:CreateLogStream"]
-    resources = ["${aws_cloudwatch_log_group.cloudtrail_logging.arn}"]
+    resources = [aws_cloudwatch_log_group.cloudtrail_logging[0].arn]
   }
 
   statement {
     sid       = "AWSCloudTrailPutLogEvents"
     effect    = "Allow"
     actions   = ["logs:PutLogEvents"]
-    resources = ["${aws_cloudwatch_log_group.cloudtrail_logging.arn}"]
+    resources = [aws_cloudwatch_log_group.cloudtrail_logging[0].arn]
   }
 
   statement {
@@ -230,7 +230,7 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
       "kms:GenerateDataKey*",
     ]
 
-    resources = ["${aws_kms_key.cloudtrail_encryption.arn}"]
+    resources = [aws_kms_key.cloudtrail_encryption.arn]
   }
 }
 
@@ -238,19 +238,19 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
 //   If we are collecting CloudTrail logs in the 'home region' another way, this allows
 //   for suppression of logs that originated in this region.
 resource "aws_cloudwatch_log_subscription_filter" "cloudtrail_via_cloudwatch" {
-  count           = "${var.send_to_cloudwatch ? 1 : 0}"
+  count           = var.send_to_cloudwatch ? 1 : 0
   name            = "${var.prefix}_${var.cluster}_cloudtrail_delivery"
-  log_group_name  = "${aws_cloudwatch_log_group.cloudtrail_logging.name}"
-  filter_pattern  = "${var.exclude_home_region_events ? local.apply_filter_string : ""}"
-  destination_arn = "${var.cloudwatch_destination_arn}"
+  log_group_name  = aws_cloudwatch_log_group.cloudtrail_logging[0].name
+  filter_pattern  = var.exclude_home_region_events ? local.apply_filter_string : ""
+  destination_arn = var.cloudwatch_destination_arn
   distribution    = "Random"
 }
 
 // S3 bucket for CloudTrail output
 resource "aws_s3_bucket" "cloudtrail_bucket" {
-  count         = "${var.existing_trail ? 0 : 1}"
-  bucket        = "${local.cloudtrail_bucket_name}"
-  policy        = "${data.aws_iam_policy_document.cloudtrail_bucket.json}"
+  count         = var.existing_trail ? 0 : 1
+  bucket        = local.cloudtrail_bucket_name
+  policy        = data.aws_iam_policy_document.cloudtrail_bucket[0].json
   force_destroy = false
 
   versioning {
@@ -258,7 +258,7 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
   }
 
   logging {
-    target_bucket = "${var.s3_logging_bucket}"
+    target_bucket = var.s3_logging_bucket
     target_prefix = "${local.cloudtrail_bucket_name}/"
   }
 
@@ -266,19 +266,19 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
     rule {
       apply_server_side_encryption_by_default {
         sse_algorithm     = "aws:kms"
-        kms_master_key_id = "${aws_kms_key.cloudtrail_encryption.key_id}"
+        kms_master_key_id = aws_kms_key.cloudtrail_encryption.key_id
       }
     }
   }
 
-  tags {
-    Name    = "${local.cloudtrail_bucket_name}"
-    Cluster = "${var.cluster}"
+  tags = {
+    Name    = local.cloudtrail_bucket_name
+    Cluster = var.cluster
   }
 }
 
 data "aws_iam_policy_document" "cloudtrail_bucket" {
-  count = "${var.existing_trail ? 0 : 1}"
+  count = var.existing_trail ? 0 : 1
 
   statement {
     sid = "AWSCloudTrailAclCheck"
@@ -304,9 +304,10 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
       "s3:PutObject",
     ]
 
-    resources = [
-      "${formatlist("arn:aws:s3:::${local.cloudtrail_bucket_name}/AWSLogs/%s/*", var.account_ids)}",
-    ]
+    resources = formatlist(
+      "arn:aws:s3:::${local.cloudtrail_bucket_name}/AWSLogs/%s/*",
+      var.account_ids,
+    )
 
     principals {
       type        = "Service"

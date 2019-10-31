@@ -47,7 +47,7 @@ def generate_athena(config):
 
     athena_dict['module']['stream_alert_athena'] = {
         's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
-        'source': 'modules/tf_athena',
+        'source': './modules/tf_athena',
         'database_name': database,
         'queue_name': queue_name,
         'results_bucket': results_bucket_name,
@@ -65,7 +65,7 @@ def generate_athena(config):
     # Cloudwatch monitoring setup
     sns_topic_name = monitoring_topic_name(config)
     athena_dict['module']['athena_monitoring'] = {
-        'source': 'modules/tf_monitoring',
+        'source': './modules/tf_monitoring',
         'sns_topic_arn': 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
             region=config['global']['account']['region'],
             account_id=config['global']['account']['aws_account_id'],

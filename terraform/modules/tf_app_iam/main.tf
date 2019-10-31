@@ -1,8 +1,8 @@
 // IAM Role Policy: Allow the StreamAlert App function to invoke the Classifier function
 resource "aws_iam_role_policy" "invoke_destination_function" {
   name   = "InvokeDestinationFunction"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.invoke_destination_function.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.invoke_destination_function.json
 }
 
 // IAM Policy Doc: Allow the StreamAlert App function to invoke the Classifier function
@@ -23,8 +23,8 @@ data "aws_iam_policy_document" "invoke_destination_function" {
 // IAM Role Policy: Allow the StreamAlert App function to create/update SSM Parameter Store Values
 resource "aws_iam_role_policy" "parameter_store" {
   name   = "GetAndPutSSMParams"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.parameter_store.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.parameter_store.json
 }
 
 // IAM Policy Doc: Allow the StreamAlert App function to create/update SSM Parameter Store Values
@@ -60,8 +60,8 @@ data "aws_iam_policy_document" "parameter_store" {
 // IAM Role Policy: Allow the StreamAlert App function to invoke itself
 resource "aws_iam_role_policy" "invoke_self" {
   name   = "LambdaInvokeSelf"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.invoke_self.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.invoke_self.json
 }
 
 // IAM Policy Doc: Allow the StreamAlert App function to invoke itself

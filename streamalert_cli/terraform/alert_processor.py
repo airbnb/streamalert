@@ -34,7 +34,7 @@ def generate_alert_processor(config):
 
     # Set variables for the IAM permissions module
     result['module']['alert_processor_iam'] = {
-        'source': 'modules/tf_alert_processor_iam',
+        'source': './modules/tf_alert_processor_iam',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': prefix,

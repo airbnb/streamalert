@@ -2,9 +2,9 @@
 resource "aws_iam_role" "athena_partition_role" {
   name               = "${var.prefix}_athena_partition_refresh"
   path               = "/streamalert/"
-  assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role_policy.json}"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy.json
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
     AltName = "Athena"
   }
@@ -26,8 +26,8 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 // IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
 resource "aws_iam_role_policy" "cloudwatch" {
   name   = "CloudWatchPutLogs"
-  role   = "${aws_iam_role.athena_partition_role.id}"
-  policy = "${data.aws_iam_policy_document.cloudwatch.json}"
+  role   = aws_iam_role.athena_partition_role.id
+  policy = data.aws_iam_policy_document.cloudwatch.json
 }
 
 // IAM Policy Doc: Cloudwatch creation and logging of events
@@ -50,8 +50,8 @@ data "aws_iam_policy_document" "cloudwatch" {
 // IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
 resource "aws_iam_role_policy" "sqs" {
   name   = "SQSReadDeleteMessages"
-  role   = "${aws_iam_role.athena_partition_role.id}"
-  policy = "${data.aws_iam_policy_document.sqs.json}"
+  role   = aws_iam_role.athena_partition_role.id
+  policy = data.aws_iam_policy_document.sqs.json
 }
 
 // IAM Policy Doc: decrypt, read, and delete SQS messages
@@ -64,7 +64,7 @@ data "aws_iam_policy_document" "sqs" {
     ]
 
     resources = [
-      "${aws_kms_key.sse.arn}",
+      aws_kms_key.sse.arn,
     ]
   }
 
@@ -92,7 +92,7 @@ data "aws_iam_policy_document" "sqs" {
     ]
 
     resources = [
-      "${aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn}",
+      aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn,
     ]
   }
 }
@@ -101,8 +101,8 @@ data "aws_iam_policy_document" "sqs" {
 // Ref: http://amzn.to/2tSyxUV
 resource "aws_iam_role_policy" "athena_query_permissions" {
   name   = "AthenaQuery"
-  role   = "${aws_iam_role.athena_partition_role.id}"
-  policy = "${data.aws_iam_policy_document.athena_permissions.json}"
+  role   = aws_iam_role.athena_partition_role.id
+  policy = data.aws_iam_policy_document.athena_permissions.json
 }
 
 // IAM Policy Doc: Athena and S3 permissions
@@ -173,8 +173,8 @@ data "aws_iam_policy_document" "athena_permissions" {
 // IAM Role Policy: Allow the Lambda function to read data buckets
 resource "aws_iam_role_policy" "athena_query_data_bucket_permissions" {
   name   = "AthenaGetData"
-  role   = "${aws_iam_role.athena_partition_role.id}"
-  policy = "${data.aws_iam_policy_document.athena_data_bucket_read.json}"
+  role   = aws_iam_role.athena_partition_role.id
+  policy = data.aws_iam_policy_document.athena_data_bucket_read.json
 }
 
 // IAM Policy Doc: Allow Athena to read data from configured buckets
@@ -194,10 +194,10 @@ data "aws_iam_policy_document" "athena_data_bucket_read" {
       "s3:PutObject",
     ]
 
-    resources = [
-      "${formatlist("arn:aws:s3:::%s/*", var.athena_data_buckets)}",
-      "${formatlist("arn:aws:s3:::%s", var.athena_data_buckets)}",
-    ]
+    resources = concat(
+      formatlist("arn:aws:s3:::%s/*", var.athena_data_buckets),
+      formatlist("arn:aws:s3:::%s", var.athena_data_buckets),
+    )
   }
 }
 
@@ -216,16 +216,14 @@ data "aws_iam_policy_document" "athena_data_bucket_sqs_sendmessage" {
     }
 
     resources = [
-      "${aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn}",
+      aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn,
     ]
 
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
 
-      values = [
-        "${formatlist("arn:aws:s3:*:*:%s", var.athena_data_buckets)}",
-      ]
+      values = formatlist("arn:aws:s3:*:*:%s", var.athena_data_buckets)
     }
   }
 }

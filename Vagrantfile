@@ -62,7 +62,7 @@ def configure_streamalert(machine)
                    privileged: false
 end
 
-TERRAFORM_VERSION = ENV.fetch('SA_TERRAFORM_VERSION', '0.11.7')
+TERRAFORM_VERSION = ENV.fetch('SA_TERRAFORM_VERSION', '0.12.9')
 def configure_terraform(machine)
   # Install terraform with the specified version.
   machine.vm.provision :shell,
