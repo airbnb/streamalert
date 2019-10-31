@@ -59,7 +59,6 @@ class TestStreamAlertApp:
             'gsuite_login',
             'gsuite_mobile',
             'gsuite_rules',
-            'gsuite_saml',
             'gsuite_token',
             'gsuite_user_accounts',
             'intercom_admin_activity_logs',

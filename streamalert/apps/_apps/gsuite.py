@@ -320,15 +320,6 @@ class GSuiteRulesReports(GSuiteReportsApp):
 
 
 @StreamAlertApp
-class GSuiteSAMLReports(GSuiteReportsApp):
-    """G Suite SAML Activity Report app integration"""
-
-    @classmethod
-    def _type(cls):
-        return 'saml'
-
-
-@StreamAlertApp
 class GSuiteTokenReports(GSuiteReportsApp):
     """G Suite Token Activity Report app integration"""
 
