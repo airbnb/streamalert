@@ -1,13 +1,13 @@
 variable "account_id" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "buffer_size" {
@@ -27,5 +27,6 @@ variable "compression_format" {
 }
 
 variable "kms_key_arn" {
-  type = "string"
+  type = string
 }
+

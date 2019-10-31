@@ -1,5 +1,5 @@
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "use_prefix" {
@@ -15,24 +15,24 @@ variable "buffer_interval" {
 }
 
 variable "compression_format" {
-  type    = "string"
+  type    = string
   default = "GZIP"
 }
 
 variable "log_name" {
-  type = "string"
+  type = string
 }
 
 variable "role_arn" {
-  type = "string"
+  type = string
 }
 
 variable "s3_bucket_name" {
-  type = "string"
+  type = string
 }
 
 variable "kms_key_arn" {
-  type = "string"
+  type = string
 }
 
 variable "enable_alarm" {
@@ -56,7 +56,7 @@ variable "period_seconds" {
 }
 
 variable "alarm_actions" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
 }

@@ -1,0 +1,69 @@
+{
+  "kinesis": {
+    "prefix_cluster1_stream_alert_kinesis": {
+      "logs": [
+        "cloudwatch",
+        "ghe",
+        "osquery"
+      ]
+    }
+  },
+  "s3": {
+    "prefix.cluster.sample.bucket": {
+      "logs": [
+        "cloudtrail",
+        "carbonblack",
+        "fleet"
+      ]
+    }
+  },
+  "sns": {
+    "prefix_cluster_sample_topic": {
+      "logs": [
+        "binaryalert"
+      ]
+    }
+  },
+  "stream_alert_app": {
+    "prefix_cluster_box_admin_events_sm-app-name_app": {
+      "logs": [
+        "box"
+      ]
+    },
+    "prefix_cluster_duo_admin_sm-app-name_app": {
+      "logs": [
+        "duo"
+      ]
+    },
+    "prefix_cluster_duo_auth_sm-app-name_app": {
+      "logs": [
+        "duo"
+      ]
+    },
+    "prefix_cluster_gsuite_admin_sm-app-name_app": {
+      "logs": [
+        "gsuite"
+      ]
+    },
+    "prefix_cluster_onelogin-events-app-name_app": {
+      "logs": [
+        "onelogin"
+      ]
+    },
+    "prefix_cluster_slack_access_sm-app-name_app": {
+      "logs": [
+        "slack"
+      ]
+    },
+    "prefix_cluster_slack_integration_sm-app-name_app": {
+      "logs": [
+        "slack"
+      ]
+    },
+    "prefix_cluster_aliyun_actiontrail_sm-app-name_app": {
+      "logs": [
+        "aliyun"
+      ]
+    }
+  }
+}

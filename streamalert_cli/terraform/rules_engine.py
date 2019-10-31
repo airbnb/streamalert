@@ -32,7 +32,7 @@ def generate_rules_engine(config):
 
     # Set variables for the rules engine IAM permissions
     result['module']['rules_engine_iam'] = {
-        'source': 'modules/tf_rules_engine',
+        'source': './modules/tf_rules_engine',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': prefix,

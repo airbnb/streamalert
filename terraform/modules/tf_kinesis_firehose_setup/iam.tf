@@ -2,9 +2,9 @@
 resource "aws_iam_role" "streamalert_kinesis_firehose" {
   name               = "${var.prefix}_firehose_data_delivery"
   path               = "/streamalert/"
-  assume_role_policy = "${data.aws_iam_policy_document.firehose_assume_role_policy.json}"
+  assume_role_policy = data.aws_iam_policy_document.firehose_assume_role_policy.json
 
-  tags {
+  tags = {
     Name = "StreamAlert"
   }
 }
@@ -25,8 +25,8 @@ data "aws_iam_policy_document" "firehose_assume_role_policy" {
 // IAM Policy: Write data to S3
 resource "aws_iam_role_policy" "streamalert_firehose_s3" {
   name   = "WriteDataToS3"
-  role   = "${aws_iam_role.streamalert_kinesis_firehose.id}"
-  policy = "${data.aws_iam_policy_document.firehose_s3.json}"
+  role   = aws_iam_role.streamalert_kinesis_firehose.id
+  policy = data.aws_iam_policy_document.firehose_s3.json
 }
 
 // IAM Policy Document: Write data to S3
@@ -66,8 +66,8 @@ data "aws_iam_policy_document" "firehose_s3" {
 // IAM Policy: Write logs to CloudWatch
 resource "aws_iam_role_policy" "streamalert_firehose_cloudwatch" {
   name   = "WriteDataToCloudWatch"
-  role   = "${aws_iam_role.streamalert_kinesis_firehose.id}"
-  policy = "${data.aws_iam_policy_document.firehose_cloudwatch.json}"
+  role   = aws_iam_role.streamalert_kinesis_firehose.id
+  policy = data.aws_iam_policy_document.firehose_cloudwatch.json
 }
 
 // IAM Policy Document: Write logs to CloudWatch

@@ -36,7 +36,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
     )
 
     cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
-        'source': 'modules/tf_kinesis_streams',
+        'source': './modules/tf_kinesis_streams',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['clusters'][cluster_name]['region'],
         'cluster': cluster_name,

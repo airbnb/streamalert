@@ -1,67 +1,67 @@
 variable "account_id" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "lambda_handler" {
-  type    = "string"
+  type    = string
   default = "main.handler"
 }
 
 variable "lambda_memory" {
-  type    = "string"
+  type    = string
   default = "128"
 }
 
 variable "lambda_timeout" {
-  type    = "string"
+  type    = string
   default = "60"
 }
 
 variable "filename" {
-  type    = "string"
+  type    = string
   default = "athena_partition_refresh.zip"
 }
 
 variable "lambda_log_level" {
-  type    = "string"
+  type    = string
   default = "info"
 }
 
 variable "athena_data_buckets" {
-  type = "list"
+  type = list(string)
 }
 
 variable "results_bucket" {
-  type = "string"
+  type = string
 }
 
 variable "kms_key_id" {
-  type = "string"
+  type = string
 }
 
 variable "s3_logging_bucket" {
-  type = "string"
+  type = string
 }
 
 variable "database_name" {
-  type = "string"
+  type = string
 }
 
 variable "queue_name" {
-  type = "string"
+  type = string
 }
 
 variable "athena_metric_filters" {
-  type    = "list"
+  type    = list(string)
   default = []
 }
 
 variable "namespace" {
-  type    = "string"
+  type    = string
   default = "StreamAlert"
 }
 

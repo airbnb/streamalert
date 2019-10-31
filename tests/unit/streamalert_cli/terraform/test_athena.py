@@ -39,7 +39,7 @@ def test_generate_athena():
         'module': {
             'stream_alert_athena': {
                 's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),
-                'source': 'modules/tf_athena',
+                'source': './modules/tf_athena',
                 'database_name': '{}_streamalert'.format(prefix),
                 'queue_name': '{}_streamalert_athena_s3_notifications'.format(prefix),
                 'results_bucket': '{}.streamalert.athena-results'.format(prefix),
@@ -57,7 +57,7 @@ def test_generate_athena():
                 'concurrency_limit': 10
             },
             'athena_monitoring': {
-                'source': 'modules/tf_monitoring',
+                'source': './modules/tf_monitoring',
                 'sns_topic_arn': (
                     'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                 ),

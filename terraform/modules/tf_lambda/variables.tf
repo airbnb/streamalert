@@ -43,24 +43,24 @@ variable "concurrency_limit" {
 }
 
 variable "environment_variables" {
-  type        = "map"
+  type        = map(string)
   description = "Map of environment variables available to the running Lambda function"
 }
 
 variable "vpc_subnet_ids" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of VPC subnet IDs"
 }
 
 variable "vpc_security_group_ids" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of security group IDs (for VPC)"
 }
 
 variable "default_tags" {
-  type = "map"
+  type = map(string)
 
   default = {
     Name = "StreamAlert"
@@ -70,7 +70,7 @@ variable "default_tags" {
 }
 
 variable "tags" {
-  type        = "map"
+  type        = map(string)
   default     = {}
   description = "Any dditional tags to be associated with all applicable components"
 }
@@ -96,7 +96,7 @@ variable "schedule_expression" {
 }
 
 variable "lambda_input_event" {
-  type        = "map"
+  type        = map(string)
   default     = {}
   description = "Optional dictionary representing input to be encoded to json and passed to the Lambda function"
 }
@@ -109,7 +109,7 @@ variable "log_retention_days" {
 // ***** CloudWatch metric alarms *****
 
 variable "alarm_actions" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
 }
@@ -176,6 +176,6 @@ variable "iterator_age_alarm_period_secs" {
 
 variable "input_sns_topics" {
   description = "SNS topics that are allowed to invoke this Lambda function"
-  type        = "list"
+  type        = list(string)
   default     = []
 }

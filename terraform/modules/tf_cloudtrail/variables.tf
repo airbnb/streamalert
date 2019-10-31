@@ -1,21 +1,21 @@
 variable "primary_account_id" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "cluster" {
-  type = "string"
+  type = string
 }
 
 variable "account_ids" {
-  type = "list"
+  type = list(string)
 }
 
 variable "enable_kinesis" {
@@ -27,7 +27,7 @@ variable "enable_logging" {
 }
 
 variable "event_pattern" {
-  type    = "string"
+  type    = string
   default = ""
 }
 
@@ -40,12 +40,12 @@ variable "is_global_trail" {
 }
 
 variable "kinesis_arn" {
-  type    = "string"
+  type    = string
   default = ""
 }
 
 variable "s3_logging_bucket" {
-  type = "string"
+  type = string
 }
 
 variable "cloudwatch_destination_arn" {

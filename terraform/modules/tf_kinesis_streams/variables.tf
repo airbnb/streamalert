@@ -1,17 +1,17 @@
 variable "account_id" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "cluster" {
-  type = "string"
+  type = string
 }
 
 variable "access_key_count" {
@@ -31,7 +31,7 @@ variable "retention" {
 }
 
 variable "stream_name" {
-  type = "string"
+  type = string
 }
 
 variable "shards" {
@@ -40,6 +40,6 @@ variable "shards" {
 
 // Default values for shard_level_metrics
 variable "shard_level_metrics" {
-  type    = "list"
+  type    = list(string)
   default = []
 }

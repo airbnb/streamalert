@@ -27,9 +27,9 @@ data "aws_iam_policy_document" "streamalert_data" {
 }
 
 resource "aws_s3_bucket" "streamalert_data" {
-  bucket        = "${var.s3_bucket_name}"
+  bucket        = var.s3_bucket_name
   acl           = "private"
-  policy        = "${data.aws_iam_policy_document.streamalert_data.json}"
+  policy        = data.aws_iam_policy_document.streamalert_data.json
   force_destroy = false
 
   versioning {
@@ -37,7 +37,7 @@ resource "aws_s3_bucket" "streamalert_data" {
   }
 
   logging {
-    target_bucket = "${var.s3_logging_bucket}"
+    target_bucket = var.s3_logging_bucket
     target_prefix = "${var.s3_bucket_name}/"
   }
 
@@ -45,12 +45,12 @@ resource "aws_s3_bucket" "streamalert_data" {
     rule {
       apply_server_side_encryption_by_default {
         sse_algorithm     = "aws:kms"
-        kms_master_key_id = "${var.kms_key_id}"
+        kms_master_key_id = var.kms_key_id
       }
     }
   }
 
-  tags {
+  tags = {
     Name = "StreamAlert"
   }
 }
