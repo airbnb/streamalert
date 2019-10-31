@@ -241,14 +241,12 @@ class TestThreatIntel:
 
     def test_segment(self):
         """ThreatIntel - Segment"""
-        values = [i for i in range(120)]
-
         expected_result = [
-            {i for i in range(100)},
-            {i for i in range(100, 120)}
+            set(range(100)),
+            set(range(100, 120))
         ]
 
-        result = list(ThreatIntel._segment(values))
+        result = list(ThreatIntel._segment(list(range(120))))
         assert_equal(result, expected_result)
 
     def test_query_client_error(self):

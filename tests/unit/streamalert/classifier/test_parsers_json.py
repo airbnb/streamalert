@@ -770,9 +770,8 @@ class TestJSONParser:
         parser = JSONParser(options)
         assert_equal(parser.parse(record_data), True)
 
-        expected_result = [
-            rec for rec in data['Records']
-        ]
+        expected_result = data['Records']
+
         assert_equal(parser.parsed_records, expected_result)
 
     def test_cloudwatch(self):

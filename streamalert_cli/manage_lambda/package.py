@@ -15,6 +15,7 @@ limitations under the License.
 """
 import os
 import shutil
+import sys
 import tempfile
 import zipfile
 
@@ -74,12 +75,12 @@ class LambdaPackage:
 
         if not self._resolve_libraries(temp_package_path):
             LOGGER.exception('Failed to install necessary libraries')
-            exit(1)
+            sys.exit(1)
 
         # Extract any precompiled libs for this package
         if self.precompiled_libs and not self._extract_precompiled_libs(temp_package_path):
             LOGGER.exception('Failed to extract precompiled libraries')
-            exit(1)
+            sys.exit(1)
 
         # Zip up files
         result = shutil.make_archive(

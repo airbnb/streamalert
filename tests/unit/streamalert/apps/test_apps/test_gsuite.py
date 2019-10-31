@@ -21,7 +21,6 @@ from datetime import datetime, timedelta
 
 import googleapiclient
 from google.auth import exceptions
-from google.oauth2 import service_account
 from mock import Mock, mock_open, patch
 from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_count_equal, assert_true, raises
