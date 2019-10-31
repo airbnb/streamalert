@@ -207,9 +207,7 @@ class ThreatIntel:
                 }
             )
 
-            results.extend([
-                result for result in self._deserialize(response['Responses'].get(self._table))
-            ])
+            results.extend(self._deserialize(response['Responses'].get(self._table)))
 
             # Log this as an error for now so it can be picked up in logs
             if response['UnprocessedKeys']:

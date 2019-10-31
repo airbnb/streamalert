@@ -15,6 +15,7 @@ limitations under the License.
 """
 import os
 import shutil
+import sys
 import tempfile
 import zipfile
 
@@ -43,16 +44,15 @@ class LambdaPackage:
     # Define a package dict to support pinning versions across all subclasses
     PACKAGE_LIBS = {
         'aliyun-python-sdk-actiontrail': 'aliyun-python-sdk-actiontrail==2.0.0',
-        'backoff': 'backoff==1.8.0',
-        'boto3': 'boto3==1.9.208',
-        'boxsdk[jwt]': 'boxsdk[jwt]==2.6.0',
-        'cbapi': 'cbapi==1.5.1',
-        'google-api-python-client': 'google-api-python-client==1.6.4',
+        'backoff': 'backoff==1.8.1',
+        'boto3': 'boto3==1.10.6',
+        'boxsdk[jwt]': 'boxsdk[jwt]==2.6.1',
+        'cbapi': 'cbapi==1.5.4',
+        'google-api-python-client': 'google-api-python-client==1.7.11',
         'jmespath': 'jmespath==0.9.4',
         'jsonlines': 'jsonlines==1.2.0',
         'netaddr': 'netaddr==0.7.19',
-        'oauth2client': 'oauth2client==4.1.3',
-        'policyuniverse': 'policyuniverse==1.3.2.0',
+        'policyuniverse': 'policyuniverse==1.3.2.1',
         'requests': 'requests==2.22.0',
     }
 
@@ -75,12 +75,12 @@ class LambdaPackage:
 
         if not self._resolve_libraries(temp_package_path):
             LOGGER.exception('Failed to install necessary libraries')
-            exit(1)
+            sys.exit(1)
 
         # Extract any precompiled libs for this package
         if self.precompiled_libs and not self._extract_precompiled_libs(temp_package_path):
             LOGGER.exception('Failed to extract precompiled libraries')
-            exit(1)
+            sys.exit(1)
 
         # Zip up files
         result = shutil.make_archive(
@@ -258,7 +258,6 @@ class AppPackage(LambdaPackage):
         'backoff',
         'boxsdk[jwt]',
         'google-api-python-client',
-        'oauth2client',
         'requests'
     }
 

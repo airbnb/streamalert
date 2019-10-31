@@ -732,8 +732,8 @@ class CSVParser(ParserBase):
                 if parsed_data and parsed_data[0][1] is True:
                     parsed_payload[key] = parsed_data[0][0]
                     continue
-                else:
-                    return False  # break the loop if the nested data was invalid
+
+                return False  # break the loop if the nested data was invalid
 
             # extract the keys from the row via the index
             parsed_payload[key] = row[index]

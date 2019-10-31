@@ -19,8 +19,10 @@ import re
 import socket
 import ssl
 
-import apiclient
-from oauth2client import client, service_account
+import googleapiclient.discovery
+import googleapiclient.errors
+from google.oauth2 import service_account
+from google.auth.exceptions import GoogleAuthError
 
 from . import AppIntegration, StreamAlertApp, get_logger
 
@@ -36,8 +38,12 @@ class GSuiteReportsApp(AppIntegration):
     """G Suite Reports base app integration. This is subclassed for various endpoints"""
     _SCOPES = ['https://www.googleapis.com/auth/admin.reports.audit.readonly']
     # A tuple of uncaught exceptions that the googleapiclient can raise
-    _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, client.Error, socket.timeout,
-                              ssl.SSLError)
+    _GOOGLE_API_EXCEPTIONS = (
+        googleapiclient.errors.Error,
+        GoogleAuthError,
+        socket.timeout,
+        ssl.SSLError,
+    )
 
     # The maximum number of unique event ids to store that occur on the most
     # recent timestamp. These are used to de-duplicate events in the next poll.
@@ -73,12 +79,14 @@ class GSuiteReportsApp(AppIntegration):
                 JSON file
 
         Returns:
-            oauth2client.service_account.ServiceAccountCredentials: Instance of
+             google.oauth2.service_account.ServiceAccountCredentials: Instance of
                 service account credentials for this discovery service
         """
         try:
-            creds = service_account.ServiceAccountCredentials.from_json_keyfile_dict(
-                keydata, scopes=cls._SCOPES)
+            creds = service_account.Credentials.from_service_account_info(
+                keydata,
+                scopes=cls._SCOPES,
+            )
         except (ValueError, KeyError):
             # This has the potential to raise errors. See: https://tinyurl.com/y8q5e9rm
             LOGGER.exception('[%s] Could not generate credentials from keyfile', cls.type())
@@ -103,9 +111,13 @@ class GSuiteReportsApp(AppIntegration):
         if not creds:
             return False
 
-        delegation = creds.create_delegated(self._config.auth['delegation_email'])
+        delegation = creds.with_subject(self._config.auth['delegation_email'])
         try:
-            resource = apiclient.discovery.build('admin', 'reports_v1', credentials=delegation)
+            resource = googleapiclient.discovery.build(
+                'admin',
+                'reports_v1',
+                credentials=delegation
+            )
         except self._GOOGLE_API_EXCEPTIONS:
             LOGGER.exception('[%s] Failed to build discovery service', self)
             return False
@@ -230,6 +242,15 @@ class GSuiteReportsApp(AppIntegration):
 
 
 @StreamAlertApp
+class GSuiteAccessTransparencyReports(GSuiteReportsApp):
+    """G Suite Access Transparency  Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'access_transparency'
+
+
+@StreamAlertApp
 class GSuiteAdminReports(GSuiteReportsApp):
     """G Suite Admin Activity Report app integration"""
 
@@ -257,12 +278,21 @@ class GSuiteDriveReports(GSuiteReportsApp):
 
 
 @StreamAlertApp
-class GSuiteGroupsReports(GSuiteReportsApp):
-    """G Suite Groups Activity Report app integration"""
+class GSuiteGroupReports(GSuiteReportsApp):
+    """G Suite Group Activity Report app integration"""
 
     @classmethod
     def _type(cls):
-        return 'groups'
+        return 'group'
+
+
+@StreamAlertApp
+class GSuiteGroupEnterpriseReports(GSuiteReportsApp):
+    """G Suite Groups Enterprise Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'groups_enterprise'
 
 
 @StreamAlertApp
@@ -302,18 +332,18 @@ class GSuiteRulesReports(GSuiteReportsApp):
 
 
 @StreamAlertApp
-class GSuiteSAMLReports(GSuiteReportsApp):
-    """G Suite SAML Activity Report app integration"""
-
-    @classmethod
-    def _type(cls):
-        return 'saml'
-
-
-@StreamAlertApp
 class GSuiteTokenReports(GSuiteReportsApp):
     """G Suite Token Activity Report app integration"""
 
     @classmethod
     def _type(cls):
         return 'token'
+
+
+@StreamAlertApp
+class GSuiteUserAccountsReports(GSuiteReportsApp):
+    """G Suite User Accounts Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'user_accounts'

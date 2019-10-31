@@ -9,7 +9,7 @@ boxsdk[jwt]
 cbapi
 coverage
 coveralls
-google-api-python-client==1.6.4
+google-api-python-client
 jmespath
 jsonlines
 mock
@@ -20,7 +20,7 @@ nose-timer
 pathlib2
 policyuniverse
 pyfakefs
-pylint
+pylint==2.3.1
 requests
 Sphinx
 sphinx-rtd-theme
