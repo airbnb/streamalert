@@ -428,7 +428,7 @@ class SQSOutput(AWSOutput):
         """
         queue_name = self.config[self.__service__][descriptor]
         sqs = boto3.resource('sqs', region_name=self.region)
-        queue = sqs.get_queue_by_name(QueueName=queue_name)
+        queue = sqs.get_queue_by_name(QueueName=queue_name)  # pylint: disable=no-member
 
         publication = compose_alert(alert, self, descriptor)
 

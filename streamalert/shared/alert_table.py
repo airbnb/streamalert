@@ -131,7 +131,7 @@ class AlertTable:
             'KeyConditionExpression': Key('RuleName').eq(rule_name) & Key('AlertID').eq(alert_id)
         }
         items = list(self._paginate(self._table.query, kwargs))
-        return items[0] if items else None
+        return items[0] if items else {}
 
     # ---------- Add/Delete/Update Operations ----------
 

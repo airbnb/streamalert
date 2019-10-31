@@ -20,7 +20,7 @@ nose-timer
 pathlib2
 policyuniverse
 pyfakefs
-pylint
+pylint==2.3.1
 requests
 Sphinx
 sphinx-rtd-theme
