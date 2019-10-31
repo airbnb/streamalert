@@ -19,7 +19,6 @@ from botocore.exceptions import ClientError
 from mock import call, Mock, patch
 from moto import mock_ssm
 from nose.tools import (
-    assert_count_equal,
     assert_equal,
     assert_false,
     assert_is_instance,
