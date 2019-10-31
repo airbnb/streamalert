@@ -19,8 +19,9 @@ import socket
 import ssl
 from datetime import datetime, timedelta
 
-import apiclient
-import oauth2client
+import googleapiclient
+from google.auth import exceptions
+from google.oauth2 import service_account
 from mock import Mock, mock_open, patch
 from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_count_equal, assert_true, raises
@@ -57,7 +58,7 @@ class TestGSuiteReportsApp:
         assert_count_equal(list(self._app.required_auth_info().keys()),
                            {'delegation_email', 'keyfile'})
 
-    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict',
+    @patch('google.oauth2.service_account.Credentials.from_service_account_info',
            Mock(return_value=True))
     def test_keyfile_validator(self):
         """GSuiteReportsApp - Keyfile Validation, Success"""
@@ -68,7 +69,7 @@ class TestGSuiteReportsApp:
             loaded_keydata = validation_function('fakepath')
             assert_equal(loaded_keydata, data)
 
-    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict')
+    @patch('google.oauth2.service_account.Credentials.from_service_account_info')
     def test_keyfile_validator_failure(self, cred_mock):
         """GSuiteReportsApp - Keyfile Validation, Failure"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
@@ -78,7 +79,7 @@ class TestGSuiteReportsApp:
             assert_false(validation_function('fakepath'))
             cred_mock.assert_called()
 
-    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict')
+    @patch('google.oauth2.service_account.Credentials.from_service_account_info')
     def test_keyfile_validator_bad_json(self, cred_mock):
         """GSuiteReportsApp - Keyfile Validation, Bad JSON"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
@@ -87,20 +88,20 @@ class TestGSuiteReportsApp:
             assert_false(validation_function('fakepath'))
             cred_mock.assert_not_called()
 
-    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict',
+    @patch('google.oauth2.service_account.Credentials.from_service_account_info',
            Mock(return_value=True))
     def test_load_credentials(self):
         """GSuiteReportsApp - Load Credentials, Success"""
         assert_true(self._app._load_credentials('fakedata'))
 
-    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict')
+    @patch('google.oauth2.service_account.Credentials.from_service_account_info')
     def test_load_credentials_bad(self, cred_mock):
         """GSuiteReportsApp - Load Credentials, ValueError"""
         cred_mock.side_effect = ValueError('Bad things happened')
         assert_false(self._app._load_credentials('fakedata'))
 
     @patch('streamalert.apps._apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
-    @patch('streamalert.apps._apps.gsuite.apiclient.discovery.build')
+    @patch('streamalert.apps._apps.gsuite.googleapiclient.discovery.build')
     def test_create_service(self, build_mock):
         """GSuiteReportsApp - Create Service, Success"""
         build_mock.return_value.activities.return_value = True
@@ -121,16 +122,16 @@ class TestGSuiteReportsApp:
 
     @patch('streamalert.apps._apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
     @patch('logging.Logger.exception')
-    @patch('streamalert.apps._apps.gsuite.apiclient.discovery.build')
+    @patch('streamalert.apps._apps.gsuite.googleapiclient.discovery.build')
     def test_create_service_api_error(self, build_mock, log_mock):
         """GSuiteReportsApp - Create Service, Google API Error"""
-        build_mock.side_effect = apiclient.errors.Error('This is bad')
+        build_mock.side_effect = googleapiclient.errors.Error('This is bad')
         assert_false(self._app._create_service())
         log_mock.assert_called_with('[%s] Failed to build discovery service', self._app)
 
     @patch('streamalert.apps._apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
     @patch('logging.Logger.exception')
-    @patch('streamalert.apps._apps.gsuite.apiclient.discovery.build')
+    @patch('streamalert.apps._apps.gsuite.googleapiclient.discovery.build')
     def test_create_service_ssl_error(self, build_mock, log_mock):
         """GSuiteReportsApp - Create Service, SSL Handshake Error"""
         build_mock.side_effect = ssl.SSLError('_ssl.c:574: The handshake operation timed out')
@@ -139,7 +140,7 @@ class TestGSuiteReportsApp:
 
     @patch('streamalert.apps._apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
     @patch('logging.Logger.exception')
-    @patch('streamalert.apps._apps.gsuite.apiclient.discovery.build')
+    @patch('streamalert.apps._apps.gsuite.googleapiclient.discovery.build')
     def test_create_service_socket_error(self, build_mock, log_mock):
         """GSuiteReportsApp - Create Service, Socket Timeout"""
         build_mock.side_effect = socket.timeout('timeout: timed out')
@@ -166,7 +167,7 @@ class TestGSuiteReportsApp:
     def test_gather_logs_http_error(self, log_mock):
         """GSuiteReportsApp - Gather Logs, Google API HTTP Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
-            error = apiclient.errors.HttpError('response', 'bad'.encode())
+            error = googleapiclient.errors.HttpError('response', 'bad'.encode())
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)
@@ -177,7 +178,7 @@ class TestGSuiteReportsApp:
     def test_gather_logs_token_error(self, log_mock):
         """GSuiteReportsApp - Gather Logs, Google API Token Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
-            error = oauth2client.client.HttpAccessTokenRefreshError('bad', status=502)
+            error = exceptions.RefreshError('bad')
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)
