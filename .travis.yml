@@ -11,6 +11,7 @@ install:
 script:
   - ./tests/scripts/unit_tests.sh
   - ./manage.py test rules
+  - ./manage.py test classifier
   - sphinx-build -W docs/source docs/build
   - ./tests/scripts/pylint.sh
   - bandit --ini setup.cfg -r .

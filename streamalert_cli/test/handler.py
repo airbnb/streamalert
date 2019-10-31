@@ -234,7 +234,8 @@ class TestRunner:
             'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
             'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
         }
-        if options.stats:
+
+        if 'stats' in options and options.stats:
             env['STREAMALERT_TRACK_RULE_STATS'] = '1'
 
         patch.dict(
