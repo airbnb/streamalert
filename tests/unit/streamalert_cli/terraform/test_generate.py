@@ -90,7 +90,7 @@ class TestTerraformGenerate:
                 }
             },
             'terraform': {
-                'required_version': '~> 0.11.7', # Changes to this should require unit test update
+                'required_version': '~> 0.12.9', # Changes to this should require unit test update
                 'backend': {
                     's3': {
                         'bucket': 'unit-test.streamalert.terraform.state',
@@ -296,7 +296,7 @@ class TestTerraformGenerate:
                     'vpcs': ['vpc-id-1', 'vpc-id-2'],
                 },
                 'cloudwatch_logs_destination_advanced': {
-                    'source': 'modules/tf_cloudwatch_logs_destination',
+                    'source': './modules/tf_cloudwatch_logs_destination',
                     'prefix': 'unit-test',
                     'cluster': 'advanced',
                     'regions': [

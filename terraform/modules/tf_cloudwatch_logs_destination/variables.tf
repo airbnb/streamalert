@@ -1,15 +1,15 @@
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "cluster" {
-  type = "string"
+  type = string
 }
 
 variable "destination_kinesis_stream_arn" {
-  type = "string"
+  type = string
 }
 
 variable "regions" {
-  type = "list"
+  type = list(string)
 }
