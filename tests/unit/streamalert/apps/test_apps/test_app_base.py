@@ -53,7 +53,7 @@ class TestStreamAlertApp:
             'gsuite_calendar',
             'gsuite_drive',
             'gsuite_gplus',
-            'gsuite_group',
+            'gsuite_groups',
             'gsuite_groups_enterprise',
             'gsuite_login',
             'gsuite_mobile',

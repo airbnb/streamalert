@@ -283,7 +283,7 @@ class GSuiteGroupReports(GSuiteReportsApp):
 
     @classmethod
     def _type(cls):
-        return 'group'
+        return 'groups'
 
 
 @StreamAlertApp

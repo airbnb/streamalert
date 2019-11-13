@@ -71,9 +71,9 @@ on ec2 instance
   $ mkdir $HOME/build_temp $HOME/pip_temp
 
   # Install all of the dependencies to this directory
-  $ pip install boxsdk[jwt]==2.6.0 --build $HOME/build_temp/ --target $HOME/pip_temp
+  $ pip install boxsdk[jwt]==2.6.1 --build $HOME/build_temp/ --target $HOME/pip_temp
 
-  # Replace the `boxsdk[jwt]==2.6.0` below with the desired package & version
+  # Replace the `boxsdk[jwt]==2.6.1` below with the desired package & version
   # For example, the following would update the aliyun dependencies:
   # pip install aliyun-python-sdk-actiontrail==2.0.0 --build $HOME/build_temp/ --target $HOME/pip_temp
 
@@ -132,9 +132,9 @@ SSH and Build Dependencies
   $ pip install --upgrade pip setuptools
 
   $ mkdir $HOME/build_temp $HOME/pip_temp
-  $ pip install boxsdk[jwt]==2.6.0 --build $HOME/build_temp/ --target $HOME/pip_temp
+  $ pip install boxsdk[jwt]==2.6.1 --build $HOME/build_temp/ --target $HOME/pip_temp
 
-  # Replace the `boxsdk[jwt]==2.6.0` below with the desired package & version
+  # Replace the `boxsdk[jwt]==2.6.1` below with the desired package & version
   # For example, the following would update the aliyun dependencies:
   # pip install aliyun-python-sdk-actiontrail==2.0.0 --build $HOME/build_temp/ --target $HOME/pip_temp
 
@@ -144,21 +144,30 @@ SSH and Build Dependencies
   # Install zip package
   $ sudo apt-get install zip
   $ zip -r pip.zip .
-  $ exit
 
-Download Dependencies
-+++++++++++++++++++++
+Copy the Dependencies Locally
++++++++++++++++++++++++++++++
 
 Copy the `pip.zip` file from the virtual machine to the local host.
 
 .. code-block:: bash
 
-  $ vagrant scp development_py3:/home/vagrant/pip_temp/pip.zip streamalert/apps/_apps/boxsdk[jwt]==2.6.0_dependencies.zip
+  $ cp pip.zip /vagrant/streamalert/apps/_apps/boxsdk[jwt]==2.6.1_dependencies.zip
+  $ exit  # exit the session
+
+Stop the Virtual Machine
+++++++++++++++++++++++++
+
+Suspend the Vagrant virtual machine after you are finished building and copying dependencies.
+
+.. code-block:: bash
+
+  $ vagrant suspend
 
 Destroy the VM
 ++++++++++++++
 
-Destroy the Vagrant virtual machine after you are finished building and copying dependencies.
+Optionally, destroy the Vagrant virtual machine to free up disk space.
 
 .. code-block:: bash
 
