@@ -531,7 +531,7 @@ class CLIConfig:
         return True
 
     @staticmethod
-    def _config_writer(path, data, sort=True):
+    def _config_writer(path, data, sort=False):
         with open(path, 'r+') as conf_file:
             json.dump(data, conf_file, indent=2, separators=(',', ': '), sort_keys=sort)
             conf_file.truncate()
@@ -550,4 +550,4 @@ class CLIConfig:
                     parts = path_parts + [cluster_key]
                     self._config_writer(format_path(parts), self.config['clusters'][cluster_key])
             elif config_key != 'logs':
-                self._config_writer(format_path(path_parts), self.config[config_key], True)
+                self._config_writer(format_path(path_parts), self.config[config_key])
