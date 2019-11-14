@@ -72,7 +72,7 @@ variable "default_tags" {
 variable "tags" {
   type        = map(string)
   default     = {}
-  description = "Any dditional tags to be associated with all applicable components"
+  description = "Any additional tags to be associated with all applicable components"
 }
 
 variable "auto_publish_versions" {
