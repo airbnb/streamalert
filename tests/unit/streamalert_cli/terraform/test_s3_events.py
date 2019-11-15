@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from mock import patch
-from nose.tools import assert_equal, assert_false, assert_true
+from nose.tools import assert_equal
 
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import common, s3_events
@@ -23,13 +23,13 @@ CONFIG = CLIConfig(config_path='tests/unit/conf')
 
 
 def test_generate_s3_events():
-    """CLI - Terraform - S3 Events with Valid Buckets"""
+    """CLI - Terraform - S3 Events"""
     cluster_dict = common.infinitedict()
     result = s3_events.generate_s3_events('advanced', cluster_dict, CONFIG)
 
     expected_config = {
         'module': {
-            's3_events_unit-test_advanced_0': {
+            's3_events_unit-test_advanced_unit-test-bucket.data': {
                 'source': './modules/tf_s3_events',
                 'lambda_function_alias': (
                     '${module.classifier_advanced_lambda.function_alias}'
@@ -40,14 +40,16 @@ def test_generate_s3_events():
                 'lambda_function_name': (
                     '${module.classifier_advanced_lambda.function_name}'
                 ),
-                'bucket_id': 'unit-test-bucket.data',
-                'notification_id': 'advanced_0',
-                'enable_events': True,
+                'bucket_name': 'unit-test-bucket.data',
                 'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
-                'filter_suffix': '.log',
-                'filter_prefix': 'AWSLogs/123456789/CloudTrail/us-east-1/'
+                'filters': [
+                    {
+                        'filter_prefix': 'AWSLogs/123456789/CloudTrail/us-east-1/',
+                        'filter_suffix': '.log'
+                    }
+                ]
             },
-            's3_events_unit-test_advanced_1': {
+            's3_events_unit-test_advanced_unit-test.cloudtrail.data': {
                 'source': './modules/tf_s3_events',
                 'lambda_function_alias': (
                     '${module.classifier_advanced_lambda.function_alias}'
@@ -58,26 +60,12 @@ def test_generate_s3_events():
                 'lambda_function_name': (
                     '${module.classifier_advanced_lambda.function_name}'
                 ),
-                'bucket_id': 'unit-test.cloudtrail.data',
-                'enable_events': False,
-                'notification_id': 'advanced_1',
+                'bucket_name': 'unit-test.cloudtrail.data',
                 'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
-                'filter_suffix': '',
-                'filter_prefix': ''
+                'filters': []
             }
         }
     }
 
-    assert_true(result)
+    assert_equal(result, True)
     assert_equal(cluster_dict, expected_config)
-
-
-@patch('streamalert_cli.terraform.s3_events.LOGGER')
-def test_generate_s3_events_invalid_bucket(mock_logging):
-    """CLI - Terraform - S3 Events with Missing Bucket Key"""
-    cluster_dict = common.infinitedict()
-    CONFIG['clusters']['advanced']['modules']['s3_events'] = [{'wrong_key': 'my-bucket!!!'}]
-    result = s3_events.generate_s3_events('advanced', cluster_dict, CONFIG)
-
-    assert_true(mock_logging.error.called)
-    assert_false(result)
