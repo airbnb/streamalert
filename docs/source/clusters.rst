@@ -613,16 +613,18 @@ Example: S3 Events Cluster
     {
       "id": "s3-events-example",
       "modules": {
-        "s3_events": [
-          {
-            "bucket_id": "bucket-1",
-            "enable_events": true
-          },
-          {
-            "bucket_id": "bucket-2",
-            "enable_events": true
-          }
-        ],
+        "s3_events": {
+          "bucket_name_01": [
+            {
+              "filter_prefix": "AWSLogs/1234",
+              "filter_suffix": ".log"
+            },
+            {
+              "filter_prefix": "AWSLogs/5678"
+            }
+          ],
+          "bucket_name_02": []
+        },
         "stream_alert": {
           "classifier_config": {
             "enable_custom_metrics": true,
@@ -636,17 +638,19 @@ Example: S3 Events Cluster
       "region": "us-east-1"
     }
 
-This configures the two buckets to notify the classifier function in this cluster when new objects
-arrive in the bucket, and authorizes the classifier to download objects from either bucket.
+This configures the two buckets (``bucket_name_01`` and ``bucket_name_02``) to notify the classifier
+function in this cluster when new objects arrive in the bucket at the specified (optional) prefix(es),
+provided the objects have the specified (optional) suffix(es). Additionally, this will authorize the
+classifier to download objects from each bucket.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
-Unlike the other modules, ``s3_events`` expects a *list* of dictionaries. Each element represents a
-single bucket source and has the following options:
+The ``s3_events`` module expects a *dictionary/map* of bucket names, where the value for each key
+(bucket name) is a list of maps. Each map in the list can include optional prefixes (``filter_prefix``)
+and suffixes (``filter_suffix``) to which the notification should be applied. The mere existence of a
+bucket name in this map within this module implicitly enables event notifications for said bucket.
+Note that the value specified for the map of prefixes and suffixes can be an empty list (``[]``).
+An empty list will enable event notifications for **all** objects created in the bucket by default.
 
-==================  ===========  ===============
-**Key**             **Default**  **Description**
-------------------  -----------  ---------------
-``bucket_id``       ---          The name of the S3 bucket
-``enable_events``   ``true``     Toggle the S3 event notification
-==================  ===========  ===============
+See the above example for how prefixes/suffixes can be (optionally) specified (as in "bucket_name_01")
+and how to use the empty list to enable bucket-wide notifications (as in "bucket_name_02").
