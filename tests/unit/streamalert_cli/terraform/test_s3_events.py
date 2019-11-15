@@ -22,21 +22,6 @@ from streamalert_cli.terraform import common, s3_events
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
 
-def test_generate_s3_events_legacy():
-    """CLI - Terraform - S3 Events - Legacy"""
-    cluster_dict = common.infinitedict()
-    CONFIG['clusters']['test']['modules']['s3_events'] = {
-        's3_bucket_id': 'unit-test-bucket.legacy.data'
-    }
-    result = s3_events.generate_s3_events('test', cluster_dict, CONFIG)
-
-    assert_true(result)
-    assert_equal(CONFIG['clusters']['test']['modules']['s3_events'],
-                 [{
-                     'bucket_id': 'unit-test-bucket.legacy.data'
-                 }])
-
-
 def test_generate_s3_events():
     """CLI - Terraform - S3 Events with Valid Buckets"""
     cluster_dict = common.infinitedict()

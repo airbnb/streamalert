@@ -33,14 +33,6 @@ def generate_s3_events(cluster_name, cluster_dict, config):
     prefix = config['global']['account']['prefix']
     s3_event_buckets = modules['s3_events']
 
-    # Detect legacy and convert
-    if isinstance(s3_event_buckets, dict) and 's3_bucket_id' in s3_event_buckets:
-        del config['clusters'][cluster_name]['modules']['s3_events']
-        s3_event_buckets = [{'bucket_id': s3_event_buckets['s3_bucket_id']}]
-        config['clusters'][cluster_name]['modules']['s3_events'] = s3_event_buckets
-        LOGGER.info('Converting legacy S3 Events config')
-        config.write()
-
     # Add each configured S3 bucket module
     for index, bucket_info in enumerate(s3_event_buckets):
         if 'bucket_id' not in bucket_info:
