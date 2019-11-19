@@ -1,9 +1,9 @@
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "cluster" {
-  type = "string"
+  type = string
 }
 
 variable "cloudwatch_logs_destination_arn" {
@@ -19,16 +19,17 @@ variable "log_retention" {
 }
 
 variable "enis" {
-  type    = "list"
+  type    = list(string)
   default = []
 }
 
 variable "subnets" {
-  type    = "list"
+  type    = list(string)
   default = []
 }
 
 variable "vpcs" {
-  type    = "list"
+  type    = list(string)
   default = []
 }
+

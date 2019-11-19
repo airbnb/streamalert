@@ -41,7 +41,7 @@ def generate_rule_promotion(config):
 
     # Set variables for the IAM permissions, etc module
     result['module']['rule_promotion_iam'] = {
-        'source': 'modules/tf_rule_promotion_iam',
+        'source': './modules/tf_rule_promotion_iam',
         'send_digest_schedule_expression':
             config['lambda']['rule_promotion_config']['send_digest_schedule_expression'],
         'digest_sns_topic': StatsPublisher.formatted_sns_topic_arn(config).split(':')[-1],

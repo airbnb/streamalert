@@ -1,34 +1,35 @@
 variable "account_id" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
-variable "lambda_handler" {}
+variable "lambda_handler" {
+}
 
 variable "lambda_memory" {
-  type    = "string"
+  type    = string
   default = "128"
 }
 
 variable "lambda_timeout" {
-  type    = "string"
+  type    = string
   default = "120"
 }
 
 variable "filename" {
-  type    = "string"
+  type    = string
   default = "threat_intel_downloader.zip"
 }
 
 variable "lambda_log_level" {
-  type    = "string"
+  type    = string
   default = "info"
 }
 
@@ -37,7 +38,7 @@ variable "enable_metrics" {
 }
 
 variable "interval" {
-  type    = "string"
+  type    = string
   default = "rate(1 day)"
 }
 
@@ -51,10 +52,11 @@ variable "table_wcu" {
 
 variable "parameter_name" {
   default = "threat_intel_downloader_api_creds"
-  type    = "string"
+  type    = string
 }
 
-variable "monitoring_sns_topic" {}
+variable "monitoring_sns_topic" {
+}
 
 variable "log_retention" {
   default = 14

@@ -88,7 +88,7 @@ class TestTerraformGenerateClassifier:
         expected_result = {
             'module': {
                 'classifier_test_iam': {
-                    'source': 'modules/tf_classifier',
+                    'source': './modules/tf_classifier',
                     'account_id': '123456789012',
                     'region': 'us-east-1',
                     'prefix': 'unit-test',
@@ -125,7 +125,7 @@ class TestTerraformGenerateClassifier:
                     'handler': 'streamalert.classifier.main.handler',
                     'log_retention_days': 14,
                     'memory_size_mb': 128,
-                    'source': 'modules/tf_lambda',
+                    'source': './modules/tf_lambda',
                     'throttles_alarm_enabled': True,
                     'throttles_alarm_evaluation_periods': 1,
                     'throttles_alarm_period_secs': 120,

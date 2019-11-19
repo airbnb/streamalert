@@ -29,7 +29,7 @@ def generate_alert_merger(config):
 
     # Set variables for the alert merger's IAM permissions
     result['module']['alert_merger_iam'] = {
-        'source': 'modules/tf_alert_merger_iam',
+        'source': './modules/tf_alert_merger_iam',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],

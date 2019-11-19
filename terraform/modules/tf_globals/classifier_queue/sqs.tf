@@ -4,20 +4,20 @@ resource "aws_sqs_queue" "classifier_queue" {
 
   # The amount of time messages are hidden after being received from a consumer
   # Default this to 2 seconds longer than the maximum AWS Lambda duration
-  visibility_timeout_seconds = "${var.rules_engine_timeout + 2}"
+  visibility_timeout_seconds = var.rules_engine_timeout + 2
 
   # Enable queue encryption of messages in the queue
-  kms_master_key_id = "${aws_kms_key.sqs_sse.arn}"
+  kms_master_key_id = aws_kms_key.sqs_sse.arn
 
-  tags {
+  tags = {
     Name = "StreamAlert"
   }
 }
 
 // SQS Queue Policy: Allow the Classifiers to send messages to SQS
 resource "aws_sqs_queue_policy" "classifier_queue" {
-  queue_url = "${aws_sqs_queue.classifier_queue.id}"
-  policy    = "${data.aws_iam_policy_document.classifier_queue.json}"
+  queue_url = aws_sqs_queue.classifier_queue.id
+  policy    = data.aws_iam_policy_document.classifier_queue.json
 }
 
 // IAM Policy Doc: Allow Classifiers to send messages to SQS
@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "classifier_queue" {
     }
 
     actions   = ["sqs:SendMessage"]
-    resources = ["${aws_sqs_queue.classifier_queue.arn}"]
+    resources = [aws_sqs_queue.classifier_queue.arn]
 
     condition {
       test     = "ArnLike"
@@ -44,3 +44,4 @@ data "aws_iam_policy_document" "classifier_queue" {
     }
   }
 }
+

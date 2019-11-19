@@ -1,13 +1,13 @@
 variable "account_id" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
 }
 
 variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "function_role_id" {
@@ -24,7 +24,7 @@ variable "function_name" {
 
 variable "input_sns_topics" {
   description = "SNS topics to which the classifier function should subscribe"
-  type        = "list"
+  type        = list(string)
   default     = []
 }
 

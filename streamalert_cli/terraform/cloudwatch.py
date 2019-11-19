@@ -107,7 +107,7 @@ def _generate(cluster_name, cluster_dict, config, account_ids, regions):
     )
 
     cluster_dict['module'][parent_module_name] = {
-        'source': 'modules/tf_cloudwatch_logs_destination',
+        'source': './modules/tf_cloudwatch_logs_destination',
         'prefix': prefix,
         'cluster': cluster_name,
         'regions': all_regions,
@@ -123,7 +123,7 @@ def _generate(cluster_name, cluster_dict, config, account_ids, regions):
         ).union(set(account_ids))
 
         cluster_dict['module'][module_name] = {
-            'source': 'modules/tf_cloudwatch_logs_destination/modules/destination',
+            'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
             'prefix': prefix,
             'cluster': cluster_name,
             'account_ids': sorted(all_account_ids),

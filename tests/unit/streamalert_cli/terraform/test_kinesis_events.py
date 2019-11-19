@@ -29,7 +29,7 @@ def test_kinesis_events():
     expected_result = {
         'module': {
             'kinesis_events_advanced': {
-                'source': 'modules/tf_kinesis_events',
+                'source': './modules/tf_kinesis_events',
                 'batch_size': 100,
                 'lambda_production_enabled': True,
                 'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',

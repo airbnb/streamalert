@@ -1,8 +1,8 @@
 // Allow the Alert Merger to query and update the alerts table
 resource "aws_iam_role_policy" "manage_alerts_table" {
   name   = "ManageAlertsTable"
-  role   = "${var.role_id}"
-  policy = "${data.aws_iam_policy_document.manage_alerts_table.json}"
+  role   = var.role_id
+  policy = data.aws_iam_policy_document.manage_alerts_table.json
 }
 
 data "aws_iam_policy_document" "manage_alerts_table" {
@@ -24,8 +24,8 @@ data "aws_iam_policy_document" "manage_alerts_table" {
 // Allow the Alert Merger to invoke the Alert Processor
 resource "aws_iam_role_policy" "invoke_alert_processor" {
   name   = "InvokeAlertProcessor"
-  role   = "${var.role_id}"
-  policy = "${data.aws_iam_policy_document.invoke_alert_processor.json}"
+  role   = var.role_id
+  policy = data.aws_iam_policy_document.invoke_alert_processor.json
 }
 
 data "aws_iam_policy_document" "invoke_alert_processor" {

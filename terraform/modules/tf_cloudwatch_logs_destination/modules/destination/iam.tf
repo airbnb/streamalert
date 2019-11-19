@@ -4,12 +4,10 @@ data "aws_iam_policy_document" "cloudwatch_logs_destination_policy" {
     sid    = "DestinationPolicy"
     effect = "Allow"
 
-    principals = {
+    principals {
       type = "AWS"
 
-      identifiers = [
-        "${var.account_ids}",
-      ]
+      identifiers = var.account_ids
     }
 
     actions = [
@@ -17,7 +15,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_destination_policy" {
     ]
 
     resources = [
-      "${aws_cloudwatch_log_destination.cloudwatch_to_kinesis.arn}",
+      aws_cloudwatch_log_destination.cloudwatch_to_kinesis.arn,
     ]
   }
 }

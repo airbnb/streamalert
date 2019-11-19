@@ -66,7 +66,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
 
     # Set variables for the alert merger's IAM permissions
     cluster_dict['module'][iam_module] = {
-        'source': 'modules/tf_classifier',
+        'source': './modules/tf_classifier',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],

@@ -1,9 +1,9 @@
 // IAM Role Policy: Allow Rules Engine to read DynamoDB table (Threat Intel)
 resource "aws_iam_role_policy" "read_threat_intel_table" {
-  count  = "${var.threat_intel_enabled ? 1 : 0}"
+  count  = var.threat_intel_enabled ? 1 : 0
   name   = "ReadThreatIntelDynamoDB"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.read_threat_intel_table.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.read_threat_intel_table.json
 }
 
 // IAM Policy Doc: Allow lambda function to read/write data from DynamoDB
@@ -24,14 +24,14 @@ data "aws_iam_policy_document" "read_threat_intel_table" {
 
 // Allow the Rules Engine to read the rules table
 resource "aws_iam_role_policy" "read_rules_table" {
-  count  = "${var.rules_table_arn == "" ? 0 : 1}"
+  count  = var.rules_table_arn == "" ? 0 : 1
   name   = "ReadRulesDynamoDB"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.read_rules_table.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.read_rules_table[0].json
 }
 
 data "aws_iam_policy_document" "read_rules_table" {
-  count = "${var.rules_table_arn == "" ? 0 : 1}"
+  count = var.rules_table_arn == "" ? 0 : 1
 
   statement {
     effect = "Allow"
@@ -41,7 +41,7 @@ data "aws_iam_policy_document" "read_rules_table" {
     ]
 
     resources = [
-      "${var.rules_table_arn}",
+      var.rules_table_arn,
     ]
   }
 }
@@ -56,7 +56,7 @@ data "aws_iam_policy_document" "rules_engine_policy" {
       "kms:GenerateDataKey",
     ]
 
-    resources = ["${var.classifier_sqs_sse_kms_key_arn}"]
+    resources = [var.classifier_sqs_sse_kms_key_arn]
   }
 
   statement {
@@ -69,21 +69,21 @@ data "aws_iam_policy_document" "rules_engine_policy" {
       "sqs:ReceiveMessage",
     ]
 
-    resources = ["${var.classifier_sqs_queue_arn}"]
+    resources = [var.classifier_sqs_queue_arn]
   }
 }
 
 resource "aws_iam_role_policy" "rules_engine_policy" {
   name   = "SQSReadAndDecrypt"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.rules_engine_policy.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.rules_engine_policy.json
 }
 
 // IAM Role Policy: Allow the Rules Engine to save alerts to dynamo.
 resource "aws_iam_role_policy" "save_alerts_to_dynamo" {
   name   = "WriteAlertsDynamoDB"
-  role   = "${var.function_role_id}"
-  policy = "${data.aws_iam_policy_document.save_alerts_to_dynamo.json}"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.save_alerts_to_dynamo.json
 }
 
 data "aws_iam_policy_document" "save_alerts_to_dynamo" {

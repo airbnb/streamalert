@@ -4,11 +4,11 @@
 resource "aws_iam_role" "subscription_role" {
   name               = "${var.prefix}_${var.cluster}_cloudwatch_logs_subscription_role"
   path               = "/streamalert/"
-  assume_role_policy = "${data.aws_iam_policy_document.cloudwatch_logs_assume_role_policy.json}"
+  assume_role_policy = data.aws_iam_policy_document.cloudwatch_logs_assume_role_policy.json
 
-  tags {
+  tags = {
     Name    = "StreamAlert"
-    Cluster = "${var.cluster}"
+    Cluster = var.cluster
   }
 }
 
@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_assume_role_policy" {
 
     principals {
       type        = "Service"
-      identifiers = ["${formatlist("logs.%s.amazonaws.com", var.regions)}"]
+      identifiers = formatlist("logs.%s.amazonaws.com", var.regions)
     }
   }
 }
@@ -28,8 +28,8 @@ data "aws_iam_policy_document" "cloudwatch_logs_assume_role_policy" {
 // IAM Policy: CloudWatch Logs Write to Kinesis
 resource "aws_iam_role_policy" "cloudwatch_logs_write_to_kinesis" {
   name   = "CloudWatchLogsWriteToKinesis"
-  role   = "${aws_iam_role.subscription_role.id}"
-  policy = "${data.aws_iam_policy_document.cloudwatch_logs_write_to_kinesis.json}"
+  role   = aws_iam_role.subscription_role.id
+  policy = data.aws_iam_policy_document.cloudwatch_logs_write_to_kinesis.json
 }
 
 // IAM Policy Doc: CloudWatch Logs Write to Kinesis
@@ -44,7 +44,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_write_to_kinesis" {
     ]
 
     resources = [
-      "${var.destination_kinesis_stream_arn}",
+      var.destination_kinesis_stream_arn,
     ]
   }
 
@@ -56,7 +56,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_write_to_kinesis" {
     ]
 
     resources = [
-      "${aws_iam_role.subscription_role.arn}",
+      aws_iam_role.subscription_role.arn,
     ]
   }
 }

@@ -33,7 +33,7 @@ def generate_kinesis_events(cluster_name, cluster_dict, config):
 
     # Kinesis events module
     cluster_dict['module']['kinesis_events_{}'.format(cluster_name)] = {
-        'source': 'modules/tf_kinesis_events',
+        'source': './modules/tf_kinesis_events',
         'batch_size': batch_size,
         'lambda_production_enabled': kinesis_events_enabled,
         'lambda_role_id': '${{module.classifier_{}_lambda.role_id}}'.format(cluster_name),

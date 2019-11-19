@@ -58,7 +58,7 @@ def generate_monitoring(cluster_name, cluster_dict, config):
     sns_topic_arn = monitoring_topic_arn(config)
 
     cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
-        'source': 'modules/tf_monitoring',
+        'source': './modules/tf_monitoring',
         'sns_topic_arn': sns_topic_arn,
         'kinesis_alarms_enabled': False,
         'lambda_alarms_enabled': False

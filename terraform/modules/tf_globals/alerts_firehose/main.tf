@@ -4,13 +4,13 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
   destination = "s3"
 
   s3_configuration {
-    role_arn           = "${aws_iam_role.firehose.arn}"
+    role_arn           = aws_iam_role.firehose.arn
     bucket_arn         = "arn:aws:s3:::${var.prefix}.streamalerts"
     prefix             = "alerts/"
-    buffer_size        = "${var.buffer_size}"
-    buffer_interval    = "${var.buffer_interval}"
-    compression_format = "${var.compression_format}"
-    kms_key_arn        = "${var.kms_key_arn}"
+    buffer_size        = var.buffer_size
+    buffer_interval    = var.buffer_interval
+    compression_format = var.compression_format
+    kms_key_arn        = var.kms_key_arn
 
     cloudwatch_logging_options {
       enabled         = true
@@ -19,7 +19,8 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
     }
   }
 
-  tags {
+  tags = {
     Name = "StreamAlert"
   }
 }
+

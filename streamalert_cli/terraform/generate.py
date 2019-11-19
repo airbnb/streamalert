@@ -50,7 +50,7 @@ from streamalert_cli.terraform.threat_intel_downloader import generate_threat_in
 from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSION = '~> 0.11.7'
+TERRAFORM_VERSION = '~> 0.12.9'
 TERRAFORM_PROVIDER_VERSION = '~> 2.28.1'
 
 LOGGER = get_logger(__name__)
@@ -528,7 +528,7 @@ def _generate_lookup_tables_settings(config):
 
     if dynamodb_tables:
         generated_config['module']['lookup_tables_iam_dynamodb'] = {
-            'source': 'modules/tf_lookup_tables_dynamodb',
+            'source': './modules/tf_lookup_tables_dynamodb',
             'dynamodb_tables': sorted(dynamodb_tables),
             'roles': sorted(roles),
             'role_count': len(roles),
@@ -539,7 +539,7 @@ def _generate_lookup_tables_settings(config):
 
     if s3_buckets:
         generated_config['module']['lookup_tables_iam_s3'] = {
-            'source': 'modules/tf_lookup_tables_s3',
+            'source': './modules/tf_lookup_tables_s3',
             's3_buckets': sorted(s3_buckets),
             'roles': sorted(roles),
             'role_count': len(roles),
@@ -595,7 +595,7 @@ def _generate_global_module(config):
     )
 
     global_module = {
-        'source': 'modules/tf_globals',
+        'source': './modules/tf_globals',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],

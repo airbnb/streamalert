@@ -111,7 +111,7 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         environment_variables.update(environment)
 
     lambda_module = {
-        'source': 'modules/tf_lambda',
+        'source': './modules/tf_lambda',
         'function_name': function_name,
         'description': function_name.replace('_', ' ').title(),
         'handler': handler,
