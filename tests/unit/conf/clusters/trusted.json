@@ -22,7 +22,7 @@
       "enabled": true
     },
     "s3_events": {
-      "unit-test-bucket.legacy.data": []
+      "unit-test-bucket": []
     },
     "stream_alert": {
       "classifier_config": {
