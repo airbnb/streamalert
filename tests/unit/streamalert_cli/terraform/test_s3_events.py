@@ -28,17 +28,13 @@ def test_generate_s3_events():
 
     expected_config = {
         'module': {
-            's3_events_unit-test_advanced_unit-test-bucket.data': {
+            's3_events_unit-test_advanced_unit-test-bucket_data': {
                 'source': './modules/tf_s3_events',
-                'lambda_function_alias': (
-                    '${module.classifier_advanced_lambda.function_alias}'
-                ),
+                'lambda_function_alias': '${module.classifier_advanced_lambda.function_alias}',
                 'lambda_function_alias_arn': (
                     '${module.classifier_advanced_lambda.function_alias_arn}'
                 ),
-                'lambda_function_name': (
-                    '${module.classifier_advanced_lambda.function_name}'
-                ),
+                'lambda_function_name': '${module.classifier_advanced_lambda.function_name}',
                 'bucket_name': 'unit-test-bucket.data',
                 'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
                 'filters': [
@@ -48,17 +44,13 @@ def test_generate_s3_events():
                     }
                 ]
             },
-            's3_events_unit-test_advanced_unit-test.cloudtrail.data': {
+            's3_events_unit-test_advanced_unit-test_cloudtrail_data': {
                 'source': './modules/tf_s3_events',
-                'lambda_function_alias': (
-                    '${module.classifier_advanced_lambda.function_alias}'
-                ),
+                'lambda_function_alias': '${module.classifier_advanced_lambda.function_alias}',
                 'lambda_function_alias_arn': (
                     '${module.classifier_advanced_lambda.function_alias_arn}'
                 ),
-                'lambda_function_name': (
-                    '${module.classifier_advanced_lambda.function_name}'
-                ),
+                'lambda_function_name': '${module.classifier_advanced_lambda.function_name}',
                 'bucket_name': 'unit-test.cloudtrail.data',
                 'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
                 'filters': []

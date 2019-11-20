@@ -114,11 +114,9 @@ Example: CloudTrail via S3 Events
         "enable_kinesis": false,
         "enable_logging": true
       },
-      "s3_events": [
-        {
-          "bucket_id": "PREFIX.CLUSTER.streamalert.cloudtrail"
-        }
-      ],
+      "s3_events": {
+        "PREFIX.CLUSTER.streamalert.cloudtrail": []
+      },
       "stream_alert": {
         "classifier_config": {
           "enable_custom_metrics": true,
