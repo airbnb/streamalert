@@ -42,8 +42,6 @@ def generate_s3_events(cluster_name, cluster_dict, config):
         mod_suffix = re.sub('[^a-zA-Z0-9_-]', '_', bucket_name)
         cluster_dict['module']['s3_events_{}_{}_{}'.format(prefix, cluster_name, mod_suffix)] = {
             'source': './modules/tf_s3_events',
-            'prefix': prefix,
-            'cluster': cluster_name,
             'lambda_role_id': '${{{}.role_id}}'.format(lambda_module_path),
             'lambda_function_alias': '${{{}.function_alias}}'.format(lambda_module_path),
             'lambda_function_alias_arn': '${{{}.function_alias_arn}}'.format(lambda_module_path),

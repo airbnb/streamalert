@@ -4,7 +4,7 @@ locals {
 
 // Lambda Permission: Allow S3 Event Notifications to invoke Lambda
 resource "aws_lambda_permission" "allow_bucket" {
-  statement_id  = "${var.prefix}_${var.cluster}_InvokeFromS3Bucket_${local.sanitized_bucket_name}"
+  statement_id  = "InvokeFromS3Bucket_${local.sanitized_bucket_name}"
   action        = "lambda:InvokeFunction"
   function_name = var.lambda_function_name
   principal     = "s3.amazonaws.com"
@@ -15,7 +15,7 @@ resource "aws_lambda_permission" "allow_bucket" {
 // This hack ensures that the lambda_function block is still created
 // even if no filters are provided
 locals {
-  filters = coalescelist(var.filters, [{ filter_prefix = "" }])
+  filters = coalescelist(var.filters, [{}])
 }
 
 // S3 Bucket Notification: Invoke the StreamAlert Classifier
@@ -36,7 +36,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 
 // IAM Policy: Allow Lambda to GetObjects from S3
 resource "aws_iam_role_policy" "lambda_s3_permission" {
-  name   = "${var.prefix}_${var.cluster}_S3GetObjects_${var.bucket_name}"
+  name   = "S3GetObjects_${var.bucket_name}"
   role   = var.lambda_role_id
   policy = data.aws_iam_policy_document.s3_read_only.json
 }

@@ -1,11 +1,3 @@
-variable "prefix" {
-  type = string
-}
-
-variable "cluster" {
-  type = string
-}
-
 variable "bucket_name" {
   type = string
 }
