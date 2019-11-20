@@ -1,6 +1,10 @@
+locals {
+  sanitized_bucket_name = replace(var.bucket_name, "/[^a-zA-Z0-9_-]/", "_")
+}
+
 // Lambda Permission: Allow S3 Event Notifications to invoke Lambda
 resource "aws_lambda_permission" "allow_bucket" {
-  statement_id  = "${var.prefix}_${var.cluster}_InvokeFromS3Bucket_${var.bucket_name}"
+  statement_id  = "${var.prefix}_${var.cluster}_InvokeFromS3Bucket_${local.sanitized_bucket_name}"
   action        = "lambda:InvokeFunction"
   function_name = var.lambda_function_name
   principal     = "s3.amazonaws.com"
@@ -8,12 +12,18 @@ resource "aws_lambda_permission" "allow_bucket" {
   qualifier     = var.lambda_function_alias
 }
 
+// This hack ensures that the lambda_function block is still created
+// even if no filters are provided
+locals {
+  filters = coalescelist(var.filters, [{ filter_prefix = "" }])
+}
+
 // S3 Bucket Notification: Invoke the StreamAlert Classifier
 resource "aws_s3_bucket_notification" "bucket_notification" {
   bucket = var.bucket_name
 
   dynamic "lambda_function" {
-    for_each = var.filters
+    for_each = local.filters
 
     content {
       events              = ["s3:ObjectCreated:*"]

@@ -16,5 +16,3 @@ variable "lambda_production_enabled" {
 variable "lambda_function_alias_arn" {
   type = string
 }
-
-variable "lambda_function_alias_arn" {}

@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import re
+
 from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -36,8 +38,12 @@ def generate_s3_events(cluster_name, cluster_dict, config):
 
     # Add each configured S3 bucket module
     for bucket_name, info in s3_event_buckets.items():
-        cluster_dict['module']['s3_events_{}_{}_{}'.format(prefix, cluster_name, bucket_name)] = {
+        # Replace all invalid module characters with underscores
+        mod_suffix = re.sub('[^a-zA-Z0-9_-]', '_', bucket_name)
+        cluster_dict['module']['s3_events_{}_{}_{}'.format(prefix, cluster_name, mod_suffix)] = {
             'source': './modules/tf_s3_events',
+            'prefix': prefix,
+            'cluster': cluster_name,
             'lambda_role_id': '${{{}.role_id}}'.format(lambda_module_path),
             'lambda_function_alias': '${{{}.function_alias}}'.format(lambda_module_path),
             'lambda_function_alias_arn': '${{{}.function_alias_arn}}'.format(lambda_module_path),

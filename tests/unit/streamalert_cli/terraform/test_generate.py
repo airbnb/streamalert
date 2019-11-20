@@ -489,8 +489,8 @@ class TestTerraformGenerate:
             'kinesis_events_advanced',
             'flow_logs_advanced',
             'cloudtrail_advanced',
-            's3_events_unit-test_advanced_unit-test-bucket.data',
-            's3_events_unit-test_advanced_unit-test.cloudtrail.data'
+            's3_events_unit-test_advanced_unit-test-bucket_data',
+            's3_events_unit-test_advanced_unit-test_cloudtrail_data'
         }
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)

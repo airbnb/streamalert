@@ -28,8 +28,10 @@ def test_generate_s3_events():
 
     expected_config = {
         'module': {
-            's3_events_unit-test_advanced_unit-test-bucket.data': {
+            's3_events_unit-test_advanced_unit-test-bucket_data': {
                 'source': './modules/tf_s3_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
                 'lambda_function_alias': (
                     '${module.classifier_advanced_lambda.function_alias}'
                 ),
@@ -48,8 +50,10 @@ def test_generate_s3_events():
                     }
                 ]
             },
-            's3_events_unit-test_advanced_unit-test.cloudtrail.data': {
+            's3_events_unit-test_advanced_unit-test_cloudtrail_data': {
                 'source': './modules/tf_s3_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
                 'lambda_function_alias': (
                     '${module.classifier_advanced_lambda.function_alias}'
                 ),
