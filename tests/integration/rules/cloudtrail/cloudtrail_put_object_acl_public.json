@@ -83,7 +83,7 @@
     "description": "A PutObjectAcl call without use of AllUsers or AuthenticatedUsers should not create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   },
   {
@@ -172,7 +172,7 @@
     "description": "A PutObjectAcl call from the AWS Console with AllUsers or AuthenticatedUsers should create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "cloudtrail_put_object_acl_public"
     ]
@@ -250,7 +250,7 @@
     "description": "A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers should create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "cloudtrail_put_object_acl_public"
     ]
@@ -328,7 +328,7 @@
     "description": "A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers for a whitelisted bucket should not create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

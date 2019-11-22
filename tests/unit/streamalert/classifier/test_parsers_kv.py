@@ -17,10 +17,10 @@ from collections import OrderedDict
 
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import KVParser
+from streamalert.classifier.parsers import KVParser
 
 
-class TestKVParser(object):
+class TestKVParser:
     """Test class for KVParser"""
     # pylint: disable=no-self-use,protected-access
 

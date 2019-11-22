@@ -3,7 +3,7 @@ variable "digest_sns_topic" {
 }
 
 variable "rules_table_arn" {
-  description = "Rules DynamoDB Table arn, exported from the tf_stream_alert_globals module"
+  description = "Rules DynamoDB Table arn, exported from the tf_globals module"
 }
 
 variable "role_id" {
@@ -28,7 +28,7 @@ variable "athena_results_bucket_arn" {
 
 variable "athena_data_buckets" {
   description = "List of S3 buckets where Athena data is stored"
-  type        = "list"
+  type        = list(string)
 }
 
 variable "s3_kms_key_arn" {

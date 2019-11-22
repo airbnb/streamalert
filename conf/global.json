@@ -19,6 +19,7 @@
       "write_capacity": 5
     },
     "firehose": {
+      "use_prefix": true,
       "buffer_interval": 900,
       "buffer_size": 128,
       "compression_format": "GZIP",
@@ -37,7 +38,7 @@
       }
     },
     "classifier_sqs": {
-      "use_prefix": null
+      "use_prefix": true
     }
   },
   "s3_access_logging": {

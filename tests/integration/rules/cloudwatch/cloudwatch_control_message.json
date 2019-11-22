@@ -14,7 +14,7 @@
     "description": "CloudWatch Control Message (validation only)",
     "log": "cloudwatch:control_message",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [],
     "validate_schema_only": true
   }

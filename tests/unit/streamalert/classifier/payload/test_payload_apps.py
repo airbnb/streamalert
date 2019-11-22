@@ -15,10 +15,10 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert.classifier.payload.apps import AppPayload
+from streamalert.classifier.payload.apps import AppPayload
 
 
-class TestAppPayload(object):
+class TestAppPayload:
     """AppPayload tests"""
     # pylint: disable=no-self-use
 

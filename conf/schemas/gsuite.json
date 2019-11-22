@@ -1,0 +1,26 @@
+{
+  "gsuite:reports": {
+    "schema": {
+      "actor": {},
+      "etag": "string",
+      "events": [],
+      "id": {
+        "applicationName": "string",
+        "customerId": "string",
+        "time": "string",
+        "uniqueQualifier": "integer"
+      },
+      "ipAddress": "string",
+      "kind": "string",
+      "ownerDomain": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "etag",
+        "ipAddress",
+        "ownerDomain"
+      ]
+    }
+  }
+}

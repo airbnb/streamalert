@@ -15,10 +15,10 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import SyslogParser
+from streamalert.classifier.parsers import SyslogParser
 
 
-class TestSyslogParser(object):
+class TestSyslogParser:
     """Test class for SyslogParser"""
     # pylint: disable=no-self-use,protected-access
 

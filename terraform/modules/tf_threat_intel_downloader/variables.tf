@@ -1,28 +1,35 @@
-variable "region" {}
+variable "account_id" {
+  type = string
+}
 
-variable "account_id" {}
+variable "region" {
+  type = string
+}
 
-variable "lambda_handler" {}
+variable "prefix" {
+  type = string
+}
 
-variable "lambda_function_arn" {}
+variable "lambda_handler" {
+}
 
 variable "lambda_memory" {
-  type    = "string"
+  type    = string
   default = "128"
 }
 
 variable "lambda_timeout" {
-  type    = "string"
+  type    = string
   default = "120"
 }
 
 variable "filename" {
-  type    = "string"
+  type    = string
   default = "threat_intel_downloader.zip"
 }
 
 variable "lambda_log_level" {
-  type    = "string"
+  type    = string
   default = "info"
 }
 
@@ -30,12 +37,8 @@ variable "enable_metrics" {
   default = false
 }
 
-variable "prefix" {
-  type = "string"
-}
-
 variable "interval" {
-  type    = "string"
+  type    = string
   default = "rate(1 day)"
 }
 
@@ -49,18 +52,11 @@ variable "table_wcu" {
 
 variable "parameter_name" {
   default = "threat_intel_downloader_api_creds"
-  type    = "string"
+  type    = string
 }
 
-variable "monitoring_sns_topic" {}
-
-variable "ioc_filters" {}
-
-variable "ioc_keys" {}
-
-variable "ioc_types" {}
-
-variable "excluded_sub_types" {}
+variable "monitoring_sns_topic" {
+}
 
 variable "log_retention" {
   default = 14

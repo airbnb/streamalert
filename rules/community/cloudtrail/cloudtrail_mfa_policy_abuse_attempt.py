@@ -1,5 +1,5 @@
 """Alert on calls made without MFA that may be attempting to abuse a flawed enforcement policy"""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 _IAM_ACTIONS = {

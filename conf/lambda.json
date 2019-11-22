@@ -86,6 +86,7 @@
     "enable_custom_metrics": true,
     "log_level": "info",
     "log_retention_days": 14,
+    "log_rule_statistics": true,
     "memory": 128,
     "metric_alarms": {
       "errors": {

@@ -1,5 +1,5 @@
 """Github setting 'Dismiss stale pull request approvals' was disabled for a repo."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['ghe:general'])
