@@ -78,6 +78,7 @@ Table of Contents
    testing
    outputs
    publishers
+   lookup-tables
    metrics
    troubleshooting
    faq

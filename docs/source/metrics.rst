@@ -48,7 +48,7 @@ metric across the entire StreamAlert deployment.
 
 Custom metrics are logged to a unique `StreamAlert` namespace within CloudWatch Logs. Navigate to AWS Console -> CloudWatch -> Metrics -> StreamAlert to view these metrics.
 
-Custom metrics definitions are found within ``stream_alert/shared/metrics.py``.
+Custom metrics definitions are found within ``streamalert/shared/metrics.py``.
 
 Classifier Custom Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,4 +157,4 @@ Example: TotalRecords Alarm on a Global Level
   --alarm-description 'Trigger this alarm if the total incoming records (aggregate) drops below 200000 for 3 consecutive 10 minute time periods in a row' \
   --statistic Sum
 
-The custom metric alarms will notify StreamAlert's default SNS topic for monitoring: ``stream_alert_monitoring``
+The custom metric alarms will notify StreamAlert's default SNS topic for monitoring: ``<prefix>_streamalert_monitoring``

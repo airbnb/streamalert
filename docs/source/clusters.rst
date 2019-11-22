@@ -100,7 +100,7 @@ CloudTrail
 ----------
 StreamAlert has native support for enabling and monitoring `AWS CloudTrail <https://aws.amazon.com/cloudtrail/>`_.
 
-This module is implemented by `terraform/modules/tf_stream_alert_cloudtrail <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_cloudtrail>`_.
+This module is implemented by `terraform/modules/tf_cloudtrail <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudtrail>`_.
 
 Example: CloudTrail via S3 Events
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,11 +114,9 @@ Example: CloudTrail via S3 Events
         "enable_kinesis": false,
         "enable_logging": true
       },
-      "s3_events": [
-        {
-          "bucket_id": "PREFIX.CLUSTER.streamalert.cloudtrail"
-        }
-      ],
+      "s3_events": {
+        "PREFIX.CLUSTER.streamalert.cloudtrail": []
+      },
       "stream_alert": {
         "classifier_config": {
           "enable_custom_metrics": true,
@@ -143,9 +141,6 @@ Example: CloudTrail via CloudWatch Logs
     {
       "id": "cloudtrail-via-cloudwatch",
       "modules": {
-        "cloudwatch": {
-          "enabled": true
-        },
         "cloudtrail": {
           "enable_kinesis": true,
           "enable_logging": true,
@@ -175,9 +170,9 @@ Example: CloudTrail via CloudWatch Logs
     }
 
 This also creates the CloudTrail and S3 bucket, but now the CloudTrail logs are also delivered to
-CloudWatch Logs and then to a Kinesis subscription which feeds the classifier function. This can scale to
-higher throughput, since StreamAlert does not have to download potentially very large files from
-S3. In this case, rules should be written against the ``cloudwatch:events`` log type.
+CloudWatch Logs and then to a Kinesis stream via a CloudWatch Logs Subscription Filter.
+This can scale to higher throughput, since StreamAlert does not have to download potentially very
+large files from S3. In this case, rules should be written against the ``cloudwatch:cloudtrail`` log type.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
@@ -207,7 +202,7 @@ from any AWS account. A common use case is to ingest and scan CloudTrail from mu
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_cloudwatch <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_cloudwatch>`_.
+This module is implemented by `terraform/modules/tf_cloudwatch_logs_destination <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch_logs_destination>`_.
 
 Example: CloudWatch Logs Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,16 +211,14 @@ Example: CloudWatch Logs Cluster
   {
     "id": "cloudwatch-logs-example",
     "modules": {
-      "cloudwatch": {
+      "cloudwatch_logs_destination": {
         "cross_account_ids": [
           "111111111111"
         ],
         "enabled": true,
-        "excluded_regions": [
+        "regions": [
           "ap-northeast-1",
           "ap-northeast-2",
-          "ap-south-1",
-          "ap-southeast-1",
           "ap-southeast-2"
         ]
       },
@@ -281,7 +274,7 @@ To ensure data collection is running smoothly, we recommend enabling
 `CloudWatch metric alarms <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html#CloudWatchAlarms>`_
 to monitor the health the classifier Lambda function(s) and, if applicable, the respective Kinesis stream.
 
-This module is implemented by `terraform/modules/tf_stream_alert_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_monitoring>`_.
+This module is implemented by `terraform/modules/tf_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_monitoring>`_.
 
 Example: Enable CloudWatch Monitoring
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -366,7 +359,7 @@ The following options are available in the ``settings`` dictionary:
 
 Receiving CloudWatch Metric Alarms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-By default, StreamAlert automatically creates a ``stream_alert_monitoring`` SNS topic that receives
+By default, StreamAlert automatically creates a ``<prefix>_streamalert_monitoring`` SNS topic that receives
 CloudWatch metric alarm notifications. If you would instead like to use an existing SNS topic for
 metric alarms, edit the ``monitoring`` section of `conf/global.json <https://github.com/airbnb/streamalert/tree/stable/conf/global.json>`_
 as follows:
@@ -383,6 +376,7 @@ as follows:
 
       "...": "..."
     }
+  }
 
 In either case, to receive metric alarms, simply `subscribe to the SNS topic <https://docs.aws.amazon.com/sns/latest/dg/SubscribeTopic.html>`_.
 
@@ -402,7 +396,7 @@ Each Kinesis stream is a set of *shards*, which in aggregate determine the total
 the stream. Indeed, this is the primary motivation for StreamAlert's cluster design - each cluster
 can have its own data stream whose shard counts can be configured individually.
 
-This module is implemented by `terraform/modules/tf_stream_alert_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_kinesis_streams>`_.
+This module is implemented by `terraform/modules/tf_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_kinesis_streams>`_.
 
 Example: Kinesis Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -460,15 +454,16 @@ Configuration Options
 The ``kinesis`` module expects a single key (``streams``) whose value is a dictionary with the
 following options:
 
-=======================  ============  ===============
-**Key**                  **Default**   **Description**
------------------------  ------------  ---------------
-``create_user``          ``false``     Create an IAM user authorized to ``PutRecords`` on the stream
-``retention``            ---           Length of time (hours) data records remain in the stream
-``shard_level_metrics``  ``[]``        Enable these `enhanced shard-level metrics <https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-shard>`_
-``shards``               ---           Number of shards (determines stream data capacity)
-``trusted_accounts``     ``[]``        Authorize these account IDs to assume an IAM role which can write to the stream
-=======================  ============  ===============
+=======================  ==================================  ===============
+**Key**                  **Default**                         **Description**
+-----------------------  ----------------------------------  ---------------
+``create_user``          ``false``                           Create an IAM user authorized to ``PutRecords`` on the stream
+``retention``            ---                                 Length of time (hours) data records remain in the stream
+``shard_level_metrics``  ``[]``                              Enable these `enhanced shard-level metrics <https://docs.aws.amazon.com/streams/latest/dev/monitoring-with-cloudwatch.html#kinesis-metrics-shard>`_
+``shards``               ---                                 Number of shards (determines stream data capacity)
+``trusted_accounts``     ``[]``                              Authorize these account IDs to assume an IAM role which can write to the stream
+``stream_name``          ``<prefix>_<cluster>_streamalert``  [optional] Custom name for the stream that will be created
+=======================  ==================================  ===============
 
 Scaling
 ~~~~~~~
@@ -480,7 +475,7 @@ First, update the Kinesis Stream shard count with the following command:
 .. code-block:: bash
 
   $ aws kinesis update-shard-count \
-    --stream-name <prefix>_<cluster>_stream_alert_kinesis \
+    --stream-name <prefix>_<cluster>_streamalert_kinesis \
     --target-shard-count <new_shard_count> \
     --scaling-type UNIFORM_SCALING
 
@@ -508,7 +503,7 @@ The Kinesis Events module connects a Kinesis Stream to the classifier Lambda fun
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_kinesis_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_kinesis_events>`_.
+This module is implemented by `terraform/modules/tf_kinesis_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_kinesis_events>`_.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
@@ -533,7 +528,7 @@ When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
-This module is implemented by `terraform/modules/tf_stream_alert_flow_logs <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_flow_logs>`_.
+This module is implemented by `terraform/modules/tf_flow_logs <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_flow_logs>`_.
 
 Example: Flow Logs Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -544,12 +539,8 @@ Example: Flow Logs Cluster
       "id": "prod",
       "modules": {
         "flow_logs": {
-          "cross_account_ids": [
-            "111111111111"
-          ],
           "enis": [],
           "enabled": true,
-          "log_group_name": "flow-logs-test",
           "subnets": [
             "subnet-12345678"
           ],
@@ -580,24 +571,25 @@ Example: Flow Logs Cluster
       "region": "us-east-1"
     }
 
-This creates the ``flow-logs-test`` CloudWatch Log group, adds flow logs to the specified subnet
-and vpc IDs with the log group as their target, and adds a Kinesis subscription to that log group
-for StreamAlert consumption.
+This creates the ``<prefix>_prod_streamalert_flow_logs`` CloudWatch Log Group, adds flow logs
+to the specified subnet, eni, and vpc IDs with the log group as their target, and adds a CloudWatch
+Logs Subscription Filter to that log group to send to Kinesis for consumption by StreamAlert.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
 
-=====================  ==========================================  ===============
-**Key**                **Default**                                 **Description**
----------------------  ------------------------------------------  ---------------
-``cross_account_ids``  ``[]``                                      Authorize flow log delivery from these accounts
-``enabled``            ---                                         Toggle flow log creation
-``enis``               ``[]``                                      Add flow logs for these ENIs
-``log_group_name``     ``"PREFIX_CLUSTER_streamalert_flow_logs"``  Flow logs are directed to this log group
-``subnets``            ``[]``                                      Add flow logs for these VPC subnet IDs
-``vpcs``               ``[]``                                      Add flow logs for these VPC IDs
-=====================  ==========================================  ===============
+=====================  =============================================================================================================================================  ===============
+**Key**                **Default**                                                                                                                                    **Description**
+---------------------  ---------------------------------------------------------------------------------------------------------------------------------------------  ---------------
+``enabled``            ---                                                                                                                                            Toggle flow log creation
+``flow_log_filter``    ``[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action, flowlogstatus]``   Toggle flow log creation
+``log_retention``      ``7``                                                                                                                                          Day for which logs should be retained in the log group
+``enis``               ``[]``                                                                                                                                         Add flow logs for these ENIs
+``subnets``            ``[]``                                                                                                                                         Add flow logs for these VPC subnet IDs
+``vpcs``               ``[]``                                                                                                                                         Add flow logs for these VPC IDs
+=====================  =============================================================================================================================================  ===============
 
+.. note:: One of the following **must** be set for this module to have any result: ``enis``, ``subnets``, or ``vpcs``
 
 .. _s3_events:
 
@@ -609,7 +601,7 @@ on any of your S3 buckets to invoke the StreamAlert classifier function. When th
 function receives this notification, it downloads the object from S3 and runs each record
 through the classification logic.
 
-This module is implemented by `terraform/modules/tf_stream_alert_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_s3_events>`_.
+This module is implemented by `terraform/modules/tf_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_s3_events>`_.
 
 Example: S3 Events Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -619,16 +611,18 @@ Example: S3 Events Cluster
     {
       "id": "s3-events-example",
       "modules": {
-        "s3_events": [
-          {
-            "bucket_id": "bucket-1",
-            "enable_events": true
-          },
-          {
-            "bucket_id": "bucket-2",
-            "enable_events": true
-          }
-        ],
+        "s3_events": {
+          "bucket_name_01": [
+            {
+              "filter_prefix": "AWSLogs/1234",
+              "filter_suffix": ".log"
+            },
+            {
+              "filter_prefix": "AWSLogs/5678"
+            }
+          ],
+          "bucket_name_02": []
+        },
         "stream_alert": {
           "classifier_config": {
             "enable_custom_metrics": true,
@@ -642,17 +636,19 @@ Example: S3 Events Cluster
       "region": "us-east-1"
     }
 
-This configures the two buckets to notify the classifier function in this cluster when new objects
-arrive in the bucket, and authorizes the classifier to download objects from either bucket.
+This configures the two buckets (``bucket_name_01`` and ``bucket_name_02``) to notify the classifier
+function in this cluster when new objects arrive in the bucket at the specified (optional) prefix(es),
+provided the objects have the specified (optional) suffix(es). Additionally, this will authorize the
+classifier to download objects from each bucket.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
-Unlike the other modules, ``s3_events`` expects a *list* of dictionaries. Each element represents a
-single bucket source and has the following options:
+The ``s3_events`` module expects a *dictionary/map* of bucket names, where the value for each key
+(bucket name) is a list of maps. Each map in the list can include optional prefixes (``filter_prefix``)
+and suffixes (``filter_suffix``) to which the notification should be applied. The mere existence of a
+bucket name in this map within this module implicitly enables event notifications for said bucket.
+Note that the value specified for the map of prefixes and suffixes can be an empty list (``[]``).
+An empty list will enable event notifications for **all** objects created in the bucket by default.
 
-==================  ===========  ===============
-**Key**             **Default**  **Description**
-------------------  -----------  ---------------
-``bucket_id``       ---          The name of the S3 bucket
-``enable_events``   ``true``     Toggle the S3 event notification
-==================  ===========  ===============
+See the above example for how prefixes/suffixes can be (optionally) specified (as in "bucket_name_01")
+and how to use the empty list to enable bucket-wide notifications (as in "bucket_name_02").

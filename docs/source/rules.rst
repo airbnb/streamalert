@@ -39,14 +39,14 @@ The simplest possible rule looks like this:
 
 .. code-block:: python
 
-  from stream_alert.shared.rule import rule
+  from streamalert.shared.rule import rule
 
   @rule(logs=['cloudwatch:events'])
   def all_cloudwatch_events(record):
       """Minimal StreamAlert rule: alert on all CloudWatch events"""
       return True
 
-This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined in ``conf/logs.json``.
+This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined in a schema file in the ``conf/schemas`` directory, i.e ``conf/schemas/cloudwatch.json``.
 In this case, *all* CloudWatch events will generate an alert, which will be sent to the :ref:`alerts Athena table <athena_user_guide>`.
 
 Example: Logic & Outputs
@@ -56,7 +56,7 @@ Let's modify the rule to page the security team if anyone ever uses AWS root cre
 
 .. code-block:: python
 
-  from stream_alert.shared.rule import rule
+  from streamalert.shared.rule import rule
 
   @rule(logs=['cloudwatch:events'], outputs=['pagerduty:csirt', 'slack:security'])
   def cloudtrail_root_account_usage(record):
@@ -87,7 +87,7 @@ We can generalize the rule to alleviate these issues:
 .. code-block:: python
 
   from rules.helpers.base import get_first_key  # Find first key recursively in record
-  from stream_alert.shared.rule import rule
+  from streamalert.shared.rule import rule
 
   # This could alternatively be defined in rules/matchers/matchers.py to be shareable
   _PROD_ACCOUNTS = {'111111111111', '222222222222'}
@@ -161,8 +161,8 @@ datatypes
 .. code-block:: python
 
   """These rules apply to several different log types, defined in conf/normalized_types.json"""
-  from stream_alert.shared.rule import rule
-  from stream_alert.shared.normalize import Normalizer
+  from streamalert.shared.rule import rule
+  from streamalert.shared.normalize import Normalizer
 
   @rule(datatypes=['sourceAddress'], outputs=['aws-sns:my-topic'])
   def ip_watchlist_hit(record):
@@ -182,7 +182,8 @@ logs
 
 ``logs`` define the log schema(s) supported by the rule.
 
-Log `sources <conf-datasources.html>`_ are defined in ``conf/sources.json`` and their `schemas <conf-schemas.html>`_ are defined in ``conf/logs.json``
+Log `sources <conf-datasources.html>`_ are defined under the ``data_sources`` field for a cluster defined in ``conf/clusters/<cluster>.json``
+and their `schemas <conf-schemas.html>`_ are defined in one or more files in the ``conf/schemas`` directory.
 
 .. note:: Either ``logs`` or ``datatypes`` must be specified for each rule
 
@@ -282,7 +283,7 @@ This allows you to keep the rule definition and tests in place instead of having
 
 .. code-block:: python
 
-  from stream_alert.shared.rule import disable, rule
+  from streamalert.shared.rule import disable, rule
 
   @disable  # TODO: this rule is too noisy!
   @rule(logs=['example'], outputs=['slack'])

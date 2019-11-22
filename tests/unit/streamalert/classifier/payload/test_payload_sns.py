@@ -15,10 +15,10 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert.classifier.payload.sns import SnsPayload
+from streamalert.classifier.payload.sns import SnsPayload
 
 
-class TestSnsPayload(object):
+class TestSnsPayload:
     """SnsPayload tests"""
     # pylint: disable=no-self-use,protected-access
 

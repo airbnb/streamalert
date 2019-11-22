@@ -1,6 +1,6 @@
 """Alert on GuardDuty"""
 from rules.matchers import matchers
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['cloudwatch:events'], matchers=[matchers.guard_duty])

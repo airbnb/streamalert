@@ -15,10 +15,10 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert_cli.terraform import rules_engine
+from streamalert_cli.terraform import rules_engine
 
 
-class TestTerraformGenerateRuleEngine(object):
+class TestTerraformGenerateRuleEngine:
     """CLI Terraform Generate, Rules Engine"""
     # pylint: disable=no-self-use,attribute-defined-outside-init
 
@@ -76,7 +76,7 @@ class TestTerraformGenerateRuleEngine(object):
         expected_result = {
             'module': {
                 'rules_engine_iam': {
-                    'source': 'modules/tf_rules_engine',
+                    'source': './modules/tf_rules_engine',
                     'account_id': '123456789012',
                     'region': 'us-east-1',
                     'prefix': 'unit-test',
@@ -108,10 +108,10 @@ class TestTerraformGenerateRuleEngine(object):
                     'errors_alarm_threshold': 0,
                     'filename': 'rules_engine.zip',
                     'function_name': 'unit-test_streamalert_rules_engine',
-                    'handler': 'stream_alert.rules_engine.main.handler',
+                    'handler': 'streamalert.rules_engine.main.handler',
                     'log_retention_days': 14,
                     'memory_size_mb': 128,
-                    'source': 'modules/tf_lambda',
+                    'source': './modules/tf_lambda',
                     'throttles_alarm_enabled': True,
                     'throttles_alarm_evaluation_periods': 1,
                     'throttles_alarm_period_secs': 120,

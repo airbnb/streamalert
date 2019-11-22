@@ -18,10 +18,10 @@ import json
 
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import CSVParser
+from streamalert.classifier.parsers import CSVParser
 
 
-class TestCSVParser(object):
+class TestCSVParser:
     """Test class for CSVParser"""
     # pylint: disable=no-self-use,protected-access
 
@@ -30,7 +30,7 @@ class TestCSVParser(object):
         return OrderedDict([('host', 'string'), ('date', 'string'), ('message', 'string')])
 
     def test_basic_parsing(self):
-        """CSVParser - Basic CSV data"""
+        """CSVParser - Basic CSV data, str"""
         options = {
             'schema': self._default_schema(),
             'configuration': {
@@ -38,6 +38,30 @@ class TestCSVParser(object):
             }
         }
         data = 'test-01.stg.foo.net,01-01-2018,test message!!!!'
+
+        # get parsed data
+        parser = CSVParser(options)
+        result = parser.parse(data)
+        assert_equal(result, True)
+
+        expected_result = [
+            {
+                'date': '01-01-2018',
+                'host': 'test-01.stg.foo.net',
+                'message': 'test message!!!!'
+            }
+        ]
+        assert_equal(parser.parsed_records, expected_result)
+
+    def test_basic_parsing_bytes(self):
+        """CSVParser - Basic CSV data, bytes"""
+        options = {
+            'schema': self._default_schema(),
+            'configuration': {
+                'delimiter': ','
+            }
+        }
+        data = b'test-01.stg.foo.net,01-01-2018,test message!!!!'
 
         # get parsed data
         parser = CSVParser(options)

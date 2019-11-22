@@ -1,17 +1,19 @@
 {
+  "data_sources": {},
   "id": "advanced",
   "modules": {
     "cloudtrail": {
       "enable_kinesis": true,
       "enable_logging": true
     },
-    "cloudwatch": {
+    "cloudwatch_logs_destination": {
       "cross_account_ids": [
         "123456789012"
       ],
       "enabled": true,
-      "excluded_regions": [
-        "us-west-1"
+      "regions": [
+        "us-west-2",
+        "us-east-2"
       ]
     },
     "cloudwatch_monitoring": {
@@ -40,17 +42,15 @@
     "kinesis_events": {
       "enabled": true
     },
-    "s3_events": [
-      {
-        "bucket_id": "unit-test-bucket.data",
-        "filter_prefix": "AWSLogs/123456789/CloudTrail/us-east-1/",
-        "filter_suffix": ".log"
-      },
-      {
-        "bucket_id": "unit-test.cloudtrail.data",
-        "enable_events": false
-      }
-    ],
+    "s3_events": {
+      "unit-test-bucket.data": [
+        {
+          "filter_prefix": "AWSLogs/123456789/CloudTrail/us-east-1/",
+          "filter_suffix": ".log"
+        }
+      ],
+      "unit-test.cloudtrail.data": []
+    },
     "stream_alert": {
       "classifier_config": {
         "inputs": {

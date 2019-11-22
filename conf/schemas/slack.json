@@ -1,0 +1,51 @@
+{
+  "slack:access": {
+    "schema": {
+      "user_id": "string",
+      "username": "string",
+      "date_first": "integer",
+      "date_last": "integer",
+      "count": "integer",
+      "ip": "string",
+      "user_agent": "string",
+      "isp": "string",
+      "country": "string",
+      "region": "string"
+    },
+    "parser": "json"
+  },
+  "slack:integration": {
+    "schema": {
+      "channel": "string",
+      "user_id": "string",
+      "user_name": "string",
+      "date": "string",
+      "change_type": "string",
+      "app_type": "string",
+      "app_id": "string",
+      "service_type": "string",
+      "service_id": "string",
+      "reason": "string",
+      "scope": "string",
+      "rss_feed": "string",
+      "rss_feed_change_type": "string",
+      "rss_feed_title": "string",
+      "rss_feed_url": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "channel",
+        "app_type",
+        "app_id",
+        "service_type",
+        "service_id",
+        "rss_feed",
+        "rss_feed_change_type",
+        "rss_feed_title",
+        "rss_feed_url",
+        "reason"
+      ]
+    }
+  }
+}

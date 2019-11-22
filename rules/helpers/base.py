@@ -20,7 +20,7 @@ import random
 import time
 import pathlib2
 
-from stream_alert.shared.utils import (  # pylint: disable=unused-import
+from streamalert.shared.utils import (  # pylint: disable=unused-import
     # Import some utility functions which are useful for rules as well
     get_first_key,
     get_keys,
@@ -48,7 +48,7 @@ def path_matches_any(text, patterns):
     Returns:
         bool: True if the text matches at least one of the patterns, False otherwise.
     """
-    if not isinstance(text, basestring):
+    if not isinstance(text, str):
         return False
     return any(pathlib2.PurePath(text).match(pattern) for pattern in patterns)
 
@@ -66,7 +66,7 @@ def starts_with_any(text, prefixes):
     Returns:
         bool: True if the text starts with at least one of the given prefixes, False otherwise.
     """
-    if not isinstance(text, basestring):
+    if not isinstance(text, str):
         return False
     return any(text.startswith(prefix) for prefix in prefixes)
 
@@ -84,7 +84,7 @@ def ends_with_any(text, suffixes):
     Returns:
         bool: True if the text ends with at least one of the given prefixes, False otherwise.
     """
-    if not isinstance(text, basestring):
+    if not isinstance(text, str):
         return False
     return any(text.endswith(suffix) for suffix in suffixes)
 
@@ -102,7 +102,7 @@ def contains_any(text, substrings):
     Returns:
         bool: True if the text contains at least one of the given prefixes, False otherwise.
     """
-    if not isinstance(text, basestring):
+    if not isinstance(text, str):
         return False
     return any(s in text for s in substrings)
 
@@ -121,7 +121,7 @@ def matches_any(text, patterns):
     Returns:
         bool: True if the text matches at least one of the patterns, False otherwise.
     """
-    if not isinstance(text, basestring):
+    if not isinstance(text, str):
         return False
     return any(fnmatch(text, pattern) for pattern in patterns)
 
@@ -176,7 +176,7 @@ def data_has_value_with_substring(data, search_value):
     if isinstance(data, dict):
         return any(data_has_value_with_substring(v, search_value) for v in data.values())
 
-    return isinstance(data, basestring) and search_value in data
+    return isinstance(data, str) and search_value in data
 
 
 def data_has_value_from_list(data, needle_list):

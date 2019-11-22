@@ -61,7 +61,7 @@
     "description": "Creating an AMI with unencrypted Volume should trigger an alert",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "unencrypted_ami_volume"
     ]
@@ -122,7 +122,7 @@
     "description": "Creating a public AMI should trigger an alert",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "public_ami"
     ]

@@ -1,8 +1,8 @@
 {
   "account": {
     "aws_account_id": "12345678910",
-    "kms_key_alias": "unit-testing",
-    "prefix": "unit-testing",
+    "kms_key_alias": "unit-test",
+    "prefix": "unit-test",
     "region": "us-west-1"
   },
   "general": {
@@ -22,17 +22,8 @@
       "buffer_size": 128,
       "compression_format": "GZIP",
       "enabled": true,
-      "enabled_logs": {}
-    },
-    "lookup_tables": {
-      "buckets": {
-        "bucket_name": [
-          "foo.json",
-          "bar.json"
-        ]
-      },
-      "cache_refresh_minutes": 10,
-      "enabled": false
+      "enabled_logs": {},
+      "use_prefix": true
     },
     "monitoring": {
       "create_sns_topic": true
@@ -47,11 +38,11 @@
   },
   "s3_access_logging": {
     "create_bucket": true,
-    "logging_bucket": "unit-testing.streamalert.s3-logging"
+    "logging_bucket": "unit-test.streamalert.s3-logging"
   },
   "terraform": {
     "create_bucket": true,
-    "tfstate_bucket": "unit-testing.streamalert.terraform.state",
+    "tfstate_bucket": "unit-test.streamalert.terraform.state",
     "tfstate_s3_key": "stream_alert_state/terraform.tfstate"
   },
   "threat_intel": {

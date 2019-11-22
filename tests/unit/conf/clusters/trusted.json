@@ -1,4 +1,5 @@
 {
+  "data_sources": {},
   "id": "trusted",
   "modules": {
     "cloudwatch_monitoring": {
@@ -20,11 +21,9 @@
     "kinesis_events": {
       "enabled": true
     },
-    "s3_events": [
-      {
-        "bucket_id": "unit-test-bucket.legacy.data"
-      }
-    ],
+    "s3_events": {
+      "unit-test-bucket": []
+    },
     "stream_alert": {
       "classifier_config": {
         "inputs": {
