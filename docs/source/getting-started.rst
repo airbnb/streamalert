@@ -7,7 +7,7 @@ on MacOS, but should also work on most linux systems.
 Install Dependencies
 --------------------
 
-1. Install Python 2.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
+1. Install Python 3.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
 2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ v0.11.X:
 
 .. code-block:: bash
@@ -45,7 +45,7 @@ Download StreamAlert
 .. code-block:: bash
 
   cd streamalert
-  virtualenv -p python2.7 venv
+  virtualenv -p python3.7 venv
   source venv/bin/activate
 
 3. Install the StreamAlert requirements:
@@ -169,14 +169,14 @@ Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look 
   }
 
 5. Tell StreamAlert which `log schemas <conf-schemas.html>`_ will be sent to this input.
-Open ``conf/sources.json`` and change the ``sns`` section to look like this:
+Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look like this:
 
 .. code-block:: json
 
   {
-    "sns": {
-      "streamalert-test-data": {
-        "logs": [
+    "data_sources": {
+      "sns": {
+        "streamalert-test-data": [
           "cloudwatch"
         ]
       }

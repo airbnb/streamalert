@@ -1,5 +1,5 @@
 """Alert on dangerous S3 bucket ACLs."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 _DENIED_ACLS = {
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',
@@ -26,7 +26,7 @@ def cloudtrail_put_bucket_acl(rec):
     if rec['detail']['eventName'] != 'PutBucketAcl':
         # check the event type early to avoid unnecessary performance impact
         return False
-    elif rec['detail']['requestParameters'] is None:
+    if rec['detail']['requestParameters'] is None:
         # requestParameters can be defined with a value of null
         return False
 

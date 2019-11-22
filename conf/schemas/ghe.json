@@ -1,0 +1,106 @@
+{
+  "ghe:general": {
+    "schema": {
+      "action": "string",
+      "actor": "string",
+      "actor_id": "integer",
+      "actor_ip": "string",
+      "created_at": "string",
+      "data": {},
+      "from": "string",
+      "org": "string",
+      "org_id": {},
+      "repo": "string",
+      "repo_id": "string",
+      "user": "string",
+      "user_id": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "priority": 0,
+      "envelope_keys": {
+        "@timestamp": "string",
+        "@version": "string",
+        "host": "string",
+        "logsource": "string",
+        "pid": "string",
+        "port": "string",
+        "program": "string",
+        "received_at": "string",
+        "tags": [],
+        "timestamp": "string"
+      },
+      "json_regex_key": "message",
+      "optional_envelope_keys": [
+        "logsource",
+        "pid",
+        "program",
+        "timestamp"
+      ],
+      "optional_top_level_keys": [
+        "repo",
+        "repo_id",
+        "user",
+        "user_id",
+        "org"
+      ]
+    }
+  },
+  "ghe:syslog": {
+    "parser": "json",
+    "schema": {
+      "@timestamp": "string",
+      "@version": "string",
+      "action": "string",
+      "current_user": "string",
+      "elapsed": "string",
+      "half_day": "string",
+      "host": "string",
+      "logsource": "string",
+      "message": "string",
+      "pid": "string",
+      "port": "integer",
+      "program": "string",
+      "received_at": "string",
+      "remote_address": "string",
+      "request_method": "string",
+      "route": "string",
+      "syslog_facility": "string",
+      "syslog_facility_code": "string",
+      "syslog_hostname": "string",
+      "syslog_pid": "string",
+      "syslog_pri": "string",
+      "syslog_program": "string",
+      "syslog_severity": "string",
+      "syslog_severity_code": "string",
+      "tags": [],
+      "timestamp": "string",
+      "user": "string"
+    },
+    "configuration": {
+      "priority": 1,
+      "optional_top_level_keys": [
+        "action",
+        "current_user",
+        "elapsed",
+        "half_day",
+        "logsource",
+        "pid",
+        "program",
+        "request_method",
+        "remote_address",
+        "route",
+        "syslog_pri",
+        "syslog_severity_code",
+        "syslog_facility_code",
+        "syslog_severity",
+        "syslog_hostname",
+        "syslog_program",
+        "syslog_pid",
+        "syslog_facility",
+        "timestamp",
+        "user"
+      ]
+    }
+  }
+}

@@ -18,7 +18,7 @@
     "description": "Disabling 2FA for a Github user should create an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "github_disable_two_factor_requirement_user"
     ]
@@ -42,7 +42,7 @@
     "description": "Enabling 2FA for a Github should not create an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

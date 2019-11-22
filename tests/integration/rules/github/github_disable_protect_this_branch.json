@@ -15,7 +15,7 @@
     "description": "Disabling Github branch protections should trigger an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "github_disable_protect_this_branch"
     ]
@@ -37,7 +37,7 @@
     "description": "An unrelated Github log should not trigger an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

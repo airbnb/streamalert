@@ -1,0 +1,10 @@
+{
+  "binaryalert": {
+    "schema": {
+      "FileInfo": {},
+      "MatchedRules": {},
+      "NumMatchedRules": "integer"
+    },
+    "parser": "json"
+  }
+}

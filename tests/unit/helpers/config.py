@@ -16,7 +16,7 @@ limitations under the License.
 import json
 
 
-class MockCLIConfig(object):
+class MockCLIConfig:
     """Fake CLI Config Class"""
 
     def __init__(self, config):
@@ -32,7 +32,7 @@ class MockCLIConfig(object):
         self.config.__setitem__(key, new_value)
 
     def clusters(self):
-        return self.config['clusters'].keys()
+        return list(self.config['clusters'].keys())
 
     def get(self, key):
         return self.config.get(key)
@@ -48,7 +48,7 @@ def basic_streamalert_config():
             'account': {
                 'aws_account_id': '123456789123',
                 'kms_key_alias': 'stream_alert_secrets',
-                'prefix': 'unit-testing',
+                'prefix': 'unit-test',
                 'region': 'us-west-2'
             },
             'infrastructure': {
@@ -58,11 +58,11 @@ def basic_streamalert_config():
             },
             's3_access_logging': {
                 'create_bucket': True,
-                'logging_bucket': 'unit-testing.streamalert.s3-logging'
+                'logging_bucket': 'unit-test.streamalert.s3-logging'
             },
             'terraform': {
                 'create_bucket': True,
-                'tfstate_bucket': 'unit-testing.streamalert.terraform.state',
+                'tfstate_bucket': 'unit-test.streamalert.terraform.state',
                 'tfstate_s3_key': 'stream_alert_state/terraform.tfstate'
             },
         },
@@ -104,16 +104,6 @@ def basic_streamalert_config():
                 'parser': 'csv'
             }
         },
-        'sources': {
-            'kinesis': {
-                'stream_1': {
-                    'logs': [
-                        'json_log',
-                        'csv_log'
-                    ]
-                }
-            }
-        },
         'lambda': {
             'alert_merger_config': {
                 'memory': 128,
@@ -129,7 +119,7 @@ def basic_streamalert_config():
                 'partitioning': {
                     'firehose': {},
                     'normal': {
-                        'unit-testing.streamalerts': 'alerts'
+                        'unit-test.streamalerts': 'alerts'
                     }
                 },
                 'timeout': 60
@@ -171,6 +161,14 @@ def basic_streamalert_config():
         'clusters': {
             'prod': {
                 'id': 'prod',
+                'data_sources': {
+                    'kinesis': {
+                        'stream_1': [
+                            'json_log',
+                            'csv_log'
+                        ]
+                    }
+                },
                 'modules': {
                     'cloudwatch_monitoring': {
                         'enabled': True
@@ -240,7 +238,7 @@ def basic_streamalert_config():
                         }
                     },
                     'stream_alert_apps': {
-                        'unit-testing_corp_box_admin_events_box_collector_app': {
+                        'unit-test_corp_box_admin_events_box_collector_app': {
                             'app_name': 'box_collector',
                             'concurrency_limit': 2,
                             'log_level': 'info',
@@ -257,7 +255,7 @@ def basic_streamalert_config():
                             'timeout': 60,
                             'type': 'box_admin_events'
                         },
-                        'unit-testing_corp_duo_admin_duo_admin_collector_app': {
+                        'unit-test_corp_duo_admin_duo_admin_collector_app': {
                             'app_name': 'duo_admin_collector',
                             'concurrency_limit': 2,
                             'log_level': 'info',

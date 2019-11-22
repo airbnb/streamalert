@@ -23,25 +23,25 @@ variable "sse_kms_key_arn" {
 }
 
 variable "output_lambda_functions" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of configured Lambda outputs (function names)"
 }
 
 variable "output_s3_buckets" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of configured S3 bucket outputs (bucket names)"
 }
 
 variable "output_sns_topics" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of configured SNS outputs (topic names)"
 }
 
 variable "output_sqs_queues" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of configured SQS outputs (queue names)"
 }

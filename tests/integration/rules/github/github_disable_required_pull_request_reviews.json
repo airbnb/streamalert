@@ -15,7 +15,7 @@
     "description": "Disabling Required Pull Request reviews should trigger an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "github_disable_required_pull_request_reviews"
     ]
@@ -37,7 +37,7 @@
     "description": "An unrelated Github log should not trigger an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

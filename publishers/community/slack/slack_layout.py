@@ -16,10 +16,10 @@ limitations under the License.
 import calendar
 import cgi
 import json
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
-from stream_alert.shared.publisher import AlertPublisher, Register
-from stream_alert.shared.description import RuleDescriptionParser
+from streamalert.shared.publisher import AlertPublisher, Register
+from streamalert.shared.description import RuleDescriptionParser
 
 RAUSCH = '#ff5a5f'
 BABU = '#00d1c1'
@@ -102,7 +102,7 @@ class Summary(AlertPublisher):
         return '{}{}?{}'.format(
             cls._GITHUB_REPO_URL,
             cls._SEARCH_PATH,
-            urllib.urlencode({
+            urllib.parse.urlencode({
                 'q': '{} path:{}'.format(rule_name, cls._RULES_PATH)
             })
         )

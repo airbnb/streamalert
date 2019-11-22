@@ -14,7 +14,7 @@
     "description": "GuardDuty",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "guard_duty_all"
     ]

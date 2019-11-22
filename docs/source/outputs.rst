@@ -69,13 +69,13 @@ Adding support for a new service involves five steps:
 
 1. Create a subclass of ``OutputDispatcher``
 
-  - For reference, ``OutputDispatcher`` is declared in ``stream_alert/alert_processor/outputs/output_base.py``
+  - For reference, ``OutputDispatcher`` is declared in ``streamalert/alert_processor/outputs/output_base.py``
 
 2. Implement the following methods, at a minimum:
 
 .. code-block:: python
 
-  from stream_alert.alert_processor.helpers import compose_alert
+  from streamalert.alert_processor.helpers import compose_alert
 
 
   def get_user_defined_properties(self):
@@ -97,7 +97,7 @@ Adding support for a new service involves five steps:
     Any external API calls for this service should be added here.
     This method should return a boolean where True means the alert was successfully sent.
 
-    In general, use the compose_alert() method defined in stream_alert.alert_processor.helpers
+    In general, use the compose_alert() method defined in streamalert.alert_processor.helpers
     when presenting the alert in a generic polymorphic format to be rendered on the chosen output
     integration. This is so specialized Publishers can modify how the alert is represented on the
     output.
@@ -148,7 +148,7 @@ Adding support for a new service involves five steps:
 
    - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
 
-6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``stream_alert_cli/test.py`` module to provide mock credentials for your new output.
+6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``streamalert_cli/test.py`` module to provide mock credentials for your new output.
 
 Strategy
 --------

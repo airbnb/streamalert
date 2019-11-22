@@ -15,29 +15,27 @@ Configuration
 
 When enabling the Kinesis Firehose module, a dedicated Delivery Stream is created per each log type.
 
-For example, if the ``sources.json`` defines the following:
+For example, if the data_sources for a cluster named prod defined in ``conf/clusters/prod.json`` contains the following:
 
 .. code-block:: json
 
   {
-    "kinesis": {
-      "example_prod_stream_alert_kinesis": {
-        "logs": [
+    "data_sources": {
+      "kinesis": {
+        "example_prod_streamalert": [
           "cloudwatch",
           "osquery"
         ]
-      }
-    },
-    "s3": {
-      "example.prod.streamalert.cloudtrail": {
-        "logs": [
+      },
+      "s3": {
+        "example.prod.streamalert.cloudtrail": [
           "cloudtrail"
         ]
       }
     }
   }
 
-And the following schemas are defined in ``logs.json``:
+And the following schemas are defined across one or more files in the ``conf/schemas`` directory:
 
 .. code-block:: json
 
@@ -62,10 +60,10 @@ And the following schemas are defined in ``logs.json``:
 
 The Firehose module will create four Delivery Streams, one for each type:
 
-- ``streamalert_data_cloudwatch_events``
-- ``streamalert_data_cloudwatch_flow_logs``
-- ``streamalert_data_osquery``
-- ``streamalert_data_cloudtrail``
+- ``<prefix>_streamalert_data_cloudwatch_events``
+- ``<prefix>_streamalert_data_cloudwatch_flow_logs``
+- ``<prefix>_streamalert_data_osquery``
+- ``<prefix>_streamalert_data_cloudtrail``
 
 Each Delivery Stream delivers data to the same S3 bucket created by the module in a prefix based on the corresponding log type:
 
@@ -139,15 +137,15 @@ example above for how this should be performed.
 Alarms Options
 ~~~~~~~~~~~~~~
 
-============================  =======================================  ===========
-Key                           Default                                  Description
-----------------------------  ---------------------------------------  -----------
-``enable_alarm``              ``false``                                If set to ``true``, a CloudWatch Metric Alarm will be created for this log type
-``evaluation_periods``        ``1``                                    Consecutive periods the records count threshold must be breached before triggering an alarm
-``period_seconds``            ``86400``                                Period over which to count the IncomingRecords (default: 86400 seconds [1 day])
-``log_min_count_threshold``   ``1000``                                 Alarm if IncomingRecords count drops below this value in the specified period(s)
-``alarm_actions``             ``stream_alert_monitoring SNS topic``    Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)
-============================  =======================================  ===========
+============================  ===============================================  ===========
+Key                           Default                                          Description
+----------------------------  -----------------------------------------------  -----------
+``enable_alarm``              ``false``                                        If set to ``true``, a CloudWatch Metric Alarm will be created for this log type
+``evaluation_periods``        ``1``                                            Consecutive periods the records count threshold must be breached before triggering an alarm
+``period_seconds``            ``86400``                                        Period over which to count the IncomingRecords (default: 86400 seconds [1 day])
+``log_min_count_threshold``   ``1000``                                         Alarm if IncomingRecords count drops below this value in the specified period(s)
+``alarm_actions``             ``<prefix>_streamalert_monitoring SNS topic``    Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)
+============================  ===============================================  ===========
 
 Deploying
 ---------

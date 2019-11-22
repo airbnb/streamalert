@@ -17,13 +17,13 @@ permissions, attach/inline them to the created IAM role.
 ```hcl
 module "alert_processor" {
   function_name     = "alert_processor"
-  handler           = "stream_alert.alert_processor.main.handler"
+  handler           = "streamalert.alert_processor.main.handler"
   filename          = "alert_processor.zip"
 
   environment_variables = {
     LOGGER_LEVEL = "info"
   }
-  
+
   // Commonly used optional variables
   enabled                   = true
   description               = "Function Description"
