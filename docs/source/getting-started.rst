@@ -70,6 +70,7 @@ with permissions for at least the following services:
 * CloudTrail
 * CloudWatch Events and Logs
 * DynamoDB
+* Glue
 * IAM
 * Kinesis Firehose and Streams
 * KMS
