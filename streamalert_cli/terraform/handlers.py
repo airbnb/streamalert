@@ -23,7 +23,7 @@ from streamalert_cli.athena.handler import create_table
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
 from streamalert_cli.terraform.generate import terraform_generate_handler
-from streamalert_cli.terraform.helpers import terraform_check
+from streamalert_cli.terraform.helpers import terraform_check, terraform_state_lock
 from streamalert_cli.utils import (
     add_clusters_arg,
     CLICommand,
@@ -60,6 +60,12 @@ class TerraformInitCommand(CLICommand):
         Returns:
             bool: False if errors occurred, True otherwise
         """
+        # Create the DynamoDB table for tf state locking before any terraform commands.
+        terraform_state_lock(
+            'create',
+            config['global']['account']['region'],
+            '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
+        )
         # Stop here if only initializing the backend
         if options.backend:
             return cls._terraform_init_backend()

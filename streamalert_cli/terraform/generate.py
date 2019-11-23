@@ -167,13 +167,12 @@ def generate_main(config, init=False):
             'key': config['global']['terraform']['tfstate_s3_key'],
             'region': config['global']['account']['region'],
             'encrypt': True,
+            'dynamodb_table': "{}_streamalert_terraform_state_lock".format(
+                config['global']['account']['prefix']
+            ),
             'acl': 'private',
             'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
         }
-        if config['global']['terraform']['lock_state_file']:
-            main_dict['terraform']['backend']['s3']['dynamodb_table'] = (
-                "{}_streamalert_terraform_state_lock".format(config['global']['account']['prefix'])
-            )
 
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
