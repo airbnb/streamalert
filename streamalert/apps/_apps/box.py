@@ -18,7 +18,7 @@ import json
 from boxsdk import Client, JWTAuth
 from boxsdk.exception import BoxException
 from boxsdk.object.events import EnterpriseEventsStreamType
-from requests.exceptions import ConnectionError as requestsConnectionError
+import requests
 
 from . import AppIntegration, StreamAlertApp, get_logger, safe_timeout
 
@@ -30,6 +30,7 @@ LOGGER = get_logger(__name__)
 class BoxApp(AppIntegration):
     """BoxApp integration"""
     _MAX_CHUNK_SIZE = 500
+    _MAX_RETRY_COUNT = 5
 
     def __init__(self, event, context):
         super(BoxApp, self).__init__(event, context)
@@ -117,7 +118,7 @@ class BoxApp(AppIntegration):
 
         LOGGER.debug('[%s] Requesting events', self)
 
-        def _perform_request(allow_retry=True):
+        def _perform_request(timeout, allow_retry=True, retry_count=1):
             try:
                 # Get the events using a make_request call with the box api. This is to
                 # support custom parameters such as 'created_after' and 'created_before'
@@ -125,18 +126,25 @@ class BoxApp(AppIntegration):
                     'GET',
                     self._client.get_url('events'),
                     params=params,
-                    timeout=self._DEFAULT_REQUEST_TIMEOUT
+                    timeout=timeout
                 )
             except BoxException:
                 LOGGER.exception('[%s] Failed to get events', self)
                 return False, {}   # Return a tuple to conform to return value of safe_timeout
-            except requestsConnectionError:
+            except requests.exceptions.Timeout:
+                # Retry requests that timed out a few more times, with increased timeout
+                timeout *= 2
+                LOGGER.debug('Attempting new request with timeout: %0.2f seconds', timeout)
+                if retry_count == self._MAX_RETRY_COUNT:
+                    raise  # eventually give up and raise this
+                return _perform_request(timeout, allow_retry, retry_count + 1)
+            except requests.exceptions.ConnectionError:
                 # In testing, the requests connection seemed to get reset for no
                 # obvious reason, and a simple retry once works fine so catch it
                 # and retry once, but after that return False
                 LOGGER.exception('Bad response received from host, will retry once')
                 if allow_retry:
-                    return _perform_request(allow_retry=False)
+                    return _perform_request(timeout, allow_retry=False)
 
                 return False, {}   # Return a tuple to conform to return value of safe_timeout
 
@@ -144,7 +152,7 @@ class BoxApp(AppIntegration):
             # Return a tuple to conform to return value of safe_timeout
             return True, box_response.json()
 
-        return _perform_request()
+        return _perform_request(self._DEFAULT_REQUEST_TIMEOUT)
 
     def _gather_logs(self):
         """Gather the Box Admin Events
