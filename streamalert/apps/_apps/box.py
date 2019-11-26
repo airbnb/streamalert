@@ -30,7 +30,7 @@ LOGGER = get_logger(__name__)
 class BoxApp(AppIntegration):
     """BoxApp integration"""
     _MAX_CHUNK_SIZE = 500
-    _MAX_RETRY_COUNT = 5
+    _MAX_RETRY_COUNT = 3
 
     def __init__(self, event, context):
         super(BoxApp, self).__init__(event, context)
@@ -118,7 +118,7 @@ class BoxApp(AppIntegration):
 
         LOGGER.debug('[%s] Requesting events', self)
 
-        def _perform_request(timeout, allow_retry=True, retry_count=1):
+        def _perform_request(timeout, allow_retry=True, retry_count=0):
             try:
                 # Get the events using a make_request call with the box api. This is to
                 # support custom parameters such as 'created_after' and 'created_before'
