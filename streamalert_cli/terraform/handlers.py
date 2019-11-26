@@ -241,6 +241,12 @@ class TerraformDestroyCommand(CLICommand):
         if not tf_runner(action='destroy', auto_approve=True):
             return False
 
+        # Destroy DynamoDB state lock table
+        terraform_state_lock(
+            'destroy',
+            config['global']['account']['region'],
+            '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
+        )
         # Remove old Terraform files
         return TerraformCleanCommand.handler(options, config)
 

@@ -12,8 +12,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import boto3
 import time
+import boto3
+
 from streamalert_cli.helpers import run_command
 from streamalert.shared.logger import get_logger
 
