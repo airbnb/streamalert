@@ -42,7 +42,6 @@
   },
   "terraform": {
     "create_bucket": true,
-    "lock_state_file": true,
     "tfstate_bucket": "unit-test.streamalert.terraform.state",
     "tfstate_s3_key": "stream_alert_state/terraform.tfstate"
   },
