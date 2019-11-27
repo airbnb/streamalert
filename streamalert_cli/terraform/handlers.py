@@ -233,7 +233,7 @@ class TerraformDestroyCommand(CLICommand):
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
         # Do not check for terraform or aws creds again since these were checked above
-        if not terraform_generate_handler(config=config, init=True, check_tf=False,
+        if not terraform_generate_handler(config=config, init=False, check_tf=False,
                                           check_creds=False):
             return False
 
