@@ -15,6 +15,7 @@ limitations under the License.
 import time
 import boto3
 
+from streamalert.shared.helpers.boto import default_config
 from streamalert_cli.helpers import run_command
 from streamalert.shared.logger import get_logger
 
@@ -30,32 +31,45 @@ def terraform_check():
                        '\t$ export PATH=$PATH:/usr/local/terraform/bin')
     return run_command(['terraform', 'version'], error_message=prereqs_message, quiet=True)
 
-def terraform_state_lock(action, region, table):
-    ddb_client = boto3.client('dynamodb', region_name=region)
+def create_tf_state_lock_ddb_table(region, table):
+    """Create the DynamoDB table for terraform remote state locking
+
+    Args:
+        region: The AWS region to create the table in
+        table: The name of the DynamoDB table to create
+    """
+    ddb_client = boto3.client('dynamodb', config=default_config(region=region))
     ddb_tables = ddb_client.list_tables()
-    if action == 'create':
-        if table not in ddb_tables['TableNames']:
-            LOGGER.info('Creating terraform state locking DynamoDB table')
-            ddb_client.create_table(
-                AttributeDefinitions=[{
-                    'AttributeName': 'LockID',
-                    'AttributeType': 'S'
-                }],
-                TableName=table,
-                KeySchema=[{
-                    'AttributeName': 'LockID',
-                    'KeyType': 'HASH'
-                }],
-                BillingMode='PAY_PER_REQUEST'
-            )
-            wait = True
-            while wait:
-                desc_resp = ddb_client.describe_table(TableName=table)
-                if desc_resp['Table']['TableStatus'] == 'ACTIVE':
-                    wait = False
-                else:
-                    time.sleep(1)
-    elif action == 'destroy':
-        if table in ddb_tables['TableNames']:
-            LOGGER.info('Destroying terraform state locking DynamoDB table')
-            ddb_client.delete_table(TableName=table)
+    if table in ddb_tables['TableNames']:
+        return
+    LOGGER.info('Creating terraform state locking DynamoDB table')
+    ddb_client.create_table(
+        AttributeDefinitions=[{
+            'AttributeName': 'LockID',
+            'AttributeType': 'S'
+        }],
+        TableName=table,
+        KeySchema=[{
+            'AttributeName': 'LockID',
+            'KeyType': 'HASH'
+        }],
+        BillingMode='PAY_PER_REQUEST'
+    )
+    waiter = ddb_client.get_waiter('table_exists')
+    waiter.wait(TableName=table)
+
+def destroy_tf_state_lock_ddb_table(region, table):
+    """Destroy the DynamoDB table for terraform remote state locking
+
+    Args:
+        region: The AWS region to destroy the table in
+        table: The name of the DynamoDB table to destroy
+    """
+    ddb_client = boto3.client('dynamodb', config=default_config(region=region))
+    ddb_tables = ddb_client.list_tables()
+    if table not in ddb_tables['TableNames']:
+        return
+    LOGGER.info('Destroying terraform state locking DynamoDB table')
+    ddb_client.delete_table(TableName=table)
+    waiter = ddb_client.get_waiter('table_not_exists')
+    waiter.wait(TableName=table)

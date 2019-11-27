@@ -167,7 +167,7 @@ def generate_main(config, init=False):
             'key': config['global']['terraform']['tfstate_s3_key'],
             'region': config['global']['account']['region'],
             'encrypt': True,
-            'dynamodb_table': "{}_streamalert_terraform_state_lock".format(
+            'dynamodb_table': '{}_streamalert_terraform_state_lock'.format(
                 config['global']['account']['prefix']
             ),
             'acl': 'private',

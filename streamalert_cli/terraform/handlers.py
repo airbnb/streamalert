@@ -23,7 +23,11 @@ from streamalert_cli.athena.handler import create_table
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
 from streamalert_cli.terraform.generate import terraform_generate_handler
-from streamalert_cli.terraform.helpers import terraform_check, terraform_state_lock
+from streamalert_cli.terraform.helpers import (
+    terraform_check,
+    create_tf_state_lock_ddb_table,
+    destroy_tf_state_lock_ddb_table
+)
 from streamalert_cli.utils import (
     add_clusters_arg,
     CLICommand,
@@ -61,8 +65,7 @@ class TerraformInitCommand(CLICommand):
             bool: False if errors occurred, True otherwise
         """
         # Create the DynamoDB table for tf state locking before any terraform commands.
-        terraform_state_lock(
-            'create',
+        create_tf_state_lock_ddb_table(
             config['global']['account']['region'],
             '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
         )
@@ -242,8 +245,7 @@ class TerraformDestroyCommand(CLICommand):
             return False
 
         # Destroy DynamoDB state lock table
-        terraform_state_lock(
-            'destroy',
+        destroy_tf_state_lock_ddb_table(
             config['global']['account']['region'],
             '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
         )

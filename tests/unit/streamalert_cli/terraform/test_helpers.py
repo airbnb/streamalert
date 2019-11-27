@@ -17,7 +17,10 @@ import boto3
 from mock import Mock, patch
 from nose.tools import assert_false, assert_true
 from moto import mock_dynamodb2
-from streamalert_cli.terraform.helpers import terraform_state_lock
+from streamalert_cli.terraform.helpers import (
+    create_tf_state_lock_ddb_table, 
+    destroy_tf_state_lock_ddb_table
+)
 
 from streamalert_cli.config import CLIConfig
 
@@ -28,7 +31,7 @@ REGION = CONFIG['global']['account']['region']
 @mock_dynamodb2()
 @patch('time.sleep', Mock())
 def test_terraform_state_lock_create():
-    terraform_state_lock('create', REGION, LOCK_TABLE)
+    create_tf_state_lock_ddb_table(REGION, LOCK_TABLE)
     client = boto3.client('dynamodb', REGION)
     # Verify table creation logic
     assert_true(LOCK_TABLE in client.list_tables()['TableNames'])
@@ -42,6 +45,6 @@ def test_terraform_state_lock_create():
 @mock_dynamodb2()
 def test_terraform_state_lock_destroy():
     # Verify destroy logic
-    terraform_state_lock('destroy', REGION, LOCK_TABLE)
+    destroy_tf_state_lock_ddb_table(REGION, LOCK_TABLE)
     client = boto3.client('dynamodb', REGION)
     assert_false(LOCK_TABLE in client.list_tables()['TableNames'])
