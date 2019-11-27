@@ -95,15 +95,13 @@ Deploy
   ./manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
   ./manage.py configure prefix NAME                  # Choose a unique name prefix (alphanumeric characters only)
 
-2. Configure terraform state locking (optional):
+2. Configure terraform state locking:
 
   Streamalert supports terraforms native ability to lock the remote s3 state file whenever a user is planning and applying terraform configuration.
   This is to prevent multiple users from deploying Streamalert at the same time potentially resulting in a broken state.
-  To enable this feature this you must first create a DynamoDB table named ``<prefix>_streamalert_terraform_state_lock`` with a primary key named ``LockID``.
-  Streamalert will automatically create the proper IAM permissions so that terraform can read and write to this table.
+  Streamalert will automatically create and destroy this table via the command line interface;
+  however, you may need to add the appropriate permissions (GetItem, PutItem and DeleteItem) to an IAM role to allow other users to deploy.
   See `terraform's documentation <https://www.terraform.io/docs/backends/types/s3.html>`_ for more information.
-  
-  Once you have created this table, open ``conf/global.json``, find the ``terraform`` key and change ``lock_state_file`` to ``true``.
 
 3. Build the StreamAlert infrastructure for the first time:
 
