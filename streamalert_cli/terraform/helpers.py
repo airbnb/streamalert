@@ -34,8 +34,8 @@ def create_tf_state_lock_ddb_table(region, table):
     """Create the DynamoDB table for terraform remote state locking
 
     Args:
-        region: The AWS region to create the table in
-        table: The name of the DynamoDB table to create
+        region (str): The AWS region to create the table in
+        table (str): The name of the DynamoDB table to create
     """
     ddb_client = boto3.client('dynamodb', config=default_config(region=region))
     ddb_tables = ddb_client.list_tables()
@@ -61,8 +61,8 @@ def destroy_tf_state_lock_ddb_table(region, table):
     """Destroy the DynamoDB table for terraform remote state locking
 
     Args:
-        region: The AWS region to destroy the table in
-        table: The name of the DynamoDB table to destroy
+        region (str): The AWS region to destroy the table in
+        table (str): The name of the DynamoDB table to destroy
     """
     ddb_client = boto3.client('dynamodb', config=default_config(region=region))
     ddb_tables = ddb_client.list_tables()
