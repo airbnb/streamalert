@@ -18,7 +18,7 @@ from mock import Mock, patch
 from nose.tools import assert_false, assert_true
 from moto import mock_dynamodb2
 from streamalert_cli.terraform.helpers import (
-    create_tf_state_lock_ddb_table, 
+    create_tf_state_lock_ddb_table,
     destroy_tf_state_lock_ddb_table
 )
 

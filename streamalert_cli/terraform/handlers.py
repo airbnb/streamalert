@@ -24,9 +24,9 @@ from streamalert_cli.helpers import check_credentials, continue_prompt, run_comm
 from streamalert_cli.manage_lambda.deploy import deploy
 from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.terraform.helpers import (
-    terraform_check,
     create_tf_state_lock_ddb_table,
-    destroy_tf_state_lock_ddb_table
+    destroy_tf_state_lock_ddb_table,
+    terraform_check
 )
 from streamalert_cli.utils import (
     add_clusters_arg,
