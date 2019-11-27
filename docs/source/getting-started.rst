@@ -88,6 +88,10 @@ with permissions for at least the following services:
 
 Deploy
 ------
+.. note:: StreamAlert supports Terraform's native ability to lock the remote s3 state file whenever a user is planning and applying Terraform configuration.
+    This is to prevent multiple users from deploying StreamAlert at the same time potentially resulting in a broken state.
+    StreamAlert will automatically create and destroy this table via the command line interface.
+    See `Terraform's documentation <https://www.terraform.io/docs/backends/types/s3.html>`_ for more information.
 
 1. Set basic StreamAlert configuration options:
 

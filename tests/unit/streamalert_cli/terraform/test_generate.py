@@ -96,6 +96,7 @@ class TestTerraformGenerate:
                         'bucket': 'unit-test.streamalert.terraform.state',
                         'key': 'stream_alert_state/terraform.tfstate',
                         'region': 'us-west-1',
+                        'dynamodb_table': 'unit-test_streamalert_terraform_state_lock',
                         'encrypt': True,
                         'acl': 'private',
                         'kms_key_id': 'alias/unit-test'
