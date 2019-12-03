@@ -167,8 +167,7 @@ class TestClassifier:
             self._resource_name
         )
 
-    @patch('logging.Logger.error')
-    def test_load_logs_for_resource_invalid_resource(self, log_mock):
+    def test_load_logs_for_resource_invalid_resource(self):
         """Classifier - Load Logs for Resource, Invalid Resource"""
         assert_raises(
             ConfigError,
