@@ -31,6 +31,7 @@ REGION = CONFIG['global']['account']['region']
 @mock_dynamodb2()
 @patch('time.sleep', Mock())
 def test_terraform_state_lock_create():
+    """CLI - Terraform Create State Lock Table"""
     create_tf_state_lock_ddb_table(REGION, LOCK_TABLE)
     client = boto3.client('dynamodb', REGION)
     # Verify table creation logic
@@ -44,6 +45,7 @@ def test_terraform_state_lock_create():
 
 @mock_dynamodb2()
 def test_terraform_state_lock_destroy():
+    """CLI - Terraform Delete State Lock Table"""
     # Verify destroy logic
     destroy_tf_state_lock_ddb_table(REGION, LOCK_TABLE)
     client = boto3.client('dynamodb', REGION)
