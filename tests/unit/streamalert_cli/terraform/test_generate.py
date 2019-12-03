@@ -110,7 +110,7 @@ class TestTerraformGenerate:
                         'description': 'StreamAlert S3 Server-Side Encryption',
                         'policy': ANY
                     },
-                    'stream_alert_secrets': {
+                    'streamalert_secrets': {
                         'enable_key_rotation': True,
                         'description': 'StreamAlert secret management'
                     }
@@ -120,13 +120,13 @@ class TestTerraformGenerate:
                         'name': 'alias/unit-test_server-side-encryption',
                         'target_key_id': '${aws_kms_key.server_side_encryption.key_id}'
                     },
-                    'stream_alert_secrets': {
+                    'streamalert_secrets': {
                         'name': 'alias/unit-test',
-                        'target_key_id': '${aws_kms_key.stream_alert_secrets.key_id}'
+                        'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
                     }
                 },
                 'aws_s3_bucket': {
-                    'stream_alert_secrets': {
+                    'streamalert_secrets': {
                         'bucket': 'unit-test.streamalert.secrets',
                         'acl': 'private',
                         'force_destroy': True,

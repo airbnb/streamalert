@@ -39,7 +39,7 @@ def generate_alert_processor(config):
         'region': config['global']['account']['region'],
         'prefix': prefix,
         'role_id': '${module.alert_processor_lambda.role_id}',
-        'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+        'kms_key_arn': '${aws_kms_key.streamalert_secrets.arn}',
         'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
         'output_lambda_functions': [
             # Strip qualifiers: only the function name is needed for the IAM permissions

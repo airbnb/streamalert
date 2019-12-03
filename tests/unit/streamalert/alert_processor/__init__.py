@@ -24,7 +24,7 @@ base_config = load_config('tests/unit/conf/', include={'outputs.json'})['outputs
 CONFIG = resources.merge_required_outputs(base_config, PREFIX)
 
 ALERTS_TABLE = '{}_streamalert_alerts'.format(PREFIX)
-KMS_ALIAS = 'alias/stream_alert_secrets_test'
+KMS_ALIAS = 'alias/streamalert_secrets_test'
 
 MOCK_ENV = {
     'AWS_ACCOUNT_ID': ACCOUNT_ID,

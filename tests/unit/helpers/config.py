@@ -47,7 +47,7 @@ def basic_streamalert_config():
         'global': {
             'account': {
                 'aws_account_id': '123456789123',
-                'kms_key_alias': 'stream_alert_secrets',
+                'kms_key_alias': 'streamalert_secrets',
                 'prefix': 'unit-test',
                 'region': 'us-west-2'
             },
