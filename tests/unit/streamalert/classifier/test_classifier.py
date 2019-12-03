@@ -17,10 +17,11 @@ from collections import OrderedDict
 import os
 
 from mock import Mock, patch
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 
 import streamalert.classifier.classifier as classifier_module
 from streamalert.classifier.classifier import Classifier
+from streamalert.shared.exceptions import ConfigError
 
 
 class TestClassifier:
@@ -157,24 +158,23 @@ class TestClassifier:
         result = self._classifier._load_logs_for_resource(self._service_name, self._resource_name)
         assert_equal(result, expected_result)
 
-    @patch('logging.Logger.error')
-    def test_load_logs_for_resource_invalid_service(self, log_mock):
+    def test_load_logs_for_resource_invalid_service(self):
         """Classifier - Load Logs for Resource, Invalid Service"""
-        service = 'invalid_service'
-        result = self._classifier._load_logs_for_resource(service, self._resource_name)
-        assert_equal(result, False)
-        log_mock.assert_called_with('Service [%s] not declared in sources configuration', service)
+        assert_raises(
+            ConfigError,
+            self._classifier._load_logs_for_resource,
+            'invalid_service',
+            self._resource_name
+        )
 
     @patch('logging.Logger.error')
     def test_load_logs_for_resource_invalid_resource(self, log_mock):
         """Classifier - Load Logs for Resource, Invalid Resource"""
-        resource = 'invalid_resource'
-        result = self._classifier._load_logs_for_resource(self._service_name, resource)
-        assert_equal(result, False)
-        log_mock.assert_called_with(
-            'Resource [%s] not declared in sources configuration for service [%s]',
-            resource,
-            self._service_name
+        assert_raises(
+            ConfigError,
+            self._classifier._load_logs_for_resource,
+            self._service_name,
+            'invalid_resource'
         )
 
     @patch.object(classifier_module, 'get_parser')
