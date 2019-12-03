@@ -255,6 +255,14 @@ def _validate_config(config):
                 raise ConfigError("'data_sources' missing for cluster {}".format(cluster_name))
             _validate_sources(cluster_name, cluster_attrs['data_sources'], existing_sources)
 
+            if not cluster_attrs.get('modules', {}).get('streamalert'):
+                error = '\'streamalert\' module is missing in the \'{}\' cluster'.format(
+                    cluster_name
+                )
+                if cluster_attrs.get('modules', {}).get('stream_alert'):
+                    error += '. \'stream_alert\' should be renamed to \'streamalert\''
+                raise ConfigError(error)
+
     if TopLevelConfigKeys.THREAT_INTEL in config:
         if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
             raise ConfigError('Normalized types must also be loaded with IOC types')

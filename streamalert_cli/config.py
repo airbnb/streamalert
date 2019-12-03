@@ -155,7 +155,7 @@ class CLIConfig:
             else:
                 # Classifier - toggle for each cluster
                 for cluster in clusters:
-                    self.config['clusters'][cluster]['modules']['stream_alert'] \
+                    self.config['clusters'][cluster]['modules']['streamalert'] \
                         [function_config]['enable_custom_metrics'] = enabled
 
         self.write()
@@ -199,7 +199,7 @@ class CLIConfig:
         for func in funcs:
             func_config = '{}_config'.format(func)
             for cluster, cluster_config in self.config['clusters'].items():
-                func_alarms = cluster_config['modules']['stream_alert'][func_config].get(
+                func_alarms = cluster_config['modules']['streamalert'][func_config].get(
                     'custom_metric_alarms', {}
                 )
                 if alarm_name in func_alarms:
@@ -222,7 +222,7 @@ class CLIConfig:
         return {
             cluster
             for cluster, cluster_config in self.config['clusters'].items()
-            if (self.config['clusters'][cluster]['modules']['stream_alert']
+            if (self.config['clusters'][cluster]['modules']['streamalert']
                 [function_config].get('enable_custom_metrics'))
         }
 
@@ -240,7 +240,7 @@ class CLIConfig:
         config_name = '{}_config'.format(function_name)
         for cluster in alarm_info['clusters']:
             function_config = (
-                self.config['clusters'][cluster]['modules']['stream_alert'][config_name])
+                self.config['clusters'][cluster]['modules']['streamalert'][config_name])
 
             if not function_config.get('enable_custom_metrics'):
                 prompt = ('Metrics are not currently enabled for the \'{}\' function '

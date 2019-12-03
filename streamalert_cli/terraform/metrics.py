@@ -119,7 +119,7 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
         cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
         config (dict): The loaded config from the 'conf/' directory
     """
-    stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
+    stream_alert_config = config['clusters'][cluster_name]['modules']['streamalert']
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
@@ -173,7 +173,7 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
 
     sns_topic_arn = monitoring_topic_arn(config)
 
-    stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
+    stream_alert_config = config['clusters'][cluster_name]['modules']['streamalert']
 
     # Add cluster metric alarms for the clustered function(s). ie: classifier
     metric_alarms = [

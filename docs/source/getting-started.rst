@@ -156,7 +156,7 @@ Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look 
 .. code-block:: json
 
   {
-    "stream_alert": {
+    "streamalert": {
       "classifier_config": {
         "enable_custom_metrics": true,
         "inputs": {

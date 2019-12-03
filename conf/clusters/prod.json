@@ -53,7 +53,7 @@
       "kinesis_alarms_enabled": false,
       "lambda_alarms_enabled": true
     },
-    "stream_alert": {
+    "streamalert": {
       "classifier_config": {
         "enable_custom_metrics": true,
         "inputs": {
