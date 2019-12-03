@@ -40,7 +40,7 @@ class TestTerraformGenerateClassifier:
             'clusters': {
                 'test': {
                     'modules': {
-                        'stream_alert': {
+                        'streamalert': {
                             'classifier_config': {
                                 'inputs': {
                                     'aws-sns': [

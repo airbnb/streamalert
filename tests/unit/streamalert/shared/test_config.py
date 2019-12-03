@@ -51,9 +51,11 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
 
         config_data = basic_streamalert_config()
 
+        mock_cluster_contents = '{"data_sources": {}, "modules": {"streamalert": {"foo": "bar"}}}'
+
         # Add config files which should be loaded
-        self.fs.create_file('conf/clusters/prod.json', contents='{"data_sources": {}}')
-        self.fs.create_file('conf/clusters/dev.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf/clusters/prod.json', contents=mock_cluster_contents)
+        self.fs.create_file('conf/clusters/dev.json', contents=mock_cluster_contents)
         self.fs.create_file('conf/global.json', contents='{}')
         self.fs.create_file('conf/lambda.json', contents='{}')
         self.fs.create_file('conf/logs.json', contents='{}')
@@ -72,8 +74,8 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         )
 
         # Create similar structure but with schemas folder instead of logs.json and 2 clusters.
-        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{"data_sources": {}}')
-        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf_schemas/clusters/prod.json', contents=mock_cluster_contents)
+        self.fs.create_file('conf_schemas/clusters/dev.json', contents=mock_cluster_contents)
         self.fs.create_file('conf_schemas/global.json', contents='{}')
         self.fs.create_file('conf_schemas/lambda.json', contents='{}')
         self.fs.create_file('conf_schemas/outputs.json', contents='{}')

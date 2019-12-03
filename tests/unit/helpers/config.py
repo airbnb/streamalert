@@ -186,7 +186,7 @@ def basic_streamalert_config():
                     'kinesis_events': {
                         'enabled': True
                     },
-                    'stream_alert': {
+                    'streamalert': {
                         'classifier_config': {
                             'enable_custom_metrics': True,
                             'log_level': 'info',
@@ -218,7 +218,7 @@ def basic_streamalert_config():
             'corp': {
                 'id': 'corp',
                 'modules': {
-                    'stream_alert': {
+                    'streamalert': {
                         'classifier_config': {
                             'enable_custom_metrics': True,
                             'log_level': 'info',
