@@ -17,6 +17,7 @@ from collections import defaultdict, OrderedDict
 import json
 import os
 
+from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -36,9 +37,6 @@ class TopLevelConfigKeys:
     THREAT_INTEL = 'threat_intel'
     LOOKUP_TABLES = 'lookup_tables'
 
-
-class ConfigError(Exception):
-    """Exception class for config file errors"""
 
 class SchemaSorter:
     """Statefully sort schema by priority where 0 is the highest priority
@@ -140,7 +138,6 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     exclusions = exclude or set()
     conf_files = conf_files.difference(exclusions)
 
-
     schemas_dir = os.path.join(conf_dir, TopLevelConfigKeys.SCHEMAS)
     schema_files = []
 
@@ -181,6 +178,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
 
     return config
 
+
 def _load_schemas(schemas_dir, schema_files):
     """Helper to load all schemas from the schemas directory into one ordered dictionary.
 
@@ -200,6 +198,7 @@ def _load_schemas(schemas_dir, schema_files):
                            ', '.join(dup_schema))
         schemas.update(schemas_from_file)
     return OrderedDict(sorted(schemas.items(), key=SchemaSorter().sort_key))
+
 
 def _load_json_file(path, ordered=False):
     """Helper to return the loaded json from a given path
@@ -274,6 +273,7 @@ def _validate_config(config):
                         "IOC key '{}' within IOC type '{}' must be defined for at least "
                         "one log type in normalized types".format(normalized_key, ioc_type)
                     )
+
 
 def _validate_sources(cluster_name, data_sources, existing_sources):
     """Validates the sources for a cluster
