@@ -33,7 +33,9 @@
       "hostIdentifier": "string",
       "log_type": "string",
       "name": "string",
-      "unixTime": "integer"
+      "unixTime": "integer",
+      "logNumericsAsNumbers": "string",
+      "numerics": "string"
     },
     "parser": "json",
     "configuration": {
@@ -41,7 +43,9 @@
         "counter",
         "decorations",
         "epoch",
-        "log_type"
+        "log_type",
+        "logNumericsAsNumbers",
+        "numerics"
       ]
     }
   },
@@ -56,14 +60,18 @@
       "log_type": "string",
       "name": "string",
       "snapshot": [],
-      "unixTime": "string"
+      "unixTime": "string",
+      "logNumericsAsNumbers": "string",
+      "numerics": "string"
     },
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
         "decorations",
         "epoch",
-        "counter"
+        "counter",
+        "logNumericsAsNumbers",
+        "numerics"
       ]
     }
   },
