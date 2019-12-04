@@ -32,7 +32,7 @@ def configure_python(machine, version)
                    }
 end
 
-STREAM_ALERT_SHELL_ENV = %{
+STREAMALERT_SHELL_ENV = %{
 export AWS_DEFAULT_REGION='#{ENV.fetch('SA_AWS_DEFAULT_REGION', 'Your region here!')}'
 export AWS_ACCESS_KEY_ID='#{ENV.fetch('SA_AWS_ACCESS_KEY_ID', 'Your access key ID here!')}'
 export AWS_SECRET_ACCESS_KEY='#{ENV.fetch('SA_AWS_SECRET_ACCESS_KEY', 'Your secret access key here!')}'
@@ -52,7 +52,7 @@ def configure_streamalert(machine)
   machine.vm.provision :shell,
                    # Append the environment variables to the .bashrc for
                    # the vagrant user (unprivileged default)
-                   inline: "echo \"#{STREAM_ALERT_SHELL_ENV}\" >> ~/.bashrc",
+                   inline: "echo \"#{STREAMALERT_SHELL_ENV}\" >> ~/.bashrc",
                    # Install this to the vagrant user (unprivileged default)
                    privileged: false
 
@@ -82,7 +82,7 @@ created correctly, run "aws s3 ls | grep streamalert".
 The following lines were appended to the vagrant (default) user's
 ~/.bashrc:
 
-#{STREAM_ALERT_SHELL_ENV}
+#{STREAMALERT_SHELL_ENV}
 
 }
 
