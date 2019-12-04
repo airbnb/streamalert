@@ -14,7 +14,7 @@ Install Dependencies
 
   brew install terraform  # MacOS Homebrew
   terraform --version     # Must be v0.11.X
-  
+
 .. note:: Terraform versions >= 0.12.X are not currently supported.
 
 3. Install `virtualenv <https://virtualenv.pypa.io/en/stable/installation/>`_:
@@ -151,7 +151,7 @@ SNS for both sending the log data and receiving the alert, but StreamAlert also 
 .. note:: You will need to click the verification link in your email to activate the subscription.
 
 4. Add the ``streamalert-test-data`` SNS topic as an input to the (default) ``prod`` `cluster <clusters.html>`_.
-Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look like this:
+Open ``conf/clusters/prod.json`` and change the ``streamalert`` module to look like this:
 
 .. code-block:: json
 

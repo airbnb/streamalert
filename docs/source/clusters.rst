@@ -32,7 +32,7 @@ Configuration options are divided into different modules, each of which is discu
 
 Classifier Function
 -------------------
-``stream_alert`` is the only required module because it configures the cluster's classifier.
+``streamalert`` is the only required module because it configures the cluster's classifier.
 
 Example: Minimal Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -253,7 +253,7 @@ Once you have applied this change to enable StreamAlert to subscribe to CloudWat
 in the *producer* account to actually deliver the logs, optionally with
 `Terraform <https://www.terraform.io/docs/providers/aws/r/cloudwatch_log_subscription_filter.html>`_.
 The CloudWatch logs destination ARN will be
-``arn:aws:logs:REGION:STREAMALERT_ACCOUNT:destination:stream_alert_CLUSTER_cloudwatch_to_kinesis``.
+``arn:aws:logs:REGION:STREAMALERT_ACCOUNT:destination:streamalert_CLUSTER_cloudwatch_to_kinesis``.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~

@@ -74,7 +74,7 @@ def parse_lambda_arn(function_arn):
     and the name of the function.
 
     Example:
-        arn:aws:lambda:aws-region:acct-id:function:stream_alert:production
+        arn:aws:lambda:aws-region:acct-id:function:streamalert:production
 
     Args:
         function_arn (str): The AWS Lambda function ARN

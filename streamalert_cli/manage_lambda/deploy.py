@@ -211,7 +211,7 @@ def _create(function_name, config, clusters=None):
         ),
         'athena': PackageMap(
             streamalert_packages.AthenaPackage,
-            {'module.stream_alert_athena'},
+            {'module.streamalert_athena'},
             True
         ),
         'classifier': PackageMap(

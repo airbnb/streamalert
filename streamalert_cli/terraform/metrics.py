@@ -119,7 +119,7 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
         cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
         config (dict): The loaded config from the 'conf/' directory
     """
-    stream_alert_config = config['clusters'][cluster_name]['modules']['streamalert']
+    streamalert_config = config['clusters'][cluster_name]['modules']['streamalert']
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
@@ -129,10 +129,10 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
             continue
 
         func_config_name = '{}_config'.format(func)
-        if func_config_name not in stream_alert_config:
+        if func_config_name not in streamalert_config:
             continue
 
-        if not stream_alert_config[func_config_name].get('enable_custom_metrics'):
+        if not streamalert_config[func_config_name].get('enable_custom_metrics'):
             continue
 
         metric_prefix = metrics.FUNC_PREFIXES[func]
@@ -173,13 +173,13 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
 
     sns_topic_arn = monitoring_topic_arn(config)
 
-    stream_alert_config = config['clusters'][cluster_name]['modules']['streamalert']
+    streamalert_config = config['clusters'][cluster_name]['modules']['streamalert']
 
     # Add cluster metric alarms for the clustered function(s). ie: classifier
     metric_alarms = [
         metric_alarm
         for func in CLUSTERED_FUNCTIONS
-        for metric_alarm in stream_alert_config['{}_config'.format(func)].get(
+        for metric_alarm in streamalert_config['{}_config'.format(func)].get(
             'custom_metric_alarms', []
         )
     ]
