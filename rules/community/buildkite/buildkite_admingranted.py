@@ -1,7 +1,7 @@
 """Improbable Buildkite Rule config """
-from stream_alert.shared.rule import rule
-from publishers.community.slack.slack_layout import Summary, AttachRuleInfo, \
-    AttachPublication, AttachFullRecord
+from streamalert.shared.rule import rule
+# Remove disable import if no rules are disabled using the @disable decorator.
+from streamalert.shared.rule import disable
 
 
 # Remove the @disable decorator to use this rule in a live deployment

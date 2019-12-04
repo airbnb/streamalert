@@ -4,10 +4,10 @@ from mock import Mock, patch
 from moto import mock_ssm
 from nose.tools import assert_equal, raises
 
-from stream_alert.apps._apps.buildkite import BuildkiteApp, BuildkiteAppError
+from streamalert.apps._apps.buildkite import BuildkiteApp, BuildkiteAppError
 
-from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
-from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
+from tests.unit.streamalert.apps.test_helpers import get_event, put_mock_params
+from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
@@ -25,8 +25,8 @@ class TestBuildkiteApp(object):
         self._context = get_mock_lambda_context(self._test_app_name)
         self._app = BuildkiteApp(self._event, self._context)
 
-    @patch('stream_alert.apps._apps.buildkite.BuildkiteApp._make_post_request')
-    @patch('stream_alert.apps._apps.buildkite.BuildkiteApp._get_token')
+    @patch('streamalert.apps._apps.buildkite.BuildkiteApp._make_post_request')
+    @patch('streamalert.apps._apps.buildkite.BuildkiteApp._get_token')
     def test_gather_logs(self, mock_get_token, mock_make_post_request):
         mock_get_token.return_value = '26afff2f6996004847458481ee78240b573cd66a'
         mock_make_post_request.return_value = True, self.get_sample_response()
@@ -35,8 +35,8 @@ class TestBuildkiteApp(object):
         mock_get_token.assert_called_once()
 
     @raises(BuildkiteAppError)
-    @patch('stream_alert.apps._apps.buildkite.BuildkiteApp._make_post_request')
-    @patch('stream_alert.apps._apps.buildkite.BuildkiteApp._get_token')
+    @patch('streamalert.apps._apps.buildkite.BuildkiteApp._make_post_request')
+    @patch('streamalert.apps._apps.buildkite.BuildkiteApp._get_token')
     def test_gather_logs_error_response(self, _mock_get_token, mock_make_post_request):
         mock_make_post_request.return_value = True, self.get_sample_error_response()
         self._app._gather_logs()

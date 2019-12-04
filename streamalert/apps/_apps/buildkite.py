@@ -1,3 +1,19 @@
+"""
+Copyright 2017-present, Improbable Worlds Ltd.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import json
 import re
 from datetime import datetime
@@ -6,8 +22,10 @@ from . import AppIntegration, StreamAlertApp, get_logger
 
 LOGGER = get_logger(__name__)
 
+
 class BuildkiteAppError(Exception):
     """Buildkite App Error class"""
+
 
 @StreamAlertApp
 class BuildkiteApp(AppIntegration):
@@ -80,6 +98,10 @@ class BuildkiteApp(AppIntegration):
             'token': {
                 'description': 'bearer token to access BuildKite GraphQL',
                 'format': re.compile(r'^[a-f0-9]{40}$')
+            },
+            'buildkite_organisation': {
+                'description': 'bearer token to access BuildKite GraphQL',
+                'format': re.compile(r'^[a-f0-9]{40}$')
             }
         }
 
@@ -91,7 +113,7 @@ class BuildkiteApp(AppIntegration):
         LOGGER.debug('[%s] cursor_last_id set to [%s]', self, cursor_last_id)
         cursors_changed = False
         retrieved_logs = []
-        for name, instance in self._all_queries.iteritems():
+        for name, instance in self._all_queries.items():
             if not cursor_last_id:
                 self._before_cursor = "null"
             else:
@@ -99,7 +121,9 @@ class BuildkiteApp(AppIntegration):
             LOGGER.debug('[%s] self._before_cursor to value [%s]', self, self._before_cursor)
             current_query = {
                 'query': instance['query'](
-                    query_size=self._PAGE_SIZE, before_cursor=self._before_cursor)}
+                    query_size=self._PAGE_SIZE, before_cursor=self._before_cursor,
+                    bk_organisation=self._get_bk_organisation())}
+
             success, response = self._make_post_request(self._BUILDKITE_GRAPHQL_ENDPOINT,
                                                         data=current_query,
                                                         headers=self._get_headers(),
@@ -157,3 +181,6 @@ class BuildkiteApp(AppIntegration):
 
     def _get_token(self):
         return self._config.auth['token']
+
+    def _get_bk_organisation(self):
+        return self._config.auth['buildkite_organisation']
