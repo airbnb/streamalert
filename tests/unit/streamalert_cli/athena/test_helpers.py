@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from mock import patch
 from nose.tools import assert_equal
 
 from streamalert_cli.athena import helpers
@@ -94,5 +95,33 @@ def test_add_partition_statement():
                        "PARTITION (dt = '2018-12-01-05') "
                        "LOCATION 's3://bucket/test/2018/12/01/05'")
 
-    result = helpers.add_partition_statement(partitions, 'bucket', 'test')
-    assert_equal(result, expected_result)
+    results = helpers.add_partition_statement(partitions, 'bucket', 'test')
+    assert_equal(len(results), 1)
+    assert_equal(results[0], expected_result)
+
+
+@patch.object(helpers, 'MAX_QUERY_LENGTH', 256)
+def test_add_partition_statement_exceed_length():
+    """CLI - Athena Add Partition Statement when statement exceed max query length"""
+    partitions = {
+        'dt=2017-12-01-01',
+        'dt=2016-12-01-02',
+        'dt=2018-12-01-05',
+        'dt=2013-12-01-04',
+    }
+
+    results = helpers.add_partition_statement(partitions, 'bucket', 'test')
+    assert_equal(len(results), 2)
+
+    expected_result_0 = ("ALTER TABLE test ADD IF NOT EXISTS "
+                         "PARTITION (dt = '2013-12-01-04') "
+                         "LOCATION 's3://bucket/test/2013/12/01/04' "
+                         "PARTITION (dt = '2016-12-01-02') "
+                         "LOCATION 's3://bucket/test/2016/12/01/02'")
+    expected_result_1 = ("ALTER TABLE test ADD IF NOT EXISTS "
+                         "PARTITION (dt = '2017-12-01-01') "
+                         "LOCATION 's3://bucket/test/2017/12/01/01' "
+                         "PARTITION (dt = '2018-12-01-05') "
+                         "LOCATION 's3://bucket/test/2018/12/01/05'")
+    assert_equal(results[0], expected_result_0)
+    assert_equal(results[1], expected_result_1)

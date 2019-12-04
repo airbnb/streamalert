@@ -33,6 +33,8 @@ SCHEMA_TYPE_MAPPING = {
     list: 'array<string>'
 }
 
+# Athena query statement length limit
+MAX_QUERY_LENGTH = 262144
 
 def add_partition_statement(partitions, bucket, table_name):
     """Generate ALTER TABLE commands from existing partitions.
@@ -43,9 +45,14 @@ def add_partition_statement(partitions, bucket, table_name):
         table_name (str): The name of the Athena table
 
     Returns:
-        str: The ALTER TABLE statement to add the new partitions
+        list[str]: The ALTER TABLE statements to add the new partitions
     """
-    statements = ['ALTER TABLE {} ADD IF NOT EXISTS'.format(table_name)]
+
+    # monitor statement length, if it is less than 0, start a new statement.
+    # return a list of str
+    results = []
+    statement = ['ALTER TABLE {} ADD IF NOT EXISTS'.format(table_name)]
+    statement_len = MAX_QUERY_LENGTH - len(statement[0])
     fmt_values = {
         'bucket': bucket,
         'table_name': table_name
@@ -57,10 +64,21 @@ def add_partition_statement(partitions, bucket, table_name):
             continue
 
         fmt_values.update(parts.groupdict())
+        partition_stmt = PARTITION_STMT.format(**fmt_values)
 
-        statements.append(PARTITION_STMT.format(**fmt_values))
+        # If statement will be reset if it is about to reach the MAX_QUERY_LENGTH
+        if statement_len - len(partition_stmt) - len(statement) < 0:
+            results.append(' '.join(statement))
+            statement = ['ALTER TABLE {} ADD IF NOT EXISTS'.format(table_name)]
+            statement_len = MAX_QUERY_LENGTH - len(statement[0])
 
-    return ' '.join(statements)
+        statement_len -= len(partition_stmt)
+
+        statement.append(partition_stmt)
+
+    results.append(' '.join(statement))
+
+    return results
 
 
 def logs_schema_to_athena_schema(log_schema):
