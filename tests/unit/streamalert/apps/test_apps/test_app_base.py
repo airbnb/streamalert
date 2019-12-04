@@ -46,6 +46,7 @@ class TestStreamAlertApp:
         """StreamAlertApp - Get All Apps"""
         expected_apps = {
             'box_admin_events',
+            'buildkite_audit',
             'duo_admin',
             'duo_auth',
             'gsuite_access_transparency',
