@@ -43,7 +43,7 @@
   "terraform": {
     "create_bucket": true,
     "tfstate_bucket": "unit-test.streamalert.terraform.state",
-    "tfstate_s3_key": "stream_alert_state/terraform.tfstate"
+    "tfstate_s3_key": "streamalert_state/terraform.tfstate"
   },
   "threat_intel": {
     "dynamodb_table": "test_table_name",

@@ -41,5 +41,5 @@ class AppPayload(StreamPayload):
         for data in self.raw_record['logs']:
             yield PayloadRecord(data)
 
-        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_STREAM_ALERT_APP_RECORDS,
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_STREAMALERT_APP_RECORDS,
                                 len(self.raw_record['logs']))

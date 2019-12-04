@@ -244,7 +244,7 @@ class AlertMergerPackage(LambdaPackage):
 
 class AppPackage(LambdaPackage):
     """Deployment package class for App functions"""
-    config_key = 'stream_alert_apps_config'
+    config_key = 'streamalert_apps_config'
     lambda_handler = 'streamalert.apps.main.handler'
     package_files = {
         'streamalert/__init__.py',

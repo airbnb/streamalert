@@ -716,7 +716,7 @@ class TestJSONParser:
                     'eventID': '0000000',
                     'eventTime': '2016-12-31T12:00:00Z',
                     'requestParameters': {
-                        'streamName': 'stream_alert'
+                        'streamName': 'streamalert'
                     },
                     'eventType': 'AwsApiCall',
                     'responseElements': None,

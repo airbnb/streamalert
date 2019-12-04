@@ -31,7 +31,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
         cluster: [
             func.replace('_config', '')
             for func in CLUSTERED_FUNCTIONS
-            if cluster_config['modules']['stream_alert']['{}_config'.format(func)].get(
+            if cluster_config['modules']['streamalert']['{}_config'.format(func)].get(
                 'enable_custom_metrics'
             )
         ] for cluster, cluster_config in config['clusters'].items()

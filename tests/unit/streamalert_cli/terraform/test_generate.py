@@ -94,7 +94,7 @@ class TestTerraformGenerate:
                 'backend': {
                     's3': {
                         'bucket': 'unit-test.streamalert.terraform.state',
-                        'key': 'stream_alert_state/terraform.tfstate',
+                        'key': 'streamalert_state/terraform.tfstate',
                         'region': 'us-west-1',
                         'dynamodb_table': 'unit-test_streamalert_terraform_state_lock',
                         'encrypt': True,

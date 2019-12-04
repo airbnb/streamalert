@@ -20,7 +20,7 @@
           "binaryalert"
       ]
     },
-    "stream_alert_app": {
+    "streamalert_app": {
       "prefix_cluster_box_admin_events_sm-app-name_app": [
         "box"
       ],

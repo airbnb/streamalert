@@ -441,7 +441,7 @@ class CLIConfig:
         cluster_config['modules']['streamalert_apps'] = apps_config
 
         # Add this service to the sources for this app integration
-        # The `stream_alert_app` is purposely singular here
+        # The `streamalert_app` is purposely singular here
         app_sources = self.config['clusters'][cluster_name]['data_sources'].get(
             'streamalert_app', {}
         )
