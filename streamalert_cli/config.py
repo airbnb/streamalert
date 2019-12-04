@@ -26,10 +26,6 @@ from streamalert_cli.apps.helpers import save_app_auth_info
 LOGGER = get_logger(__name__)
 
 
-class CLIConfigError(Exception):
-    pass
-
-
 class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
     DEFAULT_CONFIG_PATH = 'conf/'

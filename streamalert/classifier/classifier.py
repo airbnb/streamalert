@@ -21,6 +21,7 @@ from streamalert.classifier.clients import FirehoseClient, SQSClient
 from streamalert.classifier.parsers import get_parser
 from streamalert.classifier.payload.payload_base import StreamPayload
 from streamalert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
+from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 from streamalert.shared.metrics import MetricLogger
 from streamalert.shared.normalize import Normalizer
@@ -87,19 +88,21 @@ class Classifier:
             bool: True if the resource's log sources loaded properly
         """
         # Get all logs for the configured service/entity (s3, kinesis, or sns)
-
         resources = self._config['clusters'][self._cluster]['data_sources'].get(service)
         if not resources:
-            LOGGER.error('Service [%s] not declared in sources configuration', service)
-            return False
+            error = 'Service [{}] not declared in sources configuration for resource [{}]'.format(
+                service,
+                resource
+            )
+            raise ConfigError(error)
 
         source_config = resources.get(resource)
         if not source_config:
-            LOGGER.error(
-                'Resource [%s] not declared in sources configuration for service [%s]',
+            error = 'Resource [{}] not declared in sources configuration for service [{}]'.format(
                 resource,
-                service)
-            return False
+                service
+            )
+            raise ConfigError(error)
 
         # Get the log schemas for source(s)
         return OrderedDict(
