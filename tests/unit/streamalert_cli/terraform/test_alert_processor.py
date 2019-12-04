@@ -36,7 +36,7 @@ class TestAlertProcessor(unittest.TestCase):
             'module': {
                 'alert_processor_iam': {
                     'account_id': '12345678910',
-                    'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+                    'kms_key_arn': '${aws_kms_key.streamalert_secrets.arn}',
                     'output_lambda_functions': [
                         'unit_test_function',
                         'unit_test_qualified_function'
@@ -100,7 +100,7 @@ class TestAlertProcessor(unittest.TestCase):
             'module': {
                 'alert_processor_iam': {
                     'account_id': '12345678910',
-                    'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+                    'kms_key_arn': '${aws_kms_key.streamalert_secrets.arn}',
                     'output_lambda_functions': [],
                     'output_s3_buckets': [],
                     'output_sns_topics': [],

@@ -20,7 +20,7 @@
           "binaryalert"
       ]
     },
-    "stream_alert_app": {
+    "streamalert_app": {
       "prefix_cluster_box_admin_events_sm-app-name_app": [
         "box"
       ],
@@ -53,7 +53,7 @@
       "kinesis_alarms_enabled": false,
       "lambda_alarms_enabled": true
     },
-    "stream_alert": {
+    "streamalert": {
       "classifier_config": {
         "enable_custom_metrics": true,
         "inputs": {

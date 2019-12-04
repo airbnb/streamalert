@@ -533,9 +533,9 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
         Will automatically create the new directory if it does not exist.
 
         Returns:
-            str: local path for stream_alert_secrets tmp directory
+            str: local path for streamalert_secrets tmp directory
         """
-        temp_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
+        temp_dir = os.path.join(tempfile.gettempdir(), "streamalert_secrets")
 
         # Check if this item exists as a file, and remove it if it does
         if os.path.isfile(temp_dir):

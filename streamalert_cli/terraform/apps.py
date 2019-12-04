@@ -32,7 +32,7 @@ def generate_apps(cluster_name, cluster_dict, config):
     prefix = config['global']['account']['prefix']
 
     for function_name, app_info in config['clusters'][cluster_name]['modules'].get(
-            'stream_alert_apps', {}).items():
+            'streamalert_apps', {}).items():
 
         tf_module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
 
@@ -59,7 +59,7 @@ def generate_apps(cluster_name, cluster_dict, config):
             function_name,
             AppPackage.package_name + '.zip',
             AppPackage.lambda_handler,
-            config['clusters'][cluster_name]['modules']['stream_alert_apps'][function_name],
+            config['clusters'][cluster_name]['modules']['streamalert_apps'][function_name],
             config,
             input_event=app_config
         )

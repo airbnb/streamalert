@@ -51,9 +51,11 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
 
         config_data = basic_streamalert_config()
 
+        mock_cluster_contents = '{"data_sources": {}, "modules": {"streamalert": {"foo": "bar"}}}'
+
         # Add config files which should be loaded
-        self.fs.create_file('conf/clusters/prod.json', contents='{"data_sources": {}}')
-        self.fs.create_file('conf/clusters/dev.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf/clusters/prod.json', contents=mock_cluster_contents)
+        self.fs.create_file('conf/clusters/dev.json', contents=mock_cluster_contents)
         self.fs.create_file('conf/global.json', contents='{}')
         self.fs.create_file('conf/lambda.json', contents='{}')
         self.fs.create_file('conf/logs.json', contents='{}')
@@ -72,8 +74,8 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         )
 
         # Create similar structure but with schemas folder instead of logs.json and 2 clusters.
-        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{"data_sources": {}}')
-        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{"data_sources": {}}')
+        self.fs.create_file('conf_schemas/clusters/prod.json', contents=mock_cluster_contents)
+        self.fs.create_file('conf_schemas/clusters/dev.json', contents=mock_cluster_contents)
         self.fs.create_file('conf_schemas/global.json', contents='{}')
         self.fs.create_file('conf_schemas/lambda.json', contents='{}')
         self.fs.create_file('conf_schemas/outputs.json', contents='{}')
@@ -242,6 +244,12 @@ class TestConfigValidation:
         assert_equal(env['account_id'], '123456789012')
         assert_equal(env['function_name'], func_name)
         assert_equal(env['qualifier'], 'development')
+
+    def test_missing_streamalert_module(self):
+        """Shared - Config Validator, Missing streamalert Module"""
+        config = basic_streamalert_config()
+        del config['clusters']['prod']['modules']['streamalert']
+        assert_raises(ConfigError, _validate_config, config)
 
     def test_config_invalid_ioc_types(self):
         """Shared - Config Validator - IOC Types, Invalid"""

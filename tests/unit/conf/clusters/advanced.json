@@ -51,7 +51,7 @@
       ],
       "unit-test.cloudtrail.data": []
     },
-    "stream_alert": {
+    "streamalert": {
       "classifier_config": {
         "inputs": {
           "aws-sns": []

@@ -53,10 +53,10 @@ When writing commit messages, make sure to prefix with one of the following tags
   [docs]              # changes to StreamAlert documentation
   [cli]               # streamalert_cli changes
   [terraform]         # terraform changes
-  [core]              # changes with core stream_alert classes used across lambda functions
+  [core]              # changes with core streamalert classes used across lambda functions
   [testing]           # changes with testing infrastructure or processes
   [setup]             # StreamAlert development setup changes
-  [config]            # stream_alert config changes
+  [config]            # streamalert config changes
 
 The first line of your commit message should be short.  Use newlines to explain further::
 

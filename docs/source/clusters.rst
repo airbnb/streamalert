@@ -32,7 +32,7 @@ Configuration options are divided into different modules, each of which is discu
 
 Classifier Function
 -------------------
-``stream_alert`` is the only required module because it configures the cluster's classifier.
+``streamalert`` is the only required module because it configures the cluster's classifier.
 
 Example: Minimal Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,7 +42,7 @@ Example: Minimal Cluster
   {
     "id": "minimal-cluster",
     "modules": {
-      "stream_alert": {
+      "streamalert": {
         "classifier_config": {
           "enable_custom_metrics": true,
           "log_level": "info",
@@ -63,7 +63,7 @@ Example: Classifier with SNS Inputs
   {
     "id": "sns-inputs",
     "modules": {
-      "stream_alert": {
+      "streamalert": {
         "classifier_config": {
           "enable_custom_metrics": true,
           "inputs": {
@@ -117,7 +117,7 @@ Example: CloudTrail via S3 Events
       "s3_events": {
         "PREFIX.CLUSTER.streamalert.cloudtrail": []
       },
-      "stream_alert": {
+      "streamalert": {
         "classifier_config": {
           "enable_custom_metrics": true,
           "log_level": "info",
@@ -156,7 +156,7 @@ Example: CloudTrail via CloudWatch Logs
           "batch_size": 10,
           "enabled": true
         },
-        "stream_alert": {
+        "streamalert": {
           "classifier_config": {
             "enable_custom_metrics": true,
             "log_level": "info",
@@ -232,7 +232,7 @@ Example: CloudWatch Logs Cluster
         "batch_size": 100,
         "enabled": true
       },
-      "stream_alert": {
+      "streamalert": {
         "classifier_config": {
           "enable_custom_metrics": true,
           "log_level": "info",
@@ -253,7 +253,7 @@ Once you have applied this change to enable StreamAlert to subscribe to CloudWat
 in the *producer* account to actually deliver the logs, optionally with
 `Terraform <https://www.terraform.io/docs/providers/aws/r/cloudwatch_log_subscription_filter.html>`_.
 The CloudWatch logs destination ARN will be
-``arn:aws:logs:REGION:STREAMALERT_ACCOUNT:destination:stream_alert_CLUSTER_cloudwatch_to_kinesis``.
+``arn:aws:logs:REGION:STREAMALERT_ACCOUNT:destination:streamalert_CLUSTER_cloudwatch_to_kinesis``.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
@@ -295,7 +295,7 @@ Example: Enable CloudWatch Monitoring
           "kinesis_write_throughput_exceeded_threshold": 10
         }
       },
-      "stream_alert": {
+      "streamalert": {
         "classifier_config": {
           "enable_custom_metrics": true,
           "log_level": "info",
@@ -424,7 +424,7 @@ Example: Kinesis Cluster
         "batch_size": 100,
         "enabled": true
       },
-      "stream_alert": {
+      "streamalert": {
         "classifier_config": {
           "enable_custom_metrics": true,
           "log_level": "info",
@@ -558,7 +558,7 @@ Example: Flow Logs Cluster
           "batch_size": 2,
           "enabled": true
         },
-        "stream_alert": {
+        "streamalert": {
           "classifier_config": {
             "enable_custom_metrics": true,
             "log_level": "info",
@@ -623,7 +623,7 @@ Example: S3 Events Cluster
           ],
           "bucket_name_02": []
         },
-        "stream_alert": {
+        "streamalert": {
           "classifier_config": {
             "enable_custom_metrics": true,
             "log_level": "info",

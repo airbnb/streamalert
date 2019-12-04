@@ -45,7 +45,7 @@ def generate_athena(config):
         '{}_streamalert_athena_s3_notifications'.format(prefix)
     ).strip()
 
-    athena_dict['module']['stream_alert_athena'] = {
+    athena_dict['module']['streamalert_athena'] = {
         's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
         'source': './modules/tf_athena',
         'database_name': database,
@@ -96,6 +96,6 @@ def generate_athena(config):
                for metric, settings in
                current_metrics[metrics.ATHENA_PARTITION_REFRESH_NAME].items()]
 
-    athena_dict['module']['stream_alert_athena']['athena_metric_filters'] = filters
+    athena_dict['module']['streamalert_athena']['athena_metric_filters'] = filters
 
     return athena_dict

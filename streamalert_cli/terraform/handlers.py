@@ -87,10 +87,10 @@ class TerraformInitCommand(CLICommand):
         LOGGER.info('Building initial infrastructure')
         init_targets = [
             'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
-            'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
+            'aws_s3_bucket.streamalert_secrets', 'aws_s3_bucket.terraform_remote_state',
             'aws_s3_bucket.streamalerts',
             'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
-            'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets'
+            'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets'
         ]
         if not tf_runner(targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')

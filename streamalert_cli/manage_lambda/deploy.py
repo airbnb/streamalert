@@ -19,7 +19,7 @@ import sys
 from streamalert.shared import rule_table
 from streamalert.shared.logger import get_logger
 from streamalert_cli import helpers
-from streamalert_cli.manage_lambda import package as stream_alert_packages
+from streamalert_cli.manage_lambda import package as streamalert_packages
 from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.utils import (
     add_default_lambda_args,
@@ -188,51 +188,51 @@ def _create(function_name, config, clusters=None):
 
     package_mapping = {
         'alert': PackageMap(
-            stream_alert_packages.AlertProcessorPackage,
+            streamalert_packages.AlertProcessorPackage,
             {'module.alert_processor_iam', 'module.alert_processor_lambda'},
             True
         ),
         'alert_merger': PackageMap(
-            stream_alert_packages.AlertMergerPackage,
+            streamalert_packages.AlertMergerPackage,
             {'module.alert_merger_iam', 'module.alert_merger_lambda'},
             True
         ),
         'apps': PackageMap(
-            stream_alert_packages.AppPackage,
+            streamalert_packages.AppPackage,
             {'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
              for suffix in {'lambda', 'iam'}
              for cluster in clusters
              for app_info in config['clusters'][cluster]['modules'].get(
-                 'stream_alert_apps', {}
+                 'streamalert_apps', {}
              ).values()
              if 'app_name' in app_info},
-            any(info['modules'].get('stream_alert_apps')
+            any(info['modules'].get('streamalert_apps')
                 for info in config['clusters'].values())
         ),
         'athena': PackageMap(
-            stream_alert_packages.AthenaPackage,
-            {'module.stream_alert_athena'},
+            streamalert_packages.AthenaPackage,
+            {'module.streamalert_athena'},
             True
         ),
         'classifier': PackageMap(
-            stream_alert_packages.ClassifierPackage,
+            streamalert_packages.ClassifierPackage,
             {'module.classifier_{}_{}'.format(cluster, suffix)
              for suffix in {'lambda', 'iam'}
              for cluster in clusters},
             True
         ),
         'rule': PackageMap(
-            stream_alert_packages.RulesEnginePackage,
+            streamalert_packages.RulesEnginePackage,
             {'module.rules_engine_iam', 'module.rules_engine_lambda'},
             True
         ),
         'rule_promo': PackageMap(
-            stream_alert_packages.RulePromotionPackage,
+            streamalert_packages.RulePromotionPackage,
             {'module.rule_promotion_iam', 'module.rule_promotion_lambda'},
             config['lambda'].get('rule_promotion_config', {}).get('enabled', False)
         ),
         'threat_intel_downloader': PackageMap(
-            stream_alert_packages.ThreatIntelDownloaderPackage,
+            streamalert_packages.ThreatIntelDownloaderPackage,
             {'module.threat_intel_downloader'},
             config['lambda'].get('threat_intel_downloader_config', False)
         )

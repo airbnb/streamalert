@@ -65,7 +65,7 @@ class TestThreatIntel:
             'clusters': {
                 'prod': {
                     'modules': {
-                        'stream_alert': {
+                        'streamalert': {
                             'enable_threat_intel': True
                         }
                     }
@@ -523,7 +523,7 @@ class TestThreatIntel:
             'clusters': {
                 'prod': {
                     'modules': {
-                        'stream_alert': {
+                        'streamalert': {
                             'enable_threat_intel': False
                         }
                     }

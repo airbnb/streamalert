@@ -176,7 +176,7 @@ def generate_main(config, init=False):
 
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
-        'stream_alert_secrets': generate_s3_bucket(
+        'streamalert_secrets': generate_s3_bucket(
             # FIXME (derek.wang) DRY out by using OutputCredentialsProvider?
             bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
             logging=_config_get_logging_bucket(config)
@@ -255,13 +255,13 @@ def generate_main(config, init=False):
         'target_key_id': '${aws_kms_key.server_side_encryption.key_id}'
     }
 
-    main_dict['resource']['aws_kms_key']['stream_alert_secrets'] = {
+    main_dict['resource']['aws_kms_key']['streamalert_secrets'] = {
         'enable_key_rotation': True,
         'description': 'StreamAlert secret management'
     }
-    main_dict['resource']['aws_kms_alias']['stream_alert_secrets'] = {
+    main_dict['resource']['aws_kms_alias']['streamalert_secrets'] = {
         'name': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
-        'target_key_id': '${aws_kms_key.stream_alert_secrets.key_id}'
+        'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
     }
 
     # Global infrastructure settings

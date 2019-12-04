@@ -475,7 +475,7 @@ def test_get_formatted_output_credentials_name():
 def test_get_load_credentials_temp_dir():
     """LocalFileDriver - Get Load Credentials Temp Dir"""
     temp_dir = LocalFileDriver.get_local_credentials_temp_dir()
-    assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
+    assert_equal(temp_dir.split('/')[-1], 'streamalert_secrets')
 
 
 def test_get_formatted_output_credentials_name_no_descriptor(): #pylint: disable=invalid-name

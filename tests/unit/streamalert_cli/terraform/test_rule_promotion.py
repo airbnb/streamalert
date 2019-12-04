@@ -42,7 +42,7 @@ class TestRulePromotion:
                     'source': './modules/tf_rule_promotion_iam',
                     'send_digest_schedule_expression': 'cron(30 13 * * ? *)',
                     'digest_sns_topic': 'unit-test_streamalert_rule_staging_stats',
-                    'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
+                    'athena_results_bucket_arn': '${module.streamalert_athena.results_bucket_arn}',
                     'athena_data_buckets': [
                         'unit-test.streamalert.data',
                         'unit-test.streamalerts'

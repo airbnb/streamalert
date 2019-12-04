@@ -47,7 +47,7 @@ def basic_streamalert_config():
         'global': {
             'account': {
                 'aws_account_id': '123456789123',
-                'kms_key_alias': 'stream_alert_secrets',
+                'kms_key_alias': 'streamalert_secrets',
                 'prefix': 'unit-test',
                 'region': 'us-west-2'
             },
@@ -63,7 +63,7 @@ def basic_streamalert_config():
             'terraform': {
                 'create_bucket': True,
                 'tfstate_bucket': 'unit-test.streamalert.terraform.state',
-                'tfstate_s3_key': 'stream_alert_state/terraform.tfstate'
+                'tfstate_s3_key': 'streamalert_state/terraform.tfstate'
             },
         },
         'threat_intel': {
@@ -186,7 +186,7 @@ def basic_streamalert_config():
                     'kinesis_events': {
                         'enabled': True
                     },
-                    'stream_alert': {
+                    'streamalert': {
                         'classifier_config': {
                             'enable_custom_metrics': True,
                             'log_level': 'info',
@@ -218,7 +218,7 @@ def basic_streamalert_config():
             'corp': {
                 'id': 'corp',
                 'modules': {
-                    'stream_alert': {
+                    'streamalert': {
                         'classifier_config': {
                             'enable_custom_metrics': True,
                             'log_level': 'info',
@@ -237,7 +237,7 @@ def basic_streamalert_config():
                             'timeout': 10
                         }
                     },
-                    'stream_alert_apps': {
+                    'streamalert_apps': {
                         'unit-test_corp_box_admin_events_box_collector_app': {
                             'app_name': 'box_collector',
                             'concurrency_limit': 2,

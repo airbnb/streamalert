@@ -125,11 +125,11 @@ class TestStreamPayload:
     def test_load_from_raw_record_app(self):
         """StreamPayload - Load from Raw Record, StreamAlertApp"""
         record = {
-            'stream_alert_app': 'test_app'
+            'streamalert_app': 'test_app'
         }
         with patch.object(RegisterInput, 'load_for_service') as load_mock:
             StreamPayload.load_from_raw_record(record)
-            load_mock.assert_called_with('stream_alert_app', 'test_app', record)
+            load_mock.assert_called_with('streamalert_app', 'test_app', record)
 
     def test_load_from_raw_record_sns_s3(self):
         """StreamPayload - Load from Raw Record, SNS S3 Event"""

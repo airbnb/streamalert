@@ -123,7 +123,7 @@ class TestCLIConfig:
 
         self.config.add_metric_alarm(alarm_info)
         result = (
-            self.config['clusters']['prod']['modules']['stream_alert']
+            self.config['clusters']['prod']['modules']['streamalert']
             ['classifier_config']['custom_metric_alarms']
         )
 

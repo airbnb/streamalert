@@ -72,7 +72,7 @@ class StatusCommand(CLICommand):
 
         cluster_non_func_keys = sorted(['enable_threat_intel'])
         for cluster in sorted(config['clusters']):
-            sa_config = config['clusters'][cluster]['modules']['stream_alert']
+            sa_config = config['clusters'][cluster]['modules']['streamalert']
 
             print(_format_header('Cluster: {}'.format(cluster), True))
             for key in cluster_non_func_keys:

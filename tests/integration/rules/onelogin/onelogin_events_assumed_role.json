@@ -35,7 +35,7 @@
     },
     "description": "OneLogin generated event when a user assumed a different role, it should alert",
     "log": "onelogin:events",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_onelogin-events-app-name_app",
     "trigger_rules": [
       "onelogin_events_assumed_role"
@@ -77,7 +77,7 @@
     },
     "description": "OneLogin generated event when a user do any other action, it should not alert",
     "log": "onelogin:events",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_onelogin-events-app-name_app",
     "trigger_rules": []
   }

@@ -37,7 +37,7 @@ def test_generate_athena():
 
     expected_athena_config = {
         'module': {
-            'stream_alert_athena': {
+            'streamalert_athena': {
                 's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),
                 'source': './modules/tf_athena',
                 'database_name': '{}_streamalert'.format(prefix),
@@ -72,16 +72,16 @@ def test_generate_athena():
 
     # List order messes up the comparison between both dictionaries
     assert_equal(
-        set(athena_config['module']['stream_alert_athena']['athena_data_buckets']),
-        set(expected_athena_config['module']['stream_alert_athena']['athena_data_buckets'])
+        set(athena_config['module']['streamalert_athena']['athena_data_buckets']),
+        set(expected_athena_config['module']['streamalert_athena']['athena_data_buckets'])
     )
 
     # Delete the keys to compare the rest of the generated module
-    del athena_config['module']['stream_alert_athena']['athena_data_buckets']
-    del expected_athena_config['module']['stream_alert_athena']['athena_data_buckets']
+    del athena_config['module']['streamalert_athena']['athena_data_buckets']
+    del expected_athena_config['module']['streamalert_athena']['athena_data_buckets']
 
     # Compare each generated Athena module from the expected module
-    assert_equal(athena_config['module']['stream_alert_athena'],
-                 expected_athena_config['module']['stream_alert_athena'])
+    assert_equal(athena_config['module']['streamalert_athena'],
+                 expected_athena_config['module']['streamalert_athena'])
     assert_equal(athena_config['module']['athena_monitoring'],
                  expected_athena_config['module']['athena_monitoring'])

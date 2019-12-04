@@ -19,8 +19,8 @@ This file should contain the following structure:
       "data": "Either a string, or JSON object",
       "description": "This test should trigger or not trigger an alert",
       "log": "The log name declared in a json file under the conf/schemas directory",
-      "service": "The service sending the log - kinesis, s3, sns, or stream_alert_app",
-      "source": "The exact resource which sent the log - kinesis stream name, s3 bucket ID, SNS topic name, or stream_alert_app_function name",
+      "service": "The service sending the log - kinesis, s3, sns, or streamalert_app",
+      "source": "The exact resource which sent the log - kinesis stream name, s3 bucket ID, SNS topic name, or streamalert_app function name",
       "trigger_rules": [
         "rule_name_that_should_trigger_for_this_event",
         "another_rule_name_that_should_trigger_for_this_event"
@@ -114,7 +114,7 @@ Key                        Type                    Required  Description
 ``log``                    ``string``              Yes       The log type this test record should parse as. The value of this
                                                              should be taken from the defined logs in one or more files in the ``conf/schemas`` directory
 ``service``                ``string``              Yes       The name of the service which sent the log.
-                                                             This should be one of: ``kinesis``, ``s3``, ``sns``, or ``stream_alert_app``.
+                                                             This should be one of: ``kinesis``, ``s3``, ``sns``, or ``streamalert_app``.
 ``source``                 ``string``              Yes       The name of the Kinesis Stream or S3 bucket, SNS topic or StreamAlert App
                                                              function where the data originated from. This value should match a source
                                                              provided in the ``data_sources`` field defined within a cluster in ``conf/clusters/<cluster>.json``

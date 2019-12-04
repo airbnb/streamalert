@@ -155,7 +155,7 @@ class CLIConfig:
             else:
                 # Classifier - toggle for each cluster
                 for cluster in clusters:
-                    self.config['clusters'][cluster]['modules']['stream_alert'] \
+                    self.config['clusters'][cluster]['modules']['streamalert'] \
                         [function_config]['enable_custom_metrics'] = enabled
 
         self.write()
@@ -199,7 +199,7 @@ class CLIConfig:
         for func in funcs:
             func_config = '{}_config'.format(func)
             for cluster, cluster_config in self.config['clusters'].items():
-                func_alarms = cluster_config['modules']['stream_alert'][func_config].get(
+                func_alarms = cluster_config['modules']['streamalert'][func_config].get(
                     'custom_metric_alarms', {}
                 )
                 if alarm_name in func_alarms:
@@ -222,7 +222,7 @@ class CLIConfig:
         return {
             cluster
             for cluster, cluster_config in self.config['clusters'].items()
-            if (self.config['clusters'][cluster]['modules']['stream_alert']
+            if (self.config['clusters'][cluster]['modules']['streamalert']
                 [function_config].get('enable_custom_metrics'))
         }
 
@@ -240,7 +240,7 @@ class CLIConfig:
         config_name = '{}_config'.format(function_name)
         for cluster in alarm_info['clusters']:
             function_config = (
-                self.config['clusters'][cluster]['modules']['stream_alert'][config_name])
+                self.config['clusters'][cluster]['modules']['streamalert'][config_name])
 
             if not function_config.get('enable_custom_metrics'):
                 prompt = ('Metrics are not currently enabled for the \'{}\' function '
@@ -386,7 +386,7 @@ class CLIConfig:
         # Check to see if there is an existing configuration for this app integration
         cluster_config = self.config['clusters'][cluster_name]
 
-        if func_name in cluster_config['modules'].get('stream_alert_apps', {}):
+        if func_name in cluster_config['modules'].get('streamalert_apps', {}):
             prompt = ('An app with the name \'{}\' is already configured for cluster '
                       '\'{}\'. Would you like to update the existing app\'s configuration'
                       '?'.format(app_name, cluster_name))
@@ -406,7 +406,7 @@ class CLIConfig:
         if prompt_for_auth and not save_app_auth_info(app, app_info, func_name, overwrite):
             return False
 
-        apps_config = cluster_config['modules'].get('stream_alert_apps', {})
+        apps_config = cluster_config['modules'].get('streamalert_apps', {})
         if not exists:
             # Save a default app settings to the config for new apps
             new_app_config = {
@@ -438,15 +438,15 @@ class CLIConfig:
             }
             apps_config[func_name].update(updated_app_config)
 
-        cluster_config['modules']['stream_alert_apps'] = apps_config
+        cluster_config['modules']['streamalert_apps'] = apps_config
 
         # Add this service to the sources for this app integration
-        # The `stream_alert_app` is purposely singular here
+        # The `streamalert_app` is purposely singular here
         app_sources = self.config['clusters'][cluster_name]['data_sources'].get(
-            'stream_alert_app', {}
+            'streamalert_app', {}
         )
         app_sources[func_name] = [app.service()]
-        self.config['clusters'][cluster_name]['data_sources']['stream_alert_app'] = app_sources
+        self.config['clusters'][cluster_name]['data_sources']['streamalert_app'] = app_sources
 
         LOGGER.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
                     'for service \'%s\'.', app_info['app_name'], app_info['cluster'],

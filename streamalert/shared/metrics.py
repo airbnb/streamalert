@@ -61,7 +61,7 @@ class MetricLogger:
     TOTAL_PROCESSED_SIZE = 'TotalProcessedSize'
     TOTAL_RECORDS = 'TotalRecords'
     TOTAL_S3_RECORDS = 'TotalS3Records'
-    TOTAL_STREAM_ALERT_APP_RECORDS = 'TotalStreamAlertAppRecords'
+    TOTAL_STREAMALERT_APP_RECORDS = 'TotalStreamAlertAppRecords'
     FIREHOSE_RECORDS_SENT = 'FirehoseRecordsSent'
     FIREHOSE_FAILED_RECORDS = 'FirehoseFailedRecords'
     SQS_FAILED_RECORDS = 'SQSFailedRecords'
@@ -111,8 +111,8 @@ class MetricLogger:
                             _default_value_lookup),
             TOTAL_S3_RECORDS: (_default_filter.format(TOTAL_S3_RECORDS),
                                _default_value_lookup),
-            TOTAL_STREAM_ALERT_APP_RECORDS:
-                (_default_filter.format(TOTAL_STREAM_ALERT_APP_RECORDS), _default_value_lookup)
+            TOTAL_STREAMALERT_APP_RECORDS:
+                (_default_filter.format(TOTAL_STREAMALERT_APP_RECORDS), _default_value_lookup)
         },
         RULES_ENGINE_FUNCTION_NAME: {
             FAILED_DYNAMO_WRITES: (_default_filter.format(FAILED_DYNAMO_WRITES),

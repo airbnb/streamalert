@@ -24,7 +24,7 @@
     "s3_events": {
       "unit-test-bucket": []
     },
-    "stream_alert": {
+    "streamalert": {
       "classifier_config": {
         "inputs": {
           "aws-sns": []

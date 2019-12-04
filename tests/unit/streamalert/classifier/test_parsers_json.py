@@ -716,18 +716,18 @@ class TestJSONParser:
                     'eventID': '0000000',
                     'eventTime': '2016-12-31T12:00:00Z',
                     'requestParameters': {
-                        'streamName': 'stream_alert'
+                        'streamName': 'streamalert'
                     },
                     'eventType': 'AwsApiCall',
                     'responseElements': None,
                     'awsRegion': 'us-west-1',
                     'eventName': 'DescribeStream',
                     'userIdentity': {
-                        'userName': 'stream_alert_user',
+                        'userName': 'streamalert_user',
                         'principalId': 'AAAAAAAAAAAAAAAA',
                         'accessKeyId': 'FFFFFFFFFFFFFFFFFF',
                         'type': 'IAMUser',
-                        'arn': 'arn:aws:iam::111111111111:user/stream_alert_user',
+                        'arn': 'arn:aws:iam::111111111111:user/streamalert_user',
                         'accountId': '111111111111'
                     },
                     'eventSource': 'kinesis.amazonaws.com',
@@ -741,18 +741,18 @@ class TestJSONParser:
                     'eventID': '1111111',
                     'eventTime': '2017-01-31T12:00:00Z',
                     'requestParameters': {
-                        'streamName': 'stream_alert_prod'
+                        'streamName': 'streamalert_prod'
                     },
                     'eventType': 'AwsApiCall',
                     'responseElements': None,
                     'awsRegion': 'us-east-1',
                     'eventName': 'DescribeStream',
                     'userIdentity': {
-                        'userName': 'stream_alert_prod_user',
+                        'userName': 'streamalert_prod_user',
                         'principalId': 'BBBBBBBBBBBBBBBB',
                         'accessKeyId': 'GGGGGGGGGGGGGGGG',
                         'type': 'IAMUser',
-                        'arn': 'arn:aws:iam::222222222222:user/stream_alert_prod_user',
+                        'arn': 'arn:aws:iam::222222222222:user/streamalert_prod_user',
                         'accountId': '222222222222'
                     },
                     'eventSource': 'kinesis.amazonaws.com',
@@ -850,12 +850,12 @@ class TestJSONParser:
                     'timestamp': 1488216331000
                 }
             ],
-            'logGroup': 'airdev_prod_stream_alert_flow_logs',
+            'logGroup': 'airdev_prod_streamalert_flow_logs',
             'logStream': 'eni-77ccbe24-all',
             'messageType': 'DATA_MESSAGE',
             'owner': '123456789012',
             'subscriptionFilters': [
-                'airdev_prod_stream_alert_flow_logs_to_lambda'
+                'airdev_prod_streamalert_flow_logs_to_lambda'
             ]
         })
 
@@ -880,7 +880,7 @@ class TestJSONParser:
                 'windowend': 1488216389,
                 'windowstart': 1488216331,
                 'streamalert:envelope_keys': {
-                    'logGroup': 'airdev_prod_stream_alert_flow_logs',
+                    'logGroup': 'airdev_prod_streamalert_flow_logs',
                     'logStream': 'eni-77ccbe24-all',
                     'owner': 123456789012
                 }
@@ -901,7 +901,7 @@ class TestJSONParser:
                 'windowend': 1488216389,
                 'windowstart': 1488216331,
                 'streamalert:envelope_keys': {
-                    'logGroup': 'airdev_prod_stream_alert_flow_logs',
+                    'logGroup': 'airdev_prod_streamalert_flow_logs',
                     'logStream': 'eni-77ccbe24-all',
                     'owner': 123456789012
                 }
