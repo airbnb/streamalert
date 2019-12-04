@@ -90,7 +90,7 @@ class Batcher:
         """
         # Create a payload to be sent to the classifier function that contains the
         # service these logs were collected from and the list of logs
-        payload = {'Records': [{'stream_alert_app': self._source_function, 'logs': logs}]}
+        payload = {'Records': [{'streamalert_app': self._source_function, 'logs': logs}]}
         payload_json = json.dumps(payload, separators=(',', ':'))
         if len(payload_json) > self.MAX_LAMBDA_PAYLOAD_SIZE:
             if len(logs) == 1:

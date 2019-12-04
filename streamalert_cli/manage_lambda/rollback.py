@@ -120,7 +120,7 @@ class RollbackCommand(CLICommand):
 
         if rollback_all or 'apps' in options.function:
             for cluster in clusters:
-                apps_config = config['clusters'][cluster]['modules'].get('stream_alert_apps', {})
+                apps_config = config['clusters'][cluster]['modules'].get('streamalert_apps', {})
                 for lambda_name in sorted(apps_config):
                     success = success and _rollback_production(client, lambda_name)
 

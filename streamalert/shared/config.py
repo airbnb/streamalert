@@ -22,7 +22,7 @@ from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
 
-SUPPORTED_SOURCES = {'kinesis', 's3', 'sns', 'stream_alert_app'}
+SUPPORTED_SOURCES = {'kinesis', 's3', 'sns', 'streamalert_app'}
 
 
 class TopLevelConfigKeys:
@@ -256,11 +256,11 @@ def _validate_config(config):
             _validate_sources(cluster_name, cluster_attrs['data_sources'], existing_sources)
 
             if not cluster_attrs.get('modules', {}).get('streamalert'):
-                error = '\'streamalert\' module is missing in the \'{}\' cluster'.format(
+                error = "'streamalert' module is missing in the '{}' cluster".format(
                     cluster_name
                 )
                 if cluster_attrs.get('modules', {}).get('stream_alert'):
-                    error += '. \'stream_alert\' should be renamed to \'streamalert\''
+                    error += ". 'stream_alert' should be renamed to 'streamalert'"
                 raise ConfigError(error)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:

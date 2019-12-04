@@ -80,7 +80,7 @@ class TestAppBatcher:
 
         log_mock.assert_called_with('Log payload size for single log exceeds input '
                                     'limit and will be dropped (%d > %d max).',
-                                    128073, 128000)
+                                    128072, 128000)
 
     @patch('streamalert.apps.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send(self, batcher_mock):

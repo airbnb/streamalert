@@ -249,7 +249,7 @@ class StreamPayload(metaclass=ABCMeta):
             'kinesis': lambda r: r['eventSourceARN'].split('/')[-1],
             's3': lambda r: r['s3']['bucket']['name'],
             'Sns': lambda r: r['Sns']['TopicArn'].split(':')[-1],
-            'stream_alert_app': lambda r: r['stream_alert_app']
+            'streamalert_app': lambda r: r['streamalert_app']
         }
 
         service, resource = None, None

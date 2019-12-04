@@ -245,6 +245,12 @@ class TestConfigValidation:
         assert_equal(env['function_name'], func_name)
         assert_equal(env['qualifier'], 'development')
 
+    def test_missing_streamalert_module(self):
+        """Shared - Config Validator, Missing streamalert Module"""
+        config = basic_streamalert_config()
+        del config['clusters']['prod']['modules']['streamalert']
+        assert_raises(ConfigError, _validate_config, config)
+
     def test_config_invalid_ioc_types(self):
         """Shared - Config Validator - IOC Types, Invalid"""
         # Load a valid config

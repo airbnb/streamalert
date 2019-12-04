@@ -386,7 +386,7 @@ class CLIConfig:
         # Check to see if there is an existing configuration for this app integration
         cluster_config = self.config['clusters'][cluster_name]
 
-        if func_name in cluster_config['modules'].get('stream_alert_apps', {}):
+        if func_name in cluster_config['modules'].get('streamalert_apps', {}):
             prompt = ('An app with the name \'{}\' is already configured for cluster '
                       '\'{}\'. Would you like to update the existing app\'s configuration'
                       '?'.format(app_name, cluster_name))
@@ -406,7 +406,7 @@ class CLIConfig:
         if prompt_for_auth and not save_app_auth_info(app, app_info, func_name, overwrite):
             return False
 
-        apps_config = cluster_config['modules'].get('stream_alert_apps', {})
+        apps_config = cluster_config['modules'].get('streamalert_apps', {})
         if not exists:
             # Save a default app settings to the config for new apps
             new_app_config = {
@@ -438,15 +438,15 @@ class CLIConfig:
             }
             apps_config[func_name].update(updated_app_config)
 
-        cluster_config['modules']['stream_alert_apps'] = apps_config
+        cluster_config['modules']['streamalert_apps'] = apps_config
 
         # Add this service to the sources for this app integration
         # The `stream_alert_app` is purposely singular here
         app_sources = self.config['clusters'][cluster_name]['data_sources'].get(
-            'stream_alert_app', {}
+            'streamalert_app', {}
         )
         app_sources[func_name] = [app.service()]
-        self.config['clusters'][cluster_name]['data_sources']['stream_alert_app'] = app_sources
+        self.config['clusters'][cluster_name]['data_sources']['streamalert_app'] = app_sources
 
         LOGGER.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
                     'for service \'%s\'.', app_info['app_name'], app_info['cluster'],

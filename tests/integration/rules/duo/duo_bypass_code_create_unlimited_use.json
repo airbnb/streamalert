@@ -9,7 +9,7 @@
     },
     "description": "A DUO bypass code that has unlimited use should create an alert.",
     "log": "duo:administrator",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_admin_sm-app-name_app",
     "trigger_rules": [
       "duo_bypass_code_create_unlimited_use"
@@ -25,7 +25,7 @@
     },
     "description": "A DUO bypass code that has finite remaining uses should not create an alert.",
     "log": "duo:administrator",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_admin_sm-app-name_app",
     "trigger_rules": []
   }

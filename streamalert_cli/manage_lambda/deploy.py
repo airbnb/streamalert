@@ -203,10 +203,10 @@ def _create(function_name, config, clusters=None):
              for suffix in {'lambda', 'iam'}
              for cluster in clusters
              for app_info in config['clusters'][cluster]['modules'].get(
-                 'stream_alert_apps', {}
+                 'streamalert_apps', {}
              ).values()
              if 'app_name' in app_info},
-            any(info['modules'].get('stream_alert_apps')
+            any(info['modules'].get('streamalert_apps')
                 for info in config['clusters'].values())
         ),
         'athena': PackageMap(

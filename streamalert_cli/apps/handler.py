@@ -177,7 +177,7 @@ class AppCommand(CLICommand):
         # List all of the available app integrations, broken down by cluster
         if options.subcommand == 'list':
             all_info = {
-                cluster: cluster_config['modules'].get('stream_alert_apps')
+                cluster: cluster_config['modules'].get('streamalert_apps')
                 for cluster, cluster_config in config['clusters'].items()
             }
 
@@ -220,7 +220,7 @@ class AppCommand(CLICommand):
         # Update the auth information for an existing app integration function
         if options.subcommand == 'update-auth':
             cluster_config = config['clusters'][app_info['cluster']]
-            apps = cluster_config['modules'].get('stream_alert_apps', {})
+            apps = cluster_config['modules'].get('streamalert_apps', {})
             if not apps:
                 LOGGER.error('No apps configured for cluster \'%s\'', app_info['cluster'])
                 return False
@@ -239,7 +239,7 @@ class AppCommand(CLICommand):
 
             # Get the type for this app integration from the current
             # config so we can update it properly
-            app_info['type'] = cluster_config['modules']['stream_alert_apps'][func_name]['type']
+            app_info['type'] = cluster_config['modules']['streamalert_apps'][func_name]['type']
 
             app = StreamAlertApp.get_app(app_info['type'])
 

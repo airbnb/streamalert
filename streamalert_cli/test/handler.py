@@ -552,7 +552,7 @@ class TestRunner:
         elif not isinstance(data, str):
             return False, 'Invalid data type: {}'.format(type(data))
 
-        if test_event['service'] not in {'s3', 'kinesis', 'sns', 'stream_alert_app'}:
+        if test_event['service'] not in {'s3', 'kinesis', 'sns', 'streamalert_app'}:
             return False, 'Unsupported service: {}'.format(test_event['service'])
 
         # Get a formatted record for this particular service
@@ -662,8 +662,8 @@ class TestRunner:
                 }
             }
 
-        if service == 'stream_alert_app':
-            return {'stream_alert_app': source, 'logs': [data]}
+        if service == 'streamalert_app':
+            return {'streamalert_app': source, 'logs': [data]}
 
     @staticmethod
     def _validate_test_event(test_event):

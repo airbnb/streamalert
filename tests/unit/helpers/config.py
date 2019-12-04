@@ -237,7 +237,7 @@ def basic_streamalert_config():
                             'timeout': 10
                         }
                     },
-                    'stream_alert_apps': {
+                    'streamalert_apps': {
                         'unit-test_corp_box_admin_events_box_collector_app': {
                             'app_name': 'box_collector',
                             'concurrency_limit': 2,

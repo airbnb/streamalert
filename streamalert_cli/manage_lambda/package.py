@@ -251,7 +251,7 @@ class AppPackage(LambdaPackage):
         'streamalert/apps',
         'streamalert/shared'
     }
-    package_name = 'stream_alert_app'
+    package_name = 'streamalert_app'
     precompiled_libs = {'boxsdk[jwt]', 'aliyun-python-sdk-actiontrail'}
     package_libs = {
         'aliyun-python-sdk-actiontrail',

@@ -28,7 +28,7 @@ class AppPayload(StreamPayload):
 
     @classmethod
     def service(cls):
-        return 'stream_alert_app'
+        return 'streamalert_app'
 
     def _pre_parse(self):
         """Pre-parsing method for incoming app records
