@@ -28,7 +28,7 @@ ushlex==0.99.1
 yapf==0.25.0
 ## The following requirements were added by pip freeze:
 alabaster==0.7.12
-asn1crypto==0.24.0
+asn1crypto==1.2.0
 astroid==1.6.5
 attrdict==2.0.0
 aws-xray-sdk==0.95
