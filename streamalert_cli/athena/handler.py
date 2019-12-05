@@ -252,7 +252,7 @@ def rebuild_partitions(table, bucket, config):
     if not create_table(table, bucket, config):
         return False
 
-    new_partitions_statements = helpers.add_partition_statement(
+    new_partitions_statements = helpers.add_partition_statements(
         partitions, bucket, sanitized_table_name)
 
     LOGGER.info('Creating total %d new partitions for %s', len(partitions), sanitized_table_name)

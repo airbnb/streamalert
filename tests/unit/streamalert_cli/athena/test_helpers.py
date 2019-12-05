@@ -76,7 +76,7 @@ def test_generate_athena_schema_nested():
 
     assert_equal(athena_schema, expected_athena_schema)
 
-def test_add_partition_statement():
+def test_add_partition_statements():
     """CLI - Athena Add Partition Statement"""
     partitions = {
         'dt=2017-12-01-01',
@@ -95,13 +95,14 @@ def test_add_partition_statement():
                        "PARTITION (dt = '2018-12-01-05') "
                        "LOCATION 's3://bucket/test/2018/12/01/05'")
 
-    results = helpers.add_partition_statement(partitions, 'bucket', 'test')
-    assert_equal(len(results), 1)
-    assert_equal(results[0], expected_result)
+    results = helpers.add_partition_statements(partitions, 'bucket', 'test')
+    results_copy = list(results)
+    assert_equal(len(results_copy), 1)
+    assert_equal(results_copy[0], expected_result)
 
 
 @patch.object(helpers, 'MAX_QUERY_LENGTH', 256)
-def test_add_partition_statement_exceed_length():
+def test_add_partition_statements_exceed_length():
     """CLI - Athena Add Partition Statement when statement exceed max query length"""
     partitions = {
         'dt=2017-12-01-01',
@@ -110,8 +111,9 @@ def test_add_partition_statement_exceed_length():
         'dt=2013-12-01-04',
     }
 
-    results = helpers.add_partition_statement(partitions, 'bucket', 'test')
-    assert_equal(len(results), 2)
+    results = helpers.add_partition_statements(partitions, 'bucket', 'test')
+    results_copy = list(results)
+    assert_equal(len(results_copy), 2)
 
     expected_result_0 = ("ALTER TABLE test ADD IF NOT EXISTS "
                          "PARTITION (dt = '2013-12-01-04') "
@@ -123,5 +125,5 @@ def test_add_partition_statement_exceed_length():
                          "LOCATION 's3://bucket/test/2017/12/01/01' "
                          "PARTITION (dt = '2018-12-01-05') "
                          "LOCATION 's3://bucket/test/2018/12/01/05'")
-    assert_equal(results[0], expected_result_0)
-    assert_equal(results[1], expected_result_1)
+    assert_equal(results_copy[0], expected_result_0)
+    assert_equal(results_copy[1], expected_result_1)
