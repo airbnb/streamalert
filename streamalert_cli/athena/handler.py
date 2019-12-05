@@ -35,9 +35,6 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\') '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
 
-MAX_QUERY_LENGTH = 262144
-
-
 class AthenaCommand(CLICommand):
     description = 'Perform actions related to Athena'
 
@@ -255,30 +252,31 @@ def rebuild_partitions(table, bucket, config):
     if not create_table(table, bucket, config):
         return False
 
-    new_partitions_statement = helpers.add_partition_statement(
+    new_partitions_statements = helpers.add_partition_statements(
         partitions, bucket, sanitized_table_name)
 
-    # Make sure our new alter table statement is within the query API limits
-    if len(new_partitions_statement) > MAX_QUERY_LENGTH:
-        file_name = 'partitions_{}.txt'.format(sanitized_table_name)
-        LOGGER.error(
-            'Partition statement too large, writing to local file with name %s',
-            file_name
-        )
-        with open(file_name, 'w') as partition_file:
-            partition_file.write(new_partitions_statement)
-        return False
+    LOGGER.info('Creating total %d new partitions for %s', len(partitions), sanitized_table_name)
 
-    LOGGER.info('Creating %d new partitions for %s', len(partitions), sanitized_table_name)
+    for idx, statement in enumerate(new_partitions_statements):
+        success = athena_client.run_query(query=statement)
+        LOGGER.info('Rebuilt partitions part %d', idx+1)
+        if not success:
+            LOGGER.error('Error re-creating new partitions for %s', sanitized_table_name)
+            write_partitions_statements(new_partitions_statements, sanitized_table_name)
+            return False
 
-    success = athena_client.run_query(query=new_partitions_statement)
-    if not success:
-        LOGGER.error('Error re-creating new partitions for %s', sanitized_table_name)
-        return False
-
-    LOGGER.info('Successfully rebuilt partitions for %s', sanitized_table_name)
+    LOGGER.info('Successfully rebuilt all partitions for %s', sanitized_table_name)
     return True
 
+def write_partitions_statements(statements, sanitized_table_name):
+    """Write partitions statements to a file if re-creating new partitions failed"""
+    file_name = 'partitions_{}.txt'.format(sanitized_table_name)
+    LOGGER.error(
+        'Rebuild partitions failed, writing to local file with name %s',
+        file_name
+    )
+    with open(file_name, 'w') as partition_file:
+        partition_file.write(statements)
 
 def drop_all_tables(config):
     """Drop all 'streamalert' Athena tables

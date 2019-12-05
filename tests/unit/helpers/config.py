@@ -278,3 +278,38 @@ def basic_streamalert_config():
             }
         }
     }
+
+def athena_cli_basic_config():
+    return {
+        'global': {
+            'account': {
+                'aws_account_id': '123456789123',
+                'kms_key_alias': 'stream_alert_secrets',
+                'prefix': 'unit-test',
+                'region': 'us-west-2'
+            },
+            'infrastructure': {
+                'firehose': {
+                    'enabled_logs': {
+                        'unit': {}
+                    },
+                }
+            }
+        },
+        'logs': {
+            'unit:my_test': {
+                'schema': {
+                    'name': 'string'
+                },
+                'parser': 'json'
+            }
+        },
+        'lambda': {
+            'athena_partition_refresh_config': {
+                'buckets': {
+                    'unit-test.streamalert.data': 'data',
+                    'unit-test.streamalerts': 'alerts'
+                },
+            }
+        }
+    }
