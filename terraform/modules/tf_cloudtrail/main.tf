@@ -1,11 +1,10 @@
 locals {
-  apply_filter_string    = "{ $$.awsRegion != \"${var.region}\" }"
-  cloudtrail_bucket_name = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+  exclude_home_region_filter = "{ $$.awsRegion != \"${var.region}\" }"
 }
 
 // KMS key for encrypting CloudTrail logs
 resource "aws_kms_key" "cloudtrail_encryption" {
-  description         = "Encrypt Cloudtrail logs for ${local.cloudtrail_bucket_name}"
+  description         = "Encrypt CloudTrail logs for ${var.s3_bucket_name}"
   policy              = data.aws_iam_policy_document.cloudtrail_encryption.json
   enable_key_rotation = true
 
@@ -93,59 +92,31 @@ resource "aws_kms_alias" "cloudtrail_encryption" {
   target_key_id = aws_kms_key.cloudtrail_encryption.key_id
 }
 
-// StreamAlert CloudTrail, also sending to CloudWatch Logs group
+// StreamAlert CloudTrail, optionally sending to CloudWatch Logs group
 resource "aws_cloudtrail" "streamalert" {
-  count                         = var.send_to_cloudwatch && false == var.existing_trail ? 1 : 0
-  name                          = local.cloudtrail_bucket_name
-  s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].id
-  cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail_to_cloudwatch_role[0].arn
-  cloud_watch_logs_group_arn    = aws_cloudwatch_log_group.cloudtrail_logging[0].arn
+  name                          = var.s3_bucket_name
+  s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket.id
+  cloud_watch_logs_role_arn     = var.send_to_cloudwatch ? aws_iam_role.cloudtrail_to_cloudwatch_role[0].arn : null
+  cloud_watch_logs_group_arn    = var.send_to_cloudwatch ? aws_cloudwatch_log_group.cloudtrail_logging[0].arn : null
   enable_log_file_validation    = true
   enable_logging                = var.enable_logging
   include_global_service_events = true
   is_multi_region_trail         = var.is_global_trail
   kms_key_id                    = aws_kms_key.cloudtrail_encryption.arn
 
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
+  dynamic "event_selector" {
+    for_each = var.s3_event_selector_type == "" ? [] : [1]
+    content {
+      read_write_type           = var.s3_event_selector_type
+      include_management_events = true
 
-    data_resource {
-      type = "AWS::S3::Object"
+      data_resource {
+        type = "AWS::S3::Object"
 
-      values = [
-        "arn:aws:s3",
-      ]
-    }
-  }
-
-  tags = {
-    Name    = "StreamAlert"
-    Cluster = var.cluster
-  }
-}
-
-// StreamAlert CloudTrail, not sending to CloudWatch
-resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
-  count                         = var.send_to_cloudwatch == false && var.existing_trail == false ? 1 : 0
-  name                          = local.cloudtrail_bucket_name
-  s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket[0].id
-  enable_log_file_validation    = true
-  enable_logging                = var.enable_logging
-  include_global_service_events = true
-  is_multi_region_trail         = var.is_global_trail
-  kms_key_id                    = aws_kms_key.cloudtrail_encryption.arn
-
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
-
-    data_resource {
-      type = "AWS::S3::Object"
-
-      values = [
-        "arn:aws:s3",
-      ]
+        values = [
+          "arn:aws:s3",
+        ]
+      }
     }
   }
 
@@ -159,7 +130,7 @@ resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
 resource "aws_cloudwatch_log_group" "cloudtrail_logging" {
   count             = var.send_to_cloudwatch ? 1 : 0
   name              = "CloudTrail/DefaultLogGroup"
-  retention_in_days = 1
+  retention_in_days = var.retention_in_days
 
   tags = {
     Name    = "StreamAlert"
@@ -241,16 +212,15 @@ resource "aws_cloudwatch_log_subscription_filter" "cloudtrail_via_cloudwatch" {
   count           = var.send_to_cloudwatch ? 1 : 0
   name            = "${var.prefix}_${var.cluster}_cloudtrail_delivery"
   log_group_name  = aws_cloudwatch_log_group.cloudtrail_logging[0].name
-  filter_pattern  = var.exclude_home_region_events ? local.apply_filter_string : ""
+  filter_pattern  = var.exclude_home_region_events ? local.exclude_home_region_filter : ""
   destination_arn = var.cloudwatch_destination_arn
   distribution    = "Random"
 }
 
 // S3 bucket for CloudTrail output
 resource "aws_s3_bucket" "cloudtrail_bucket" {
-  count         = var.existing_trail ? 0 : 1
-  bucket        = local.cloudtrail_bucket_name
-  policy        = data.aws_iam_policy_document.cloudtrail_bucket[0].json
+  bucket        = var.s3_bucket_name
+  policy        = data.aws_iam_policy_document.cloudtrail_bucket.json
   force_destroy = false
 
   versioning {
@@ -259,7 +229,7 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
 
   logging {
     target_bucket = var.s3_logging_bucket
-    target_prefix = "${local.cloudtrail_bucket_name}/"
+    target_prefix = "${var.s3_bucket_name}/"
   }
 
   server_side_encryption_configuration {
@@ -272,13 +242,12 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
   }
 
   tags = {
-    Name    = local.cloudtrail_bucket_name
+    Name    = var.s3_bucket_name
     Cluster = var.cluster
   }
 }
 
 data "aws_iam_policy_document" "cloudtrail_bucket" {
-  count = var.existing_trail ? 0 : 1
 
   statement {
     sid = "AWSCloudTrailAclCheck"
@@ -288,7 +257,7 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     ]
 
     resources = [
-      "arn:aws:s3:::${local.cloudtrail_bucket_name}",
+      "arn:aws:s3:::${var.s3_bucket_name}",
     ]
 
     principals {
@@ -305,8 +274,8 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     ]
 
     resources = formatlist(
-      "arn:aws:s3:::${local.cloudtrail_bucket_name}/AWSLogs/%s/*",
-      var.account_ids,
+      "arn:aws:s3:::${var.s3_bucket_name}/AWSLogs/%s/*",
+      var.s3_cross_account_ids,
     )
 
     principals {
@@ -338,8 +307,8 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     actions = ["s3:*"]
 
     resources = [
-      "arn:aws:s3:::${local.cloudtrail_bucket_name}",
-      "arn:aws:s3:::${local.cloudtrail_bucket_name}/*",
+      "arn:aws:s3:::${var.s3_bucket_name}",
+      "arn:aws:s3:::${var.s3_bucket_name}/*",
     ]
 
     condition {

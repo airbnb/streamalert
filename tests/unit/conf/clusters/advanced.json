@@ -3,7 +3,6 @@
   "id": "advanced",
   "modules": {
     "cloudtrail": {
-      "enable_kinesis": true,
       "enable_logging": true
     },
     "cloudwatch_events": {},

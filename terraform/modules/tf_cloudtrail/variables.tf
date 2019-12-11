@@ -14,41 +14,38 @@ variable "cluster" {
   type = string
 }
 
-variable "account_ids" {
+variable "s3_cross_account_ids" {
   type = list(string)
-}
-
-variable "enable_kinesis" {
-  default = true
 }
 
 variable "enable_logging" {
   default = true
 }
 
-variable "event_pattern" {
-  type    = string
-  default = ""
-}
-
-variable "existing_trail" {
-  default = false
+variable "retention_in_days" {
+  default     = 1
+  description = "Days for which to retain logs in the CloudWatch Logs Group. Default=1"
 }
 
 variable "is_global_trail" {
   default = true
 }
 
-variable "kinesis_arn" {
-  type    = string
-  default = ""
-}
-
 variable "s3_logging_bucket" {
   type = string
 }
 
+variable "s3_bucket_name" {
+  type = string
+}
+
+variable "s3_event_selector_type" {
+  type    = string
+  default = ""
+}
+
 variable "cloudwatch_destination_arn" {
+  type    = string
   default = ""
 }
 
