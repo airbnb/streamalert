@@ -16,7 +16,9 @@ limitations under the License.
 import json
 
 from streamalert.shared.logger import get_logger
-from streamalert_cli.terraform.cloudwatch import generate_cloudwatch_destinations_internal
+from streamalert_cli.terraform.cloudwatch_destinations import (
+    generate_cloudwatch_destinations_internal,
+)
 
 LOGGER = get_logger(__name__)
 

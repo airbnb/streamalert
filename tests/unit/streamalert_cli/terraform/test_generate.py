@@ -21,7 +21,7 @@ from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import (
     common,
     cloudtrail,
-    cloudwatch,
+    cloudwatch_destinations,
     flow_logs,
     generate
 )
@@ -387,7 +387,7 @@ class TestTerraformGenerate:
 
     def test_generate_cloudwatch(self):
         """CLI - Terraform Generate CloudWatch Destinations"""
-        cloudwatch.generate_cloudwatch_destinations(
+        cloudwatch_destinations.generate_cloudwatch_destinations(
             'advanced',
             self.cluster_dict,
             self.config
