@@ -32,6 +32,7 @@ from streamalert_cli.terraform.cloudtrail import generate_cloudtrail
 from streamalert_cli.terraform.cloudwatch_destinations import (
     generate_cloudwatch_destinations,
 )
+from streamalert_cli.terraform.cloudwatch_events import generate_cloudwatch_events
 from streamalert_cli.terraform.firehose import generate_firehose
 from streamalert_cli.terraform.flow_logs import generate_flow_logs
 from streamalert_cli.terraform.helpers import terraform_check
@@ -337,6 +338,11 @@ def generate_cluster(config, cluster_name):
 
     if modules.get('cloudtrail'):
         if not generate_cloudtrail(cluster_name, cluster_dict, config):
+            return
+
+    # purposely not using .get, since no extra settings are required for this module
+    if 'cloudwatch_events' in modules:
+        if not generate_cloudwatch_events(cluster_name, cluster_dict, config):
             return
 
     if modules.get('cloudwatch_logs_destination'):

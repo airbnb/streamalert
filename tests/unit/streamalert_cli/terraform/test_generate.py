@@ -22,6 +22,7 @@ from streamalert_cli.terraform import (
     common,
     cloudtrail,
     cloudwatch_destinations,
+    cloudwatch_events,
     flow_logs,
     generate
 )
@@ -385,7 +386,7 @@ class TestTerraformGenerate:
         assert_false(result)
         assert_true(mock_logging.error.called)
 
-    def test_generate_cloudwatch(self):
+    def test_generate_cloudwatch_destinations(self):
         """CLI - Terraform Generate CloudWatch Destinations"""
         cloudwatch_destinations.generate_cloudwatch_destinations(
             'advanced',
@@ -439,6 +440,63 @@ class TestTerraformGenerate:
         }
 
         assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudwatch_events(self):
+        """CLI - Terraform Generate CloudWatch Events"""
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_events_advanced': {
+                'source': './modules/tf_cloudwatch_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'kinesis_arn': '${module.kinesis_advanced.arn}',
+                'event_pattern': '{"account": ["12345678910"]}',
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudwatch_events_no_pattern(self):
+        """CLI - Terraform Generate CloudWatch Events, No Pattern"""
+        self.config['clusters']['advanced']['modules']['cloudwatch_events']['event_pattern'] = None
+
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_events_advanced': {
+                'source': './modules/tf_cloudwatch_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'kinesis_arn': '${module.kinesis_advanced.arn}',
+                'event_pattern': None,
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    @patch('streamalert_cli.terraform.cloudwatch_events.LOGGER.error')
+    def test_generate_cloudwatch_events_invalid_pattern(self, log_mock):
+        """CLI - Terraform Generate CloudWatch Events, Invalid Pattern"""
+        self.config['clusters']['advanced']['modules']['cloudwatch_events']['event_pattern'] = {
+            'invalid': ['aws.ec2']
+        }
+
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        assert_true(log_mock.called)
 
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
