@@ -210,11 +210,13 @@ class TestAthenaRefresher:
 
     def test_run_placeholder_file(self):
         """AthenaRefresher - Run, Placeholder File"""
-        expected_msg = 'Skipping placeholder file notification with key: %s'
-        # Use assert_logs since multiple things are logged to INFO
-        with assert_logs(level='INFO') as f:
-            self._refresher.run(self._create_test_message(1, True))
-            assert_in(expected_msg, [r.msg for r in f.records])
+        self._refresher.run(self._create_test_message(1, True))
+        log_mock.assert_has_calls([
+            call(
+                'Skipping placeholder file notification with key: %s',
+                b'alerts/dt=2017/08/01/14/02/test.json_$folder$'
+            )
+        ])
 
     @patch('logging.Logger.warning')
     def test_run_no_messages(self, log_mock):
