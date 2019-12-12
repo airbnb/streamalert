@@ -111,11 +111,7 @@ Example: CloudTrail via S3 Events
     "id": "cloudtrail-s3-events",
     "modules": {
       "cloudtrail": {
-        "enable_kinesis": false,
-        "enable_logging": true
-      },
-      "s3_events": {
-        "PREFIX.CLUSTER.streamalert.cloudtrail": []
+        "enable_s3_events": true
       },
       "streamalert": {
         "classifier_config": {
@@ -131,8 +127,8 @@ Example: CloudTrail via S3 Events
   }
 
 This creates a new CloudTrail and an S3 bucket for the resulting logs. Each new object in the bucket
-invokes the StreamAlert classifier function via :ref:`S3 events <s3_events>`. For this data, rules should
-be written against the ``cloudtrail:events`` log type.
+will invoke the StreamAlert classifier function via S3 events. For this data, rules should be written
+against the ``cloudtrail:events`` log type.
 
 Example: CloudTrail via CloudWatch Logs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,9 +138,8 @@ Example: CloudTrail via CloudWatch Logs
       "id": "cloudtrail-via-cloudwatch",
       "modules": {
         "cloudtrail": {
-          "enable_kinesis": true,
-          "enable_logging": true,
-          "send_to_cloudwatch": true
+          "send_to_cloudwatch": true,
+          "enable_s3_events": false,
         },
         "kinesis": {
           "streams": {
@@ -170,26 +165,93 @@ Example: CloudTrail via CloudWatch Logs
     }
 
 This also creates the CloudTrail and S3 bucket, but now the CloudTrail logs are also delivered to
-CloudWatch Logs and then to a Kinesis stream via a CloudWatch Logs Subscription Filter.
+CloudWatch Logs Group that forwards them to a Kinesis stream via a CloudWatch Logs Subscription Filter.
 This can scale to higher throughput, since StreamAlert does not have to download potentially very
 large files from S3. In this case, rules should be written against the ``cloudwatch:cloudtrail`` log type.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
-==============================  =================================  ===============
-**Key**                         **Default**                        **Description**
-------------------------------  ---------------------------------  ---------------
-``cloudwatch_destination_arn``  (Computed from CloudWatch module)  CloudWatch subscription filter destination ARN
-``cross_account_ids``           ``[]``                             Grant write access to the CloudTrail S3 bucket for these account IDs
-``enable_kinesis``              ``true``                           Toggle Kinesis subscription to CloudWatch logs
-``enable_logging``              ``true``                           Toggle CloudTrail logging
-``event_pattern``               ``{"account": ["<accound_id>"]}``  The `CloudWatch Events pattern <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_ to send to Kinesis
-``exclude_home_region_events``  ``false``                          Ignore events from the StreamAlert deployment region
-``existing_trail``              ``false``                          If ``true``, a new CloudTrail will *not* be created
-``is_global_trail``             ``true``                           If ``true``, the CloudTrail is applied to all regions
-``send_to_cloudwatch``          ``false``                          Toggle CloudTrail delivery to CloudWatch Logs
-==============================  =================================  ===============
+==============================  ===================================================  ===============
+**Key**                         **Default**                                          **Description**
+------------------------------  ---------------------------------------------------  ---------------
+``s3_cross_account_ids``        ``[]``                                               Grant write access to the CloudTrail S3 bucket for these account IDs. The primary, aka deployment account ID, will be added to this list.
+``enable_logging``              ``true``                                             Toggle to ``false`` to pause logging to the CloudTrail
+``exclude_home_region_events``  ``false``                                            Ignore events from the StreamAlert deployment region. This only has an effect if ``send_to_cloudwatch`` is set to ``true``
+``is_global_trail``             ``true``                                             If ``true``, the CloudTrail is applied to all regions
+``send_to_cloudwatch``          ``false``                                            Enable CloudTrail delivery to CloudWatch Logs. Logs sent to CloudWatch Logs are forwarded to this cluster's Kinesis stream for processing. If this is enabled, the ``enable_s3_events`` option should be disabled to avoid duplicative processing.
+``cloudwatch_destination_arn``  (Computed from CloudWatch Logs Destination module)   CloudWatch Destination ARN used for forwarding data to this cluster's Kinesis stream. This has a default value but can be overriden here with a different CloudWatch Logs Destination ARN
+``enable_s3_events``            ``false``                                            Enable S3 events for the logs sent to the S3 bucket. These will invoke this cluster's classifier for every new object in the CloudTrail S3 bucket
+``s3_bucket_name``              ``prefix-cluster-streamalert-cloudtrail``            Name of the S3 bucket to be used for the CloudTrail logs. This can be overriden, but defaults to ``prefix-cluster-streamalert-cloudtrail``
+``s3_event_selector_type``      ``""``                                               An S3 event selector to enable object level logging for the account's S3 buckets. Choices are: "ReadOnly", "WriteOnly", "All", or "", where "" disables object level logging for S3
+==============================  ===================================================  ===============
 
+.. _cloudwatch_events:
+
+CloudWatch Events
+-----------------
+StreamAlert supports ingestion of events published to CloudWatch Events for processing.
+
+This module is implemented by `terraform/modules/tf_cloudwatch_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch_events>`_.
+
+.. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
+
+Example: CloudWatch Events Cluster
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: json
+
+  {
+    "id": "cloudwatch-events-example",
+    "modules": {
+      "cloudwatch_events": {
+        "event_pattern": {
+          "account": [
+            "123456789012"
+          ],
+          "detail-type": [
+            "EC2 Instance Launch Successful",
+            "EC2 Instance Launch Unsuccessful",
+            "EC2 Instance Terminate Successful",
+            "EC2 Instance Terminate Unsuccessful"
+          ]
+        }
+      },
+      "kinesis": {
+        "streams": {
+          "retention": 96,
+          "shards": 10
+        }
+      },
+      "kinesis_events": {
+        "batch_size": 100,
+        "enabled": true
+      },
+      "streamalert": {
+        "classifier_config": {
+          "enable_custom_metrics": true,
+          "log_level": "info",
+          "log_retention_days": 14,
+          "memory": 128,
+          "timeout": 60
+        }
+      }
+    },
+    "region": "us-east-1"
+  }
+
+This creates a CloudWatch Events Rule that will publish all events that match the provided
+``event_pattern`` to the Kinesis stream for this cluster. Note in the example above that a custom
+``event_pattern`` is supplied, but may be omitted entirely. To override the default ``event_patten``
+(shown below), a value of ``None`` or ``{}`` may also be supplied to capture all events,
+regardless of which account the logs came from. In this case, rules should be written against
+the ``cloudwatch:events`` log type.
+
+Configuration Options
+~~~~~~~~~~~~~~~~~~~~~
+=====================  ===================================  ===============
+**Key**                **Default**                          **Description**
+---------------------  -----------------------------------  ---------------
+``event_pattern``      ``{"account": ["<accound_id>"]}``    The `CloudWatch Events pattern <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_ to control what is sent to Kinesis
+=====================  ===================================  ===============
 
 .. _cloudwatch_logs:
 
