@@ -8,7 +8,7 @@ Configure the necessary resources to deliver all events published to CloudWatch 
 ## Example
 ```hcl
 module "cloudwatch_events" {
-  source         = "modules/tf_cloudwatch_events"
+  source         = "./modules/tf_cloudwatch_events"
   prefix         = "company"
   cluster        = "prod"
   event_pattern  = "{"accountId": ["123456789012"]}"

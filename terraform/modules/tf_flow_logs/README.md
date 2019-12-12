@@ -88,7 +88,7 @@ via a CloudWatch Logs Subscription Filter and a CloudWatch Logs Destination.
 #### Example
 ```hcl
 module "flow_logs_prod" {
-  source                          = "modules/tf_flow_logs"
+  source                          = "./modules/tf_flow_logs"
   region                          = "us-east-1"
   prefix                          = "orgname"
   cluster                         = "prod"

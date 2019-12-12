@@ -1,59 +1,63 @@
 variable "primary_account_id" {
-  type = string
+  type        = string
+  description = "ID of the deployment account"
 }
 
 variable "region" {
-  type = string
+  type        = string
+  description = "AWS region where the CloudTrail resources should be created"
 }
 
 variable "prefix" {
-  type = string
+  type        = string
+  description = "Resource prefix namespace"
 }
 
 variable "cluster" {
-  type = string
+  type        = string
+  description = "Name of the cluster"
 }
 
 variable "s3_cross_account_ids" {
-  type    = list(string)
-  default = []
+  type        = list(string)
+  default     = []
+  description = "List of external account IDs for which logging should be allowed to the S3 bucket"
 }
 
 variable "enable_logging" {
-  default = true
-}
-
-variable "retention_in_days" {
-  default     = 1
-  description = "Days for which to retain logs in the CloudWatch Logs Group. Default=1"
+  default     = true
+  description = "nables logging for the CloudTrail. Setting this to false will pause logging on the trail"
 }
 
 variable "is_global_trail" {
-  default = true
+  default     = true
+  description = "Log API calls from all AWS regions"
 }
 
 variable "s3_logging_bucket" {
-  type = string
+  type        = string
+  description = "Name of bucket where S3 logs should be sent"
 }
 
 variable "s3_bucket_name" {
-  type = string
+  type        = string
+  description = "Name to apply to the bucket used for storing CloudTrail logs"
 }
 
 variable "s3_event_selector_type" {
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
+  description = "Type of S3 object level logging to enable via CloudTrail. Choices are: 'ReadOnly', 'WriteOnly', 'All', or '' where '' disables this feature"
 }
 
-variable "send_to_cloudwatch" {
-  default = false
+variable "cloudwatch_logs_role_arn" {
+  type        = string
+  default     = null
+  description = "ARN of the IAM role to be used for sending logs to the CloudWatch Logs Group"
 }
 
-variable "cloudwatch_destination_arn" {
-  type    = string
-  default = ""
-}
-
-variable "exclude_home_region_events" {
-  default = false
+variable "cloudwatch_logs_group_arn" {
+  type        = string
+  default     = null
+  description = "ARN of the CloudWatch Logs Group to which CloudTrail logs should be sent"
 }
