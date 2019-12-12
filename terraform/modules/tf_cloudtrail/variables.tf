@@ -15,7 +15,8 @@ variable "cluster" {
 }
 
 variable "s3_cross_account_ids" {
-  type = list(string)
+  type    = list(string)
+  default = []
 }
 
 variable "enable_logging" {
@@ -44,13 +45,13 @@ variable "s3_event_selector_type" {
   default = ""
 }
 
+variable "send_to_cloudwatch" {
+  default = false
+}
+
 variable "cloudwatch_destination_arn" {
   type    = string
   default = ""
-}
-
-variable "send_to_cloudwatch" {
-  default = false
 }
 
 variable "exclude_home_region_events" {
