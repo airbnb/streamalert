@@ -61,22 +61,30 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         's3_cross_account_ids': account_ids,
         'enable_logging': settings.get('enable_logging', True),
         's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
-        'send_to_cloudwatch': send_to_cloudwatch,
-        'exclude_home_region_events': settings.get('exclude_home_region_events', False),
         'is_global_trail': settings.get('is_global_trail', True),
         's3_event_selector_type': settings.get('s3_event_selector_type', ''),
         's3_bucket_name': s3_bucket_name,
     }
 
     if send_to_cloudwatch:
-        destination_arn = settings.get('cloudwatch_destination_arn')
-        if not destination_arn:
-            fmt = '${{module.cloudwatch_logs_destination_{}_{}.cloudwatch_logs_destination_arn}}'
-            destination_arn = fmt.format(cluster_name, region)
-            if not generate_cloudwatch_destinations_internal(cluster_name, cluster_dict, config):
-                return False
+        if not generate_cloudtrail_cloudwatch(
+                cluster_name,
+                cluster_dict,
+                config,
+                settings,
+                prefix,
+                region
+        ):
+            return False
 
-        module_info['cloudwatch_destination_arn'] = destination_arn
+        module_info['cloudwatch_logs_role_arn'] = (
+            '${{module.cloudtrail_cloudwatch_{}.cloudtrail_to_cloudwatch_logs_role}}'.format(
+                cluster_name
+            )
+        )
+        module_info['cloudwatch_logs_group_arn'] = (
+            '${{module.cloudtrail_cloudwatch_{}.cloudwatch_logs_group_arn}}'.format(cluster_name)
+        )
 
     cluster_dict['module']['cloudtrail_{}'.format(cluster_name)] = module_info
 
@@ -95,5 +103,43 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
             bucket_info,
             module_prefix='cloudtrail',
         )
+
+    return True
+
+
+def generate_cloudtrail_cloudwatch(cluster_name, cluster_dict, config, settings, prefix, region):
+    """Add the CloudTrail to CloudWatch Logs Group module to the Terraform cluster dict.
+
+    Args:
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        settings (dict): Settings for the cloudtrail module for this cluster
+
+    Returns:
+        bool: Result of applying the cloudtrail to cloudwatch logs module
+    """
+    module_info = {
+        'source': './modules/tf_cloudtrail/modules/tf_cloudtrail_cloudwatch',
+        'region': region,
+        'prefix': prefix,
+        'cluster': cluster_name,
+    }
+
+    # These have defaults in the terraform module, so only override if it's set in the config
+    settings_with_defaults = {'exclude_home_region_events', 'retention_in_days'}
+    for value in settings_with_defaults:
+        if value in settings:
+            module_info[value] = settings[value]
+
+    destination_arn = settings.get('cloudwatch_destination_arn')
+    if not destination_arn:
+        fmt = '${{module.cloudwatch_logs_destination_{}_{}.cloudwatch_logs_destination_arn}}'
+        destination_arn = fmt.format(cluster_name, region)
+        if not generate_cloudwatch_destinations_internal(cluster_name, cluster_dict, config):
+            return False
+
+    module_info['cloudwatch_destination_arn'] = destination_arn
+
+    cluster_dict['module']['cloudtrail_cloudwatch_{}'.format(cluster_name)] = module_info
 
     return True

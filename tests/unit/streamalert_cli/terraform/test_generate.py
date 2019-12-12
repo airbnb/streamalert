@@ -351,8 +351,6 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'enable_logging': True,
                 'region': 'us-west-1',
-                'exclude_home_region_events': False,
-                'send_to_cloudwatch': False,
                 's3_event_selector_type': '',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
                 's3_logging_bucket': 'unit-test.streamalert.s3-logging',
@@ -386,8 +384,6 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'enable_logging': True,
                 'region': 'us-west-1',
-                'exclude_home_region_events': False,
-                'send_to_cloudwatch': False,
                 's3_event_selector_type': '',
                 's3_bucket_name': 'unit-test-bucket',
                 's3_logging_bucket': 'unit-test.streamalert.s3-logging',
@@ -414,8 +410,8 @@ class TestTerraformGenerate:
 
         assert_equal(expected, self.cluster_dict['module'])
 
-    def test_generate_cloudtrail_with_cloudwatch_dest(self):
-        """CLI - Terraform Generate CloudTrail Module, With CloudWatch Logs Destination"""
+    def test_generate_cloudtrail_with_cloudwatch_logs(self):
+        """CLI - Terraform Generate CloudTrail Module, With CloudWatch Logs"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
             'send_to_cloudwatch': True,
@@ -453,6 +449,16 @@ class TestTerraformGenerate:
                     'aws': 'aws.us-west-1'
                 }
             },
+            'cloudtrail_cloudwatch_advanced': {
+                'source': './modules/tf_cloudtrail/modules/tf_cloudtrail_cloudwatch',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                'cloudwatch_destination_arn': (
+                    '${module.cloudwatch_logs_destination_advanced_us-west-1.'
+                    'cloudwatch_logs_destination_arn}'
+                ),
+            },
             'cloudtrail_advanced': {
                 'source': './modules/tf_cloudtrail',
                 's3_cross_account_ids': ['12345678910'],
@@ -462,14 +468,14 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'enable_logging': True,
                 'region': 'us-west-1',
-                'exclude_home_region_events': False,
-                'send_to_cloudwatch': True,
                 's3_event_selector_type': '',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
                 's3_logging_bucket': 'unit-test.streamalert.s3-logging',
-                'cloudwatch_destination_arn': (
-                    '${module.cloudwatch_logs_destination_advanced_us-west-1.'
-                    'cloudwatch_logs_destination_arn}'
+                'cloudwatch_logs_role_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
+                ),
+                'cloudwatch_logs_group_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudwatch_logs_group_arn}'
                 ),
             },
         }
