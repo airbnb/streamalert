@@ -17,10 +17,10 @@ limitations under the License.
 import json
 import os
 
-from mock import Mock, patch
-from nose.tools import assert_equal, assert_in, assert_logs, assert_raises, assert_true, raises
+from mock import Mock, patch, call
+from nose.tools import assert_equal, assert_true
 
-from streamalert.athena_partition_refresh.main import AthenaRefresher, AthenaRefreshError
+from streamalert.athena_partition_refresh.main import AthenaRefresher
 from streamalert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
@@ -208,7 +208,8 @@ class TestAthenaRefresher:
             'unit-test.streamalerts'
         )
 
-    def test_run_placeholder_file(self):
+    @patch('logging.Logger.info')
+    def test_run_placeholder_file(self, log_mock):
         """AthenaRefresher - Run, Placeholder File"""
         self._refresher.run(self._create_test_message(1, True))
         log_mock.assert_has_calls([
