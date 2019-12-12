@@ -43,6 +43,14 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     prefix = config['global']['account']['prefix']
     send_to_cloudwatch = settings.get('send_to_cloudwatch', False)
     enable_s3_events = settings.get('enable_s3_events', True)
+
+    if send_to_cloudwatch and enable_s3_events:
+        LOGGER.warning(
+            'The "cloudtrail" module has both "send_to_cloudwatch" and "enable_s3_events" '
+            'turned on. To avoid processing duplicative data, it is advisable to set '
+            '"enable_s3_events" to false (the default is true)'
+        )
+
     s3_bucket_name = settings.get(
         's3_bucket_name',
         '{}-{}-streamalert-cloudtrail'.format(prefix, cluster_name)
@@ -59,12 +67,19 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'prefix': prefix,
         'cluster': cluster_name,
         's3_cross_account_ids': account_ids,
-        'enable_logging': settings.get('enable_logging', True),
         's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
-        'is_global_trail': settings.get('is_global_trail', True),
-        's3_event_selector_type': settings.get('s3_event_selector_type', ''),
         's3_bucket_name': s3_bucket_name,
     }
+
+    # These have defaults in the terraform module, so only override if it's set in the config
+    settings_with_defaults = {
+        'enable_logging',
+        'is_global_trail',
+        's3_event_selector_type',
+    }
+    for value in settings_with_defaults:
+        if value in settings:
+            module_info[value] = settings[value]
 
     if send_to_cloudwatch:
         if not generate_cloudtrail_cloudwatch(

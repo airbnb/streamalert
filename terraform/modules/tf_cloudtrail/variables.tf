@@ -20,7 +20,6 @@ variable "cluster" {
 
 variable "s3_cross_account_ids" {
   type        = list(string)
-  default     = []
   description = "List of external account IDs for which logging should be allowed to the S3 bucket"
 }
 
@@ -47,7 +46,7 @@ variable "s3_bucket_name" {
 variable "s3_event_selector_type" {
   type        = string
   default     = ""
-  description = "Type of S3 object level logging to enable via CloudTrail. Choices are: 'ReadOnly', 'WriteOnly', 'All', or '' where '' disables this feature"
+  description = "Type of S3 object level logging to enable via CloudTrail. Choices are: 'ReadOnly', 'WriteOnly', 'All', or '', where '' disables this feature"
 }
 
 variable "cloudwatch_logs_role_arn" {

@@ -77,7 +77,7 @@ module "cloudtrail" {
   </tr>
   <tr>
     <td>s3_event_selector_type</td>
-    <td>Type of S3 object level logging to enable via CloudTrail. Choices are: "ReadOnly", "WriteOnly", "All", or "" where "" disables this feature</td>
+    <td>Type of S3 object level logging to enable via CloudTrail. Choices are: "ReadOnly", "WriteOnly", "All", or "", where "" disables this feature</td>
     <td>""</td>
   </tr>
   <tr>

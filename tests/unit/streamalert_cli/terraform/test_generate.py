@@ -347,17 +347,29 @@ class TestTerraformGenerate:
                 's3_cross_account_ids': ['12345678910', '456789012345'],
                 'primary_account_id': '12345678910',
                 'cluster': 'advanced',
-                'is_global_trail': True,
                 'prefix': 'unit-test',
-                'enable_logging': True,
                 'region': 'us-west-1',
-                's3_event_selector_type': '',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
                 's3_logging_bucket': 'unit-test.streamalert.s3-logging',
             }
         }
 
         assert_equal(expected, self.cluster_dict['module'])
+
+    @patch('streamalert_cli.terraform.cloudtrail.LOGGER.warning')
+    def test_generate_cloudtrail_warning(self, log_mock):
+        """CLI - Terraform Generate CloudTrail Module, Warn on Duplicative Data"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'send_to_cloudwatch': True
+        }
+        cloudtrail.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        log_mock.assert_called()
 
     def test_generate_cloudtrail_with_s3_events(self):
         """CLI - Terraform Generate CloudTrail Module, With S3 Events"""
@@ -380,11 +392,8 @@ class TestTerraformGenerate:
                 's3_cross_account_ids': ['12345678910', '456789012345'],
                 'primary_account_id': '12345678910',
                 'cluster': 'advanced',
-                'is_global_trail': True,
                 'prefix': 'unit-test',
-                'enable_logging': True,
                 'region': 'us-west-1',
-                's3_event_selector_type': '',
                 's3_bucket_name': 'unit-test-bucket',
                 's3_logging_bucket': 'unit-test.streamalert.s3-logging',
             },
@@ -464,11 +473,8 @@ class TestTerraformGenerate:
                 's3_cross_account_ids': ['12345678910'],
                 'primary_account_id': '12345678910',
                 'cluster': 'advanced',
-                'is_global_trail': True,
                 'prefix': 'unit-test',
-                'enable_logging': True,
                 'region': 'us-west-1',
-                's3_event_selector_type': '',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
                 's3_logging_bucket': 'unit-test.streamalert.s3-logging',
                 'cloudwatch_logs_role_arn': (
