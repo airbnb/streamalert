@@ -118,7 +118,7 @@ class AthenaRefresher:
                         break
 
                 if not match:
-                    LOGGER.error('The key %s does not match any regex, skipping', key)
+                    LOGGER.warning('The key %s does not match any regex, skipping', key)
                     continue
 
                 # Get the path to the objects in S3
@@ -153,7 +153,7 @@ class AthenaRefresher:
         """
         partitions = self._get_partitions_from_keys()
         if not partitions:
-            LOGGER.error('No partitions to add')
+            LOGGER.warning('No partitions to add')
             return False
 
         for athena_table in partitions:
@@ -183,7 +183,6 @@ class AthenaRefresher:
                 should contain one (or maybe more) S3 bucket notification message.
         """
         # Check that the database being used exists before running queries
-        is_test_notification = False
         for sqs_rec in event['Records']:
             LOGGER.debug('Processing event with message ID \'%s\' and SentTimestamp %s',
                          sqs_rec['messageId'],
@@ -191,7 +190,6 @@ class AthenaRefresher:
 
             body = json.loads(sqs_rec['body'])
             if body.get('Event') == 's3:TestEvent':
-                is_test_notification = True
                 LOGGER.debug('Skipping S3 bucket notification test event')
                 continue
 
@@ -205,17 +203,16 @@ class AthenaRefresher:
                 # Account for special characters in the S3 object key
                 # Example: Usage of '=' in the key name
                 object_key = urllib.parse.unquote_plus(s3_rec['s3']['object']['key']).encode()
+                if object_key.endswith(b'_$folder$'):
+                    LOGGER.info('Skipping placeholder file notification with key: %s', object_key)
+                    continue
 
                 LOGGER.debug('Received notification for object \'%s\' in bucket \'%s\'',
                              object_key,
                              bucket_name)
 
                 self._s3_buckets_and_keys[bucket_name].add(object_key)
-
-        if not (is_test_notification or self._add_partitions()):
-            raise AthenaRefreshError(
-                'Failed to add partitions: {}'.format(dict(self._s3_buckets_and_keys))
-            )
+        self._add_partitions()
 
 
 def handler(event, _):
