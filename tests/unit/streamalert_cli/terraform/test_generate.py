@@ -21,7 +21,8 @@ from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import (
     common,
     cloudtrail,
-    cloudwatch,
+    cloudwatch_destinations,
+    cloudwatch_events,
     flow_logs,
     generate
 )
@@ -326,21 +327,13 @@ class TestTerraformGenerate:
 
         assert_equal(self.cluster_dict, expected)
 
-    def test_generate_cloudtrail_all_options(self):
-        """CLI - Terraform Generate Cloudtrail Module - All Options"""
+    def test_generate_cloudtrail_minimal(self):
+        """CLI - Terraform Generate CloudTrail Module, Minimal Settings"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
-            'enable_logging': True,
-            'enable_kinesis': True,
-            'existing_trail': False,
-            'is_global_trail': False,
-            'event_pattern': {
-                'source': ['aws.ec2'],
-                'account': '12345678910',
-                'detail': {
-                    'state': ['running']
-                }
-            }
+            'send_to_cloudwatch': False,
+            'enable_s3_events': False,
+            's3_cross_account_ids': ['456789012345'],
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -348,46 +341,226 @@ class TestTerraformGenerate:
             self.config
         )
 
-        assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
-        assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
-            'account_ids': ['12345678910'],
-            'primary_account_id': '12345678910',
-            'cluster': 'advanced',
-            'existing_trail': False,
-            'is_global_trail': False,
-            'kinesis_arn': '${module.kinesis_advanced.arn}',
-            'prefix': 'unit-test',
-            'enable_logging': True,
-            'enable_kinesis': True,
-            'region': 'us-west-1',
-            'exclude_home_region_events': False,
-            'send_to_cloudwatch': False,
-            'source': './modules/tf_cloudtrail',
-            's3_logging_bucket': 'unit-test.streamalert.s3-logging',
-            'event_pattern': '{"source": ["aws.ec2"], "account": "12345678910",'
-                             ' "detail": {"state": ["running"]}}'
-        })
-
-    @patch('streamalert_cli.terraform.cloudtrail.LOGGER')
-    def test_generate_cloudtrail_invalid_event_pattern(self, mock_logging):
-        """CLI - Terraform Generate Cloudtrail Module - Invalid Event Pattern"""
-        cluster_name = 'advanced'
-        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
-            'enable_logging': True,
-            'enable_kinesis': True,
-            'existing_trail': False,
-            'is_global_trail': False,
-            'event_pattern': {
-                'invalid': ['aws.ec2']
+        expected = {
+            'cloudtrail_advanced': {
+                'source': './modules/tf_cloudtrail',
+                's3_cross_account_ids': ['12345678910', '456789012345'],
+                'primary_account_id': '12345678910',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
+                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
             }
         }
-        result = cloudtrail.generate_cloudtrail(cluster_name, self.cluster_dict, self.config)
-        assert_false(result)
-        assert_true(mock_logging.error.called)
 
-    def test_generate_cloudwatch(self):
+        assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudtrail_with_s3_events(self):
+        """CLI - Terraform Generate CloudTrail Module, With S3 Events"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'send_to_cloudwatch': False,
+            'enable_s3_events': True,
+            's3_cross_account_ids': ['456789012345'],
+            's3_bucket_name': 'unit-test-bucket'
+        }
+        cloudtrail.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudtrail_advanced': {
+                'source': './modules/tf_cloudtrail',
+                's3_cross_account_ids': ['12345678910', '456789012345'],
+                'primary_account_id': '12345678910',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                's3_bucket_name': 'unit-test-bucket',
+                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+            },
+            'cloudtrail_s3_events_unit-test_advanced_unit-test-bucket': {
+                'source': './modules/tf_s3_events',
+                'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
+                'lambda_function_alias': '${module.classifier_advanced_lambda.function_alias}',
+                'lambda_function_alias_arn': (
+                    '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
+                'lambda_function_name': '${module.classifier_advanced_lambda.function_name}',
+                'bucket_name': 'unit-test-bucket',
+                'filters': [
+                    {
+                        'filter_prefix': 'AWSLogs/12345678910/'
+                    },
+                    {
+                        'filter_prefix': 'AWSLogs/456789012345/'
+                    }
+                ]
+            }
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudtrail_with_cloudwatch_logs(self):
+        """CLI - Terraform Generate CloudTrail Module, With CloudWatch Logs"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'send_to_cloudwatch': True,
+            'enable_s3_events': False,
+        }
+        cloudtrail.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_logs_destination_advanced': {
+                'source': './modules/tf_cloudwatch_logs_destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'regions': [
+                    'us-west-1'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}'
+            },
+            'cloudwatch_logs_destination_advanced_us-west-1': {
+                'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'account_ids': [
+                    '12345678910'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}',
+                'cloudwatch_logs_subscription_role_arn': (
+                    '${module.cloudwatch_logs_destination_advanced.'
+                    'cloudwatch_logs_subscription_role_arn}'
+                ),
+                'providers': {
+                    'aws': 'aws.us-west-1'
+                }
+            },
+            'cloudtrail_cloudwatch_advanced': {
+                'source': './modules/tf_cloudtrail/modules/tf_cloudtrail_cloudwatch',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                'cloudwatch_destination_arn': (
+                    '${module.cloudwatch_logs_destination_advanced_us-west-1.'
+                    'cloudwatch_logs_destination_arn}'
+                ),
+            },
+            'cloudtrail_advanced': {
+                'source': './modules/tf_cloudtrail',
+                's3_cross_account_ids': ['12345678910'],
+                'primary_account_id': '12345678910',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
+                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                'cloudwatch_logs_role_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
+                ),
+                'cloudwatch_logs_group_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudwatch_logs_group_arn}'
+                ),
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudtrail_cloudwatch_logs_and_s3(self):
+        """CLI - Terraform Generate CloudTrail Module, With S3 and CloudWatch Logs"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'send_to_cloudwatch': True,
+            's3_cross_account_ids': ['456789012345'],
+            'enable_s3_events': True,
+        }
+        cloudtrail.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_logs_destination_advanced': {
+                'source': './modules/tf_cloudwatch_logs_destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'regions': [
+                    'us-west-1'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}'
+            },
+            'cloudwatch_logs_destination_advanced_us-west-1': {
+                'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'account_ids': [
+                    '12345678910'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}',
+                'cloudwatch_logs_subscription_role_arn': (
+                    '${module.cloudwatch_logs_destination_advanced.'
+                    'cloudwatch_logs_subscription_role_arn}'
+                ),
+                'providers': {
+                    'aws': 'aws.us-west-1'
+                }
+            },
+            'cloudtrail_cloudwatch_advanced': {
+                'source': './modules/tf_cloudtrail/modules/tf_cloudtrail_cloudwatch',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                'cloudwatch_destination_arn': (
+                    '${module.cloudwatch_logs_destination_advanced_us-west-1.'
+                    'cloudwatch_logs_destination_arn}'
+                ),
+            },
+            'cloudtrail_advanced': {
+                'source': './modules/tf_cloudtrail',
+                's3_cross_account_ids': ['12345678910', '456789012345'],
+                'primary_account_id': '12345678910',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
+                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                'cloudwatch_logs_role_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
+                ),
+                'cloudwatch_logs_group_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudwatch_logs_group_arn}'
+                ),
+            },
+            'cloudtrail_s3_events_unit-test_advanced_unit-test-advanced-streamalert-cloudtrail': {
+                'source': './modules/tf_s3_events',
+                'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
+                'lambda_function_alias': '${module.classifier_advanced_lambda.function_alias}',
+                'lambda_function_alias_arn': (
+                    '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
+                'lambda_function_name': '${module.classifier_advanced_lambda.function_name}',
+                'bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
+                'filters': [
+                    {
+                        'filter_prefix': 'AWSLogs/456789012345/'
+                    }
+                ]
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudwatch_destinations(self):
         """CLI - Terraform Generate CloudWatch Destinations"""
-        cloudwatch.generate_cloudwatch_destinations(
+        cloudwatch_destinations.generate_cloudwatch_destinations(
             'advanced',
             self.cluster_dict,
             self.config
@@ -440,6 +613,63 @@ class TestTerraformGenerate:
 
         assert_equal(expected, self.cluster_dict['module'])
 
+    def test_generate_cloudwatch_events(self):
+        """CLI - Terraform Generate CloudWatch Events"""
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_events_advanced': {
+                'source': './modules/tf_cloudwatch_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'kinesis_arn': '${module.kinesis_advanced.arn}',
+                'event_pattern': '{"account": ["12345678910"]}',
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudwatch_events_no_pattern(self):
+        """CLI - Terraform Generate CloudWatch Events, No Pattern"""
+        self.config['clusters']['advanced']['modules']['cloudwatch_events']['event_pattern'] = None
+
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_events_advanced': {
+                'source': './modules/tf_cloudwatch_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'kinesis_arn': '${module.kinesis_advanced.arn}',
+                'event_pattern': None,
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    @patch('streamalert_cli.terraform.cloudwatch_events.LOGGER.error')
+    def test_generate_cloudwatch_events_invalid_pattern(self, log_mock):
+        """CLI - Terraform Generate CloudWatch Events, Invalid Pattern"""
+        self.config['clusters']['advanced']['modules']['cloudwatch_events']['event_pattern'] = {
+            'invalid': ['aws.ec2']
+        }
+
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        assert_true(log_mock.called)
+
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
 
@@ -490,6 +720,8 @@ class TestTerraformGenerate:
             'kinesis_events_advanced',
             'flow_logs_advanced',
             'cloudtrail_advanced',
+            'cloudtrail_s3_events_unit-test_advanced_unit-test-advanced-streamalert-cloudtrail',
+            'cloudwatch_events_advanced',
             's3_events_unit-test_advanced_unit-test-bucket_data',
             's3_events_unit-test_advanced_unit-test_cloudtrail_data'
         }

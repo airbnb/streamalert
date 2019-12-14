@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-
 from streamalert.shared.logger import get_logger
-from streamalert_cli.terraform.cloudwatch import generate_cloudwatch_destinations_internal
+from streamalert_cli.terraform.cloudwatch_destinations import (
+    generate_cloudwatch_destinations_internal,
+)
+from streamalert_cli.terraform.s3_events import generate_s3_events_by_bucket
 
 LOGGER = get_logger(__name__)
 
@@ -33,62 +34,129 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         bool: Result of applying the cloudtrail module
     """
     modules = config['clusters'][cluster_name]['modules']
-    cloudtrail_module = 'cloudtrail_{}'.format(cluster_name)
+    settings = modules['cloudtrail']
+    if not settings.get('enabled', True):
+        LOGGER.debug('CloudTrail module is not enabled')
+        return True  # not an error
 
-    cloudtrail_enabled = modules['cloudtrail'].get('enable_logging', True)
-    kinesis_enabled = modules['cloudtrail'].get('enable_kinesis', True)
-    send_to_cloudwatch = modules['cloudtrail'].get('send_to_cloudwatch', False)
-    exclude_home_region = modules['cloudtrail'].get('exclude_home_region_events', False)
-
-    account_ids = set(modules['cloudtrail'].get('cross_account_ids', []))
-    account_ids.add(config['global']['account']['aws_account_id'])
-
-    existing_trail = modules['cloudtrail'].get('existing_trail', False)
-    is_global_trail = modules['cloudtrail'].get('is_global_trail', True)
     region = config['global']['account']['region']
+    prefix = config['global']['account']['prefix']
+    send_to_cloudwatch = settings.get('send_to_cloudwatch', False)
+    enable_s3_events = settings.get('enable_s3_events', True)
 
-    event_pattern_default = {'account': [config['global']['account']['aws_account_id']]}
-    event_pattern = modules['cloudtrail'].get('event_pattern', event_pattern_default)
+    s3_bucket_name = settings.get(
+        's3_bucket_name',
+        '{}-{}-streamalert-cloudtrail'.format(prefix, cluster_name)
+    )
 
-    # From here: http://amzn.to/2zF7CS0
-    valid_event_pattern_keys = {
-        'version', 'id', 'detail-type', 'source', 'account', 'time', 'region', 'resources', 'detail'
-    }
-    if not set(event_pattern.keys()).issubset(valid_event_pattern_keys):
-        LOGGER.error('Config Error: Invalid CloudWatch Event Pattern!')
-        return False
+    primary_account_id = config['global']['account']['aws_account_id']
+    account_ids = set(settings.get('s3_cross_account_ids', []))
+    account_ids.add(primary_account_id)
+    account_ids = sorted(account_ids)
 
     module_info = {
         'source': './modules/tf_cloudtrail',
-        'primary_account_id': config['global']['account']['aws_account_id'],
-        'account_ids': sorted(account_ids),
-        'cluster': cluster_name,
-        'prefix': config['global']['account']['prefix'],
-        'enable_logging': cloudtrail_enabled,
-        'enable_kinesis': kinesis_enabled,
-        's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
-        'existing_trail': existing_trail,
-        'send_to_cloudwatch': send_to_cloudwatch,
-        'exclude_home_region_events': exclude_home_region,
+        'primary_account_id': primary_account_id,
         'region': region,
-        'is_global_trail': is_global_trail
+        'prefix': prefix,
+        'cluster': cluster_name,
+        's3_cross_account_ids': account_ids,
+        's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
+        's3_bucket_name': s3_bucket_name,
     }
 
-    # use the kinesis output from the kinesis streams module
-    if kinesis_enabled:
-        module_info['kinesis_arn'] = '${{module.kinesis_{}.arn}}'.format(cluster_name)
-        module_info['event_pattern'] = json.dumps(event_pattern)
+    # These have defaults in the terraform module, so only override if it's set in the config
+    settings_with_defaults = {
+        'enable_logging',
+        'is_global_trail',
+        's3_event_selector_type',
+    }
+    for value in settings_with_defaults:
+        if value in settings:
+            module_info[value] = settings[value]
 
     if send_to_cloudwatch:
-        destination_arn = modules['cloudtrail'].get('cloudwatch_destination_arn')
-        if not destination_arn:
-            fmt = '${{module.cloudwatch_logs_destination_{}_{}.cloudwatch_logs_destination_arn}}'
-            destination_arn = fmt.format(cluster_name, region)
-            if not generate_cloudwatch_destinations_internal(cluster_name, cluster_dict, config):
-                return False
+        if not generate_cloudtrail_cloudwatch(
+                cluster_name,
+                cluster_dict,
+                config,
+                settings,
+                prefix,
+                region
+        ):
+            return False
 
-        module_info['cloudwatch_destination_arn'] = destination_arn
+        module_info['cloudwatch_logs_role_arn'] = (
+            '${{module.cloudtrail_cloudwatch_{}.cloudtrail_to_cloudwatch_logs_role}}'.format(
+                cluster_name
+            )
+        )
+        module_info['cloudwatch_logs_group_arn'] = (
+            '${{module.cloudtrail_cloudwatch_{}.cloudwatch_logs_group_arn}}'.format(cluster_name)
+        )
 
-    cluster_dict['module'][cloudtrail_module] = module_info
+    cluster_dict['module']['cloudtrail_{}'.format(cluster_name)] = module_info
+
+    if enable_s3_events:
+        s3_event_account_ids = account_ids
+        # Omit the primary account ID from the event notifications to avoid duplicative processing
+        if send_to_cloudwatch:
+            s3_event_account_ids = [
+                account_id
+                for account_id in account_ids
+                if account_id != primary_account_id
+            ]
+        bucket_info = {
+            s3_bucket_name: [
+                {
+                    'filter_prefix': 'AWSLogs/{}/'.format(account_id)
+                } for account_id in s3_event_account_ids
+            ]
+        }
+        generate_s3_events_by_bucket(
+            cluster_name,
+            cluster_dict,
+            config,
+            bucket_info,
+            module_prefix='cloudtrail',
+        )
+
+    return True
+
+
+def generate_cloudtrail_cloudwatch(cluster_name, cluster_dict, config, settings, prefix, region):
+    """Add the CloudTrail to CloudWatch Logs Group module to the Terraform cluster dict.
+
+    Args:
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        settings (dict): Settings for the cloudtrail module for this cluster
+
+    Returns:
+        bool: Result of applying the cloudtrail to cloudwatch logs module
+    """
+    module_info = {
+        'source': './modules/tf_cloudtrail/modules/tf_cloudtrail_cloudwatch',
+        'region': region,
+        'prefix': prefix,
+        'cluster': cluster_name,
+    }
+
+    # These have defaults in the terraform module, so only override if it's set in the config
+    settings_with_defaults = {'exclude_home_region_events', 'retention_in_days'}
+    for value in settings_with_defaults:
+        if value in settings:
+            module_info[value] = settings[value]
+
+    destination_arn = settings.get('cloudwatch_destination_arn')
+    if not destination_arn:
+        fmt = '${{module.cloudwatch_logs_destination_{}_{}.cloudwatch_logs_destination_arn}}'
+        destination_arn = fmt.format(cluster_name, region)
+        if not generate_cloudwatch_destinations_internal(cluster_name, cluster_dict, config):
+            return False
+
+    module_info['cloudwatch_destination_arn'] = destination_arn
+
+    cluster_dict['module']['cloudtrail_cloudwatch_{}'.format(cluster_name)] = module_info
 
     return True

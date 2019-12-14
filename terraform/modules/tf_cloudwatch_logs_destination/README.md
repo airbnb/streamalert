@@ -55,7 +55,7 @@ This module creates the necessary IAM role that can be assumed by the AWS ``logs
 #### Example
 ```hcl
 module "cwl_destination_role" {
-  source                         = "modules/tf_cloudwatch_logs_destination"
+  source                         = "./modules/tf_cloudwatch_logs_destination"
   prefix                         = "orgname"
   cluster                        = "prod"
   destination_kinesis_stream_arn = "arn:aws:kinesis:region:account-id:stream/stream-name"
@@ -127,7 +127,7 @@ Multi-region support in this submodule is made possible via aliased terraform pr
 #### Example
 ```hcl
 module "cwl_destination" {
-  source                                = "modules/tf_cloudwatch_logs_destination/modules/destination"
+  source                                = "./modules/tf_cloudwatch_logs_destination/modules/destination"
   prefix                                = "orgname"
   cluster                               = "prod"
   destination_kinesis_stream_arn        = "arn:aws:kinesis:region:account-id:stream/stream-name"

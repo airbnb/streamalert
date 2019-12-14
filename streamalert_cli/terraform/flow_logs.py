@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared.logger import get_logger
-from streamalert_cli.terraform.cloudwatch import generate_cloudwatch_destinations_internal
+from streamalert_cli.terraform.cloudwatch_destinations import (
+    generate_cloudwatch_destinations_internal,
+)
 
 LOGGER = get_logger(__name__)
 
