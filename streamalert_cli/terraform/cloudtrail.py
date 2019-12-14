@@ -44,25 +44,19 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     send_to_cloudwatch = settings.get('send_to_cloudwatch', False)
     enable_s3_events = settings.get('enable_s3_events', True)
 
-    if send_to_cloudwatch and enable_s3_events:
-        LOGGER.warning(
-            'The "cloudtrail" module has both "send_to_cloudwatch" and "enable_s3_events" '
-            'turned on. To avoid processing duplicative data, it is advisable to set '
-            '"enable_s3_events" to false (the default is true)'
-        )
-
     s3_bucket_name = settings.get(
         's3_bucket_name',
         '{}-{}-streamalert-cloudtrail'.format(prefix, cluster_name)
     )
 
+    primary_account_id = config['global']['account']['aws_account_id']
     account_ids = set(settings.get('s3_cross_account_ids', []))
-    account_ids.add(config['global']['account']['aws_account_id'])
+    account_ids.add(primary_account_id)
     account_ids = sorted(account_ids)
 
     module_info = {
         'source': './modules/tf_cloudtrail',
-        'primary_account_id': config['global']['account']['aws_account_id'],
+        'primary_account_id': primary_account_id,
         'region': region,
         'prefix': prefix,
         'cluster': cluster_name,
@@ -104,11 +98,19 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     cluster_dict['module']['cloudtrail_{}'.format(cluster_name)] = module_info
 
     if enable_s3_events:
+        s3_event_account_ids = account_ids
+        # Omit the primary account ID from the event notifications to avoid duplicative processing
+        if send_to_cloudwatch:
+            s3_event_account_ids = [
+                account_id
+                for account_id in account_ids
+                if account_id != primary_account_id
+            ]
         bucket_info = {
             s3_bucket_name: [
                 {
                     'filter_prefix': 'AWSLogs/{}/'.format(account_id)
-                } for account_id in account_ids
+                } for account_id in s3_event_account_ids
             ]
         }
         generate_s3_events_by_bucket(

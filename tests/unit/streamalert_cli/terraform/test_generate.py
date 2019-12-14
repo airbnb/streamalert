@@ -356,21 +356,6 @@ class TestTerraformGenerate:
 
         assert_equal(expected, self.cluster_dict['module'])
 
-    @patch('streamalert_cli.terraform.cloudtrail.LOGGER.warning')
-    def test_generate_cloudtrail_warning(self, log_mock):
-        """CLI - Terraform Generate CloudTrail Module, Warn on Duplicative Data"""
-        cluster_name = 'advanced'
-        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
-            'send_to_cloudwatch': True
-        }
-        cloudtrail.generate_cloudtrail(
-            cluster_name,
-            self.cluster_dict,
-            self.config
-        )
-
-        log_mock.assert_called()
-
     def test_generate_cloudtrail_with_s3_events(self):
         """CLI - Terraform Generate CloudTrail Module, With S3 Events"""
         cluster_name = 'advanced'
@@ -483,6 +468,91 @@ class TestTerraformGenerate:
                 'cloudwatch_logs_group_arn': (
                     '${module.cloudtrail_cloudwatch_advanced.cloudwatch_logs_group_arn}'
                 ),
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
+    def test_generate_cloudtrail_cloudwatch_logs_and_s3(self):
+        """CLI - Terraform Generate CloudTrail Module, With S3 and CloudWatch Logs"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'send_to_cloudwatch': True,
+            's3_cross_account_ids': ['456789012345'],
+            'enable_s3_events': True,
+        }
+        cloudtrail.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_logs_destination_advanced': {
+                'source': './modules/tf_cloudwatch_logs_destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'regions': [
+                    'us-west-1'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}'
+            },
+            'cloudwatch_logs_destination_advanced_us-west-1': {
+                'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'account_ids': [
+                    '12345678910'
+                ],
+                'destination_kinesis_stream_arn': '${module.kinesis_advanced.arn}',
+                'cloudwatch_logs_subscription_role_arn': (
+                    '${module.cloudwatch_logs_destination_advanced.'
+                    'cloudwatch_logs_subscription_role_arn}'
+                ),
+                'providers': {
+                    'aws': 'aws.us-west-1'
+                }
+            },
+            'cloudtrail_cloudwatch_advanced': {
+                'source': './modules/tf_cloudtrail/modules/tf_cloudtrail_cloudwatch',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                'cloudwatch_destination_arn': (
+                    '${module.cloudwatch_logs_destination_advanced_us-west-1.'
+                    'cloudwatch_logs_destination_arn}'
+                ),
+            },
+            'cloudtrail_advanced': {
+                'source': './modules/tf_cloudtrail',
+                's3_cross_account_ids': ['12345678910', '456789012345'],
+                'primary_account_id': '12345678910',
+                'cluster': 'advanced',
+                'prefix': 'unit-test',
+                'region': 'us-west-1',
+                's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
+                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                'cloudwatch_logs_role_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
+                ),
+                'cloudwatch_logs_group_arn': (
+                    '${module.cloudtrail_cloudwatch_advanced.cloudwatch_logs_group_arn}'
+                ),
+            },
+            'cloudtrail_s3_events_unit-test_advanced_unit-test-advanced-streamalert-cloudtrail': {
+                'source': './modules/tf_s3_events',
+                'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
+                'lambda_function_alias': '${module.classifier_advanced_lambda.function_alias}',
+                'lambda_function_alias_arn': (
+                    '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
+                'lambda_function_name': '${module.classifier_advanced_lambda.function_name}',
+                'bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
+                'filters': [
+                    {
+                        'filter_prefix': 'AWSLogs/456789012345/'
+                    }
+                ]
             },
         }
 
