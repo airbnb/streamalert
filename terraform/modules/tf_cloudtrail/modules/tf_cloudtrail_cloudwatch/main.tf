@@ -61,19 +61,6 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
     actions   = ["logs:PutLogEvents"]
     resources = [aws_cloudwatch_log_group.cloudtrail_logging.arn]
   }
-
-  statement {
-    sid    = "AWSCloudTrailEncryptLogEvents"
-    effect = "Allow"
-
-    actions = [
-      "kms:Decrypt",
-      "kms:Encrypt",
-      "kms:GenerateDataKey*",
-    ]
-
-    resources = [aws_kms_key.cloudtrail_encryption.arn]
-  }
 }
 
 // CloudWatch Log Subscription Filter
