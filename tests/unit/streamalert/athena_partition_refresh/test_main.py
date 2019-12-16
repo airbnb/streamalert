@@ -17,10 +17,10 @@ limitations under the License.
 import json
 import os
 
-from mock import Mock, patch
-from nose.tools import assert_equal, assert_raises, assert_true, raises
+from mock import Mock, patch, call
+from nose.tools import assert_equal, assert_true
 
-from streamalert.athena_partition_refresh.main import AthenaRefresher, AthenaRefreshError
+from streamalert.athena_partition_refresh.main import AthenaRefresher
 from streamalert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
@@ -66,7 +66,7 @@ class TestAthenaRefresher:
 
         assert_true(result)
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.warning')
     def test_add_partitions_none(self, log_mock):
         """AthenaRefresher - Add Partitions, None to Add"""
         result = self._refresher._add_partitions()
@@ -126,7 +126,7 @@ class TestAthenaRefresher:
 
         assert_equal(result, expected_result)
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.warning')
     def test_get_partitions_from_keys_error(self, log_mock):
         """AthenaRefresher - Get Partitions From Keys, Bad Key"""
         bad_key = b'bad_match_string'
@@ -159,15 +159,35 @@ class TestAthenaRefresher:
                 } for val in range(count)
             ]
         }
-
     @staticmethod
-    def _create_test_message(count=2):
-        """Helper function for creating an sqs messsage body"""
-        count = min(count, 30)
+    def _s3_record_placeholder_file():
         return {
             'Records': [
                 {
-                    'body': json.dumps(TestAthenaRefresher._s3_record(count)),
+                    's3': {
+                        'bucket': {
+                            'name': 'unit-test.streamalerts'
+                        },
+                        'object': {
+                            'key': 'alerts/dt=2017/08/01/14/02/test.json_$folder$'
+                        }
+                    }
+                }
+            ]
+        }
+
+    @staticmethod
+    def _create_test_message(count=2, placeholder=False):
+        """Helper function for creating an sqs messsage body"""
+        if placeholder:
+            body = json.dumps(TestAthenaRefresher._s3_record_placeholder_file())
+        else:
+            count = min(count, 30)
+            body = json.dumps(TestAthenaRefresher._s3_record(count))
+        return {
+            'Records': [
+                {
+                    'body': body,
                     'messageId': "40d4fac0-64a1-4a20-8be4-893c51aebca1",
                     "attributes": {
                         "SentTimestamp": "1534284301036"
@@ -188,17 +208,32 @@ class TestAthenaRefresher:
             'unit-test.streamalerts'
         )
 
-    @raises(AthenaRefreshError)
-    def test_run_no_messages(self):
+    @patch('logging.Logger.info')
+    def test_run_placeholder_file(self, log_mock):
+        """AthenaRefresher - Run, Placeholder File"""
+        self._refresher.run(self._create_test_message(1, True))
+        log_mock.assert_has_calls([
+            call(
+                'Skipping placeholder file notification with key: %s',
+                b'alerts/dt=2017/08/01/14/02/test.json_$folder$'
+            )
+        ])
+
+    @patch('logging.Logger.warning')
+    def test_run_no_messages(self, log_mock):
         """AthenaRefresher - Run, No Messages"""
         self._refresher.run(self._create_test_message(0))
+        log_mock.assert_called_with('No partitions to add')
 
     @patch('logging.Logger.error')
     def test_run_invalid_bucket(self, log_mock):
         """AthenaRefresher - Run, Bad Bucket Name"""
         event = self._create_test_message(0)
+        bucket = 'bad.bucket.name'
         s3_record = self._s3_record(1)
-        s3_record['Records'][0]['s3']['bucket']['name'] = 'bad.bucket.name'
+        s3_record['Records'][0]['s3']['bucket']['name'] = bucket
         event['Records'][0]['body'] = json.dumps(s3_record)
-        assert_raises(AthenaRefreshError, self._refresher.run, event)
-        log_mock.assert_called_with('No partitions to add')
+        self._refresher.run(event)
+        log_mock.assert_called_with('\'%s\' not found in \'buckets\' config. Please add this '
+                                    'bucket to enable additions of Hive partitions.',
+                                    bucket)
