@@ -34,11 +34,11 @@ def generate_threat_intel_downloader(config):
     prefix = config['global']['account']['prefix']
 
     # Threat Intel Downloader module
-    ti_downloader_config = config['lambda']['threat_intel_downloader_config']
+    tid_config = config['lambda']['threat_intel_downloader_config']
 
     # old format of config used interval, but tf_lambda expects 'schedule_expression'
-    if 'schedule_expression' not in ti_downloader_config:
-        ti_downloader_config['schedule_expression'] = ti_downloader_config.get('interval', 'rate(1 day)')
+    if 'schedule_expression' not in tid_config:
+        tid_config['schedule_expression'] = tid_config.get('interval', 'rate(1 day)')
 
     result = infinitedict()
 
@@ -50,19 +50,18 @@ def generate_threat_intel_downloader(config):
         'prefix': prefix,
         'function_role_id': '${module.threat_intel_downloader.role_id}',
         'monitoring_sns_topic': dlq_topic,
-        'table_rcu': ti_downloader_config.get('table_rcu', '10'),
-        'table_wcu': ti_downloader_config.get('table_wcu', '10'),
-        'max_read_capacity': ti_downloader_config.get('max_read_capacity', '5'),
-        'min_read_capacity': ti_downloader_config.get('min_read_capacity', '5'),
-        'target_utilization': ti_downloader_config.get('target_utilization', '70')
+        'table_rcu': tid_config.get('table_rcu', '10'),
+        'table_wcu': tid_config.get('table_wcu', '10'),
+        'max_read_capacity': tid_config.get('max_read_capacity', '5'),
+        'min_read_capacity': tid_config.get('min_read_capacity', '5'),
+        'target_utilization': tid_config.get('target_utilization', '70')
     }
 
     result['module']['threat_intel_downloader'] = generate_lambda(
         '{}_streamalert_{}'.format(prefix, THREAT_INTEL_DOWNLOADER_NAME),
         ThreatIntelDownloaderPackage.package_name + '.zip',
         ThreatIntelDownloaderPackage.lambda_handler,
-        ti_downloader_config,
+        tid_config,
         config,
-        environment=environment,
     )
     return result
