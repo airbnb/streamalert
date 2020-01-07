@@ -14,6 +14,14 @@ variable "function_role_id" {
   description = "Threat Intel Downloader function IAM Role ID, exported from the tf_lambda module"
 }
 
+variable "function_alias_arn" {
+  description = "Threat Intel Downloader function alias arn, exported from the tf_lambda module"
+}
+
+variable "function_cloudwatch_log_group_name" {
+  description = "Threat Intel Downloader function cloudwatch log group name, exported from the tf_lambda module"
+}
+
 variable "parameter_name" {
   default = "threat_intel_downloader_api_creds"
   type    = string

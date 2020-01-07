@@ -49,6 +49,8 @@ def generate_threat_intel_downloader(config):
         'region': config['global']['account']['region'],
         'prefix': prefix,
         'function_role_id': '${module.threat_intel_downloader.role_id}',
+        'function_alias_arn': '${module.threat_intel_downloader.function_alias_arn}',
+        'function_cloudwatch_log_group_name': '${module.threat_intel_downloader.log_group_name}',
         'monitoring_sns_topic': dlq_topic,
         'table_rcu': tid_config.get('table_rcu', '10'),
         'table_wcu': tid_config.get('table_wcu', '10'),

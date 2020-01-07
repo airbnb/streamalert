@@ -15,7 +15,7 @@ data "aws_iam_policy_document" "invoke_lambda_function" {
     ]
 
     resources = [
-      aws_lambda_function.threat_intel_downloader.arn,
+      var.function_alias_arn
     ]
   }
 }
@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_policy" {
     ]
 
     resources = [
-      aws_cloudwatch_log_group.threat_intel_downloader.arn,
+      var.function_cloudwatch_log_group_name
     ]
   }
 
@@ -50,7 +50,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_policy" {
     ]
 
     resources = [
-      "arn:aws:logs:${var.region}:${var.account_id}:log-group:${aws_cloudwatch_log_group.threat_intel_downloader.name}:log-stream:*",
+      "arn:aws:logs:${var.region}:${var.account_id}:log-group:${var.function_cloudwatch_log_group_name}:log-stream:*",
     ]
   }
 }
