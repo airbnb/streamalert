@@ -15,7 +15,7 @@ Install Dependencies
   brew install terraform  # MacOS Homebrew
   terraform --version     # Must be >= v0.12.9
 
-.. note:: Terraform versions <= 0.12.8 are not supported.
+.. note:: Terraform versions lower than 0.12 are not supported. Recommend to install terraform version 0.12.9 or up.
 
 3. Install `virtualenv <https://virtualenv.pypa.io/en/stable/installation/>`_:
 
@@ -38,7 +38,7 @@ Download StreamAlert
 
 .. code-block:: bash
 
-  git clone --branch release-3-0-0 https://github.com/airbnb/streamalert.git
+  git clone --branch stable https://github.com/airbnb/streamalert.git
 
 2. Create and activate a virtual environment:
 
