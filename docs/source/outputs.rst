@@ -144,11 +144,7 @@ Adding support for a new service involves five steps:
 
 4. Add the ``@StreamAlertOutput`` class decorator to the new subclass so it registered when the `outputs` module is loaded.
 
-5. To allow the cli to configure a new integration for this service, add the value used above for the ``__service__`` property to the ``manage.py`` file.
-
-   - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
-
-6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``streamalert_cli/test.py`` module to provide mock credentials for your new output.
+5. Extend the ``AlertProcessorTester.setup_outputs`` method in ``streamalert_cli/test.py`` module to provide mock credentials for your new output.
 
 Strategy
 --------
