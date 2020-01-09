@@ -8,14 +8,14 @@ Install Dependencies
 --------------------
 
 1. Install Python 3.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
-2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ v0.11.X:
+2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ >= v0.12.9:
 
 .. code-block:: bash
 
   brew install terraform  # MacOS Homebrew
-  terraform --version     # Must be v0.11.X
+  terraform --version     # Must be >= v0.12.9
 
-.. note:: Terraform versions >= 0.12.X are not currently supported.
+.. note:: Terraform versions <= 0.12.8 are not supported.
 
 3. Install `virtualenv <https://virtualenv.pypa.io/en/stable/installation/>`_:
 
@@ -38,7 +38,7 @@ Download StreamAlert
 
 .. code-block:: bash
 
-  git clone --branch stable https://github.com/airbnb/streamalert.git
+  git clone --branch release-3-0-0 https://github.com/airbnb/streamalert.git
 
 2. Create and activate a virtual environment:
 
