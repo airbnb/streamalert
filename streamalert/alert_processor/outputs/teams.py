@@ -147,7 +147,7 @@ class TeamsOutput(OutputDispatcher):
         if not isinstance(additional_sections, list):
             LOGGER.debug("additional_sections is not a list, converting")
 
-            additional_sections = list(additional_sections)
+            additional_sections = [additional_sections]
 
         for additional_section in additional_sections:
             if not isinstance(additional_section, pymsteams.cardsection):

@@ -106,7 +106,8 @@ def test_output_loading():
         'pagerduty-v2',
         'pagerduty-incident',
         'phantom',
-        'slack'
+        'slack',
+        'teams'
     }
     assert_count_equal(loaded_outputs, expected_outputs)
 
