@@ -44,7 +44,7 @@ class TeamsOutput(OutputDispatcher):
         Every output should return a dict that contains a 'descriptor' with a description of the
         integration being configured.
 
-        Microsoft Teams also requires a user provided 'webhook' url that is comprised of the Teams
+        Microsoft Teams also requires a user provided 'webhook' url that is composed of the Team's
         api url and the unique integration key for this output. This value should be should be
         masked during input and is a credential requirement.
 
@@ -78,6 +78,7 @@ class TeamsOutput(OutputDispatcher):
         Args:
             alert (Alert): The alert
             publication (dict): Alert relevant to the triggered rule
+            webhook_url (str): The webhook_url to send the card too
 
         Returns:
             pymsteams.connectorcard: The message to be sent to Teams
@@ -110,18 +111,12 @@ class TeamsOutput(OutputDispatcher):
         teams_card.text(description)
         teams_card.color(card_color)
 
+        # Add the Alert Section
+        teams_card.addSection(cls._generate_alert_section(alert))
+
         if with_record:
-            # Instantiate the card section
-            record_section = pymsteams.cardsection()
-
-            # Set the title
-            record_section.activityTitle("StreamAlert Alert Record")
-
-            # Add the raw alert as key/value pairs
-            for key, value in alert.record.items():
-                record_section.addFact(key, str(value))
-
-            teams_card.addSection(record_section)
+            # Add the record Section
+            teams_card.addSection(cls._generate_record_section(alert.record))
 
         if "@teams.additional_card_sections" in publication:
             teams_card = cls._add_additional_sections(
@@ -129,6 +124,51 @@ class TeamsOutput(OutputDispatcher):
             )
 
         return teams_card
+
+    @classmethod
+    def _generate_record_section(cls, record):
+        """Generate the record section
+
+        This adds the entire record to a section as key/value pairs
+
+        Args:
+            record (dict): asd
+        Returns:
+            record_section (pymsteams.cardsection): record section for the outgoing card
+        """
+        # Instantiate the card section
+        record_section = pymsteams.cardsection()
+
+        # Set the title
+        record_section.activityTitle("StreamAlert Alert Record")
+
+        # Add the record as key/value pairs
+        for key, value in record.items():
+            record_section.addFact(key, str(value))
+
+        return record_section
+
+    @classmethod
+    def _generate_alert_section(cls, alert):
+        """Generate the alert section
+
+        Args:
+            alert (Alert): The alert
+        Returns:
+            alert_section (pymsteams.cardsection): alert section for the outgoing card
+        """
+
+        # Instantiate the card
+        alert_section = pymsteams.cardsection()
+
+        # Set the title
+        alert_section.activityTitle("Alert Info")
+
+        # Add basic information to the alert section
+        alert_section.addFact("rule_name", alert.rule_name)
+        alert_section.addFact("alert_id", alert.alert_id)
+
+        return alert_section
 
     @staticmethod
     def _add_additional_sections(teams_card, additional_sections):
@@ -202,10 +242,13 @@ class TeamsOutput(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
+            LOGGER.error("No credentials found for descriptor: %s", descriptor)
             return False
 
+        # Create the publication
         publication = compose_alert(alert, self, descriptor)
 
+        # Format the message
         teams_card = self._format_message(alert, publication, creds["url"])
 
         try:

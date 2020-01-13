@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
+# pylint: disable=protected-access,attribute-defined-outside-init,no-self-use,no-member
 import pymsteams
-from mock import MagicMock, Mock, patch
-from nose.tools import assert_equal, assert_false, assert_set_equal, assert_true
+from pymsteams import TeamsWebhookException
+from mock import MagicMock, Mock, patch, call
+from nose.tools import assert_equal, assert_false, assert_true
 
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.teams import TeamsOutput
@@ -49,26 +50,164 @@ class TestTeamsOutput:
         self._provider = provider
         self._dispatcher = TeamsOutput(None)
 
-    def test_format_message_default(self):
+    @patch("pymsteams.cardsection")
+    def test_generate_record_section(self, section_mock):
+        """TeamsOutput - _generate_record_section - Teams"""
+        section_mock.return_value = Mock(
+            activityTitle=Mock(),
+            addFact=Mock()
+        )
+
+        rule_name = "test_rule_default"
+        alert = get_random_alert(25, rule_name)
+
+        section = self._dispatcher._generate_record_section(alert.record)
+
+        # Tests
+        section_mock.assert_called()
+        section.activityTitle.assert_called()
+        section.activityTitle.assert_called_with("StreamAlert Alert Record")
+        section.addFact.assert_called()
+        section.addFact.assert_has_calls(
+            [
+                call(key, value) for key, value in alert.record.items()
+            ],
+            any_order=True
+        )
+
+    @patch("pymsteams.cardsection")
+    def test_generate_alert_section(self, section_mock):
+        """TeamsOutput - _generate_alert_section - Teams"""
+        section_mock.return_value = Mock(
+            activityTitle=Mock(),
+            addFact=Mock()
+        )
+
+        rule_name = "test_rule_default"
+        alert = get_random_alert(25, rule_name)
+
+        section = self._dispatcher._generate_alert_section(alert)
+
+        # Tests
+        section_mock.assert_called()
+        section.activityTitle.assert_called()
+        section.activityTitle.assert_called_with("Alert Info")
+        section.addFact.assert_called()
+        section.addFact.assert_has_calls(
+            [
+                call('rule_name', alert.rule_name),
+                call('alert_id', alert.alert_id)
+            ],
+            any_order=False
+        )
+
+    @patch("logging.Logger.error")
+    def test_add_additional_sections_single_section(self, log_mock):
+        """TeamsOutput - _add_additional_sections - single section"""
+        teams_card = Mock(
+            addSection=Mock()
+        )
+        section = Mock(spec=pymsteams.cardsection)
+
+        teams_card = self._dispatcher._add_additional_sections(teams_card, section)
+
+        # Tests
+        teams_card.addSection.assert_called()
+        teams_card.addSection.assert_called_with(section)
+        log_mock.assert_not_called()
+
+    @patch("logging.Logger.error")
+    def test_add_additional_sections_multiple_sections(self, log_mock):
+        """TeamsOutput - _add_additional_sections - multiple sections"""
+        teams_card = Mock(
+            addSection=Mock()
+        )
+        section_1 = Mock(spec=pymsteams.cardsection)
+        section_2 = Mock(spec=pymsteams.cardsection)
+
+        teams_card = self._dispatcher._add_additional_sections(teams_card, [section_1, section_2])
+
+        # Tests
+        teams_card.addSection.assert_called()
+        teams_card.addSection.assert_has_calls(
+            [
+                call(section_1),
+                call(section_2)
+            ],
+            any_order=False
+        )
+        log_mock.assert_not_called()
+
+    @patch("logging.Logger.error")
+    def test_add_additional_sections_logs_error(self, log_mock):
+        """TeamsOutput - _add_additional_sections - logs error"""
+        teams_card = Mock(
+            addSection=Mock()
+        )
+        invalid_section = "i am not a card section"
+
+        teams_card = self._dispatcher._add_additional_sections(teams_card, [invalid_section])
+
+        # Tests
+        teams_card.addSection.assert_not_called()
+        log_mock.assert_called()
+        log_mock.assert_called_with(
+            "additional_section: %s is not an instance of %s",
+            invalid_section,
+            pymsteams.cardsection,
+        )
+
+    @patch.object(TeamsOutput, "_generate_record_section")
+    @patch.object(TeamsOutput, "_generate_alert_section")
+    @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
+    def test_format_message_default(self, _, alert_section_mock, record_section_mock):
         """TeamsOutput - Format Default Message - Teams"""
         rule_name = "test_rule_default"
         alert = get_random_alert(25, rule_name)
         output = MagicMock(spec=TeamsOutput)
         alert_publication = compose_alert(alert, output, "asdf")
 
-        loaded_message = TeamsOutput._format_message(
+        alert_section_mock.return_value = "Alert_Section"
+        record_section_mock.return_value = "Record_Section"
+
+        loaded_message = self._dispatcher._format_message(
             alert, alert_publication, self.CREDS["url"]
         )
-        payload = loaded_message.payload
 
-        # tests
-        assert_set_equal(
-            set(payload.keys()), {"title", "text", "themeColor", "sections"}
+        # Tests
+
+        # Verify title
+        loaded_message.title.assert_called()
+        loaded_message.title.assert_called_with(
+            "StreamAlert Rule Triggered: {}".format(alert.rule_name)
         )
-        assert_equal(payload["title"], "StreamAlert Rule Triggered: test_rule_default")
-        assert_equal(len(payload["sections"]), 1)
 
-    def test_format_message_custom_title(self):
+        # Verify text/description
+        loaded_message.text.assert_called()
+        loaded_message.text.assert_called_with(alert.rule_description)
+
+        # Verify card color
+        loaded_message.color.assert_called()
+        loaded_message.color.assert_called_with("E81123")
+
+        # Verify Sections
+        alert_section_mock.assert_called()
+        alert_section_mock.assert_called_with(alert)
+        record_section_mock.assert_called()
+        record_section_mock.assert_called_with(alert.record)
+        loaded_message.addSection.assert_called()
+        loaded_message.addSection.assert_has_calls(
+            [
+                call('Alert_Section'),
+                call('Record_Section')
+            ],
+            any_order=False
+        )
+
+    @patch.object(TeamsOutput, "_generate_record_section")
+    @patch.object(TeamsOutput, "_generate_alert_section")
+    @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
+    def test_format_message_custom_title(self, _, alert_section_mock, record_section_mock):
         """TeamsOutput - Format Message - Custom Title"""
         rule_name = "test_rule_default"
         alert = get_random_alert(25, rule_name)
@@ -76,39 +215,93 @@ class TestTeamsOutput:
         alert_publication = compose_alert(alert, output, "asdf")
         alert_publication["@teams.title"] = "This is a test"
 
-        loaded_message = TeamsOutput._format_message(
+        alert_section_mock.return_value = "Alert_Section"
+        record_section_mock.return_value = "Record_Section"
+
+        loaded_message = self._dispatcher._format_message(
             alert, alert_publication, self.CREDS["url"]
         )
-        payload = loaded_message.payload
 
-        # tests
-        assert_set_equal(
-            set(payload.keys()), {"title", "text", "themeColor", "sections"}
+        # Tests
+
+        # Verify title
+        loaded_message.title.assert_called()
+        loaded_message.title.assert_called_with("This is a test")
+
+        # Verify text/description
+        loaded_message.text.assert_called()
+        loaded_message.text.assert_called_with(alert.rule_description)
+
+        # Verify card color
+        loaded_message.color.assert_called()
+        loaded_message.color.assert_called_with("E81123")
+
+        # Verify Sections
+        alert_section_mock.assert_called()
+        alert_section_mock.assert_called_with(alert)
+        record_section_mock.assert_called()
+        record_section_mock.assert_called_with(alert.record)
+        loaded_message.addSection.assert_called()
+        loaded_message.addSection.assert_has_calls(
+            [
+                call('Alert_Section'),
+                call('Record_Section')
+            ],
+            any_order=False
         )
-        assert_equal(payload["title"], "This is a test")
-        assert_equal(len(payload["sections"]), 1)
 
-    def test_format_message_custom_description(self):
-        """TeamsOutput - Format Message - Custom description"""
+    @patch.object(TeamsOutput, "_generate_record_section")
+    @patch.object(TeamsOutput, "_generate_alert_section")
+    @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
+    def test_format_message_custom_text(self, _, alert_section_mock, record_section_mock):
+        """TeamsOutput - Format Message - Custom description / text"""
         rule_name = "test_rule_default"
         alert = get_random_alert(25, rule_name)
         output = MagicMock(spec=TeamsOutput)
         alert_publication = compose_alert(alert, output, "asdf")
         alert_publication["@teams.description"] = "This is a test"
 
-        loaded_message = TeamsOutput._format_message(
+        alert_section_mock.return_value = "Alert_Section"
+        record_section_mock.return_value = "Record_Section"
+
+        loaded_message = self._dispatcher._format_message(
             alert, alert_publication, self.CREDS["url"]
         )
-        payload = loaded_message.payload
 
-        # tests
-        assert_set_equal(
-            set(payload.keys()), {"title", "text", "themeColor", "sections"}
+        # Tests
+
+        # Verify title
+        loaded_message.title.assert_called()
+        loaded_message.title.assert_called_with(
+            "StreamAlert Rule Triggered: {}".format(alert.rule_name)
         )
-        assert_equal(payload["text"], "This is a test")
-        assert_equal(len(payload["sections"]), 1)
 
-    def test_format_message_custom_color(self):
+        # Verify text/description
+        loaded_message.text.assert_called()
+        loaded_message.text.assert_called_with("This is a test")
+
+        # Verify card color
+        loaded_message.color.assert_called()
+        loaded_message.color.assert_called_with("E81123")
+
+        # Verify Sections
+        alert_section_mock.assert_called()
+        alert_section_mock.assert_called_with(alert)
+        record_section_mock.assert_called()
+        record_section_mock.assert_called_with(alert.record)
+        loaded_message.addSection.assert_called()
+        loaded_message.addSection.assert_has_calls(
+            [
+                call('Alert_Section'),
+                call('Record_Section')
+            ],
+            any_order=False
+        )
+
+    @patch.object(TeamsOutput, "_generate_record_section")
+    @patch.object(TeamsOutput, "_generate_alert_section")
+    @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
+    def test_format_message_custom_color(self, _, alert_section_mock, record_section_mock):
         """TeamsOutput - Format Message - Custom color"""
         rule_name = "test_rule_default"
         alert = get_random_alert(25, rule_name)
@@ -116,19 +309,47 @@ class TestTeamsOutput:
         alert_publication = compose_alert(alert, output, "asdf")
         alert_publication["@teams.card_color"] = "46eb34"
 
-        loaded_message = TeamsOutput._format_message(
+        alert_section_mock.return_value = "Alert_Section"
+        record_section_mock.return_value = "Record_Section"
+
+        loaded_message = self._dispatcher._format_message(
             alert, alert_publication, self.CREDS["url"]
         )
-        payload = loaded_message.payload
 
-        # tests
-        assert_set_equal(
-            set(payload.keys()), {"title", "text", "themeColor", "sections"}
+        # Tests
+
+        # Verify title
+        loaded_message.title.assert_called()
+        loaded_message.title.assert_called_with(
+            "StreamAlert Rule Triggered: {}".format(alert.rule_name)
         )
-        assert_equal(payload["themeColor"], "46eb34")
-        assert_equal(len(payload["sections"]), 1)
 
-    def test_format_message_no_record(self):
+        # Verify text/description
+        loaded_message.text.assert_called()
+        loaded_message.text.assert_called_with(alert.rule_description)
+
+        # Verify card color
+        loaded_message.color.assert_called()
+        loaded_message.color.assert_called_with("46eb34")
+
+        # Verify Sections
+        alert_section_mock.assert_called()
+        alert_section_mock.assert_called_with(alert)
+        record_section_mock.assert_called()
+        record_section_mock.assert_called_with(alert.record)
+        loaded_message.addSection.assert_called()
+        loaded_message.addSection.assert_has_calls(
+            [
+                call('Alert_Section'),
+                call('Record_Section')
+            ],
+            any_order=False
+        )
+
+    @patch.object(TeamsOutput, "_generate_record_section")
+    @patch.object(TeamsOutput, "_generate_alert_section")
+    @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
+    def test_format_message_no_record(self, _, alert_section_mock, record_section_mock):
         """TeamsOutput - Format Message - No Record"""
         rule_name = "test_rule_default"
         alert = get_random_alert(25, rule_name)
@@ -136,17 +357,53 @@ class TestTeamsOutput:
         alert_publication = compose_alert(alert, output, "asdf")
         alert_publication["@teams.with_record"] = False
 
-        loaded_message = TeamsOutput._format_message(
+        alert_section_mock.return_value = "Alert_Section"
+        record_section_mock.return_value = "Record_Section"
+
+        loaded_message = self._dispatcher._format_message(
             alert, alert_publication, self.CREDS["url"]
         )
-        payload = loaded_message.payload
 
-        # tests
-        assert_set_equal(set(payload.keys()), {"title", "text", "themeColor"})
-        assert_false(payload.get("sections"))
+        # Tests
 
-    def test_format_message_additional_sections_with_record(self):
-        """TeamsOutput - Format Message - Additional card sections with record"""
+        # Verify title
+        loaded_message.title.assert_called()
+        loaded_message.title.assert_called_with(
+            "StreamAlert Rule Triggered: {}".format(alert.rule_name)
+        )
+
+        # Verify text/description
+        loaded_message.text.assert_called()
+        loaded_message.text.assert_called_with(alert.rule_description)
+
+        # Verify card color
+        loaded_message.color.assert_called()
+        loaded_message.color.assert_called_with("E81123")
+
+        # Verify Sections
+        alert_section_mock.assert_called()
+        alert_section_mock.assert_called_with(alert)
+        record_section_mock.assert_not_called()
+        loaded_message.addSection.assert_called()
+        loaded_message.addSection.assert_has_calls(
+            [
+                call('Alert_Section')
+            ],
+            any_order=False
+        )
+
+    @patch.object(TeamsOutput, "_add_additional_sections")
+    @patch.object(TeamsOutput, "_generate_record_section")
+    @patch.object(TeamsOutput, "_generate_alert_section")
+    @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
+    def test_format_message_additional_sections(
+            self,
+            _,
+            alert_section_mock,
+            record_section_mock,
+            add_sections_mock
+    ):
+        """TeamsOutput - Format Message - Additional card sections"""
         rule_name = "test_rule_default"
         alert = get_random_alert(25, rule_name)
         output = MagicMock(spec=TeamsOutput)
@@ -154,165 +411,107 @@ class TestTeamsOutput:
         alert_publication["@teams.with_record"] = True
 
         # Setup test_card_section
-        test_card_section = pymsteams.cardsection()
-        test_card_section.title("test_section")
-        test_card_section.activityText("this is test section")
-        test_card_section.addFact("test", True)
+        test_card_section = Mock()
+
+        alert_section_mock.return_value = "Alert_Section"
+        record_section_mock.return_value = "Record_Section"
+
+        add_sections_mock.side_effect = (lambda teams_card, _: teams_card)
 
         # Pass card section in via Publisher
         alert_publication["@teams.additional_card_sections"] = [test_card_section]
 
-        loaded_message = TeamsOutput._format_message(
+        loaded_message = self._dispatcher._format_message(
             alert, alert_publication, self.CREDS["url"]
         )
-        card_payload = loaded_message.payload
 
-        # tests
-        assert_set_equal(
-            set(card_payload.keys()), {"title", "text", "themeColor", "sections"}
-        )
-        assert_equal(len(card_payload["sections"]), 2)
+        # Tests
 
-        # Verify first section is the record
-        assert_equal(
-            card_payload["sections"][0]["activityTitle"], "StreamAlert Alert Record"
+        # Verify title
+        loaded_message.title.assert_called()
+        loaded_message.title.assert_called_with(
+            "StreamAlert Rule Triggered: {}".format(alert.rule_name)
         )
 
-        # Verify the second section is the passed in test_card_section
-        assert_equal(card_payload["sections"][1], test_card_section.payload)
+        # Verify text/description
+        loaded_message.text.assert_called()
+        loaded_message.text.assert_called_with(alert.rule_description)
 
-    @patch("logging.Logger.debug")
-    def test_format_message_single_section_no_record(self, log_mock):
-        """TeamsOutput - Format Message - single card section with no record"""
-        rule_name = "test_rule_default"
-        alert = get_random_alert(25, rule_name)
-        output = MagicMock(spec=TeamsOutput)
-        alert_publication = compose_alert(alert, output, "asdf")
-        alert_publication["@teams.with_record"] = False
+        # Verify card color
+        loaded_message.color.assert_called()
+        loaded_message.color.assert_called_with("E81123")
 
-        # Setup test_card_section
-        test_card_section = pymsteams.cardsection()
-        test_card_section.title("test_section")
-        test_card_section.activityText("this is test section")
-        test_card_section.addFact("test", True)
-
-        # Pass card section in via Publisher
-        alert_publication["@teams.additional_card_sections"] = test_card_section
-
-        loaded_message = TeamsOutput._format_message(
-            alert, alert_publication, self.CREDS["url"]
-        )
-        card_payload = loaded_message.payload
-
-        # tests
-        assert_set_equal(
-            set(card_payload.keys()), {"title", "text", "themeColor", "sections"}
-        )
-        assert_equal(len(card_payload["sections"]), 1)
-
-        # Verify the section is the passed in test_card_section
-        assert_equal(card_payload["sections"][0], test_card_section.payload)
-        log_mock.assert_called_with("additional_sections is not a list, converting")
-
-    def test_format_message_multiple_sections_no_record(self):
-        """TeamsOutput - Format Message - Multiple card sections with no record"""
-        rule_name = "test_rule_default"
-        alert = get_random_alert(25, rule_name)
-        output = MagicMock(spec=TeamsOutput)
-        alert_publication = compose_alert(alert, output, "asdf")
-        alert_publication["@teams.with_record"] = False
-
-        # Setup test_card_section
-        test_card_section = pymsteams.cardsection()
-        test_card_section.title("test_section")
-        test_card_section.activityText("this is test section")
-        test_card_section.addFact("test", True)
-
-        # Pass card section in via Publisher
-        alert_publication["@teams.additional_card_sections"] = [
-            test_card_section,
-            test_card_section,
-        ]
-
-        loaded_message = TeamsOutput._format_message(
-            alert, alert_publication, self.CREDS["url"]
-        )
-        card_payload = loaded_message.payload
-
-        # tests
-        assert_set_equal(
-            set(card_payload.keys()), {"title", "text", "themeColor", "sections"}
-        )
-        assert_equal(len(card_payload["sections"]), 2)
-
-        # Verify the first and second section is the passed in test_card_section
-        assert_equal(card_payload["sections"][0], test_card_section.payload)
-        assert_equal(card_payload["sections"][1], test_card_section.payload)
-
-    @patch("logging.Logger.error")
-    def test_format_message_invalid_section(self, log_mock):
-        """TeamsOutput - Format Message - invalid section passed"""
-        rule_name = "test_rule_default"
-        alert = get_random_alert(25, rule_name)
-        output = MagicMock(spec=TeamsOutput)
-        alert_publication = compose_alert(alert, output, "asdf")
-        alert_publication["@teams.with_record"] = False
-
-        # Setup test_card_section
-        test_card_section = "invalid section"
-
-        # Pass card section in via Publisher
-        alert_publication["@teams.additional_card_sections"] = test_card_section
-
-        loaded_message = TeamsOutput._format_message(
-            alert, alert_publication, self.CREDS["url"]
-        )
-        card_payload = loaded_message.payload
-
-        # tests
-        assert_set_equal(set(card_payload.keys()), {"title", "text", "themeColor"})
-        log_mock.assert_called_with(
-            "additional_section: %s is not an instance of %s",
-            test_card_section,
-            pymsteams.cardsection,
+        # Verify Sections
+        alert_section_mock.assert_called()
+        alert_section_mock.assert_called_with(alert)
+        record_section_mock.assert_called()
+        record_section_mock.assert_called_with(alert.record)
+        add_sections_mock.assert_called()
+        assert_equal(add_sections_mock.call_count, 1)
+        loaded_message.addSection.assert_called()
+        loaded_message.addSection.assert_has_calls(
+            [
+                call('Alert_Section'),
+                call('Record_Section')
+            ],
+            any_order=False
         )
 
     @patch("logging.Logger.info")
-    @patch("requests.post")
-    def test_dispatch_success(self, url_mock, log_mock):
+    @patch.object(TeamsOutput, "_format_message")
+    def test_dispatch_success(self, message_mock, log_mock):
         """TeamsOutput - Dispatch Success"""
-        url_mock.return_value.status_code = 200
-        url_mock.return_value.json.return_value = dict()
+
+        message_mock.return_value = Mock(
+            send=Mock(return_value="Worked")
+        )
 
         assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
+        # Tests
+        log_mock.assert_called()
         log_mock.assert_called_with(
             "Successfully sent alert to %s:%s", self.SERVICE, self.DESCRIPTOR
         )
 
     @patch("logging.Logger.error")
-    @patch("requests.post")
-    def test_dispatch_failure(self, url_mock, log_mock):
+    @patch.object(TeamsOutput, "_format_message")
+    def test_dispatch_failure(self, message_mock, log_mock):
         """TeamsOutput - Dispatch Failure, Bad Request"""
-        json_error = {"message": "error message", "errors": ["error1"]}
-        url_mock.return_value.json.return_value = json_error
-        url_mock.return_value.status_code = 400
+        exception = TeamsWebhookException("BOOM!")
 
+        message_mock.return_value = Mock(
+            send=Mock(side_effect=exception)
+        )
         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
-        log_mock.assert_called_with(
-            "Failed to send alert to %s:%s", self.SERVICE, self.DESCRIPTOR
+        # Tests
+        log_mock.assert_called()
+        log_mock.assert_has_calls(
+            [
+                call('Error Sending Alert to Teams: %s', exception),
+                call('Failed to send alert to %s:%s', 'teams', 'unit_test_channel')
+            ]
         )
 
     @patch("logging.Logger.error")
-    def test_dispatch_bad_descriptor(self, log_mock):
-        """TeamsOutput - Dispatch Failure, Bad Descriptor"""
+    @patch.object(TeamsOutput, "_load_creds")
+    def test_dispatch_no_creds(self, creds_mock, log_mock):
+        """TeamsOutput - Dispatch Failure, No Creds"""
+        creds_mock.return_value = None
+        descriptor = "bad_descriptor"
+
+        # Tests
         assert_false(
             self._dispatcher.dispatch(
-                get_alert(), ":".join([self.SERVICE, "bad_descriptor"])
+                get_alert(), ":".join([self.SERVICE, descriptor])
             )
         )
-
-        log_mock.assert_called_with(
-            "Failed to send alert to %s:%s", self.SERVICE, "bad_descriptor"
+        log_mock.assert_called()
+        log_mock.assert_has_calls(
+            [
+                call("No credentials found for descriptor: %s", descriptor),
+                call("Failed to send alert to %s:%s", self.SERVICE, descriptor)
+            ],
+            any_order=False
         )
