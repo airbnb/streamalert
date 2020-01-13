@@ -110,13 +110,14 @@ class TerraformInitCommand(CLICommand):
 
         deploy(functions, config)
 
-        # we need to manually create the streamalerts table since terraform does not support this
-        # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
-        create_table('alerts', alerts_bucket, config)
-
+        # The alerts table must be created manually and after the database is created
         LOGGER.info('Building remainding infrastructure')
-        return tf_runner(refresh=False)
+        if tf_runner(refresh=False):
+            # we need to manually create the streamalerts table since terraform doesn't support this
+            # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
+            alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+            return create_table('alerts', alerts_bucket, config)
+        return False
 
     @staticmethod
     def _terraform_init_backend():
