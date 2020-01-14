@@ -241,6 +241,10 @@ class ParserBase(metaclass=ABCMeta):
         if not schema:
             return True
 
+        # Expect the record is a dict. Return False (schema doesn't match) if it is not.
+        if not isinstance(record, dict):
+            return False
+
         schema_keys = set(schema)
 
         keys = set(record) if not optionals else set(record).union(optionals)
