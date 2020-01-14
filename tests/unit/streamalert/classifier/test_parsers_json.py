@@ -1121,5 +1121,5 @@ class TestJSONParser:
         parser = JSONParser(options)
         assert_equal(parser.parse(record_data), True)
 
-        expected_result = [{"key": "value"}]
+        expected_result = [{'key': 'value'}]
         assert_equal(parser.parsed_records, expected_result)
