@@ -30,6 +30,11 @@ variable "dynamodb_table_name" {
   default = "streamalert_threat_intel_ioc_table"
 }
 
+variable "enable_rule_staging" {
+  description = "Deploy rule staging resources if enabled"
+  default     = false
+}
+
 variable "rules_table_arn" {
   description = "ARN of the rules table for reading rule staging information"
 }

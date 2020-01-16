@@ -24,14 +24,14 @@ data "aws_iam_policy_document" "read_threat_intel_table" {
 
 // Allow the Rules Engine to read the rules table
 resource "aws_iam_role_policy" "read_rules_table" {
-  count  = var.rules_table_arn == "" ? 0 : 1
+  count  = var.enable_rule_staging ? 1 : 0
   name   = "ReadRulesDynamoDB"
   role   = var.function_role_id
   policy = data.aws_iam_policy_document.read_rules_table[0].json
 }
 
 data "aws_iam_policy_document" "read_rules_table" {
-  count = var.rules_table_arn == "" ? 0 : 1
+  count = var.enable_rule_staging ? 1 : 0
 
   statement {
     effect = "Allow"
