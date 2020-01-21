@@ -12,6 +12,7 @@ Out of the box, StreamAlert supports:
 * **AWS Kinesis Firehose**
 * **AWS Lambda**
 * **AWS S3**
+* **AWS SES**
 * **AWS SNS**
 * **AWS SQS**
 * **CarbonBlack**

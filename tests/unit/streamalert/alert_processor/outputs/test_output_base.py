@@ -94,6 +94,7 @@ def test_output_loading():
         'aws-firehose',
         'aws-lambda',
         'aws-s3',
+        'aws-ses',
         'aws-sns',
         'aws-sqs',
         'aws-cloudwatch-log',
