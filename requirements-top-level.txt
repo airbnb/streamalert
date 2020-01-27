@@ -21,6 +21,7 @@ pathlib2
 policyuniverse
 pyfakefs
 pylint==2.3.1
+pymsteams
 requests
 Sphinx
 sphinx-rtd-theme
