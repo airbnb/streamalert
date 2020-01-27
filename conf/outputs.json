@@ -25,5 +25,8 @@
   ],
   "slack": [
     "sample-channel"
+  ],
+  "teams": [
+    "sample-webhook"
   ]
 }
