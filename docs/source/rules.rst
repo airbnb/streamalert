@@ -139,6 +139,7 @@ The following table provides an overview of each rule option, with more details 
 ``merge_by_keys``      ``List[str]``             List of key names that must match in value before merging alerts
 ``merge_window_mins``  ``int``                   Merge related alerts at this interval rather than sending immediately
 ``outputs``            ``List[str]``             List of alert outputs
+``dynamic_outputs``    ``List[function]``        List of functions which return valid outputs
 ``req_subkeys``        ``Dict[str, List[str]]``  Subkeys which must be present in the record
 =====================  ========================  ===============
 
@@ -255,10 +256,15 @@ The following table provides an overview of each rule option, with more details 
 
     The original (unmerged) alert will always be sent to `Athena <historical-search.html#athena-user-guide>`_.
 
+:dynamic_outputs:
+
+The ``dynamic_outputs`` keyword argument defines additional `outputs <outputs.html>`_ to an Alert which are dynamically generated.
+See `dynamic_outputs <dynamic_outputs.html>`_ for more info
+
 :outputs:
 
-  Defines the alert destination if the return value of a rule is ``True``.
-  Alerts are always sent to an `Athena table <historical-search.html#athena-user-guide>`_ which is easy to query.
+  The ``outputs`` keyword argument defines the alert destination if the return value of a rule is ``True``.
+  Alerts are always sent to an :ref:`Athena table <athena_user_guide>` which is easy to query.
   Any number of additional `outputs <outputs.html>`_ can be specified.
 
 :req_subkeys:

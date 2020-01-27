@@ -17,7 +17,7 @@ limitations under the License.
 import hashlib
 
 from mock import patch
-from nose.tools import assert_equal, raises
+from nose.tools import assert_equal, assert_true, raises
 
 from streamalert.shared import rule, rule_table
 
@@ -290,3 +290,63 @@ def {}(_):
         result = rule.Rule.rules_for_log_type('log_type_03')
         assert_equal(len(result), 1)
         assert_equal(result[0].name, 'rule_04')
+
+    def test_rule_outputs(self):
+        """Rule - outputs is configured"""
+        self._create_rule_helper(
+            'test_rule', options={'logs': ['log_type_01'], 'outputs': ['aws-sns:test']}
+        )
+
+        result = rule.Rule._rules["test_rule"]
+
+        # Verify outputs is configured
+        assert_equal(result.outputs, ['aws-sns:test'])
+
+    def test_rule_outputs_set(self):
+        """Rule - outputs, check outputs_set"""
+        self._create_rule_helper(
+            'test_rule',
+            options={
+                'logs': ['log_type_01'],
+                'outputs': ['aws-sns:test', 'aws-sns:test'],
+            },
+        )
+
+        result = rule.Rule._rules["test_rule"]
+
+        # Verify outputs is configured
+        assert_equal(result.outputs, ['aws-sns:test', 'aws-sns:test'])
+        assert_true(isinstance(result.outputs_set, set))
+        assert_equal(result.outputs_set, {'aws-sns:test'})
+
+    def test_rule_dynamic_outputs(self):
+        """Rule - dynamic_outputs is configured"""
+
+        def dynamic_function():
+            return "aws-sns:test"
+
+        self._create_rule_helper(
+            'test_rule',
+            options={'logs': ['log_type_01'], 'dynamic_outputs': [dynamic_function]},
+        )
+        result = rule.Rule._rules["test_rule"]
+
+        # Verify dynamic_outputs is configured
+        assert_equal(result.dynamic_outputs, [dynamic_function])
+
+    def test_rule_dynamic_outputs_set(self):
+        """Rule - dynamic_outputs, check dynamic_outputs_set"""
+
+        def dynamic_function():
+            return "aws-sns:test"
+
+        self._create_rule_helper(
+            'test_rule',
+            options={'logs': ['log_type_01'], 'dynamic_outputs': [dynamic_function]},
+        )
+        result = rule.Rule._rules["test_rule"]
+
+        # Verify outputs is configured
+        assert_equal(result.dynamic_outputs, [dynamic_function])
+        assert_true(isinstance(result.dynamic_outputs_set, set))
+        assert_equal(result.dynamic_outputs_set, {dynamic_function})
