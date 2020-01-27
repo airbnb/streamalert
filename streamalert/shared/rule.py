@@ -59,6 +59,7 @@ class Rule:
         self.merge_by_keys = kwargs.get('merge_by_keys')
         self.merge_window_mins = kwargs.get('merge_window_mins') or 0
         self.outputs = kwargs.get('outputs')
+        self.dynamic_outputs = kwargs.get('dynamic_outputs')
         self.publishers = kwargs.get('publishers')
         self.req_subkeys = kwargs.get('req_subkeys')
         self.initial_context = kwargs.get('context')
@@ -198,6 +199,11 @@ class Rule:
     @property
     def outputs_set(self):
         return set(self.outputs or [])
+
+
+    @property
+    def dynamic_outputs_set(self):
+        return set(self.dynamic_outputs or [])
 
     @classmethod
     def disabled_rules(cls):
