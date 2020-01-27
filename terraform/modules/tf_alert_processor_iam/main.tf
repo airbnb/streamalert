@@ -196,3 +196,24 @@ data "aws_iam_policy_document" "send_to_sqs_queues" {
     resources = ["${local.sqs_arn_prefix}:${element(local.sqs_outputs, count.index)}"]
   }
 }
+
+// Allow the Alert Processor to use ses:SendRawEmail
+resource "aws_iam_role_policy" "send_raw_emails" {
+  name   = "SendRawEmails"
+  role   = var.role_id
+  policy = data.aws_iam_policy_document.send_raw_emails.json
+}
+
+data "aws_iam_policy_document" "send_raw_emails" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ses:SendRawEmail"
+    ]
+
+    // * because there isn't a way to state the emails or
+    // domains before the user puts them in as a secret
+    resources = ["*"]
+  }
+}

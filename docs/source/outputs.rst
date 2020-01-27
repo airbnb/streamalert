@@ -9,6 +9,7 @@ Out of the box, StreamAlert supports:
 * **Amazon Kinesis Firehose**
 * **AWS Lambda**
 * **Amazon Simple Storage Service (S3)**
+* **AWS Simple Email Service (SES)**
 * **Amazon Simple Notification Service (SNS)**
 * **Amazon Simple Queue Service (SQS)**
 * **Carbon Black**
