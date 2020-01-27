@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init,no-self-use
+from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText
 import boto3
-from mock import MagicMock, patch
-from moto import mock_kinesis, mock_s3, mock_sns, mock_sqs
+from mock import MagicMock, Mock, patch
+from moto import mock_kinesis, mock_s3, mock_sns, mock_sqs, mock_ses
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -24,6 +26,7 @@ from nose.tools import (
     assert_true
 )
 
+from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import OutputProperty
 from streamalert.alert_processor.outputs import aws as aws_outputs
 from streamalert.alert_processor.outputs.aws import (
@@ -31,6 +34,7 @@ from streamalert.alert_processor.outputs.aws import (
     KinesisFirehoseOutput,
     LambdaOutput,
     S3Output,
+    SESOutput,
     SNSOutput,
     SQSOutput,
     CloudwatchLogOutput
@@ -40,7 +44,7 @@ from tests.unit.streamalert.alert_processor import (
     MOCK_ENV,
     REGION
 )
-from tests.unit.streamalert.alert_processor.helpers import get_alert
+from tests.unit.streamalert.alert_processor.helpers import get_alert, get_random_alert
 
 
 class TestAWSOutput:
@@ -241,3 +245,202 @@ class TestCloudwatchLogOutput:
         assert_equal(log_mock.call_count, 3)
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
+
+
+@mock_ses
+class TestSESOutput:
+    """Test class for SESOutput"""
+    DESCRIPTOR = 'unit_test'
+    SERVICE = 'aws-ses'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
+    CREDS = {'to_emails': 'to@example.com', 'from_email': 'from@example.com'}
+
+    @patch.dict('os.environ', MOCK_ENV)
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def setup(self, provider_constructor):
+        """Create the dispatcher and the mock SES queue."""
+        provider = MagicMock()
+        provider_constructor.return_value = provider
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
+
+        # Setup SES client and verify email addresses for tests
+        ses = boto3.client('ses', region_name=REGION)
+        ses.verify_email_identity(EmailAddress="to@example.com")
+        ses.verify_email_identity(EmailAddress="to_2@example.com")
+        ses.verify_email_identity(EmailAddress="from@example.com")
+
+        self._dispatcher = SESOutput(CONFIG)
+        self._provider = provider
+
+    @patch('logging.Logger.info')
+    def test_dispatch_success(self, log_mock):
+        """SESOutput - Dispatch Success"""
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+    def test_subject_override(self):
+        """SESOutput - Change default Subject"""
+        rule_name = 'test_subject_override'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, 'asdf')
+        alert_publication['@aws-ses.subject'] = 'this is a test'
+
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # check subject override worked
+        assert_equal(msg["Subject"], 'this is a test')
+
+    def test_build_email_to_emails_single(self):
+        """SESOutput - Single recipient"""
+        rule_name = 'test_single_recipient'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # verify to_emails is set
+        assert_equal(msg["To"], "to@example.com")
+
+    def test_build_email_to_emails_multiple(self):
+        """SESOutput - Multiple recipients"""
+        rule_name = 'test_multiple_recipients'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        creds = {'to_emails': 'to@example.com,to_2@example.com', 'from_email': 'from@example.com'}
+        msg = SESOutput._build_email(alert, alert_publication, creds)
+
+        # verify to_emails is set
+        assert_equal(msg["To"], creds["to_emails"])
+
+    def test_build_email_from_email(self):
+        """SESOutput - Test sender"""
+        rule_name = 'test_sender'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # verify to_emails is set
+        assert_equal(msg["From"], self.CREDS["from_email"])
+
+    def test_add_single_attachment(self):
+        """SESOutput - Test single attachment"""
+        rule_name = 'test_single_attachment'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # Verify attachment
+        payloads = msg.get_payload()
+        for payload in payloads:
+            if isinstance(payload, MIMEApplication):
+                assert_equal(payload.get_filename(), "record.json")
+                break
+        else:
+            # Raise an error if no payload of type MIMEApplication is found
+            raise AssertionError
+
+    def test_no_attachment(self):
+        """SESOutput - No attachment"""
+        rule_name = 'test_no_attachment'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        # remove the default record
+        alert_publication['@aws-ses.attach_record'] = False
+
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+        payloads = msg.get_payload()
+
+        # Verify no attachment
+        assert_equal(len(payloads), 1)
+        assert_equal(payloads[0].get_payload(), "Please review the attached record.json")
+
+    def test_add_multiple_attachments(self):
+        """SESOutput - Multiple attachments"""
+        rule_name = 'test_multiple_attachments'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        # remove the default record
+        alert_publication['@aws-ses.attach_record'] = False
+        attachments = {
+            'file_one.json': '{"test": true, "foo": "bar"}',
+            'file_two.json': '{"test": true, "bar": "foo"}'
+        }
+        alert_publication['@aws-ses.attachments'] = attachments
+
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # Tests
+        payloads = msg.get_payload()
+        for payload in payloads:
+            if isinstance(payload, MIMEApplication):
+                assert_true(payload.get_filename() in attachments.keys())
+
+    def test_override_default_body_string(self):
+        """SESOutput - Override body string"""
+        rule_name = 'test_override_body_string'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        alert_publication["@aws-ses.body"] = "i am a test"
+
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # Tests
+        payloads = msg.get_payload()
+        for payload in payloads:
+            if isinstance(payload, MIMEText):
+                assert_equal(payload.get_payload(), "i am a test")
+                break
+        else:
+            # Raise an error if no payload of type MIMEText is found
+            raise AssertionError
+
+    def test_override_default_body_html(self):
+        """SESOutput - Override body html"""
+        rule_name = 'test_override_body_html'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+
+        alert_publication["@aws-ses.body"] = {
+            "html": "<head><body><p>i am a test</p></body></head>"
+        }
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # Tests
+        payloads = msg.get_payload()
+        for payload in payloads:
+            if payload.is_multipart():
+                # should only be one payload on this multipart
+                html = payload.get_payload()[0].get_payload()
+                assert_equal(html, "<head><body><p>i am a test</p></body></head>")
+                break
+        else:
+            # Raise an error if no payload of type MIMEText is found
+            raise AssertionError
