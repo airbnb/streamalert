@@ -83,6 +83,7 @@ pycparser==2.19
 pyflakes==2.1.1
 Pygments==2.4.2
 PyJWT==1.7.1
+pymsteams==0.1.12
 pyparsing==2.4.2
 pyrsistent==0.15.5
 pytest==5.0.0

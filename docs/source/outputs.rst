@@ -22,6 +22,7 @@ Out of the box, StreamAlert supports:
 * **PagerDuty**
 * **Phantom**
 * **Slack**
+* **Microsoft Teams**
 
 StreamAlert can be extended to support any API. Creating a new output to send alerts to is easily accomplished through inheritance from the ``StreamOutputBase`` class. More on that in the `Adding Support for New Services`_ section below.
 
@@ -41,7 +42,7 @@ Adding a new configuration for a currently supported service is handled using ``
     - ``<SERVICE_NAME>`` above should be one of the following supported service identifiers:
       ``aws-cloudwatch-log``, ``aws-firehose``, ``aws-lambda``, ``aws-s3``, ``aws-sns``, ``aws-sqs``,
       ``carbonblack``, ``github``, ``jira``, ``komand``, ``pagerduty``, ``pagerduty-incident``,
-      ``pagerduty-v2``, ``phantom``, ``slack``
+      ``pagerduty-v2``, ``phantom``, ``slack``, ``teams``
 
 For example:
  - ``python manage.py output slack``
