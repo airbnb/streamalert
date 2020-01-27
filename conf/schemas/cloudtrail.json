@@ -60,6 +60,8 @@
         "resources",
         "serviceEventDetails",
         "sharedEventID",
+        "sourceIPAddress",
+        "userAgent",
         "vpcEndpointId"
       ]
     }
