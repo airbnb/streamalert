@@ -74,6 +74,7 @@ Table of Contents
    rules
    testing
    outputs
+   dynamic-outputs
    publishers
    lookup-tables
    apps
