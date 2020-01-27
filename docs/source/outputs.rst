@@ -19,6 +19,7 @@ Out of the box, StreamAlert supports:
 * **PagerDuty**
 * **Phantom**
 * **Slack**
+* **Microsoft Teams**
 
 StreamAlert can be extended to support any API. Creating a new output to send alerts to is easily accomplished through inheritance from the ``StreamOutputBase`` class. More on that in the `Adding Support for New Services`_ section below.
 
@@ -34,7 +35,6 @@ Credentials are never cached on disk in a decrypted state.
 Configuration
 *************
 Adding a new configuration for a currently supported service is handled using ``manage.py``:
-
 
 .. code-block:: bash
 

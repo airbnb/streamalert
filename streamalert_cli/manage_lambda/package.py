@@ -54,6 +54,7 @@ class LambdaPackage:
         'netaddr': 'netaddr==0.7.19',
         'policyuniverse': 'policyuniverse==1.3.2.1',
         'requests': 'requests==2.22.0',
+        'pymsteams': 'pymsteams==0.1.12'
     }
 
     def __init__(self, config):
@@ -226,7 +227,7 @@ class AlertProcessorPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'alert_processor'
-    package_libs = {'cbapi', 'netaddr', 'requests'}
+    package_libs = {'cbapi', 'netaddr', 'pymsteams', 'requests'}
 
 
 class AlertMergerPackage(LambdaPackage):
