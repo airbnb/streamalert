@@ -13,8 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from streamalert.shared import THREAT_INTEL_DOWNLOADER_NAME
 from streamalert_cli.manage_lambda.package import ThreatIntelDownloaderPackage
 from streamalert_cli.terraform.common import infinitedict, monitoring_topic_name
+from streamalert_cli.terraform.lambda_module import generate_lambda
 
 
 def generate_threat_intel_downloader(config):
@@ -29,24 +31,39 @@ def generate_threat_intel_downloader(config):
     # Use the monitoring topic as a dead letter queue
     dlq_topic = monitoring_topic_name(config)
 
+    prefix = config['global']['account']['prefix']
+
     # Threat Intel Downloader module
-    ti_downloader_config = config['lambda']['threat_intel_downloader_config']
-    ti_downloader_dict = infinitedict()
-    ti_downloader_dict['module']['threat_intel_downloader'] = {
+    tid_config = config['lambda']['threat_intel_downloader_config']
+
+    # old format of config used interval, but tf_lambda expects 'schedule_expression'
+    if 'schedule_expression' not in tid_config:
+        tid_config['schedule_expression'] = tid_config.get('interval', 'rate(1 day)')
+
+    result = infinitedict()
+
+    # Set variables for the threat intel downloader configuration
+    result['module']['threat_intel_downloader_iam'] = {
+        'source': './modules/tf_threat_intel_downloader',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
-        'source': './modules/tf_threat_intel_downloader',
-        'lambda_handler': ThreatIntelDownloaderPackage.lambda_handler,
-        'lambda_memory': ti_downloader_config.get('memory', '128'),
-        'lambda_timeout': ti_downloader_config.get('timeout', '60'),
-        'lambda_log_level': ti_downloader_config.get('log_level', 'info'),
-        'interval': ti_downloader_config.get('interval', 'rate(1 day)'),
-        'prefix': config['global']['account']['prefix'],
+        'prefix': prefix,
+        'function_role_id': '${module.threat_intel_downloader.role_id}',
+        'function_alias_arn': '${module.threat_intel_downloader.function_alias_arn}',
+        'function_cloudwatch_log_group_name': '${module.threat_intel_downloader.log_group_name}',
         'monitoring_sns_topic': dlq_topic,
-        'table_rcu': ti_downloader_config.get('table_rcu', '10'),
-        'table_wcu': ti_downloader_config.get('table_wcu', '10'),
-        'max_read_capacity': ti_downloader_config.get('max_read_capacity', '5'),
-        'min_read_capacity': ti_downloader_config.get('min_read_capacity', '5'),
-        'target_utilization': ti_downloader_config.get('target_utilization', '70')
+        'table_rcu': tid_config.get('table_rcu', '10'),
+        'table_wcu': tid_config.get('table_wcu', '10'),
+        'max_read_capacity': tid_config.get('max_read_capacity', '5'),
+        'min_read_capacity': tid_config.get('min_read_capacity', '5'),
+        'target_utilization': tid_config.get('target_utilization', '70')
     }
-    return ti_downloader_dict
+
+    result['module']['threat_intel_downloader'] = generate_lambda(
+        '{}_streamalert_{}'.format(prefix, THREAT_INTEL_DOWNLOADER_NAME),
+        ThreatIntelDownloaderPackage.package_name + '.zip',
+        ThreatIntelDownloaderPackage.lambda_handler,
+        tid_config,
+        config,
+    )
+    return result
