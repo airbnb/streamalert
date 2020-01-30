@@ -10,44 +10,16 @@ variable "prefix" {
   type = string
 }
 
-variable "lambda_handler" {
+variable "function_role_id" {
+  description = "Threat Intel Downloader function IAM Role ID, exported from the tf_lambda module"
 }
 
-variable "lambda_memory" {
-  type    = string
-  default = "128"
+variable "function_alias_arn" {
+  description = "Threat Intel Downloader function alias arn, exported from the tf_lambda module"
 }
 
-variable "lambda_timeout" {
-  type    = string
-  default = "120"
-}
-
-variable "filename" {
-  type    = string
-  default = "threat_intel_downloader.zip"
-}
-
-variable "lambda_log_level" {
-  type    = string
-  default = "info"
-}
-
-variable "enable_metrics" {
-  default = false
-}
-
-variable "interval" {
-  type    = string
-  default = "rate(1 day)"
-}
-
-variable "table_rcu" {
-  default = 10
-}
-
-variable "table_wcu" {
-  default = 10
+variable "function_cloudwatch_log_group_name" {
+  description = "Threat Intel Downloader function cloudwatch log group name, exported from the tf_lambda module"
 }
 
 variable "parameter_name" {
@@ -58,8 +30,14 @@ variable "parameter_name" {
 variable "monitoring_sns_topic" {
 }
 
-variable "log_retention" {
-  default = 14
+// ***** DynamoDB Table configuration *****
+
+variable "table_rcu" {
+  default = 10
+}
+
+variable "table_wcu" {
+  default = 10
 }
 
 variable "max_read_capacity" {
