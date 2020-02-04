@@ -17,7 +17,8 @@
     },
     "sns": {
       "prefix_cluster_sample_topic": [
-          "binaryalert"
+        "binaryalert",
+        "trendmicro"
       ]
     },
     "streamalert_app": {

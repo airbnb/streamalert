@@ -127,7 +127,7 @@ If you are adding features to existing classes with tests, you must add test cas
 Integration Testing
 ~~~~~~~~~~~~~~~~~~~
 
-To verify StreamAlert works from end-to-end, locally, follow the testing instructions `here <https://streamalert.io/rules.html>`_.
+To verify StreamAlert works from end-to-end, locally, follow the testing instructions `here <https://streamalert.io/en/stable/testing.html#running-tests>`_.
 
 Pull Request
 ------------
