@@ -57,6 +57,7 @@ class Rule:
         self.logs = kwargs.get('logs')
         self.matchers = kwargs.get('matchers')
         self.merge_by_keys = kwargs.get('merge_by_keys')
+        self.merge_send_initial = kwargs.get('merge_send_initial')
         self.merge_window_mins = kwargs.get('merge_window_mins') or 0
         self.outputs = kwargs.get('outputs')
         self.dynamic_outputs = kwargs.get('dynamic_outputs')

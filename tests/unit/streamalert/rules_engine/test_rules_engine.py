@@ -206,6 +206,7 @@ class TestRulesEngine:
             publishers=None,
             context=None,
             merge_by_keys=None,
+            merge_send_initial=False,
             merge_window_mins=0
         )
 
@@ -230,6 +231,7 @@ class TestRulesEngine:
                 log_source='log_type',
                 log_type='json',
                 merge_by_keys=None,
+                merge_send_initial=False,
                 merge_window=timedelta(minutes=0),
                 publishers=None,
                 rule_description='rule description',
@@ -250,6 +252,7 @@ class TestRulesEngine:
             publishers=None,
             context=None,
             merge_by_keys=None,
+            merge_send_initial=False,
             merge_window_mins=0
         )
 
@@ -274,6 +277,7 @@ class TestRulesEngine:
                 log_source='log_type',
                 log_type='json',
                 merge_by_keys=None,
+                merge_send_initial=False,
                 merge_window=timedelta(minutes=0),
                 publishers=None,
                 rule_description='rule description',
@@ -307,6 +311,7 @@ class TestRulesEngine:
             },
             context=None,
             merge_by_keys=None,
+            merge_send_initial=False,
             merge_window_mins=0
         )
 
@@ -331,6 +336,7 @@ class TestRulesEngine:
                 log_source='log_type',
                 log_type='json',
                 merge_by_keys=None,
+                merge_send_initial=False,
                 merge_window=timedelta(minutes=0),
                 publishers={
                     'slack:test': [

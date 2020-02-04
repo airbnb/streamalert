@@ -20,6 +20,9 @@ from boto3.dynamodb.conditions import Attr, Key
 
 from streamalert.shared.alert import Alert
 from streamalert.shared.helpers.dynamodb import ignore_conditional_failure
+from streamalert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 class AlertTable:
@@ -188,3 +191,19 @@ class AlertTable:
         with self._table.batch_writer() as batch:
             for rule_name, alert_id in keys:
                 batch.delete_item(Key={'RuleName': rule_name, 'AlertID': alert_id})
+
+    @ignore_conditional_failure
+    def update_initial_alert(self, alert):
+        """Update the table for this specific alert
+
+        Args:
+            alert (Alert): Alert instance to update merge_initial_alert_sent to True
+        """
+        LOGGER.debug('Updating initial Alert: %s', alert.alert_id)
+
+        self._table.update_item(
+            Key=alert.dynamo_key,
+            UpdateExpression='SET MergeInitialSent = :merge_initial_sent, Context = :context',
+            ExpressionAttributeValues={':merge_initial_sent': True, ':context': alert.context},
+            ConditionExpression='attribute_exists(AlertID)'
+        )

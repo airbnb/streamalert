@@ -199,6 +199,7 @@ class RulesEngine:
             log_source=payload['log_schema_type'],
             log_type=payload['data_type'],
             merge_by_keys=rule.merge_by_keys,
+            merge_send_initial=rule.merge_send_initial,
             merge_window=timedelta(minutes=rule.merge_window_mins),
             publishers=self._configure_publishers(rule),
             rule_description=rule.description,

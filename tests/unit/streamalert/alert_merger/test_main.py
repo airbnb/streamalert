@@ -99,7 +99,11 @@ class TestAlertMerger:
             Alert('', {'key': True}, set(),
                   merge_by_keys=['key'], merge_window=timedelta(minutes=10))
         ]
-        assert_equal([], main.AlertMerger._merge_groups(alerts))
+
+        groups = self.merger._merge_groups(alerts)
+        assert_equal(1, len(groups))
+        assert_equal(None, groups[0][1])
+        assert_equal(alerts[0], groups[0][0])
 
     def test_merge_groups_single(self):
         """Alert Merger - Alert Collection - Single Merge Group"""
@@ -112,9 +116,9 @@ class TestAlertMerger:
                   merge_by_keys=['key'], merge_window=timedelta(minutes=5))
         ]
 
-        groups = main.AlertMerger._merge_groups(alerts)
+        groups = self.merger._merge_groups(alerts)
         assert_equal(1, len(groups))
-        assert_equal(alerts, groups[0].alerts)
+        assert_equal(alerts, groups[0][1].alerts)
 
     def test_merge_groups_complex(self):
         """Alert Merger - Alert Collection - Complex Merge Groups"""
@@ -152,16 +156,19 @@ class TestAlertMerger:
                   merge_by_keys=['key'], merge_window=timedelta(minutes=5)),
 
             # This alert (created now) is too recent to fit in any merge group.
+            # but will be sent as a merged_initial alert
             Alert('same_rule_name', {'key': 'A'}, set(),
                   merge_by_keys=['key'], merge_window=timedelta(minutes=10))
         ]
 
-        groups = main.AlertMerger._merge_groups(alerts)
-        assert_equal(4, len(groups))
-        assert_equal(alerts[0:2], groups[0].alerts)
-        assert_equal(alerts[2:5], groups[1].alerts)
-        assert_equal(alerts[5:7], groups[2].alerts)
-        assert_equal([alerts[7]], groups[3].alerts)
+        groups = self.merger._merge_groups(alerts)
+        assert_equal(5, len(groups))
+        assert_equal(alerts[0:2], groups[0][1].alerts)
+        assert_equal(alerts[2:5], groups[1][1].alerts)
+        assert_equal(alerts[5:7], groups[2][1].alerts)
+        assert_equal([alerts[7]], groups[3][1].alerts)
+        assert_equal(None, groups[4][1])
+        assert_equal(alerts[8], groups[4][0])
 
     @patch.object(main.AlertMergeGroup, 'MAX_ALERTS_PER_GROUP', 2)
     def test_merge_groups_limit_reached(self):
@@ -173,11 +180,84 @@ class TestAlertMerger:
         ] * 5
 
         # Since max alerts per group is 2, it should create 3 merged groups.
-        groups = main.AlertMerger._merge_groups(alerts)
+        groups = self.merger._merge_groups(alerts)
         assert_equal(3, len(groups))
-        assert_equal(alerts[0:2], groups[0].alerts)
-        assert_equal(alerts[2:4], groups[1].alerts)
-        assert_equal(alerts[4:], groups[2].alerts)
+        assert_equal(alerts[0:2], groups[0][1].alerts)
+        assert_equal(alerts[2:4], groups[1][1].alerts)
+        assert_equal(alerts[4:], groups[2][1].alerts)
+
+    def test_merge_groups_single_with_initial(self):
+        """Alert Merger - Alert Collection - Single Merge Group with initial alert"""
+
+        alerts = [
+            Alert('', {'key': True}, set(),
+                  created=datetime(year=2000, month=1, day=1),
+                  merge_by_keys=['key'],
+                  merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)
+                  ),
+            Alert('', {'key': True, 'other': True}, set(),
+                  created=datetime(year=2000, month=1, day=1),
+                  merge_by_keys=['key'],
+                  merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)
+                  )
+        ]
+
+        groups = self.merger._merge_groups(alerts)
+
+        assert_equal(1, len(groups))
+        assert_equal(alerts, groups[0][1].alerts)
+        assert_equal(alerts[0], groups[0][0])
+
+    def test_merge_groups_complex_with_initial(self):
+        """Alert Merger - Alert Collection - Complex Merge Groups with initial"""
+        alerts = [
+            # Merge group 1 - key 'A' minutes 0-5
+            Alert('same_rule_name', {'key': 'A'}, set(),
+                  created=datetime(year=2000, month=1, day=1),
+                  merge_by_keys=['key'], merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)),
+            Alert('same_rule_name', {'key': 'A'}, set(),
+                  created=datetime(year=2000, month=1, day=1, minute=1),
+                  merge_by_keys=['key'], merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)),
+
+            # Merge group 2 - Key B minutes 0-5
+            Alert('same_rule_name', {'key': 'B'}, set(),
+                  created=datetime(year=2000, month=1, day=1, minute=2),
+                  merge_by_keys=['key'], merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)),
+            Alert('same_rule_name', {'key': 'B'}, set(),
+                  created=datetime(year=2000, month=1, day=1, minute=2, second=30),
+                  merge_by_keys=['key'], merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)),
+            Alert('same_rule_name', {'key': 'B'}, set(),
+                  created=datetime(year=2000, month=1, day=1, minute=3),
+                  merge_by_keys=['key'], merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)),
+
+            # Merge group 3 - Different merge keys
+            Alert('same_rule_name', {'key': 'A', 'other': 'B'}, set(),
+                  created=datetime(year=2000, month=1, day=1, minute=4),
+                  merge_by_keys=['key', 'other'], merge_send_initial=True,
+                  merge_window=timedelta(minutes=5)),
+            Alert('same_rule_name', {'key': 'A', 'other': 'B'}, set(),
+                  created=datetime(year=2000, month=1, day=1, minute=5),
+                  merge_by_keys=['key', 'other'], merge_send_initial=True,
+                  merge_window=timedelta(minutes=5))
+        ]
+
+        groups = self.merger._merge_groups(alerts)
+        assert_equal(3, len(groups))
+
+        # Check each group of alerts and the initial is defined
+        assert_equal(alerts[0:2], groups[0][1].alerts)
+        assert_equal(alerts[0], groups[0][0])
+        assert_equal(alerts[2:5], groups[1][1].alerts)
+        assert_equal(alerts[2], groups[1][0])
+        assert_equal(alerts[5:7], groups[2][1].alerts)
+        assert_equal(alerts[5], groups[2][0])
 
     @patch.object(main, 'LOGGER')
     @patch.object(main.AlertMerger, 'MAX_LAMBDA_PAYLOAD_SIZE', 600)

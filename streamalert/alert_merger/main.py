@@ -111,23 +111,30 @@ class AlertMerger:
             alerts (list): List of Alert instances with defined merge configuration.
 
         Returns:
-            list<AlertMergeGroup>: Each returned merge group has the following properties:
-                (1) The oldest alert is older than its merge window (i.e. should be sent now), AND
-                (2) All alerts in the merge group fit within a single merge window, AND
-                (3) All alerts in the merge group have the same values for all of their merge keys.
+            list(tuple(initial_alert, <AlertMergeGroup>): Each tuple has the following properties:
+              initial_alert (<Alert>): This is the first alert within a given merge_group
+              <AlertMergeGroup>:
+                  (1) The oldest alert is older than its merge window (i.e. should be sent now), AND
+                  (2) All alerts in the merge group fit within a single merge window, AND
+                  (3) All alerts in the merge group have the same values for all of their merge
+                      keys.
 
-            Alerts which are too recent to fit in any merge group are excluded from the results.
+            Alerts which are too recent to fit in any merge group are not yet merged, but passed
+            back as the initial_alert.
         """
         merge_groups = []
 
         for alert in sorted(alerts):
             # Iterate over alerts (in order of creation) and try to add them to each merge group.
-            if not any(group.add(alert) for group in merge_groups):
+            if not any(group.add(alert) for _, group in merge_groups):
                 # The alert doesn't fit in any merge group - try creating a new one.
                 if datetime.utcnow() < alert.created + alert.merge_window:
                     # This alert is too recent - no other alerts can be merged. Stop here.
+                    # Ensure the initial alert is present to be sent and merged
+                    merge_groups.append((alert, None))
                     break
-                merge_groups.append(AlertMergeGroup(alert))
+
+                merge_groups.append((alert, AlertMergeGroup(alert)))
 
         return merge_groups
 
@@ -179,9 +186,32 @@ class AlertMerger:
                     # It should have been deleted by the alert processor, but we can do it now.
                     alerts_to_delete.append(alert)
 
-            for group in self._merge_groups(merge_enabled_alerts):
+            for initial_alert, group in self._merge_groups(merge_enabled_alerts):
+
+                if initial_alert.merge_send_initial and not initial_alert.merge_initial_sent:
+                    LOGGER.info('Creating merged initial alert and sending to outputs')
+
+                    # Keep a consistent format for the publishers on this rule
+                    initial_merged = Alert.merge([initial_alert])
+                    initial_merged.context["initial_alert"] = True
+
+                    # send it via the same method as other merged_alerts
+                    merged_alerts.append(initial_merged)
+
+                    # Update the initial_alert to reflect it has been sent
+                    initial_alert.context["relates_to_alert"] = initial_merged.alert_id
+                    self.table.update_initial_alert(initial_alert)
+
+                    # The initial alert will be merged later on and cleaned up so it will be
+                    # present in two merged alerts
+
+                if not group:
+                    # No group of alerts to send, so just sending and update the initial alert
+                    continue
+
                 # Create a new merged Alert.
                 new_alert = Alert.merge(group.alerts)
+
                 LOGGER.info('Merged %d alerts into a new alert with ID %s',
                             len(group.alerts), new_alert.alert_id)
                 merged_alerts.append(new_alert)

@@ -24,13 +24,15 @@ class AlertCreationError(Exception):
     """Raised when alert creation fails because of an invalid format."""
 
 
+# pylint: disable=too-many-instance-attributes
 class Alert:
     """Encapsulates a single alert and handles serializing to Dynamo and merging."""
 
     _EXPECTED_INIT_KWARGS = {
         'alert_id', 'attempts', 'cluster', 'context', 'created', 'dispatched', 'log_source',
-        'log_type', 'merge_by_keys', 'merge_window', 'outputs_sent', 'publishers',
-        'rule_description', 'source_entity', 'source_service', 'staged'
+        'log_type', 'merge_by_keys', 'merge_initial_sent', 'merge_send_initial', 'merge_window',
+        'outputs_sent', 'publishers', 'rule_description', 'source_entity', 'source_service',
+        'staged'
     }
     DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
@@ -53,6 +55,8 @@ class Alert:
             log_type (str): The type of the triggering log. Usually "json"
             merge_by_keys (list): Alerts are merged if the values associated with all of these
                 keys are equal. Keys can be present at any depth in the record.
+            merge_initial_sent (bool): States if this initial alert has been sent
+            merge_send_initial (bool): Should the first alert in a merge_group be sent
             merge_window (timedelta): Merged alerts are sent at this interval.
             outputs_sent (set): Subset of outputs which have sent successfully.
             publishers (str|list|dict): A structure of Strings, representing either fully qualified
@@ -101,6 +105,8 @@ class Alert:
         self.log_source = kwargs.get('log_source') or None
         self.log_type = kwargs.get('log_type') or None
         self.merge_by_keys = kwargs.get('merge_by_keys') or []
+        self.merge_initial_sent = kwargs.get("merge_initial_sent", False)
+        self.merge_send_initial = kwargs.get('merge_send_initial') or False
         self.merge_window = kwargs.get('merge_window') or timedelta(minutes=0)
         self.outputs_sent = kwargs.get('outputs_sent') or set()
         self.rule_description = kwargs.get('rule_description') or None
@@ -138,6 +144,7 @@ class Alert:
             outputs_to_send_now = self.outputs.intersection(resources.get_required_outputs())
         else:
             outputs_to_send_now = self.outputs
+
         return outputs_to_send_now.difference(self.outputs_sent)
 
     def dynamo_record(self):
@@ -157,6 +164,8 @@ class Alert:
             'LogSource': self.log_source,
             'LogType': self.log_type,
             'MergeByKeys': self.merge_by_keys,
+            'MergeInitialSent': self.merge_initial_sent,
+            'MergeSendInitial': self.merge_send_initial,
             'MergeWindowMins': int(self.merge_window.total_seconds() / 60),
             'Outputs': self.outputs,
             'OutputsSent': self.outputs_sent or None,  # Empty sets not allowed by Dynamo
@@ -198,6 +207,8 @@ class Alert:
                 log_source=record.get('LogSource'),
                 log_type=record.get('LogType'),
                 merge_by_keys=record.get('MergeByKeys'),
+                merge_initial_sent=record.get('MergeInitialSent'),
+                merge_send_initial=record.get('MergeSendInitial'),
                 merge_window=timedelta(minutes=int(record.get('MergeWindowMins', 0))),
                 outputs_sent=set(record.get('OutputsSent') or []),
                 publishers=record.get('Publishers'),
