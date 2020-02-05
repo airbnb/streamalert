@@ -1,2 +1,2 @@
 # Install git so we can clone the streamalert repository
-apt-get install git -y
+apt-get install git awscli -y
