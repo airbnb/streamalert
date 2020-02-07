@@ -94,7 +94,7 @@ class TestTerraformGenerate:
                 'required_version': '~> 0.12.9', # Changes to this should require unit test update
                 'backend': {
                     's3': {
-                        'bucket': 'unit-test.streamalert.terraform.state',
+                        'bucket': 'unit-test-streamalert-terraform-state',
                         'key': 'streamalert_state/terraform.tfstate',
                         'region': 'us-west-1',
                         'dynamodb_table': 'unit-test_streamalert_terraform_state_lock',
@@ -150,7 +150,7 @@ class TestTerraformGenerate:
                         'policy': ANY
                     },
                     'terraform_remote_state': {
-                        'bucket': 'unit-test.streamalert.terraform.state',
+                        'bucket': 'unit-test-streamalert-terraform-state',
                         'acl': 'private',
                         'force_destroy': True,
                         'versioning': {
@@ -158,7 +158,7 @@ class TestTerraformGenerate:
                         },
                         'logging': {
                             'target_bucket': 'unit-test-streamalert-s3-logging',
-                            'target_prefix': 'unit-test.streamalert.terraform.state/'
+                            'target_prefix': 'unit-test-streamalert-terraform-state/'
                         },
                         'server_side_encryption_configuration': {
                             'rule': {

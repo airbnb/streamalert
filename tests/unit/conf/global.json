@@ -42,7 +42,7 @@
   },
   "terraform": {
     "create_bucket": true,
-    "tfstate_bucket": "unit-test.streamalert.terraform.state",
+    "tfstate_bucket": "unit-test-streamalert-terraform-state",
     "tfstate_s3_key": "streamalert_state/terraform.tfstate"
   },
   "threat_intel": {

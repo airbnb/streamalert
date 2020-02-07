@@ -62,7 +62,7 @@ def basic_streamalert_config():
             },
             'terraform': {
                 'create_bucket': True,
-                'tfstate_bucket': 'unit-test.streamalert.terraform.state',
+                'tfstate_bucket': 'unit-test-streamalert-terraform-state',
                 'tfstate_s3_key': 'streamalert_state/terraform.tfstate'
             },
         },
