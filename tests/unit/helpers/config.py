@@ -307,7 +307,7 @@ def athena_cli_basic_config():
         'lambda': {
             'athena_partition_refresh_config': {
                 'buckets': {
-                    'unit-test.streamalert.data': 'data',
+                    'unit-test-streamalert-data': 'data',
                     'unit-test-streamalerts': 'alerts'
                 },
             }

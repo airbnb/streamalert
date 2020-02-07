@@ -26,7 +26,7 @@ def test_generate_athena():
     CONFIG['lambda']['athena_partition_refresh_config'] = {
         'buckets': {
             'unit-test-streamalerts': 'alerts',
-            'unit-test.streamalert.data': 'data'
+            'unit-test-streamalert-data': 'data'
         },
         'timeout': '60',
         'memory': '128',
@@ -50,7 +50,7 @@ def test_generate_athena():
                 'lambda_timeout': '60',
                 'athena_data_buckets': [
                     'unit-test-streamalerts',
-                    'unit-test.streamalert.data'
+                    'unit-test-streamalert-data'
                 ],
                 'prefix': 'unit-test',
                 'account_id': '12345678910',

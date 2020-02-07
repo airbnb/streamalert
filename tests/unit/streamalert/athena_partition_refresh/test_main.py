@@ -48,7 +48,7 @@ class TestAthenaRefresher:
                 b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json'
             },
-            'unit-test.streamalert.data': {
+            'unit-test-streamalert-data': {
                 b'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
@@ -85,19 +85,19 @@ class TestAthenaRefresher:
                                              'alerts/2017/08/26/15\'')
             },
             'log_type_1': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_1/2017/08/26/14\'')
             },
             'log_type_2': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_2/2017/08/26/14\''),
-                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_2/2017/08/26/15\''),
-                '(dt = \'2017-08-26-16\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-16\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_2/2017/08/26/16\''),
             },
             'log_type_3': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_3/2017/08/26/14\''),
             }
         }
@@ -108,7 +108,7 @@ class TestAthenaRefresher:
                 b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
                 b'alerts/2017/08/26/15/rule_name_alerts-1304134918401.json'
             },
-            'unit-test.streamalert.data': {
+            'unit-test-streamalert-data': {
                 b'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/2017/08/26/14/test-data-11111-22222-33334.snappy',
