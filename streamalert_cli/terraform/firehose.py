@@ -29,8 +29,8 @@ def generate_firehose(logging_bucket, main_dict, config):
         return
 
     firehose_config = config['global']['infrastructure']['firehose']
-    firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
-    firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
+    firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert-data')
+    firehose_s3_bucket_name = '{}-{}'.format(config['global']['account']['prefix'],
                                              firehose_s3_bucket_suffix)
 
     # Firehose Setup module

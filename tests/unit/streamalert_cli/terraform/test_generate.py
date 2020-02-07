@@ -265,7 +265,7 @@ class TestTerraformGenerate:
 
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['s3_bucket_name'],
-            'unit-test.my-data'
+            'unit-test-my-data'
         )
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['buffer_size'],
