@@ -52,7 +52,7 @@
   },
   "athena_partition_refresh_config": {
     "buckets": {
-      "PREFIX_GOES_HERE.streamalerts": "alerts"
+      "PREFIX_GOES_HERE-streamalerts": "alerts"
     },
     "concurrency_limit": 10,
     "log_level": "info"

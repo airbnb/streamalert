@@ -119,7 +119,7 @@ def basic_streamalert_config():
                 'partitioning': {
                     'firehose': {},
                     'normal': {
-                        'unit-test.streamalerts': 'alerts'
+                        'unit-test-streamalerts': 'alerts'
                     }
                 },
                 'timeout': 60
@@ -308,7 +308,7 @@ def athena_cli_basic_config():
             'athena_partition_refresh_config': {
                 'buckets': {
                     'unit-test.streamalert.data': 'data',
-                    'unit-test.streamalerts': 'alerts'
+                    'unit-test-streamalerts': 'alerts'
                 },
             }
         }

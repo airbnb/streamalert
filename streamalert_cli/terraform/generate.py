@@ -185,7 +185,7 @@ def generate_main(config, init=False):
             logging=_config_get_logging_bucket(config)
         ),
         'streamalerts': generate_s3_bucket(
-            bucket='{}.streamalerts'.format(config['global']['account']['prefix']),
+            bucket='{}-streamalerts'.format(config['global']['account']['prefix']),
             logging=_config_get_logging_bucket(config)
         )
     }

@@ -28,7 +28,7 @@ For example, if the data_sources for a cluster named prod defined in ``conf/clus
         ]
       },
       "s3": {
-        "example.prod.streamalert.cloudtrail": [
+        "example-prod-streamalert-cloudtrail": [
           "cloudtrail"
         ]
       }

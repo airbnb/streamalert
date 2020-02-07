@@ -200,7 +200,7 @@ class TestTerraformGenerate:
                         'policy': ANY
                     },
                     'streamalerts': {
-                        'bucket': 'unit-test.streamalerts',
+                        'bucket': 'unit-test-streamalerts',
                         'acl': 'private',
                         'force_destroy': True,
                         'versioning': {
@@ -208,7 +208,7 @@ class TestTerraformGenerate:
                         },
                         'logging': {
                             'target_bucket': 'unit-test-streamalert-s3-logging',
-                            'target_prefix': 'unit-test.streamalerts/'
+                            'target_prefix': 'unit-test-streamalerts/'
                         },
                         'server_side_encryption_configuration': {
                             'rule': {

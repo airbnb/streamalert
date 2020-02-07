@@ -45,8 +45,8 @@ data "aws_iam_policy_document" "firehose_s3" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}.streamalerts",
-      "arn:aws:s3:::${var.prefix}.streamalerts/*",
+      "arn:aws:s3:::${var.prefix}-streamalerts",
+      "arn:aws:s3:::${var.prefix}-streamalerts/*",
     ]
   }
 }

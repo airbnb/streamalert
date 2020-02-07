@@ -44,7 +44,7 @@ class TestAthenaRefresher:
     def test_add_partitions(self):
         """AthenaRefresher - Add Partitions"""
         self._refresher._s3_buckets_and_keys = {
-            'unit-test.streamalerts': {
+            'unit-test-streamalerts': {
                 b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json'
             },
@@ -77,11 +77,11 @@ class TestAthenaRefresher:
         """AthenaRefresher - Get Partitions From Keys"""
         expected_result = {
             'alerts': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalerts/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalerts/'
                                              'alerts/dt=2017-08-26-14\''),
-                '(dt = \'2017-08-27-14\')': ('\'s3://unit-test.streamalerts/'
+                '(dt = \'2017-08-27-14\')': ('\'s3://unit-test-streamalerts/'
                                              'alerts/dt=2017-08-27-14\''),
-                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test.streamalerts/'
+                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalerts/'
                                              'alerts/2017/08/26/15\'')
             },
             'log_type_1': {
@@ -103,7 +103,7 @@ class TestAthenaRefresher:
         }
 
         self._refresher._s3_buckets_and_keys = {
-            'unit-test.streamalerts': {
+            'unit-test-streamalerts': {
                 b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
                 b'alerts/2017/08/26/15/rule_name_alerts-1304134918401.json'
@@ -131,7 +131,7 @@ class TestAthenaRefresher:
         """AthenaRefresher - Get Partitions From Keys, Bad Key"""
         bad_key = b'bad_match_string'
         self._refresher._s3_buckets_and_keys = {
-            'unit-test.streamalerts': {
+            'unit-test-streamalerts': {
                 bad_key
             }
         }
@@ -149,7 +149,7 @@ class TestAthenaRefresher:
                 {
                     's3': {
                         'bucket': {
-                            'name': 'unit-test.streamalerts'
+                            'name': 'unit-test-streamalerts'
                         },
                         'object': {
                             'key': ('alerts/dt=2017/08/{:02d}/'
@@ -166,7 +166,7 @@ class TestAthenaRefresher:
                 {
                     's3': {
                         'bucket': {
-                            'name': 'unit-test.streamalerts'
+                            'name': 'unit-test-streamalerts'
                         },
                         'object': {
                             'key': 'alerts/dt=2017/08/01/14/02/test.json_$folder$'
@@ -205,7 +205,7 @@ class TestAthenaRefresher:
         log_mock.assert_called_with(
             'Received notification for object \'%s\' in bucket \'%s\'',
             'alerts/dt=2017/08/01/14/02/test.json'.encode(),
-            'unit-test.streamalerts'
+            'unit-test-streamalerts'
         )
 
     @patch('logging.Logger.info')

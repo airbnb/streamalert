@@ -67,7 +67,7 @@ class CLIConfig:
         athena_config_template = {
             'enable_custom_metrics': False,
             'buckets': {
-                '{}.streamalerts'.format(prefix): 'alert'
+                '{}-streamalerts'.format(prefix): 'alert'
             },
             'timeout': '60',
             'memory': '128',
@@ -105,7 +105,7 @@ class CLIConfig:
 
         self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
         self.config['lambda']['athena_partition_refresh_config']['buckets'] \
-            ['{}.streamalerts'.format(prefix)] = 'alerts'
+            ['{}-streamalerts'.format(prefix)] = 'alerts'
 
         self.write()
 
