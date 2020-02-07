@@ -37,7 +37,7 @@ def generate_athena(config):
 
     results_bucket_name = athena_config.get(
         'results_bucket',
-        '{}.streamalert.athena-results'.format(prefix)
+        '{}-streamalert-athena-results'.format(prefix)
     ).strip()
 
     queue_name = athena_config.get(
