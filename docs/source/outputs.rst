@@ -47,7 +47,7 @@ For example:
  - ``python manage.py output slack``
 
 .. note:: If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
- `An error occurred while sending credentials to S3 for key '<SERVICE>/<KEY>' in bucket '<PREFIX>.streamalert.secrets': The specified bucket does not exist`.
+ `An error occurred while sending credentials to S3 for key '<SERVICE>/<KEY>' in bucket '<PREFIX>-streamalert-secrets': The specified bucket does not exist`.
  If you encounter this error, first make sure you've followed the `Quick Start <getting-started.html#quick-start>`_ steps.
  If you've already configured StreamAlert in the past, you may just have to run `python manage.py build`.
  This ensures the S3 bucket used for storing encrypted secrets is created and only needs to be run once.

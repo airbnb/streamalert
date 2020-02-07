@@ -63,7 +63,7 @@ data "aws_iam_policy_document" "output_secrets" {
   statement {
     effect    = "Allow"
     actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.prefix}.streamalert.secrets/*"]
+    resources = ["arn:aws:s3:::${var.prefix}-streamalert-secrets/*"]
   }
 }
 

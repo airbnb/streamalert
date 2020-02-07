@@ -458,7 +458,7 @@ class S3Driver(CredentialsProvidingDriver):
         Returns:
             string
         """
-        return '{}.streamalert.secrets'.format(self._prefix)
+        return '{}-streamalert-secrets'.format(self._prefix)
 
 
 class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, CredentialsCachingDriver):

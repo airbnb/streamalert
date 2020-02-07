@@ -181,7 +181,7 @@ def generate_main(config, init=False):
     main_dict['resource']['aws_s3_bucket'] = {
         'streamalert_secrets': generate_s3_bucket(
             # FIXME (derek.wang) DRY out by using OutputCredentialsProvider?
-            bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
+            bucket='{}-streamalert-secrets'.format(config['global']['account']['prefix']),
             logging=_config_get_logging_bucket(config)
         ),
         'streamalerts': generate_s3_bucket(

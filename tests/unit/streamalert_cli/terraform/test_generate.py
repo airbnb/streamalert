@@ -128,7 +128,7 @@ class TestTerraformGenerate:
                 },
                 'aws_s3_bucket': {
                     'streamalert_secrets': {
-                        'bucket': 'unit-test.streamalert.secrets',
+                        'bucket': 'unit-test-streamalert-secrets',
                         'acl': 'private',
                         'force_destroy': True,
                         'versioning': {
@@ -136,7 +136,7 @@ class TestTerraformGenerate:
                         },
                         'logging': {
                             'target_bucket': 'unit-test.streamalert.s3-logging',
-                            'target_prefix': 'unit-test.streamalert.secrets/'
+                            'target_prefix': 'unit-test-streamalert-secrets/'
                         },
                         'server_side_encryption_configuration': {
                             'rule': {
