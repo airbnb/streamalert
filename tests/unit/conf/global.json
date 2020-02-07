@@ -38,7 +38,7 @@
   },
   "s3_access_logging": {
     "create_bucket": true,
-    "logging_bucket": "unit-test.streamalert.s3-logging"
+    "logging_bucket": "unit-test-streamalert-s3-logging"
   },
   "terraform": {
     "create_bucket": true,

@@ -135,7 +135,7 @@ class TestTerraformGenerate:
                             'enabled': True
                         },
                         'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
+                            'target_bucket': 'unit-test-streamalert-s3-logging',
                             'target_prefix': 'unit-test-streamalert-secrets/'
                         },
                         'server_side_encryption_configuration': {
@@ -157,7 +157,7 @@ class TestTerraformGenerate:
                             'enabled': True
                         },
                         'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
+                            'target_bucket': 'unit-test-streamalert-s3-logging',
                             'target_prefix': 'unit-test.streamalert.terraform.state/'
                         },
                         'server_side_encryption_configuration': {
@@ -172,15 +172,15 @@ class TestTerraformGenerate:
                         'policy': ANY
                     },
                     'logging_bucket': {
-                        'bucket': 'unit-test.streamalert.s3-logging',
+                        'bucket': 'unit-test-streamalert-s3-logging',
                         'acl': 'log-delivery-write',
                         'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
                         'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
-                            'target_prefix': 'unit-test.streamalert.s3-logging/'
+                            'target_bucket': 'unit-test-streamalert-s3-logging',
+                            'target_prefix': 'unit-test-streamalert-s3-logging/'
                         },
                         'lifecycle_rule': {
                             'prefix': '/',
@@ -207,7 +207,7 @@ class TestTerraformGenerate:
                             'enabled': True
                         },
                         'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
+                            'target_bucket': 'unit-test-streamalert-s3-logging',
                             'target_prefix': 'unit-test.streamalerts/'
                         },
                         'server_side_encryption_configuration': {
@@ -350,7 +350,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
             }
         }
 
@@ -380,7 +380,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-bucket',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
             },
             'cloudtrail_s3_events_unit-test_advanced_unit-test-bucket': {
                 'source': './modules/tf_s3_events',
@@ -461,7 +461,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
                 'cloudwatch_logs_role_arn': (
                     '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
                 ),
@@ -531,7 +531,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
                 'cloudwatch_logs_role_arn': (
                     '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
                 ),
