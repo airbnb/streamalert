@@ -33,9 +33,6 @@ def configure_python(machine, version)
 end
 
 STREAMALERT_SHELL_ENV = %{
-export AWS_DEFAULT_REGION='#{ENV.fetch('SA_AWS_DEFAULT_REGION', 'Your region here!')}'
-export AWS_ACCESS_KEY_ID='#{ENV.fetch('SA_AWS_ACCESS_KEY_ID', 'Your access key ID here!')}'
-export AWS_SECRET_ACCESS_KEY='#{ENV.fetch('SA_AWS_SECRET_ACCESS_KEY', 'Your secret access key here!')}'
 export SA_EMAIL='#{ENV.fetch('SA_EMAIL', 'example@example.com')}'
 }
 
@@ -114,4 +111,11 @@ Vagrant.configure(2) do |config|
     configure_streamalert(py3)
     final_message(py3)
   end
+
+  config.ssh.forward_env = [
+    'AWS_DEFAULT_REGION',
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_SESSION_TOKEN'
+  ]
 end
