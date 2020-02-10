@@ -176,7 +176,7 @@ def basic_streamalert_config():
                     'kinesis': {
                         'firehose': {
                             'enabled': True,
-                            's3_bucket_suffix': 'streamalert.results'
+                            'bucket_name': 'streamalert-results'
                         },
                         'streams': {
                             'retention': 24,

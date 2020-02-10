@@ -8,7 +8,7 @@
     "kinesis": {
       "firehose": {
         "enabled": true,
-        "s3_bucket_suffix": "streamalert.results"
+        "bucket_name": "streamalert-results"
       },
       "streams": {
         "retention": 24,

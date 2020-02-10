@@ -1,5 +1,47 @@
-Kinesis Firehose
-================
+Kinesis Firehose: Alerts
+========================
+
+Overview
+--------
+
+By default, StreamAlert will send all alert payloads to S3 for historical retention and searching.
+These payloads include the original record data that triggered the alert, as well as the rule that
+was triggered, the source of the log, the date/time the alert was triggered, the cluster from
+which the log came, and a variety of other fields.
+
+Configuration
+-------------
+
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "alerts_firehose": {
+        "bucket_name": "<prefix>-streamalerts",
+        "buffer_size": 64,
+        "buffer_interval": 300,
+        "cloudwatch_log_retention": 14,
+        "compression_format": "GZIP"
+      }
+    }
+  }
+
+Options
+~~~~~~~
+
+=============================  ========  ==========================  ===========
+Key                            Required  Default                     Description
+-----------------------------  --------  --------------------------  -----------
+``bucket_name``                ``No``    ``<prefix>-streamalerts``   Bucket name to override the default name
+``buffer_size``                ``No``    ``64 (MB)``                 Buffer incoming data to the specified size, in megabytes, before delivering it to S3
+``buffer_interval``            ``No``    ``300 (seconds)``           Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
+``compression_format``         ``No``    ``GZIP``                    The compression algorithm to use on data stored in S3
+``cloudwatch_log_retention``   ``No``    ``14 (days)``               Days for which to retain error logs that are sent to CloudWatch in relation to this Kinesis Firehose Delivery Stream
+=============================  ========  ==========================  ===========
+
+Kinesis Firehose: Classified Data
+=================================
 
 Overview
 --------
@@ -13,9 +55,10 @@ Firehose works by delivering data to AWS S3, which can be loaded and queried by 
 Configuration
 -------------
 
-When enabling the Kinesis Firehose module, a dedicated Delivery Stream is created per each log type.
+When enabling the Kinesis Firehose module, a dedicated Delivery Stream is created for each log type.
 
-For example, if the data_sources for a cluster named prod defined in ``conf/clusters/prod.json`` contains the following:
+For example, if the ``data_sources`` for a cluster named prod defined in ``conf/clusters/prod.json``
+contains the following:
 
 .. code-block:: json
 
@@ -104,7 +147,7 @@ The following Firehose configuration settings are defined in ``global.json``:
             "log_min_count_threshold": 100000
           }
         },
-        "s3_bucket_suffix": "streamalert.data",
+        "bucket_name": "<prefix>-streamalert-data",
         "buffer_size": 64,
         "buffer_interval": 300,
         "compression_format": "GZIP"
@@ -115,21 +158,21 @@ The following Firehose configuration settings are defined in ``global.json``:
 Options
 ~~~~~~~
 
-======================   ========  ====================  ===========
-Key                      Required  Default               Description
-----------------------   --------  --------------------  -----------
-``enabled``              ``Yes``   ``None``              If set to ``false``, will not create a Kinesis Firehose
-``enabled_logs``         ``Yes``   ``[]``                The set of classified logs to send to Kinesis Firehose from the Classifier function
-``s3_bucket_suffix``     ``No``    ``streamalert.data``  The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.suffix``
-``buffer_size``          ``No``    ``64 (MB)``           The amount of buffered incoming data before delivering it to Amazon S3
-``buffer_interval``      ``No``    ``300 (seconds)``     The frequency of data delivery to Amazon S3
-``compression_format``   ``No``    ``GZIP``              The compression algorithm to use on data stored in S3
-======================   ========  ====================  ===========
+======================  ========  ==============================  ===========
+Key                     Required  Default                         Description
+----------------------  --------  ------------------------------  -----------
+``enabled``             ``Yes``   ``None``                        If set to ``false``, will not create a Kinesis Firehose
+``bucket_name``         ``No``    ``<prefix>-streamalert-data``   Bucket name to override the default name
+``enabled_logs``        ``Yes``   ``[]``                          The set of classified logs to send to Kinesis Firehose from the Classifier function
+``buffer_size``         ``No``    ``64 (MB)``                     Buffer incoming data to the specified size, in megabytes, before delivering it to S3
+``buffer_interval``     ``No``    ``300 (seconds)``               Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
+``compression_format``  ``No``    ``GZIP``                        The compression algorithm to use on data stored in S3
+======================  ========  ==============================  ===========
 
 Throughput Alarms
 -----------------
 
-Additionlly, each Firehose that is created can be configured with an alarm that fires when
+Additionally, each Firehose that is created can be configured with an alarm that fires when
 incoming logs drops below a specified threshold. This is disabled by default, and enabled by
 setting ``enable_alarm`` to ``true`` within the configuration for the log ype. See the config
 example above for how this should be performed.

@@ -238,7 +238,7 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate Main with Firehose Enabled"""
         self.config['global']['infrastructure']['firehose'] = {
             'enabled': True,
-            's3_bucket_suffix': 'my-data',
+            'bucket_name': 'my-data',
             'buffer_size': 10,
             'buffer_interval': 650,
             'enabled_logs': {
@@ -265,7 +265,7 @@ class TestTerraformGenerate:
 
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['s3_bucket_name'],
-            'unit-test-my-data'
+            'my-data'
         )
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['buffer_size'],
@@ -274,6 +274,23 @@ class TestTerraformGenerate:
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['buffer_interval'],
             650
+        )
+
+    def test_generate_main_alerts_firehose(self):
+        """CLI - Terraform Generate Main with Alerts Firehose Config"""
+        self.config['global']['infrastructure']['alerts_firehose'] = {
+            'bucket_name': 'test-bucket-name',
+            'buffer_interval': 600
+        }
+        tf_main = generate.generate_main(config=self.config, init=False)
+
+        assert_equal(
+            tf_main['module']['globals']['alerts_firehose_bucket_name'],
+            'test-bucket-name'
+        )
+        assert_equal(
+            tf_main['module']['globals']['alerts_firehose_buffer_interval'],
+            600
         )
 
     def test_generate_flow_logs(self):

@@ -45,19 +45,9 @@ data "aws_iam_policy_document" "firehose_s3" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}-streamalerts",
-      "arn:aws:s3:::${var.prefix}-streamalerts/*",
+      "arn:aws:s3:::${var.bucket_name}",
+      "arn:aws:s3:::${var.bucket_name}/*",
     ]
-  }
-}
-
-// CloudWatch Log Group: Firehose
-resource "aws_cloudwatch_log_group" "firehose" {
-  name              = "/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery"
-  retention_in_days = var.cloudwatch_log_retention
-
-  tags = {
-    Name = "StreamAlert"
   }
 }
 
@@ -97,8 +87,7 @@ data "aws_iam_policy_document" "firehose_cloudwatch" {
     ]
 
     resources = [
-      "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery:*",
+      "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/${local.stream_name}:*",
     ]
   }
 }
-

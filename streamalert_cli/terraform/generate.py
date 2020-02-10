@@ -185,7 +185,10 @@ def generate_main(config, init=False):
             logging=_config_get_logging_bucket(config)
         ),
         'streamalerts': generate_s3_bucket(
-            bucket='{}-streamalerts'.format(config['global']['account']['prefix']),
+            bucket=(
+                config['global']['infrastructure'].get('alerts_firehose', {}).get('bucket_name')
+                or '{}-streamalerts'.format(config['global']['account']['prefix'])
+            ),
             logging=_config_get_logging_bucket(config)
         )
     }
@@ -616,6 +619,26 @@ def _generate_global_module(config):
         'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout'],
         'sqs_use_prefix': use_prefix,
     }
+
+    # The following settings apply to the alerts firehose and have
+    # defaults set in the ./modules/tf_globals. This code is meant
+    # to only override the defaults if they are explicitly set, and
+    # avoids storing defaults in mulitple locations
+    settings_with_defaults = {
+        'bucket_name',
+        'buffer_size',
+        'buffer_interval',
+        'cloudwatch_log_retention',
+        'compression_format',
+    }
+
+    if 'alerts_firehose' in config['global']['infrastructure']:
+        for setting in settings_with_defaults:
+            value = config['global']['infrastructure']['alerts_firehose'].get(setting)
+            if not value:
+                continue
+
+            global_module['alerts_firehose_{}'.format(setting)] = value
 
     if config['global']['infrastructure']['rule_staging'].get('enabled'):
         global_module['enable_rule_staging'] = True
