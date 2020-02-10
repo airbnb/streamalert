@@ -209,11 +209,6 @@ def _create(function_name, config, clusters=None):
             any(info['modules'].get('streamalert_apps')
                 for info in config['clusters'].values())
         ),
-        'athena': PackageMap(
-            streamalert_packages.AthenaPackage,
-            {'module.streamalert_athena'},
-            True
-        ),
         'classifier': PackageMap(
             streamalert_packages.ClassifierPackage,
             {'module.classifier_{}_{}'.format(cluster, suffix)

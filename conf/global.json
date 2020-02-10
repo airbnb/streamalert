@@ -26,6 +26,11 @@
       "enabled": false,
       "enabled_logs": {}
     },
+    "athena": {
+      "buckets": {
+        "PREFIX_GOES_HERE.streamalerts": "alerts"
+      }
+    },
     "monitoring": {
       "create_sns_topic": true
     },

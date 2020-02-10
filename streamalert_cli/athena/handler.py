@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.athena_partition_refresh.main import AthenaRefresher
 from streamalert.classifier.clients import FirehoseClient
 from streamalert.shared.alert import Alert
 from streamalert.shared.athena import AthenaClient
@@ -31,9 +30,11 @@ LOGGER = get_logger(__name__)
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'PARTITIONED BY (dt string) '
-                          'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
-                          'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\') '
+                          'STORED AS PARQUET '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
+
+_STREAMALERT_DATABASE = '{}_streamalert'
+
 
 class AthenaCommand(CLICommand):
     description = 'Perform actions related to Athena'
@@ -181,6 +182,24 @@ class AthenaCommand(CLICommand):
                 options.schema_override)
 
 
+def get_athena_database_name(config):
+    """Get the name of the athena database using the current config settings
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+    Returns:
+        str: The name of the athena database
+    """
+    prefix = config['global']['account']['prefix']
+    athena_config = config['global']['infrastructure'].get('athena')
+    if athena_config:
+        return athena_config.get(
+            'database_name',
+            _STREAMALERT_DATABASE.format(prefix)
+        )
+
+    return _STREAMALERT_DATABASE.format(prefix)
+
+
 def get_athena_client(config):
     """Get an athena client using the current config settings
 
@@ -191,12 +210,9 @@ def get_athena_client(config):
         AthenaClient: instantiated client for performing athena actions
     """
     prefix = config['global']['account']['prefix']
-    athena_config = config['lambda']['athena_partition_refresh_config']
+    athena_config = config['global']['infrastructure']['athena']
 
-    db_name = athena_config.get(
-        'database_name',
-        AthenaRefresher.STREAMALERT_DATABASE.format(prefix)
-    )
+    db_name = get_athena_database_name(config)
 
     # Get the S3 bucket to store Athena query results
     results_bucket = athena_config.get(
@@ -366,7 +382,7 @@ def create_table(table, bucket, config, schema_override=None):
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
         LOGGER.info('The \'%s\' table already exists.', sanitized_table_name)
-        return False
+        return True
 
     if table == 'alerts':
         # get a fake alert so we can get the keys needed and their types
@@ -423,10 +439,37 @@ def create_table(table, bucket, config, schema_override=None):
 
     # Update the CLI config
     if (table != 'alerts' and
-            bucket not in config['lambda']['athena_partition_refresh_config']['buckets']):
-        config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
+            bucket not in config['global']['infrastructure']['athena']['buckets']):
+        config['global']['infrastructure']['athena']['buckets'][bucket] = 'data'
         config.write()
 
     LOGGER.info('The %s table was successfully created!', sanitized_table_name)
+
+    return True
+
+
+def create_log_tables(config):
+    """Create all tables needed for historical search
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+    Returns:
+        bool: False if errors occurred, True otherwise
+    """
+    if not config['global']['infrastructure'].get('firehose', {}).get('enabled'):
+        return True
+
+    firehose_config = config['global']['infrastructure']['firehose']
+    firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
+    firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
+                                             firehose_s3_bucket_suffix)
+
+    enabled_logs = FirehoseClient.load_enabled_log_sources(
+        config['global']['infrastructure']['firehose'],
+        config['logs']
+    )
+
+    for log_stream_name in enabled_logs:
+        if not create_table(log_stream_name, firehose_s3_bucket_name, config):
+            return False
 
     return True

@@ -20,6 +20,8 @@ variable "alerts_table_read_capacity" {
 variable "alerts_table_write_capacity" {
 }
 
+variable "alerts_db_name" {}
+
 variable "enable_rule_staging" {
   default = false
 }

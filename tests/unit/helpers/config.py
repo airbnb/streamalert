@@ -293,6 +293,12 @@ def athena_cli_basic_config():
                     'enabled_logs': {
                         'unit': {}
                     },
+                },
+                'athena': {
+                    'buckets': {
+                        'unit-testing.streamalert.data': 'data',
+                        'unit-testing.streamalerts': 'alerts'
+                    }
                 }
             }
         },

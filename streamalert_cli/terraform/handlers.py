@@ -19,7 +19,7 @@ import os
 import shutil
 
 from streamalert.shared.logger import get_logger
-from streamalert_cli.athena.handler import create_table
+from streamalert_cli.athena.handler import create_table, create_log_tables
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
 from streamalert_cli.terraform.generate import terraform_generate_handler
@@ -90,8 +90,15 @@ class TerraformInitCommand(CLICommand):
             'aws_s3_bucket.streamalert_secrets', 'aws_s3_bucket.terraform_remote_state',
             'aws_s3_bucket.streamalerts',
             'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
-            'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets'
+            'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets',
+            'aws_athena_database.streamalert' #required for the alerts table
         ]
+
+        # this bucket must exist before the log tables can be created, but
+        # shouldn't be created unless the firehose is enabled
+        if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
+            init_targets.append('aws_s3_bucket.stream_alert_data')
+
         if not tf_runner(targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')
             return False
@@ -106,7 +113,7 @@ class TerraformInitCommand(CLICommand):
 
         LOGGER.info('Deploying Lambda Functions')
 
-        functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
+        functions = ['rule', 'alert', 'alert_merger', 'classifier']
 
         deploy(functions, config)
 
@@ -114,6 +121,10 @@ class TerraformInitCommand(CLICommand):
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
         alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
         create_table('alerts', alerts_bucket, config)
+
+        # Create the glue catalog tables for the enabled logs
+        if not create_log_tables(config=config):
+            return
 
         LOGGER.info('Building remainding infrastructure')
         return tf_runner(refresh=False)
@@ -169,6 +180,10 @@ class TerraformBuildCommand(CLICommand):
         """
         if not terraform_generate_handler(config=config):
             return False
+
+        # Create the glue catalog tables for the enabled logs
+        if not create_log_tables(config=config):
+            return
 
         target_modules, valid = _get_valid_tf_targets(config, options.target)
         if not valid:

@@ -75,11 +75,13 @@ class TestFirehoseGenerate:
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
                     's3_bucket_name': 'unit-test.streamalert.data',
-                    'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
+                    'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
+                    'glue_catalog_db_name': 'unit-test_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }
-
+        print(cluster_dict)
         assert_equal(cluster_dict, expected_result)
 
     def test_firehose_enabled_log_alarm_defaults(self):
@@ -112,7 +114,9 @@ class TestFirehoseGenerate:
                     'enable_alarm': True,
                     'alarm_actions': [
                         'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
-                    ]
+                    ],
+                    'glue_catalog_db_name': 'unit-test_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }
@@ -155,7 +159,9 @@ class TestFirehoseGenerate:
                     'alarm_threshold': 100000,
                     'alarm_actions': [
                         'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
-                    ]
+                    ],
+                    'glue_catalog_db_name': 'unit-test_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }
@@ -191,7 +197,9 @@ class TestFirehoseGenerate:
                     's3_bucket_name': 'unit-test.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
-                    'alarm_actions': ['do something crazy']
+                    'alarm_actions': ['do something crazy'],
+                    'glue_catalog_db_name': 'unit-test_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }

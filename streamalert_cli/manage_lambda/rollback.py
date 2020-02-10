@@ -124,12 +124,6 @@ class RollbackCommand(CLICommand):
                 for lambda_name in sorted(apps_config):
                     success = success and _rollback_production(client, lambda_name)
 
-        if rollback_all or 'athena' in options.function:
-            success = success and _rollback_production(
-                client,
-                '{}_streamalert_athena_partition_refresh'.format(prefix)
-            )
-
         if rollback_all or 'classifier' in options.function:
             for cluster in clusters:
                 success = success and _rollback_production(

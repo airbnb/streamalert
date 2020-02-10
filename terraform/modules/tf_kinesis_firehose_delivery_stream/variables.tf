@@ -60,3 +60,11 @@ variable "alarm_actions" {
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
 }
+
+variable "glue_catalog_db_name" {
+  type = string
+}
+
+variable "glue_catalog_table_name" {
+  type = string
+}

@@ -15,6 +15,7 @@ limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
 from streamalert_cli.terraform.common import monitoring_topic_arn
+from streamalert_cli.athena.handler import get_athena_database_name
 
 
 def generate_firehose(logging_bucket, main_dict, config):
@@ -52,6 +53,8 @@ def generate_firehose(logging_bucket, main_dict, config):
 
     log_alarms_config = config['global']['infrastructure']['firehose'].get('enabled_logs', {})
 
+    db_name = get_athena_database_name(config)
+
     # Add the Delivery Streams individually
     for log_stream_name, log_type_name in enabled_logs.items():
         module_dict = {
@@ -70,7 +73,9 @@ def generate_firehose(logging_bucket, main_dict, config):
             'log_name': log_stream_name,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,
-            'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
+            'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
+            'glue_catalog_db_name': db_name,
+            'glue_catalog_table_name': log_stream_name
         }
 
         # Try to get alarm info for this specific log type

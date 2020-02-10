@@ -22,11 +22,10 @@ variable "cloudwatch_log_retention" {
   default = 14
 }
 
-variable "compression_format" {
-  default = "GZIP"
-}
-
 variable "kms_key_arn" {
   type = string
 }
 
+variable "alerts_db_name" {
+  type = string
+}

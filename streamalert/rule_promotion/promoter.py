@@ -39,7 +39,7 @@ class RulePromoter:
         # Create the rule table class for getting staging information
         self._rule_table = RuleTable('{}_streamalert_rules'.format(prefix))
 
-        athena_config = self._config['lambda']['athena_partition_refresh_config']
+        athena_config = self._config['global']['infrastructure']['athena']
 
         # Get the name of the athena database to access
         db_name = athena_config.get('database_name', self.STREAMALERT_DATABASE.format(prefix))

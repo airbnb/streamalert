@@ -79,6 +79,7 @@ class TestRulePromotion:
             }
         }
 
+        print(result)
         assert_equal(result, expected)
 
     def test_generate_disabled(self):

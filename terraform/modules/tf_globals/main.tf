@@ -1,9 +1,10 @@
 module "alerts_firehose" {
-  source      = "./alerts_firehose"
-  account_id  = var.account_id
-  prefix      = var.prefix
-  region      = var.region
-  kms_key_arn = var.kms_key_arn
+  source         = "./alerts_firehose"
+  account_id     = var.account_id
+  prefix         = var.prefix
+  region         = var.region
+  kms_key_arn    = var.kms_key_arn
+  alerts_db_name = var.alerts_db_name
 }
 
 module "classifier_queue" {

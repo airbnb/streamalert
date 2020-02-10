@@ -6,16 +6,35 @@
 // This is a less destructive approach to creating all of the Streams.
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
   name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_data_${var.log_name}"
-  destination = "s3"
+  destination = "extended_s3"
 
-  s3_configuration {
-    role_arn           = var.role_arn
-    bucket_arn         = "arn:aws:s3:::${var.s3_bucket_name}"
-    prefix             = "${var.log_name}/"
-    buffer_size        = var.buffer_size
-    buffer_interval    = var.buffer_interval
-    compression_format = var.compression_format
-    kms_key_arn        = var.kms_key_arn
+  extended_s3_configuration {
+    role_arn            = var.role_arn
+    bucket_arn          = "arn:aws:s3:::${var.s3_bucket_name}"
+    prefix              = "${var.log_name}/dt=!{timestamp:yyyy-MM-dd-HH}/"
+    error_output_prefix = "${var.log_name}/!{firehose:error-output-type}/"
+    buffer_size         = var.buffer_size
+    buffer_interval     = var.buffer_interval
+    compression_format  = "UNCOMPRESSED"
+    kms_key_arn         = var.kms_key_arn
+
+    data_format_conversion_configuration {
+      input_format_configuration {
+        deserializer {
+          hive_json_ser_de {}
+        }
+      }
+      output_format_configuration {
+        serializer {
+          parquet_ser_de {}
+        }
+      }
+      schema_configuration {
+        database_name = var.glue_catalog_db_name
+        role_arn      = var.role_arn
+        table_name    = var.glue_catalog_table_name
+      }
+    }
   }
 
   tags = {
