@@ -38,9 +38,17 @@ class OutputCommand(CLICommand):
             'service',
             choices=outputs,
             metavar='SERVICE',
-            help='Create a new StreamAlert output for one of the available services: {}'.format(
+            help='Create a StreamAlert output for one of the available services: {}'.format(
                 ', '.join(outputs)
             )
+        )
+
+        subparser.add_argument(
+            '--edit',
+            dest='edit',
+            action='store_true',
+            default=False,
+            help='Pass to allow editing of pre-existing outputs'
         )
 
     @classmethod
@@ -81,8 +89,10 @@ class OutputCommand(CLICommand):
         output_config = config['outputs']
         service = output.__service__
 
-        # If it exists already, ask for user input again for a unique configuration
-        if output_exists(output_config, props, service):
+        _output_exists = output_exists(output_config, props, service)
+        if not options.edit and _output_exists:
+            # If the output exists already and the edit flag has not been passed, ask for user
+            # input again for a unique configuration
             return cls.handler(options, config)
 
         provider = OutputCredentialsProvider(service, config=config, region=region, prefix=prefix)
@@ -93,6 +103,13 @@ class OutputCommand(CLICommand):
                          options.service)
             return False
 
+        if options.edit and _output_exists:
+            # Don't update the config if the output already existed, this will prevent duplicates
+            LOGGER.info('Successfully updated \'%s\' output configuration for service \'%s\'',
+                        props['descriptor'].value, options.service)
+            return True
+
+        # Output didn't exist, but edit was passed. Save the output to the config
         updated_config = output.format_output_config(output_config, props)
         output_config[service] = updated_config
         config.write()

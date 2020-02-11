@@ -64,6 +64,13 @@ After a ``descriptor`` is provided, the user is then prompted for the Slack webh
 
 .. note:: The user input for the Slack webhook URL will be masked. This 'masking' approach currently applies to any potentially sensitive information the user may have to enter on the cli and can be enforced through any new services that are implemented.
 
+Edit existing outputs
+---------------------
+
+To edit ``outputs`` which have already been configured using ``python manage.py output`` you can pass the flag ``--edit``. This will allow you to update the configuration for any of the supported output services.
+
+.. note:: This will follow the same prompts as the above configuration section.
+
 Adding Support for New Services
 -------------------------------
 
