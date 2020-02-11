@@ -54,6 +54,14 @@ Table of Contents
    getting-started
    architecture
 
+.. _global_settings:
+
+.. toctree::
+  :maxdepth: 2
+  :caption: Global Settings
+
+  historical-search
+
 .. _data_configuration:
 
 .. toctree::
@@ -83,17 +91,6 @@ Table of Contents
    troubleshooting
    faq
    alternatives
-
-.. _historical_search:
-
-.. toctree::
-  :maxdepth: 2
-  :caption: Historical Search
-
-  athena-overview
-  athena-arch
-  athena-user-guide
-  firehose
 
 .. _rule_staging_and_promotion:
 

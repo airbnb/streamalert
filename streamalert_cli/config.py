@@ -96,7 +96,8 @@ class CLIConfig:
         # Set logging bucket name only if we will be creating it
         if self.config['global']['s3_access_logging'].get('create_bucket', True):
             self.config['global']['s3_access_logging']['logging_bucket'] = (
-                '{}-streamalert-s3-logging'.format(prefix))
+                '{}-streamalert-s3-logging'.format(prefix)
+            )
 
         # Set Terraform state bucket name only if we will be creating it
         if self.config['global']['terraform'].get('create_bucket', True):

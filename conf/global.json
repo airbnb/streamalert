@@ -41,10 +41,6 @@
       "use_prefix": true
     }
   },
-  "s3_access_logging": {
-    "create_bucket": true,
-    "logging_bucket": "PREFIX_GOES_HERE-streamalert-s3-logging"
-  },
   "terraform": {
     "create_bucket": true,
     "lock_state_file": false,
