@@ -86,9 +86,9 @@ data "aws_iam_policy_document" "firehose_cloudwatch" {
 }
 
 // IAM Policy: Interact with the Glue Catalog
-resource "aws_iam_role_policy" "stream_alert_firehose_glue" {
+resource "aws_iam_role_policy" "streamalert_firehose_glue" {
   name = "streamalert_firehose_read_glue_catalog"
-  role = "${aws_iam_role.stream_alert_kinesis_firehose.id}"
+  role = "${aws_iam_role.streamalert_kinesis_firehose.id}"
 
   policy = "${data.aws_iam_policy_document.firehose_glue_catalog.json}"
 }

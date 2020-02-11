@@ -21,7 +21,8 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
     data_format_conversion_configuration {
       input_format_configuration {
         deserializer {
-          hive_json_ser_de {}
+          # # more resilient with log schemas that have nested JSON comparing to hive_json_ser_de
+          open_x_json_ser_de {}
         }
       }
       output_format_configuration {

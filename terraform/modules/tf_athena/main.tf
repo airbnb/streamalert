@@ -62,14 +62,3 @@ resource "aws_athena_database" "streamalert" {
   name   = var.database_name
   bucket = aws_s3_bucket.athena_results_bucket.bucket
 }
-
-// Log Retention Policy
-resource "aws_cloudwatch_log_group" "athena" {
-  name              = "/aws/lambda/${aws_lambda_function.athena_partition_refresh.function_name}"
-  retention_in_days = 14
-
-  tags = {
-    Name    = "StreamAlert"
-    AltName = "Athena"
-  }
-}

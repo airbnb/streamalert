@@ -91,13 +91,13 @@ class TerraformInitCommand(CLICommand):
             'aws_s3_bucket.streamalerts',
             'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
             'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets',
-            'aws_athena_database.streamalert' #required for the alerts table
+            'module.streamalert_athena' #required for the alerts table
         ]
 
         # this bucket must exist before the log tables can be created, but
         # shouldn't be created unless the firehose is enabled
         if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
-            init_targets.append('aws_s3_bucket.stream_alert_data')
+            init_targets.append('aws_s3_bucket.streamalert_data')
 
         if not tf_runner(targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')

@@ -408,6 +408,15 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     LOGGER.debug('Generating cluster file: main.tf.json')
     _create_terraform_module_file(generate_main(config, init=init), 'terraform/main.tf.json')
 
+    # Setup Athena
+    generate_athena_settings(
+        config,
+        config_name='athena',
+        generate_func=generate_athena,
+        tf_tmp_file='terraform/athena.tf.json',
+        message='Removing old Athena Terraform file'
+    )
+
     # Return early during the init process, clusters are not needed yet
     if init:
         return True
@@ -656,12 +665,3 @@ def _create_terraform_module_file(generated_config, filename):
     """
     with open(filename, 'w') as file:
         json.dump(generated_config, file, indent=2, sort_keys=True)
-
-    # Setup Athena
-    generate_athena_settings(
-        generated_config,
-        config_name='athena',
-        generate_func=generate_athena,
-        tf_tmp_file='terraform/athena.tf.json',
-        message='Removing old Athena Terraform file'
-    )

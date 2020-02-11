@@ -100,7 +100,6 @@ class DeployCommand(CLICommand):
                 'alert',
                 'alert_merger',
                 'apps',
-                'athena',
                 'classifier',
                 'rule',
                 'rule_promo',
