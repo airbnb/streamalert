@@ -61,6 +61,7 @@ Table of Contents
   :caption: Global Settings
 
   historical-search
+  dynamodb-tables
 
 .. _data_configuration:
 

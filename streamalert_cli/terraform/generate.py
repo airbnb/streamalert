@@ -610,21 +610,21 @@ def _generate_global_module(config):
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],
         'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
-        'alerts_table_read_capacity': (
-            config['global']['infrastructure']['alerts_table']['read_capacity']
-        ),
-        'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity']
-        ),
         'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout'],
         'sqs_use_prefix': use_prefix,
     }
 
-    # The following settings apply to the alerts firehose and have
-    # defaults set in the ./modules/tf_globals. This code is meant
-    # to only override the defaults if they are explicitly set, and
+    # The below code applies settings for resources only if the settings are explicitly
+    # defined. This is because these resources have defaults defined in the
+    # ./modules/tf_globals module. This will allow for overriding these setting, but
     # avoids storing defaults in mulitple locations
-    settings_with_defaults = {
+    if 'alerts_table' in config['global']['infrastructure']:
+        for setting in {'read_capacity', 'write_capacity'}:
+            value = config['global']['infrastructure']['alerts_table'].get(setting)
+            if value:
+                global_module['alerts_table_{}'.format(setting)] = value
+
+    alert_fh_settings_with_defaults = {
         'bucket_name',
         'buffer_size',
         'buffer_interval',
@@ -633,7 +633,7 @@ def _generate_global_module(config):
     }
 
     if 'alerts_firehose' in config['global']['infrastructure']:
-        for setting in settings_with_defaults:
+        for setting in alert_fh_settings_with_defaults:
             value = config['global']['infrastructure']['alerts_firehose'].get(setting)
             if not value:
                 continue

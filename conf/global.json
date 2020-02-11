@@ -14,10 +14,6 @@
     ]
   },
   "infrastructure": {
-    "alerts_table": {
-      "read_capacity": 5,
-      "write_capacity": 5
-    },
     "firehose": {
       "use_prefix": true,
       "buffer_interval": 900,

@@ -46,8 +46,8 @@ For example, if you have 'cloudwatch' in your sources, you would want to create 
 Repeat this process for all relevant data tables in your deployment.
 
 
-Kinesis Firehose Configuration
-------------------------------
+Configuration: Kinesis Firehose
+-------------------------------
 
 Alerts
 ~~~~~~

@@ -40,9 +40,13 @@ variable "alerts_firehose_compression_format" {
 }
 
 variable "alerts_table_read_capacity" {
+  type    = number
+  default = 5
 }
 
 variable "alerts_table_write_capacity" {
+  type    = number
+  default = 5
 }
 
 variable "enable_rule_staging" {
@@ -50,10 +54,12 @@ variable "enable_rule_staging" {
 }
 
 variable "rules_table_read_capacity" {
+  type    = number
   default = 5
 }
 
 variable "rules_table_write_capacity" {
+  type    = number
   default = 5
 }
 
