@@ -491,6 +491,9 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Setup Lookup Tables if applicable
     _generate_lookup_tables_settings(config)
 
+    # Setup StreamQuery
+    _generate_streamquery_module(config)
+
     return True
 
 
@@ -552,6 +555,51 @@ def _generate_lookup_tables_settings(config):
             'role_count': len(roles),
             'prefix': config['global']['account']['prefix'],
         }
+
+    _create_terraform_module_file(generated_config, tf_file_name)
+
+
+def _generate_streamquery_module(config):
+    """
+    Generates .tf.json file for StreamQuery
+    """
+    tf_file_name = 'terraform/streamquery.tf.json'
+
+    streamquery_config = config.get('streamquery', {})
+
+    if not streamquery_config.get('enabled', False):
+        remove_temp_terraform_file(tf_file_name, 'Removing old StreamQuery Terraform file')
+        return
+
+    prefix = config['global']['account']['prefix']
+
+    # FIXME (derek.wang)
+    athena_config = config['lambda']['athena_partition_refresh_config']
+
+    # FIXME (derek.wang) make consistent with streamalert_athena module,
+    # maybe make this dependent on output of that module?
+    database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
+    results_bucket = athena_config.get(
+        'results_bucket',
+        '{}.streamalert.athena-results'.format(prefix)
+    ).strip()
+
+    generated_config = {'module': {}}
+    generated_config['module']['streamquery'] = {
+        'source': './modules/tf_streamquery',
+
+        'account_id': config['global']['account']['aws_account_id'],
+        'prefix': prefix,
+        'region': config['global']['account']['region'],
+
+        # FIXME (derek.wang)
+        'destination_kinesis_stream': streamquery_config['configuration']['destination_kinesis'],
+        'athena_database': database,
+        'athena_results_bucket': results_bucket,
+        # 'athena_results_bucket': '${module.streamalert_athena.results_bucket_arn}',
+        'athena_s3_buckets': sorted(athena_config.get('buckets', [])),
+        'streamquery_environment': 'staging',
+    }
 
     _create_terraform_module_file(generated_config, tf_file_name)
 

@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "configuration": {
+    "log_level": "INFO",
+    "destination_kinesis": "kinesis_stream_name",
+    "sfn_timeout": 3000,
+    "lambda_timeout": 30
+  },
+  "packs": []
+}
