@@ -23,6 +23,7 @@ from botocore.exceptions import ClientError
 
 from streamalert.shared.helpers.aws_api_client import AwsS3
 
+
 class MockLambdaClient:
     """http://boto3.readthedocs.io/en/latest/reference/services/lambda.html"""
 
