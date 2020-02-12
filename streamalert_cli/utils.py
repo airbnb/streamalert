@@ -202,12 +202,13 @@ def set_parser_epilog(parser, epilog):
     parser.epilog = textwrap.dedent(epilog) if epilog else None
 
 
-def generate_subparser(parser, name, description=None, subcommand=False):
+def generate_subparser(parser, name, description=None, subcommand=False, **kwargs):
     """Helper function to return a subparser with the given options"""
     subparser = parser.add_parser(
         name,
         description=description,
-        formatter_class=RawDescriptionHelpFormatter
+        formatter_class=RawDescriptionHelpFormatter,
+        **kwargs
     )
 
     if subcommand:
