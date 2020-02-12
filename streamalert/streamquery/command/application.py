@@ -15,6 +15,7 @@ limitations under the License.
 """
 from datetime import datetime
 
+from streamalert.streamquery.command.processor import CommandProcessor
 from streamalert.streamquery.config.services import configure_container
 from streamalert.streamquery.container.container import ServiceContainer
 from streamalert.streamquery.state.state_manager import StepFunctionStateManager, StateManager
@@ -67,8 +68,9 @@ class StreamQuery:
         done = processor.nonblocking_single_pass()
 
         # Set the updated state into the response
-        #   The step function as-written currently looks specifically for $.done and $.continue and
-        #   expects both of them to be present AND to be adopt exact numeric values
+        #   The step function as-written currently looks specifically for $.done and
+        #   $.continue and expects both of them to be present AND to be adopt exact
+        #   numeric values
         response = {
             'done': 1 if done else 0,
             'continue': 1,

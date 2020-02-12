@@ -17,7 +17,9 @@ from datetime import datetime, timezone
 from mock import MagicMock
 from nose.tools import assert_equals, assert_false, assert_true
 
-from streamalert.streamquery.query_packs.manager import QueryPack, QueryPacksManager, QueryParameterGenerator
+from streamalert.streamquery.query_packs.manager import (
+    QueryPack, QueryPacksManager, QueryParameterGenerator
+)
 
 
 class TestQueryPack:

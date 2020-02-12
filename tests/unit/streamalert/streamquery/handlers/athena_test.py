@@ -18,7 +18,11 @@ from dateutil.tz import tzlocal
 from mock import MagicMock
 from nose.tools import assert_equals, assert_true, assert_false
 
-from streamalert.streamquery.handlers.athena import AthenaClient, AthenaQueryExecution, AthenaQueryResult
+from streamalert.streamquery.handlers.athena import (
+    AthenaClient,
+    AthenaQueryExecution,
+    AthenaQueryResult
+)
 
 
 class TestAthenaClient:

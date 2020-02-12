@@ -18,7 +18,9 @@ import json
 from logging import Logger
 
 from streamalert.streamquery.handlers.athena import AthenaClient
-from streamalert.streamquery.query_packs.configuration import QueryPackConfiguration, QueryPackRepository
+from streamalert.streamquery.query_packs.configuration import (
+    QueryPackConfiguration, QueryPackRepository
+)
 from streamalert.streamquery.state.state_manager import StateManager
 from streamalert.streamquery.support.clock import Clock
 
@@ -349,5 +351,7 @@ class QueryParameterGenerator:
         if parameter == 'utctimestamp':
             return str(round(self._clock.now.timestamp()))
 
-        self._logger.error('Parameter generator does not know how to handle "{}"'.format(parameter))
+        self._logger.error(
+            'Parameter generator does not know how to handle "{}"'.format(parameter)
+        )
         return None
