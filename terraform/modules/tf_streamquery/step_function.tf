@@ -17,7 +17,7 @@ resource "aws_sfn_state_machine" "state_machine" {
     "RunFunction": {
       "Comment":  "This task calls the lamdba over and over until done",
       "Type": "Task",
-      "Resource": "${module.streamquery_lambda.function_arn}:production",
+      "Resource": "${module.streamquery_lambda.function_alias_arn}",
       "Next": "CheckIfDone",
       "TimeoutSeconds": 60
     },

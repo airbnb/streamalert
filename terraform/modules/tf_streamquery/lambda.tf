@@ -33,7 +33,7 @@ module "streamquery_lambda" {
   # Lambda Alarm configurations
   # FIXME (derek.wang)
 //  log_retention_days         = var.lambda_log_retention
-//  alarm_actions              = ["arn:aws:sns:${var.aws_region}:${var.aws_account_id}:airbnb_csirt_cloudwatch_alerts"]
+//  alarm_actions              = ["arn:aws:sns:${var.region}:${var.account_id}:airbnb_csirt_cloudwatch_alerts"]
 //  errors_alarm_threshold     = var.lambda_error_threshold
 //  errors_alarm_period_secs   = var.lambda_error_period
 //  errors_alarm_enabled       = var.lambda_alarms_enabled
@@ -47,7 +47,7 @@ module "streamquery_lambda" {
 //  deployment_package_path      = data.external.build_python_source_code.result.build_directory
 
   environment_variables = {
-    REGION                = var.aws_region
+    REGION                = var.region
     ATHENA_DATABASE       = var.athena_database
     ATHENA_RESULTS_BUCKET = var.athena_results_bucket
     KINESIS_STREAM        = var.destination_kinesis_stream

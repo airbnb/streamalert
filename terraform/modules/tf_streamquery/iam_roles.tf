@@ -30,7 +30,7 @@ data "aws_iam_policy_document" "lambda_permissions" {
       "athena:GetQueryResults",
     ]
     resources = [
-      "arn:aws:athena:${var.aws_region}:${var.aws_account_id}:workgroup/primary",
+      "arn:aws:athena:${var.region}:${var.account_id}:workgroup/primary",
     ]
   }
 
@@ -83,7 +83,7 @@ data "aws_iam_policy_document" "lambda_permissions" {
       "kinesis:DescribeStream",
     ]
     resources = [
-      "arn:aws:kinesis:${var.aws_region}:${var.aws_account_id}:stream/${var.destination_kinesis_stream}",
+      "arn:aws:kinesis:${var.region}:${var.account_id}:stream/${var.destination_kinesis_stream}",
     ]
   }
 }
@@ -106,7 +106,7 @@ data "aws_iam_policy_document" "iam_step_function_assume_role" {
     principals {
       type = "Service"
       identifiers = [
-        "states.${var.aws_region}.amazonaws.com",
+        "states.${var.region}.amazonaws.com",
       ]
     }
   }
@@ -129,7 +129,7 @@ data "aws_iam_policy_document" "stepfunction_permissions" {
       "lambda:InvokeFunction",
     ]
     resources = [
-      "${module.streamquery_lambda.function_arn}:*",
+      module.streamquery_lambda.function_alias_arn,
     ]
   }
 }
@@ -187,9 +187,9 @@ locals {
 
   # A list of all glue ARNs that the Athena is built over
   athena_glue_resources = [
-    "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:catalog",
-    "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:database/${var.athena_database}",
-    "arn:aws:glue:${var.aws_region}:${var.aws_account_id}:table/${var.athena_database}/*",
+    "arn:aws:glue:${var.region}:${var.account_id}:catalog",
+    "arn:aws:glue:${var.region}:${var.account_id}:database/${var.athena_database}",
+    "arn:aws:glue:${var.region}:${var.account_id}:table/${var.athena_database}/*",
   ]
 }
 

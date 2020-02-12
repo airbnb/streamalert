@@ -25,14 +25,14 @@ variable "lambda_memory" {
 # The AWS Account Id is used to generate the ARN of various resources. This configuration
 # ASSUMES that both the Athena and Kinesis streams being accessed belong to the same AWS acccount
 # that StreamQuery is being deployed to.
-variable "aws_account_id" {
+variable "account_id" {
   description = "The AWS Account Id that StreamQuery is deployed to"
   type        = string
 }
 
-# The region is used to generate the ARN of various resources. Same as aws_account_id, this
+# The region is used to generate the ARN of various resources. Same as account_id, this
 # configuration assumes the region is the same across all accessed resources.
-variable "aws_region" {
+variable "region" {
   description = "The AWS Region that StreamQuery is deployed to"
   type        = string
   default     = "us-east-1"
