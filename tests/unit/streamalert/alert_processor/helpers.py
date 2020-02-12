@@ -18,7 +18,7 @@ import random
 
 from streamalert.alert_processor.outputs.credentials.provider import LocalFileDriver
 from streamalert.shared.alert import Alert
-from streamalert.shared.helpers.aws_api_client import AwsKms
+from streamalert.shared.helpers.aws_api_client import AwsKms, AwsSsm
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -95,3 +95,7 @@ def put_mock_creds(output_name, creds, bucket, region, alias):
     enc_creds = encrypt_with_kms(creds_string, region, alias)
 
     put_mock_s3_object(bucket, output_name, enc_creds, region)
+
+
+def put_mock_ssm_parameters(parameter_name, parameter_value, kms_key_alias, region='us-east-1'):
+    AwsSsm.put_parameter(parameter_name, parameter_value, region, kms_key_alias)

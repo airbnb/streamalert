@@ -62,10 +62,11 @@ data "aws_iam_policy_document" "output_secrets" {
   // Allow retrieving encrypted output secrets
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.prefix}.streamalert.secrets/*"]
+    actions   = ["ssm:GetParameter"]
+    resources = ["arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.prefix}_streamalert_secrets/*"]
   }
 }
+
 
 // Allow the Alert Processor to send to default firehose and S3 outputs
 resource "aws_iam_role_policy" "default_outputs" {

@@ -20,7 +20,7 @@ from collections import OrderedDict
 
 from botocore.exceptions import ClientError
 from mock import patch, MagicMock
-from moto import mock_kms, mock_s3
+from moto import mock_kms, mock_s3, mock_ssm
 from nose.tools import (
     assert_true,
     assert_equal,
@@ -33,6 +33,7 @@ from nose.tools import (
 from streamalert.alert_processor.outputs.output_base import OutputProperty
 from streamalert.alert_processor.outputs.credentials.provider import (
     S3Driver,
+    SSMDriver,
     LocalFileDriver,
     Credentials,
     OutputCredentialsProvider,
@@ -162,7 +163,7 @@ def test_constructor_loads_from_os_when_not_provided():
     assert_equal(provider.get_aws_account_id(), '123456789012')
 
 
-@mock_s3
+@mock_ssm
 class TestOutputCredentialsProvider:
     def setup(self):
         service_name = 'service'
@@ -180,10 +181,6 @@ class TestOutputCredentialsProvider:
             prefix=prefix,
             aws_account_id=aws_account_id
         )
-
-        # Pre-create the bucket so we dont get a "Bucket does not exist" error
-        s3_driver = S3Driver('test_asdf', 'service', REGION)
-        put_mock_s3_object(s3_driver.get_s3_secrets_bucket(), 'laskdjfaouhvawe', 'lafhawef', REGION)
 
     @mock_kms
     def test_save_and_load_credentials(self):
@@ -247,14 +244,14 @@ class TestOutputCredentialsProvider:
         expectation = {'credential1': 'there is no cow level', 'property2': 'abcdef'}
         assert_equal(creds_dict, expectation)
 
-        # Now we yank the S3 driver out of the driver pool
+        # Now we yank the SSM driver out of the driver pool
         # FIXME (derek.wang): Another way to do this is to install a spy on moto and make assertions
         #                     on the number of times it is called.
-        assert_is_instance(self._provider._drivers[1], S3Driver)
+        assert_is_instance(self._provider._drivers[1], SSMDriver)
         self._provider._drivers[1] = None
         self._provider._core_driver = None
 
-        # Load again and see if it still is able to load without S3
+        # Load again and see if it still is able to load without SSM
         assert_equal(self._provider.load_credentials(descriptor), expectation)
 
         # Double-check; Examine the Driver guts and make sure that the EphemeralDriver has the
@@ -267,7 +264,8 @@ class TestOutputCredentialsProvider:
         assert_equal(json.loads(creds.data())['credential1'], 'there is no cow level')
 
     @patch('logging.Logger.error')
-    def test_load_credentials_returns_none_on_driver_failure(self, logging_error): #pylint: disable=invalid-name
+    # pylint: disable=invalid-name
+    def test_load_credentials_returns_none_on_driver_failure(self, logging_error):
         """OutputCredentials - Load Credentials Returns None on Driver Failure"""
         descriptor = 'descriptive'
 
