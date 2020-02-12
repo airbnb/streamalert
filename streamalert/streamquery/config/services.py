@@ -1,3 +1,18 @@
+"""
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import logging
 
 import boto3
@@ -101,23 +116,6 @@ def configure_container(container):
         )
 
         session_kwargs = {}
-        auth_mode = _container.get_parameter('athena_auth_mode')
-        if auth_mode == 'key':
-            session_kwargs = {
-                'aws_access_key_id': _container.get_parameter('athena_key_id'),
-                'aws_secret_access_key': _container.get_parameter('athena_secret'),
-                'aws_session_token': _container.get_parameter('athena_token'),
-            }
-        elif auth_mode == 'profile':
-            session_kwargs = {
-                'profile_name': _container.get_parameter('athena_profile')
-            }
-        elif auth_mode == 'iam_role':
-            # Trust the Lambda role to do it correctly.
-            pass
-        else:
-            logger.error('Unrecognized Athena client authentication mode: {}'.format(auth_mode))
-
         try:
             session = boto3.Session(**session_kwargs)
             return session.client(
@@ -138,22 +136,6 @@ def configure_container(container):
         )
 
         session_kwargs = {}
-        auth_mode = _container.get_parameter('kinesis_auth_mode')
-        if auth_mode == 'key':
-            session_kwargs = {
-                'aws_access_key_id': _container.get_parameter('kinesis_key_id'),
-                'aws_secret_access_key': _container.get_parameter('kinesis_secret'),
-            }
-        elif auth_mode == 'profile':
-            session_kwargs = {
-                'profile_name': _container.get_parameter('kinesis_profile')
-            }
-        elif auth_mode == 'iam_role':
-            # Trust the Lambda role to do it correctly.
-            pass
-        else:
-            logger.error('Unrecognized Kinesis client authentication mode: {}'.format(auth_mode))
-
         try:
             session = boto3.Session(**session_kwargs)
             return session.client('kinesis', config=config)
