@@ -15,7 +15,7 @@ limitations under the License.
 """
 from nose.tools import assert_equals, assert_true
 
-from streamalert.streamquery.query_packs.configuration import (
+from streamalert.scheduled_queries.query_packs.configuration import (
     QueryPackConfiguration, QueryPackRepository
 )
 

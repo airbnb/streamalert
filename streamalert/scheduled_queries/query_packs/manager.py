@@ -17,12 +17,12 @@ from datetime import timedelta
 import json
 from logging import Logger
 
-from streamalert.streamquery.handlers.athena import AthenaClient
-from streamalert.streamquery.query_packs.configuration import (
+from streamalert.scheduled_queries.handlers.athena import AthenaClient
+from streamalert.scheduled_queries.query_packs.configuration import (
     QueryPackConfiguration, QueryPackRepository
 )
-from streamalert.streamquery.state.state_manager import StateManager
-from streamalert.streamquery.support.clock import Clock
+from streamalert.scheduled_queries.state.state_manager import StateManager
+from streamalert.scheduled_queries.support.clock import Clock
 
 
 class QueryPackExecutionContext:

@@ -15,9 +15,9 @@ limitations under the License.
 """
 from logging import Logger
 
-from streamalert.streamquery.query_packs.manager import QueryPacksManager
-from streamalert.streamquery.state.state_manager import StateManager
-from streamalert.streamquery.streamalert.kinesis import KinesisClient
+from streamalert.scheduled_queries.query_packs.manager import QueryPacksManager
+from streamalert.scheduled_queries.state.state_manager import StateManager
+from streamalert.scheduled_queries.streamalert.kinesis import KinesisClient
 
 
 class CommandProcessor:

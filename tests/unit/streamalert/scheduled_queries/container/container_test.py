@@ -15,8 +15,8 @@ limitations under the License.
 """
 from nose.tools import assert_equals, assert_raises, assert_true
 
-from streamalert.streamquery.config.services import configure_container
-from streamalert.streamquery.container.container import ServiceContainer
+from streamalert.scheduled_queries.config.services import configure_container
+from streamalert.scheduled_queries.container.container import ServiceContainer
 
 
 class TestServiceContainer:

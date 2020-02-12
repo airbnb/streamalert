@@ -15,7 +15,7 @@ limitations under the License.
 """
 import json
 
-from streamalert.streamquery import __version__ as streamquery_version
+from streamalert.scheduled_queries import __version__ as streamquery_version
 
 
 class KinesisClient:

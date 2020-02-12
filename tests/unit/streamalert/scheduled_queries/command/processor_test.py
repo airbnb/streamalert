@@ -16,7 +16,7 @@ limitations under the License.
 from mock import MagicMock
 from nose.tools import assert_true, assert_false
 
-from streamalert.streamquery.command.processor import CommandProcessor
+from streamalert.scheduled_queries.command.processor import CommandProcessor
 
 
 class TestCommandProcessor:

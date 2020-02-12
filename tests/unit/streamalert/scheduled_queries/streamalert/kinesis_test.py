@@ -16,7 +16,7 @@ limitations under the License.
 from mock import MagicMock
 from moto import mock_kinesis
 
-from streamalert.streamquery.streamalert.kinesis import KinesisClient
+from streamalert.scheduled_queries.streamalert.kinesis import KinesisClient
 
 
 @mock_kinesis

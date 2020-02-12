@@ -15,15 +15,15 @@ limitations under the License.
 """
 from datetime import datetime
 
-from streamalert.streamquery.command.processor import CommandProcessor
-from streamalert.streamquery.config.services import configure_container
-from streamalert.streamquery.container.container import ServiceContainer
-from streamalert.streamquery.state.state_manager import StepFunctionStateManager, StateManager
+from streamalert.scheduled_queries.command.processor import CommandProcessor
+from streamalert.scheduled_queries.config.services import configure_container
+from streamalert.scheduled_queries.container.container import ServiceContainer
+from streamalert.scheduled_queries.state.state_manager import StepFunctionStateManager, StateManager
 
-from streamalert.streamquery.config.lambda_conf import parameters
+from streamalert.scheduled_queries.config.lambda_conf import parameters
 
 
-class StreamQuery:
+class ScheduledQueries:
 
     def __init__(self):
         # Boot the service container
@@ -37,7 +37,7 @@ class StreamQuery:
 
         # Start the function
         logger = self._logger
-        logger.info('Running StreamQuery lambda handler')
+        logger.info('Running scheduled_queries lambda handler')
         logger.debug(
             'Invocation event: %s', event
         )

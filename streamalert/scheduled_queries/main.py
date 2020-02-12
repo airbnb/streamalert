@@ -16,8 +16,8 @@ limitations under the License.
 
 This file is the entry point for AWS Lambda.
 """
-from streamalert.streamquery.command.application import StreamQuery
+from streamalert.scheduled_queries.command.application import ScheduledQueries
 
 
 def handler(event, _):
-    return StreamQuery().run(event)
+    return ScheduledQueries().run(event)

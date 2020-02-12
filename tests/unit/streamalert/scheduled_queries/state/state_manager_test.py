@@ -18,7 +18,7 @@ import os
 from mock import MagicMock
 from nose.tools import assert_equals, assert_true, assert_false
 
-from streamalert.streamquery.state.state_manager import (
+from streamalert.scheduled_queries.state.state_manager import (
     FileWritingStateManager,
     StateManager,
     StepFunctionStateManager,

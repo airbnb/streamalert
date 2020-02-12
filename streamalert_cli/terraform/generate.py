@@ -561,14 +561,14 @@ def _generate_lookup_tables_settings(config):
 
 def _generate_streamquery_module(config):
     """
-    Generates .tf.json file for StreamQuery
+    Generates .tf.json file for scheduled queries
     """
-    tf_file_name = 'terraform/streamquery.tf.json'
+    tf_file_name = 'terraform/scheduled_queries.tf.json'
 
-    streamquery_config = config.get('streamquery', {})
+    streamquery_config = config.get('scheduled_queries', {})
 
     if not streamquery_config.get('enabled', False):
-        remove_temp_terraform_file(tf_file_name, 'Removing old StreamQuery Terraform file')
+        remove_temp_terraform_file(tf_file_name, 'Removing old scheduled queries Terraform file')
         return
 
     prefix = config['global']['account']['prefix']
@@ -585,8 +585,8 @@ def _generate_streamquery_module(config):
     ).strip()
 
     generated_config = {'module': {}}
-    generated_config['module']['streamquery'] = {
-        'source': './modules/tf_streamquery',
+    generated_config['module']['scheduled_queries'] = {
+        'source': './modules/tf_scheduled_queries',
 
         'account_id': config['global']['account']['aws_account_id'],
         'prefix': prefix,

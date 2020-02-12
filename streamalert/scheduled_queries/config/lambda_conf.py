@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
-from streamalert.streamquery import __version__ as streamquery_version
+from streamalert.scheduled_queries import __version__ as streamquery_version
 
 parameters = {
     'command_name': 'StreamQuery (Lambda) v{}'.format(streamquery_version),

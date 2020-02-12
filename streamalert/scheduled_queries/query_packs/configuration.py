@@ -15,7 +15,7 @@ limitations under the License.
 """
 from streamalert.shared.importer import import_folders
 
-PACKS_DIRECTORY = 'streamalert/streamquery/query_packs/packs/'
+PACKS_DIRECTORY = 'streamalert/scheduled_queries/query_packs/packs/'
 
 
 class QueryPackConfiguration:

@@ -19,18 +19,18 @@ import boto3
 from botocore import client as botocore_client
 from botocore.exceptions import ProfileNotFound
 
-from streamalert.streamquery.command.processor import CommandProcessor
-from streamalert.streamquery.container.container import ServiceDefinition
-from streamalert.streamquery.handlers.athena import AthenaClient
-from streamalert.streamquery.query_packs.configuration import QueryPackRepository
-from streamalert.streamquery.query_packs.manager import (
+from streamalert.scheduled_queries.command.processor import CommandProcessor
+from streamalert.scheduled_queries.container.container import ServiceDefinition
+from streamalert.scheduled_queries.handlers.athena import AthenaClient
+from streamalert.scheduled_queries.query_packs.configuration import QueryPackRepository
+from streamalert.scheduled_queries.query_packs.manager import (
     QueryPackExecutionContext,
     QueryPacksManagerFactory,
     QueryParameterGenerator,
 )
-from streamalert.streamquery.state.state_manager import StateManager
-from streamalert.streamquery.streamalert.kinesis import KinesisClient
-from streamalert.streamquery.support.clock import Clock
+from streamalert.scheduled_queries.state.state_manager import StateManager
+from streamalert.scheduled_queries.streamalert.kinesis import KinesisClient
+from streamalert.scheduled_queries.support.clock import Clock
 
 
 # pylint: disable=too-many-statements
