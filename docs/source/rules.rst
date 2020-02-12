@@ -47,7 +47,7 @@ The simplest possible rule looks like this:
       return True
 
 This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined in a schema file in the ``conf/schemas`` directory, i.e ``conf/schemas/cloudwatch.json``.
-In this case, *all* CloudWatch events will generate an alert, which will be sent to the :ref:`alerts Athena table <athena_user_guide>`.
+In this case, *all* CloudWatch events will generate an alert, which will be sent to the `alerts Athena table <historical-search.html#athena-user-guide>`_.
 
 Example: Logic & Outputs
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -247,13 +247,13 @@ A single consolidated alert will be sent showing the common keys and the record 
 *All* of the specified merge keys must have the same value in order for two records to be merged,
 but those keys can be nested anywhere in the record structure.
 
-.. note:: The original (unmerged) alert will always be sent to :ref:`Athena <athena_user_guide>`
+.. note:: The original (unmerged) alert will always be sent to `Athena <historical-search.html#athena-user-guide>`_.
 
 outputs
 ~~~~~~~
 
 Defines the alert destination if the return value of a rule is ``True``.
-Alerts are always sent to an :ref:`Athena table <athena_user_guide>` which is easy to query.
+Alerts are always sent to an `Athena table <historical-search.html#athena-user-guide>`_ which is easy to query.
 Any number of additional `outputs <outputs.html>`_ can be specified.
 
 req_subkeys

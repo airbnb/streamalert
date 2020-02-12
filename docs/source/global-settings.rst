@@ -1,0 +1,324 @@
+Global Settings
+===============
+Settings that apply *globally* for StreamAlert are stored in the ``conf/global.json`` file. This
+file has a few different sections to help organize the settings by purpose. These sections are
+described in further detail below.
+
+
+Account
+-------
+The ``account`` section of ``conf/global.json`` file is used to store information specifically
+related to the AWS account used for your StreamAlert deployment.
+
+Configuration
+~~~~~~~~~~~~~
+.. code-block:: json
+
+  {
+    "account": {
+      "aws_account_id": "123456789012",
+      "prefix": "<prefix>",
+      "region": "us-east-1"
+    }
+  }
+
+
+Options
+```````
+===================  ============  ==============  ===============
+**Key**              **Required**  **Default**     **Description**
+-------------------  ------------  --------------  ---------------
+``aws_account_id``   Yes           ``None``        12 digit account ID for your AWS account
+``prefix``           Yes           ``None``        An alphanumeric and unique prefix to be used for your deployment
+``region``           Yes           ``us-east-1``   AWS region within which you would like to deploy StreamAlert
+===================  ============  ==============  ===============
+
+.. tip::
+
+  The ``aws_account_id`` and ``prefix`` settings can be set using the CLI:
+
+  .. code-block:: bash
+
+    python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
+    python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
+
+  However, if a different `region` is desired, it must be changed manually.
+
+
+General
+-------
+The ``general`` section of ``conf/global.json`` file is used to store general information related
+to your StreamAlert deployment. Notably, paths to ``rules`` and ``matchers`` can be supplied here.
+
+
+Configuration
+~~~~~~~~~~~~~
+.. code-block:: json
+
+  {
+    "general": {
+      "matcher_locations": [
+        "matchers"
+      ],
+      "rule_locations": [
+        "rules"
+      ]
+    }
+  }
+
+
+Options
+```````
+======================  ============  =================  ===============
+**Key**                 **Required**  **Default**        **Description**
+----------------------  ------------  -----------------  ---------------
+``matcher_locations``   Yes           ``["matchers"]``   List of local paths where ``matchers`` are defined
+``rule_locations``      Yes           ``["rules"]``      List of local paths where ``rules`` are defined
+======================  ============  =================  ===============
+
+
+Infrastructure
+--------------
+The ``infrastructure`` section of ``conf/global.json`` file is used to store information related
+to settings for various global resources/infrastructure components needed by StreamAlert. There are
+various subsections within this section, each of which is outlined below.
+
+Alerts Firehose
+~~~~~~~~~~~~~~~
+By default, StreamAlert will send all alert payloads to S3 for historical retention and searching.
+These payloads include the original record data that triggered the alert, as well as the rule that
+was triggered, the source of the log, the date/time the alert was triggered, the cluster from
+which the log came, and a variety of other fields.
+
+
+Configuration
+`````````````
+The following ``alerts_firehose`` configuration settings can be defined within the ``infrastructure``
+section of ``global.json``:
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "alerts_firehose": {
+        "bucket_name": "<prefix>-streamalerts",
+        "buffer_size": 64,
+        "buffer_interval": 300,
+        "cloudwatch_log_retention": 14,
+        "compression_format": "GZIP"
+      }
+    }
+  }
+
+
+Options
+'''''''
+=============================  ============  ==========================  ===============
+**Key**                        **Required**  **Default**                 **Description**
+-----------------------------  ------------  --------------------------  ---------------
+``bucket_name``                No            ``<prefix>-streamalerts``   Bucket name to override the default name
+``buffer_size``                No            ``64`` (MB)                 Buffer incoming data to the specified size, in megabytes,
+                                                                         before delivering it to S3
+``buffer_interval``            No            ``300`` (seconds)           Buffer incoming data for the specified period of time, in
+                                                                         seconds, before delivering it to S3
+``compression_format``         No            ``GZIP``                    The compression algorithm to use on data stored in S3
+``cloudwatch_log_retention``   No            ``14`` (days)               Days for which to retain error logs that are sent to CloudWatch
+                                                                         in relation to this Kinesis Firehose Delivery Stream
+=============================  ============  ==========================  ===============
+
+
+Alerts Table
+~~~~~~~~~~~~
+StreamAlert utilizes a DynamoDB Table as a temporary storage mechanism when alerts are triggered
+from the Rules Engine. This table can be configured as necessary to scale to the throughput of
+your alerts.
+
+
+Configuration
+`````````````
+The following ``alerts_table`` configuration settings can be defined within the ``infrastructure``
+section of ``global.json``:
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "alerts_table": {
+        "read_capacity": 10,
+        "write_capacity": 10
+      }
+    }
+  }
+
+
+Options
+'''''''
+===================  ============  ===========  ===============
+**Key**              **Required**  **Default**  **Description**
+-------------------  ------------  -----------  ---------------
+``read_capacity``    No            ``5``        Read capacity value to apply to the alerts DynamoDB Table
+``write_capacity``   No            ``5``        Write capacity value to apply to the alerts DynamoDB Table
+===================  ============  ===========  ===============
+
+
+Firehose
+~~~~~~~~
+StreamAlert also supports sending all logs to S3 for historical retention and searching based on
+classified type of the log.
+
+
+Configuration
+`````````````
+The following ``firehose`` configuration settings can be defined within the ``infrastructure``
+section of ``global.json``:
+
+.. _firehose_example:
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "firehose": {
+        "enabled": true,
+        "bucket_name": "<prefix>-streamalert-data",
+        "buffer_size": 64,
+        "buffer_interval": 300,
+        "compression_format": "GZIP",
+        "enabled_logs": {
+          "osquery": {
+            "enable_alarm": true
+          },
+          "cloudwatch:cloudtrail": {},
+          "ghe": {
+            "enable_alarm": true,
+            "evaluation_periods": 10,
+            "period_seconds": 3600,
+            "log_min_count_threshold": 100000
+          }
+        }
+      }
+    }
+  }
+
+
+Options
+'''''''
+=======================  ============  ==============================  ===============
+**Key**                  **Required**  **Default**                     **Description**
+-----------------------  ------------  ------------------------------  ---------------
+``enabled``              Yes           ``None``                        If set to ``false``, this will disable the creation of any Kinesis Firehose
+                                                                       resources and indicate to the Classifier functions that they should not send
+                                                                       data for retention
+``use_prefix``           No            ``true``                        Whether the prefix should be prepended to Firehoses that are created (only to be used for legacy purposes)
+``bucket_name``          No            ``<prefix>-streamalert-data``   Bucket name to override the default name
+``buffer_size``          No            ``64`` (MB)                     Buffer incoming data to the specified size, in megabytes, before delivering it to S3
+``buffer_interval``      No            ``300`` (seconds)               Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
+``compression_format``   No            ``GZIP``                        The compression algorithm to use on data stored in S3
+``enabled_logs``         No            ``{}``                          Which classified log types to send to Kinesis Firehose from the Classifier
+                                                                       function, along with specific settings per log type
+=======================  ============  ==============================  ===============
+
+.. note:: The ``enabled_logs`` object should contain log types for which Firehose should be created.
+          The keys in the 'dictionary' should reference the log type (or subtype) for which Firehoses
+          should be created, and the value should be additional (optional) setting per log type. The
+          following section contains more detail on these settings.
+
+
+Additional Options for `enabled_logs`
+'''''''''''''''''''''''''''''''''''''
+Each Firehose that is created can be configured with an alarm that will fire when the incoming log
+volume drops below a specified threshold. This is disabled by default, and enabled by setting
+``enable_alarm`` to ``true`` within the configuration for the log type.
+
+============================  ============  ==============================================  ===============
+**Key**                       **Required**  **Default**                                     **Description**
+----------------------------  ------------  ----------------------------------------------  ---------------
+``enable_alarm``              No            ``false``                                       If set to ``true``, a CloudWatch Metric Alarm will be created for this log type
+``evaluation_periods``        No            ``1``                                           Consecutive periods the records count threshold must be breached before triggering an alarm
+``period_seconds``            No            ``86400``                                       Period over which to count the IncomingRecords (default: 86400 seconds [1 day])
+``log_min_count_threshold``   No            ``1000``                                        Alarm if IncomingRecords count drops below this value in the specified period(s)
+``alarm_actions``             No            ``<prefix>_streamalert_monitoring SNS topic``   Optional CloudWatch alarm action or list of CloudWatch alarm actions (e.g. SNS topic ARNs)
+============================  ============  ==============================================  ===============
+
+.. note:: See the ``ghe`` log type in the :ref:`example <firehose_example>` ``firehose`` configuration above for how this should be performed.
+
+
+Rule Staging
+~~~~~~~~~~~~
+StreamAlert has the ability to "stage" rules that have not been battle tested. This feature is
+backed by a DynamoDB table, of which has a few configurable options.
+
+Configuration
+`````````````
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "rule_staging": {
+        "cache_refresh_minutes": 10,
+        "enabled": true,
+        "table_read_capacity": 5,
+        "table_write_capacity": 5
+      }
+    }
+  }
+
+
+Options
+'''''''
+==========================  ============  ===========  ===============
+**Key**                     **Required**  **Default**  **Description**
+--------------------------  ------------  -----------  ---------------
+``enabled``                 No            ``false``    Should be set to ``true`` to enable the rule staging feature
+``cache_refresh_minutes``   No            ``10``       Maximum amount of time (in minutes) the Rules Engine function
+                                                       should wait to force refresh the rule staging information.
+``table_read_capacity``     No            ``5``        DynamoDB read capacity to allocate to the table that stores staging
+                                                       information. The default setting should be sufficient in most use cases.
+``table_write_capacity``    No            ``5``        DynamoDB write capacity to allocate to the table that stores staging
+                                                       information. The default setting should be sufficient in most use cases.
+==========================  ============  ===========  ===============
+
+.. tip::
+
+  By default, the rule staging feature is not enabled. It can be enabled with the following command:
+
+  .. code-block:: bash
+
+    python manage.py rule-staging enable --true
+
+
+S3 Access Logging
+~~~~~~~~~~~~~~~~~
+StreamAlert will send S3 Server Access logs generated by all the buckets in your deployment to a
+logging bucket that will be created by default. However, if you have an existing bucket where you
+are already centralizing these logs, the name may be provided for use by StreamAlert's buckets.
+
+
+Configuration
+`````````````
+The following ``s3_access_logging`` configuration settings can be defined within the
+``infrastructure`` section of ``global.json``:
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "s3_access_logging": {
+        "bucket_name": "name-of-existing-bucket-to-use"
+      }
+    }
+  }
+
+
+Options
+'''''''
+================  ============  ====================================  ===============
+**Key**           **Required**  **Default**                           **Description**
+----------------  ------------  ------------------------------------  ---------------
+``bucket_name``   No            ``<prefix>-streamalert-s3-logging``   Name of existing S3 bucket to use for logging instead of
+                                                                      the default bucket that will be created
+================  ============  ====================================  ===============
+
+
+Terraform
+---------

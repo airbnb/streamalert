@@ -60,8 +60,8 @@ Table of Contents
   :maxdepth: 2
   :caption: Global Settings
 
+  global-settings
   historical-search
-  dynamodb-tables
 
 .. _data_configuration:
 

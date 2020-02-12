@@ -26,17 +26,14 @@ By default, the rule staging feature is not enabled. It can be enabled with the 
 The change will be reflected in the ``conf/globals.json`` file:
 
 .. code-block:: json
-  :caption: ``conf/global.json``
 
   {
     "infrastructure": {
       "rule_staging": {
         "cache_refresh_minutes": 10,
         "enabled": true,
-        "table": {
-          "read_capacity": 20,
-          "write_capacity": 5
-        }
+        "table_read_capacity": 20,
+        "table_write_capacity": 5
       }
     }
   }

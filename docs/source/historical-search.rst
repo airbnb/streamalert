@@ -82,11 +82,11 @@ Options
 =============================  ========  ==========================  ===========
 Key                            Required  Default                     Description
 -----------------------------  --------  --------------------------  -----------
-``bucket_name``                ``No``    ``<prefix>-streamalerts``   Bucket name to override the default name
-``buffer_size``                ``No``    ``64 (MB)``                 Buffer incoming data to the specified size, in megabytes, before delivering it to S3
-``buffer_interval``            ``No``    ``300 (seconds)``           Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
-``compression_format``         ``No``    ``GZIP``                    The compression algorithm to use on data stored in S3
-``cloudwatch_log_retention``   ``No``    ``14 (days)``               Days for which to retain error logs that are sent to CloudWatch in relation to this Kinesis Firehose Delivery Stream
+``bucket_name``                No        ``<prefix>-streamalerts``   Bucket name to override the default name
+``buffer_size``                No        ``64 (MB)``                 Buffer incoming data to the specified size, in megabytes, before delivering it to S3
+``buffer_interval``            No        ``300 (seconds)``           Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
+``compression_format``         No        ``GZIP``                    The compression algorithm to use on data stored in S3
+``cloudwatch_log_retention``   No        ``14 (days)``               Days for which to retain error logs that are sent to CloudWatch in relation to this Kinesis Firehose Delivery Stream
 =============================  ========  ==========================  ===========
 
 Classified Data
@@ -156,69 +156,6 @@ Each Delivery Stream delivers data to the same S3 bucket created by the module i
 - ``arn:aws:s3:::<prefix>-streamalert-data/osquery/YYYY/MM/DD/data_here``
 - ``arn:aws:s3:::<prefix>-streamalert-data/cloudtrail/YYYY/MM/DD/data_here``
 
-The following ``firehose`` configuration settings can be defined within the ``infrastructure``
-section of ``global.json``:
-
-.. code-block:: json
-
-  {
-    "infrastructure": {
-      "firehose": {
-        "enabled": true,
-        "enabled_logs": {
-          "osquery": {
-            "enable_alarm": true
-          },
-          "cloudwatch": {},
-          "ghe": {
-            "enable_alarm": true,
-            "evaluation_periods": 10,
-            "period_seconds": 3600,
-            "log_min_count_threshold": 100000
-          }
-        },
-        "bucket_name": "<prefix>-streamalert-data",
-        "buffer_size": 64,
-        "buffer_interval": 300,
-        "compression_format": "GZIP"
-      }
-    }
-  }
-
-Options
-'''''''
-======================  ========  ==============================  ===========
-Key                     Required  Default                         Description
-----------------------  --------  ------------------------------  -----------
-``enabled``             ``Yes``   ``None``                        If set to ``false``, will not create a Kinesis Firehose
-``bucket_name``         ``No``    ``<prefix>-streamalert-data``   Bucket name to override the default name
-``enabled_logs``        ``Yes``   ``[]``                          The set of classified logs to send to Kinesis Firehose from the Classifier function
-``buffer_size``         ``No``    ``64 (MB)``                     Buffer incoming data to the specified size, in megabytes, before delivering it to S3
-``buffer_interval``     ``No``    ``300 (seconds)``               Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
-``compression_format``  ``No``    ``GZIP``                        The compression algorithm to use on data stored in S3
-======================  ========  ==============================  ===========
-
-
-Throughput Alarms
-`````````````````
-Additionally, each Firehose that is created can be configured with an alarm will fire when
-incoming logs drops below a specified threshold. This is disabled by default, and enabled by
-setting ``enable_alarm`` to ``true`` within the configuration for the log type. See the config
-example above for how this should be performed.
-
-
-Alarms Options
-''''''''''''''
-============================  ===============================================  ===========
-Key                           Default                                          Description
-----------------------------  -----------------------------------------------  -----------
-``enable_alarm``              ``false``                                        If set to ``true``, a CloudWatch Metric Alarm will be created for this log type
-``evaluation_periods``        ``1``                                            Consecutive periods the records count threshold must be breached before triggering an alarm
-``period_seconds``            ``86400``                                        Period over which to count the IncomingRecords (default: 86400 seconds [1 day])
-``log_min_count_threshold``   ``1000``                                         Alarm if IncomingRecords count drops below this value in the specified period(s)
-``alarm_actions``             ``<prefix>_streamalert_monitoring SNS topic``    Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)
-============================  ===============================================  ===========
-
 
 Limits
 ~~~~~~
@@ -279,13 +216,13 @@ Open ``conf/lambda.json``, and fill in the following options:
 ===================================  ========  ====================   ===========
 Key                                  Required  Default                Description
 -----------------------------------  --------  --------------------   -----------
-``enabled``                          ``Yes``   ``true``               Enables/Disables the Athena Partition Refresh Lambda function
-``enable_custom_metrics``            ``No``    ``false``              Enables/Disables logging of metrics for the Athena Partition Refresh Lambda function
-``log_level``                        ``No``    ``info``               The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
-``memory``                           ``No``    ``128``                The amount of memory (in MB) allocated to the Lambda function
-``timeout``                          ``No``    ``60``                 The maximum duration of the Lambda function (in seconds)
-``schedule_expression``              ``No``    ``rate(10 minutes)``   The rate of which the Athena Partition Refresh Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
-``buckets``                          ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  By default, the alerts bucket will exist in each deployment.
+``enabled``                          Yes       ``true``               Enables/Disables the Athena Partition Refresh Lambda function
+``enable_custom_metrics``            No        ``false``              Enables/Disables logging of metrics for the Athena Partition Refresh Lambda function
+``log_level``                        No        ``info``               The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
+``memory``                           No        ``128``                The amount of memory (in MB) allocated to the Lambda function
+``timeout``                          No        ``60``                 The maximum duration of the Lambda function (in seconds)
+``schedule_expression``              No        ``rate(10 minutes)``   The rate of which the Athena Partition Refresh Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
+``buckets``                          Yes       ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  By default, the alerts bucket will exist in each deployment.
 ===================================  ========  ====================   ===========
 
 **Example:**

@@ -98,7 +98,7 @@ Deploy
 .. code-block:: bash
 
   ./manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
-  ./manage.py configure prefix NAME                  # Choose a unique name prefix (alphanumeric characters only)
+  ./manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
 2. Build the StreamAlert infrastructure for the first time:
 
