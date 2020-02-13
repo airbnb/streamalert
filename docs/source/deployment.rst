@@ -90,8 +90,8 @@ to point to the previous version:
 
 .. code-block:: bash
 
-  $ ./manage.py rollback --function rule
-  $ ./manage.py rollback --function alert
-  $ ./manage.py rollback --function all
+  $ python manage.py rollback --function rule
+  $ python manage.py rollback --function alert
+  $ python manage.py rollback --function all
 
 This is helpful to quickly revert changes to Lambda functions, e.g. if a bad rule was deployed.

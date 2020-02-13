@@ -97,18 +97,18 @@ Deploy
 
 .. code-block:: bash
 
-  ./manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
-  ./manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
+  $ python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
+  $ python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
 2. Build the StreamAlert infrastructure for the first time:
 
 .. code-block:: bash
 
-  ./manage.py init
+  $ python manage.py init
 
 There will be multiple Terraform prompts, type "yes" at each one to continue.
 
-.. note:: You only need to ``./manage.py init`` once for any given StreamAlert deployment,
+.. note:: You only need to ``python manage.py init`` once for any given StreamAlert deployment,
    although it is safe to run again if necessary.
 
 3. At this point, StreamAlert is up and running! You can, for example, see the S3 buckets
@@ -191,7 +191,7 @@ Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look
 
 .. code-block:: bash
 
-  $ ./manage.py output aws-sns
+  $ python manage.py output aws-sns
 
   Please supply a short and unique descriptor for this SNS topic: test-email
 
@@ -217,10 +217,10 @@ alerts on any usage of the root AWS account. Change the rule decorator to:
 .. code-block:: bash
 
   # Hook the streamalert-test-data SNS topic up to the StreamAlert Classifier function
-  ./manage.py build
+  $ python manage.py build
 
   # Deploy a new version of all of the Lambda functions with the updated rule and config files
-  ./manage.py deploy --function all
+  $ python manage.py deploy --function all
 
 .. note:: Use ``build`` and ``deploy`` to apply any changes to StreamAlert's
    configuration or Lambda functions, respectively. Some changes (like this example) require both.

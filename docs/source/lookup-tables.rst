@@ -218,7 +218,7 @@ eventually consistent reads is 20 seconds, with a typical delay of less than 3 s
 
 Deployment
 ----------
-When LookupTables are configured properly, a subsequent run of ``./manage.py generate`` or ``./manage.py build``
+When LookupTables are configured properly, a subsequent run of ``python manage.py generate`` or ``python manage.py build``
 will create a new file: ``terraform/lookup_tables.tf.json`` and build the appropriate *IAM PERMISSIONS* for
 the StreamAlert Lambdas to access them.
 

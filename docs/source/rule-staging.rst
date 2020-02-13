@@ -21,7 +21,7 @@ By default, the rule staging feature is not enabled. It can be enabled with the 
 
 .. code-block:: bash
 
-  python manage.py rule-staging enable --true
+  $ python manage.py rule-staging enable --true
 
 The change will be reflected in the ``conf/globals.json`` file:
 
@@ -69,7 +69,7 @@ The status of rules, meaning whether or not they are staged, can be determined w
 
 .. code-block:: bash
 
-  python manage.py rule-staging status
+  $ python manage.py rule-staging status
 
 **Sample Output**::
 
@@ -86,14 +86,14 @@ Staging a rule, or list of rules, is possible with the following command:
 
 .. code-block:: bash
 
-  python manage.py rule-staging stage <rule_001> <rule_002>
+  $ python manage.py rule-staging stage <rule_001> <rule_002>
 
 Unstaging rules, enabling them to send to all user-defined outputs, is equally as easy and accomplished
 with the following command:
 
 .. code-block:: bash
 
-  python manage.py rule-staging unstage <rule_001> <rule_002>
+  $ python manage.py rule-staging unstage <rule_001> <rule_002>
 
 Skip Staging During Deploy
 ++++++++++++++++++++++++++
@@ -104,7 +104,7 @@ staged during a deploy. To allow for this, the Rules Engine can be deployed with
 
 .. code-block:: bash
 
-  python manage.py deploy --function rule --skip-rule-staging
+  $ python manage.py deploy --function rule --skip-rule-staging
 
 This will force all new rules to send to user-defined outputs immediately upon deploy, bypassing
 the default staging period. Alternatively, the ``--stage-rules`` and ``--unstage-rules`` flags
