@@ -76,20 +76,15 @@ class QueryPack:
         self._query_execution_id = None
         self._query_result = None
 
+        self._query_parameters = {
+            param: self._execution_context.parameter_generator.generate(param)
+            for param in self._configuration.query_parameters
+        }
+        self._query_string = self.generate_query_string()
+
     @property
     def unique_id(self):
-        if QueryPackConfiguration.INTERVAL_DAILY in self._configuration.tags:
-            time_component = self._execution_context.clock.now.strftime('%Y-%m-%d')
-        elif QueryPackConfiguration.INTERVAL_HOURLY in self._configuration.tags:
-            time_component = self._execution_context.clock.now.strftime('%Y-%m-%d-%H')
-        elif QueryPackConfiguration.INTERVAL_TWO_HOURS in self._configuration.tags:
-            time_component = self._execution_context.clock.now.strftime('%Y-%m-%d-%H')
-        else:
-            self._execution_context.logger.error(
-                'Unrecognized query interval: {}'.format(self._configuration.interval))
-            time_component = '??????'
-
-        return '{}:{}'.format(self._configuration.name, time_component)
+        return self._configuration.name
 
     @property
     def query_pack_configuration(self):
@@ -118,6 +113,14 @@ class QueryPack:
     @property
     def is_previously_started(self):
         return self._query_execution_id is not None
+
+    @property
+    def query_parameters(self):
+        return self._query_parameters
+
+    @property
+    def query_string(self):
+        return self._query_string
 
     def load_from_cache(self):
         cache_key = self.unique_id
@@ -178,10 +181,7 @@ class QueryPack:
         self._execution_context.state_manager.set(self.unique_id, entry)
 
     def generate_query_string(self):
-        params = {
-            param: self._execution_context.parameter_generator.generate(param)
-            for param in self._configuration.query_parameters
-        }
+        params = self._query_parameters
         self._execution_context.logger.debug(
             'Generated Parameters: {}'.format(json.dumps(params, indent=2))
         )

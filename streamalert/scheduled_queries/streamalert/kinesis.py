@@ -50,6 +50,7 @@ class KinesisClient:
                 "name": query.name,
                 "description": query.description,
                 "query": query_pack.query_execution.query,
+                "query_parameters": query_pack.query_parameters,
                 "data_scanned_in_bytes": query_pack.query_execution.data_scanned_in_bytes,
                 "execution_time_ms": query_pack.query_execution.engine_execution_time_in_millis,
                 "tags": query.tags,

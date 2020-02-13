@@ -50,6 +50,7 @@ class TestKinesisClient:
         query_pack.query_pack_configuration.name = 'test_name'
         query_pack.query_pack_configuration.description = 'description?'
         query_pack.query_execution.query = 'SELECT * FROM yayifications;'
+        query_pack.query_parameters = {'dt': '2020'}
         query_pack.query_execution.data_scanned_in_bytes = 123
         query_pack.query_execution.engine_execution_time_in_millis = 345
         query_pack.query_pack_configuration.tags = ['daily']
@@ -78,6 +79,7 @@ class TestKinesisClient:
         query_pack.query_pack_configuration.name = 'test_name'
         query_pack.query_pack_configuration.description = 'description?'
         query_pack.query_execution.query = 'SELECT * FROM yayifications;'
+        query_pack.query_parameters = {'dt': '2020'}
         query_pack.query_execution.data_scanned_in_bytes = 123
         query_pack.query_execution.engine_execution_time_in_millis = 345
         query_pack.query_pack_configuration.tags = ['daily']

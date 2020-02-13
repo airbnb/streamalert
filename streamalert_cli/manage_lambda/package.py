@@ -311,6 +311,7 @@ class ScheduledQueriesPackage(LambdaPackage):
         'conf',
         'streamalert/__init__.py',
         'streamalert/scheduled_queries',
-        'streamalert/shared'
+        'streamalert/shared',
+        'scheduled_queries'
     }
     package_name = 'scheduled_queries'

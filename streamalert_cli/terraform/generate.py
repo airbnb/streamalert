@@ -49,6 +49,7 @@ from streamalert_cli.terraform.rule_promotion import generate_rule_promotion
 from streamalert_cli.terraform.classifier import generate_classifier
 from streamalert_cli.terraform.rules_engine import generate_rules_engine
 from streamalert_cli.terraform.s3_events import generate_s3_events
+from streamalert_cli.terraform.scheduled_queries import generate_scheduled_queries_module_configuration
 from streamalert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 from streamalert_cli.utils import CLICommand
 
@@ -564,44 +565,14 @@ def _generate_streamquery_module(config):
     Generates .tf.json file for scheduled queries
     """
     tf_file_name = 'terraform/scheduled_queries.tf.json'
-
-    streamquery_config = config.get('scheduled_queries', {})
-
-    if not streamquery_config.get('enabled', False):
+    if not config.get('scheduled_queries', {}).get('enabled', False):
         remove_temp_terraform_file(tf_file_name, 'Removing old scheduled queries Terraform file')
         return
 
-    prefix = config['global']['account']['prefix']
-
-    # FIXME (derek.wang)
-    athena_config = config['lambda']['athena_partition_refresh_config']
-
-    # FIXME (derek.wang) make consistent with streamalert_athena module,
-    # maybe make this dependent on output of that module?
-    database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
-    results_bucket = athena_config.get(
-        'results_bucket',
-        '{}.streamalert.athena-results'.format(prefix)
-    ).strip()
-
-    generated_config = {'module': {}}
-    generated_config['module']['scheduled_queries'] = {
-        'source': './modules/tf_scheduled_queries',
-
-        'account_id': config['global']['account']['aws_account_id'],
-        'prefix': prefix,
-        'region': config['global']['account']['region'],
-
-        # FIXME (derek.wang)
-        'destination_kinesis_stream': streamquery_config['configuration']['destination_kinesis'],
-        'athena_database': database,
-        'athena_results_bucket': results_bucket,
-        # 'athena_results_bucket': '${module.streamalert_athena.results_bucket_arn}',
-        'athena_s3_buckets': sorted(athena_config.get('buckets', [])),
-        'streamquery_environment': 'example', # FIXME (derek.wang)
-    }
-
-    _create_terraform_module_file(generated_config, tf_file_name)
+    _create_terraform_module_file(
+        generate_scheduled_queries_module_configuration(config),
+        tf_file_name
+    )
 
 
 def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_file, message):

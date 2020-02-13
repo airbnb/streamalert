@@ -51,7 +51,7 @@ def configure_container(container):
 
     def make_logger(_container):
         logger = logging.getLogger(_container.get_parameter('command_name'))
-        logger.setLevel(_container.get_parameter('log_level'))
+        logger.setLevel(_container.get_parameter('log_level').upper())
         logging.basicConfig(
             format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s'
         )

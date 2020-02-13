@@ -18,16 +18,9 @@ from streamalert.scheduled_queries import __version__ as streamquery_version
 
 parameters = {
     'command_name': 'StreamQuery (Lambda) v{}'.format(streamquery_version),
-
     'aws_region': os.environ['REGION'],
-
-    # Configure Logger
-    'log_level': 'INFO',  # Change to DEBUG for additional verbosity
-
-    # Configure Athena
+    'log_level': os.environ['LOGGER_LEVEL'],
     'athena_database': os.environ['ATHENA_DATABASE'],
     'athena_results_bucket': os.environ['ATHENA_RESULTS_BUCKET'],
-
-    # Configure Kinesis
     'kinesis_stream': os.environ['KINESIS_STREAM'],
 }

@@ -1,8 +1,15 @@
 {
   "enabled": false,
-  "configuration": {
-    "log_level": "INFO",
-    "destination_kinesis": "KINESIS_STREAM"
+  "config": {
+    "destination_kinesis": "KINESIS_STREAM",
+    "sfn_timeout_secs": 300,
+    "sfn_wait_secs": 30
   },
-  "packs": []
+  "packs": {
+    "sample": {
+      "description": "Runs sample queries once per hour",
+      "schedule_expression": "rate(1 hour)"
+    }
+  },
+  "lambda_config": {}
 }

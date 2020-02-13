@@ -10,12 +10,12 @@ resource "aws_sfn_state_machine" "state_machine" {
   # https://docs.aws.amazon.com/step-functions/latest/dg/sample-project-job-poller.html
   definition = <<EOF
 {
-  "Comment": "State Machine definition for StreamQuery",
+  "Comment": "State Machine definition for StreamAlert scheduled queries",
   "StartAt": "RunFunction",
-  "TimeoutSeconds": 3000,
+  "TimeoutSeconds": ${var.sfn_timeout_secs},
   "States": {
     "RunFunction": {
-      "Comment":  "This task calls the lamdba over and over until done",
+      "Comment":  "Call the scheduled queries lambda function to start queries and to report on their statuses",
       "Type": "Task",
       "Resource": "${module.scheduled_queries_lambda.function_alias_arn}",
       "Next": "CheckIfDone",
@@ -39,13 +39,13 @@ resource "aws_sfn_state_machine" "state_machine" {
       "Default": "FatalError"
     },
     "Wait": {
-      "Comment": "This state simply waits for 20 seconds",
+      "Comment": "Not all queries are completed; this state waits for a specified duration before checking again",
       "Type": "Wait",
-      "Seconds": 20,
+      "Seconds": ${var.sfn_wait_secs},
       "Next": "RunFunction"
     },
     "Done": {
-      "Comment": "We gucci",
+      "Comment": "All queries have completed",
       "Type": "Pass",
       "Result": {
         "message": "StreamQuery Execution completed"
@@ -54,10 +54,10 @@ resource "aws_sfn_state_machine" "state_machine" {
       "End": true
     },
     "FatalError": {
-      "Comment": "omg y u no work",
+      "Comment": "Something went wrong that caused the scheduled queries Lambda function to not return properly",
       "Type": "Fail",
       "Cause": "Something invalid happened",
-      "Error": "Omg What invalid vegeta what 9000??"
+      "Error": "StreamAlert scheduled query execution failed permanently"
     }
   }
 }

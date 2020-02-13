@@ -33,41 +33,12 @@ class TestQueryPack:
         self._execution = MagicMock(name='MockedExecutionContext')
         self._query_pack = QueryPack(self._config, self._execution)
 
-    def test_unique_id_hourly(self):
+    def test_unique(self):
         """QueryPack - unique_id - hourly"""
         self._config.tags = ['hourly']
         self._config.name = 'test_pack_name'
 
-        self._execution.clock.now = datetime(year=2000, month=1, day=1)
-
-        assert_equals(self._query_pack.unique_id, 'test_pack_name:2000-01-01-00')
-
-    def test_unique_id_hourly_2(self):
-        """QueryPack - unique_id - hourly #2"""
-        self._config.tags = ['hourly']
-        self._config.name = 'test_pack_name2'
-
-        self._execution.clock.now = datetime(year=2000, month=1, day=1, hour=5)
-
-        assert_equals(self._query_pack.unique_id, 'test_pack_name2:2000-01-01-05')
-
-    def test_unique_id_daily_1(self):
-        """QueryPack - unique_id - daily"""
-        self._config.tags = ['daily']
-        self._config.name = 'test_pack_name'
-
-        self._execution.clock.now = datetime(year=2000, month=1, day=1)
-
-        assert_equals(self._query_pack.unique_id, 'test_pack_name:2000-01-01')
-
-    def test_unique_id_daily_2(self):
-        """QueryPack - unique_id - daily #2"""
-        self._config.tags = ['daily']
-        self._config.name = 'test_pack_name2'
-
-        self._execution.clock.now = datetime(year=2000, month=1, day=1, hour=5)
-
-        assert_equals(self._query_pack.unique_id, 'test_pack_name2:2000-01-01')
+        assert_equals(self._query_pack.unique_id, 'test_pack_name')
 
     def test_query_pack_configuration(self):
         """QueryPack - query_pack_configuration"""
