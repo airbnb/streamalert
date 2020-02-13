@@ -54,13 +54,12 @@ Table of Contents
    getting-started
    architecture
 
-.. _global_settings:
-
 .. toctree::
   :maxdepth: 2
-  :caption: Global Settings
+  :caption: Configuration
 
-  global-settings
+  config-global
+  config-clusters
   historical-search
 
 .. _data_configuration:
@@ -69,7 +68,6 @@ Table of Contents
    :maxdepth: 2
    :caption: Data Ingestion
 
-   clusters
    datatypes
    datasources
    conf-datasources

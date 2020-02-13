@@ -1,17 +1,18 @@
-Clusters
-========
+Cluster Settings
+================
 
 Inbound data is directed to one of StreamAlert's *clusters*, each with its own data sources
 and classifier function. For many applications, one cluster may be enough. However, adding
-additional clusters can potentially improve performance and provide isolated analysis pipelines. For
-example, you could have:
+additional clusters can potentially improve performance. For example, you could have:
 
-* A cluster dedicated to `StreamAlert apps <app-configuration.html>`_
-* A separate cluster for each of your inbound `Kinesis Data Streams <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_
-* A separate cluster for data from each environment (prod, staging, corp, etc)
+  * A cluster dedicated to `StreamAlert apps <app-configuration.html>`_
+  * A separate cluster for each of your inbound `Kinesis Data Streams <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_
+  * A separate cluster for data from each environment (prod, staging, corp, etc)
 
-.. note:: Alerting and historical search components are not cluster-specific,
-          although alerts will indicate their originating cluster.
+.. note::
+
+  Alerting and historical search components are global and not tied to a specific cluster,
+  although alerts will indicate their originating cluster.
 
 Each cluster is defined by its own JSON file in the
 `conf/clusters <https://github.com/airbnb/streamalert/tree/stable/conf/clusters>`_ directory.
@@ -22,16 +23,88 @@ Changes to cluster configuration can be applied with one of the following:
 
 .. code-block:: bash
 
-  ./manage.py build  # Apply all changes
-  ./manage.py build --target cloudwatch_monitoring_*  # Only apply changes to CloudWatch module for all clusters
+  $ python manage.py build  # Apply all changes
+  $ python manage.py build --target cloudwatch_monitoring_*  # Only apply changes to CloudWatch Monitoring module for all clusters
 
-Configuration options are divided into different modules, each of which is discussed below.
+
+Required Settings
+-----------------
+There are a few top-level settings that are required within each cluster configuration file.
+Notably, these settings configure the ``data_sources`` and ``classifier_config``.
+
+
+Datasource Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. note::
+
+  As of release 3.0.0 data source configuration has moved
+  from sources.json into the ``data_sources`` top level key for each your clusters.
+
+For background on supported data source types, read `data sources <datasources.html>`_.
+
+Overview
+--------
+
+Data sources defined in each cluster file in the ``conf/clusters`` directory under the ``data_sources`` top level key control which data sources can send to and be analyzed by StreamAlert.
+
+Each data source (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific resource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
+
+Log schemas are defined in one or more files in the ``conf/schemas`` directory.
+
+An example of this would be to put all carbonblack schemas into ``conf/schemas/carbonblack.json``.
+
+Each log in the list of ``logs`` dictates to StreamAlert how to parse incoming data from a given resource.  Data will only be analyzed if its type is defined here.
+
+Example:
+
+.. code-block:: json
+
+  {
+    "data_sources": {
+      "kinesis": {
+        "abc_corporate_streamalert": [
+          "box",
+          "pan"
+        ],
+        "abc_production_stream_streamalert": [
+          "inspec",
+          "osquery"
+        ]
+      },
+      "s3": {
+        "abc.webserver.logs": [
+            "nginx"
+        ],
+        "abc.hids.logs": [
+          "carbonblack"
+        ]
+      },
+      "sns": {
+        "abc_sns_topic": [
+          "logstash"
+        ]
+      }
+    }
+  }
+
+Once data sources are defined, associated ``logs`` must have defined `schemas <conf-schemas.html>`_
+
+
+
+
+
+
+Classifier Config
+-----------------
+
+
+Modules
+-------
+Optional configuration options are divided into different modules, each of which is discussed below.
 
 
 .. _main_cluster_module:
 
-Classifier Function
--------------------
 ``streamalert`` is the only required module because it configures the cluster's classifier.
 
 Example: Minimal Cluster
@@ -51,8 +124,7 @@ Example: Minimal Cluster
           "timeout": 60
         }
       }
-    },
-    "region": "us-east-1"
+    }
   }
 
 Example: Classifier with SNS Inputs
@@ -77,8 +149,7 @@ Example: Classifier with SNS Inputs
           "timeout": 60
         }
       }
-    },
-    "region": "us-east-1"
+    }
   }
 
 Classifier Configuration Options
@@ -122,8 +193,7 @@ Example: CloudTrail via S3 Events
           "timeout": 60
         }
       }
-    },
-    "region": "us-east-1"
+    }
   }
 
 This creates a new CloudTrail and an S3 bucket for the resulting logs. Each new object in the bucket
@@ -160,8 +230,7 @@ Example: CloudTrail via CloudWatch Logs
             "timeout": 60
           }
         }
-      },
-      "region": "us-east-1"
+      }
     }
 
 This also creates the CloudTrail and S3 bucket, but now the CloudTrail logs are also delivered to
@@ -234,8 +303,7 @@ Example: CloudWatch Events Cluster
           "timeout": 60
         }
       }
-    },
-    "region": "us-east-1"
+    }
   }
 
 This creates a CloudWatch Events Rule that will publish all events that match the provided
@@ -303,8 +371,7 @@ Example: CloudWatch Logs Cluster
           "timeout": 60
         }
       }
-    },
-    "region": "us-east-1"
+    }
   }
 
 This creates an IAM role for CloudWatch subscriptions, authorized to gather logs from the StreamAlert account
@@ -366,8 +433,7 @@ Example: Enable CloudWatch Monitoring
           "timeout": 60
         }
       }
-    },
-    "region": "us-east-1"
+    }
   }
 
 This enables both the Kinesis and Lambda alarms and illustrates how the alarm thresholds can be tuned.
@@ -471,6 +537,7 @@ Example: Kinesis Cluster
         "streams": {
           "create_user": true,
           "retention": 24,
+          "region": "us-east-1",
           "shard_level_metrics": [
             "IncomingBytes",
             "IncomingRecords",
@@ -479,7 +546,12 @@ Example: Kinesis Cluster
             "OutgoingRecords",
             "WriteProvisionedThroughputExceeded"
           ],
-          "shards": 1
+          "shards": 1,
+          "terraform_outputs": [
+            "username",
+            "access_key_id",
+            "secret_key"
+          ]
         }
       },
       "kinesis_events": {
@@ -495,20 +567,12 @@ Example: Kinesis Cluster
           "timeout": 60
         }
       }
-    },
-    "outputs": {
-      "kinesis": [
-        "username",
-        "access_key_id",
-        "secret_key"
-      ]
-    },
-    "region": "us-east-1",
+    }
   }
 
 This creates a Kinesis stream and an associated IAM user and hooks up stream events to the
-StreamAlert classifier function in this cluster. The ``outputs`` instruct Terraform to print the IAM
-username and access keypair for the newly created user.
+StreamAlert classifier function in this cluster. The ``terraform_outputs`` section instructs
+Terraform to print the IAM username and access keypair for the newly created user.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
@@ -629,8 +693,7 @@ Example: Flow Logs Cluster
             "timeout": 60
           }
         }
-      },
-      "region": "us-east-1"
+      }
     }
 
 This creates the ``<prefix>_prod_streamalert_flow_logs`` CloudWatch Log Group, adds flow logs
@@ -694,8 +757,7 @@ Example: S3 Events Cluster
             "timeout": 60
           }
         }
-      },
-      "region": "us-east-1"
+      }
     }
 
 This configures the two buckets (``bucket_name_01`` and ``bucket_name_02``) to notify the classifier

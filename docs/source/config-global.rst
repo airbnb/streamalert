@@ -39,8 +39,8 @@ Options
 
   .. code-block:: bash
 
-    python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
-    python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
+    $ python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
+    $ python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
   However, if a different `region` is desired, it must be changed manually.
 
@@ -161,10 +161,49 @@ Options
 ===================  ============  ===========  ===============
 
 
-Firehose
-~~~~~~~~
+Classifier SQS
+~~~~~~~~~~~~~~
+StreamAlert sends all classified logs to an SQS Queue. This queue is then read from by the Rules
+Engine function to perform rule analysis.
+
+
+Configuration
+`````````````
+
+.. note::
+
+  These configuration options are only available for legacy purposes and may be removed in
+  a future release. They will typically only be needed if manually migrating from v2 to v3+.
+
+The following ``classifier_sqs`` configuration settings can be defined within the ``infrastructure``
+section of ``global.json``:
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "classifier_sqs": {
+        "use_prefix": true
+      }
+    }
+  }
+
+
+Options
+'''''''
+===============  ============  ===========  ===============
+**Key**          **Required**  **Default**  **Description**
+---------------  ------------  -----------  ---------------
+``use_prefix``   No            ``true``     Whether the prefix should be prepended to the classified
+                                            logs SQS Queue that is created (set to ``false`` for
+                                            legacy purposes only)
+===============  ============  ===========  ===============
+
+
+Firehose (Historical Data Retention)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 StreamAlert also supports sending all logs to S3 for historical retention and searching based on
-classified type of the log.
+classified type of the log. Kinesis Data Firehose Delivery Streams are used to send the data to S3.
 
 
 Configuration
@@ -218,17 +257,47 @@ Options
                                                                        function, along with specific settings per log type
 =======================  ============  ==============================  ===============
 
-.. note:: The ``enabled_logs`` object should contain log types for which Firehose should be created.
-          The keys in the 'dictionary' should reference the log type (or subtype) for which Firehoses
-          should be created, and the value should be additional (optional) setting per log type. The
-          following section contains more detail on these settings.
+.. note::
+
+  The ``enabled_logs`` object should contain log types for which Firehoses should be created.
+  The keys in the 'dictionary' should reference the log type (or subtype) for which Firehoses
+  should be created, and the value should be additional (optional) settings per log type. The
+  following section contains more detail on these settings.
 
 
-Additional Options for `enabled_logs`
-'''''''''''''''''''''''''''''''''''''
-Each Firehose that is created can be configured with an alarm that will fire when the incoming log
-volume drops below a specified threshold. This is disabled by default, and enabled by setting
-``enable_alarm`` to ``true`` within the configuration for the log type.
+Configuring ``enabled_logs``
+''''''''''''''''''''''''''''
+The ``enabled_logs`` section of the ``firehose`` settings must explicitly specify the log types for
+which you would like to enable historical retention. There are two syntaxes you may use to specify
+log types:
+
+  1. parent log type: ``osquery``
+  2. log subtype: ``osquery:differential``
+
+The former will create Firehose resources for *all* ``osquery`` subtypes, while the latter
+will only create one Firehose for specifically the ``osquery:differential`` subtype.
+
+Since each Firehose that gets created can have additional settings applied to it, the proper way to
+simply *enable* given log types is to add items to ``enabled_logs`` as follows (**note the empty
+JSON object as the value**):
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "firehose": {
+        "enabled_logs": {
+          "osquery": {},
+          "cloudwatch:cloudtrail": {}
+        }
+      }
+    }
+  }
+
+
+That being said, each Firehose that is created can be configured with an alarm that will fire
+when the incoming log volume drops below a specified threshold. This is disabled by default, and
+can be enabled by setting ``enable_alarm`` to ``true`` within the configuration for the log type.
 
 ============================  ============  ==============================================  ===============
 **Key**                       **Required**  **Default**                                     **Description**
@@ -240,13 +309,47 @@ volume drops below a specified threshold. This is disabled by default, and enabl
 ``alarm_actions``             No            ``<prefix>_streamalert_monitoring SNS topic``   Optional CloudWatch alarm action or list of CloudWatch alarm actions (e.g. SNS topic ARNs)
 ============================  ============  ==============================================  ===============
 
-.. note:: See the ``ghe`` log type in the :ref:`example <firehose_example>` ``firehose`` configuration above for how this should be performed.
+.. note::
+
+  See the ``ghe`` log type in the :ref:`example <firehose_example>` ``firehose`` configuration above for how this can be performed.
+
+
+Monitoring
+~~~~~~~~~~
+StreamAlert can send notifications of issues with infrastructure to an SNS topic (aka "monitoring"
+the health of your infrastructure).
+
+
+Configuration
+`````````````
+The following ``monitoring`` configuration settings can be defined within the ``infrastructure``
+section of ``global.json``:
+
+.. code-block:: json
+
+  {
+    "infrastructure": {
+      "monitoring": {
+        "sns_topic_name": "name-of-existing-sns-topic-to-use"
+      }
+    }
+  }
+
+
+Options
+'''''''
+===================  ============  ====================================  ===============
+**Key**              **Required**  **Default**                           **Description**
+-------------------  ------------  ------------------------------------  ---------------
+``sns_topic_name``   No            ``<prefix>_streamalert_monitoring``   Name of an existing SNS Topic to which monitoring information
+                                                                         should be sent instead of the default one that will be created
+===================  ============  ====================================  ===============
 
 
 Rule Staging
 ~~~~~~~~~~~~
-StreamAlert has the ability to "stage" rules that have not been battle tested. This feature is
-backed by a DynamoDB table, of which has a few configurable options.
+StreamAlert comes with the ability to *stage* rules that have not been battle tested. This
+feature is backed by a DynamoDB table, for which there are a few configurable options.
 
 Configuration
 `````````````
@@ -284,7 +387,7 @@ Options
 
   .. code-block:: bash
 
-    python manage.py rule-staging enable --true
+    $ python manage.py rule-staging enable --true
 
 
 S3 Access Logging
