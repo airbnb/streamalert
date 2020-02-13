@@ -46,7 +46,6 @@ class TestKinesisClient:
 
         query_pack.query_execution.query_execution_id = '1111-aaaa-bbbb-2222'
 
-        query_pack.query_pack_configuration.handler = 'athena:csirt'
         query_pack.query_pack_configuration.name = 'test_name'
         query_pack.query_pack_configuration.description = 'description?'
         query_pack.query_execution.query = 'SELECT * FROM yayifications;'
@@ -75,7 +74,6 @@ class TestKinesisClient:
 
         query_pack.query_execution.query_execution_id = '1111-aaaa-bbbb-2222'
 
-        query_pack.query_pack_configuration.handler = 'athena:csirt'
         query_pack.query_pack_configuration.name = 'test_name'
         query_pack.query_pack_configuration.description = 'description?'
         query_pack.query_execution.query = 'SELECT * FROM yayifications;'

@@ -95,6 +95,7 @@ Table of Contents
   athena-arch
   athena-user-guide
   firehose
+  scheduled-queries
 
 .. _rule_staging_and_promotion:
 

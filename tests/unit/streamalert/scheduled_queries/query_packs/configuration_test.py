@@ -29,7 +29,6 @@ class TestConfiguration:
             name='bubblebumblebaddabbabblerabblebarrelmumble',
             query='SELECT * FROM knowhere',
             params=[],
-            handler='athena:csirt',
             description='yoo hoo and a bottle of rum',
             tags=['tag1', 'tag2']
         )
@@ -37,7 +36,6 @@ class TestConfiguration:
         assert_equals(config.name, 'bubblebumblebaddabbabblerabblebarrelmumble')
         assert_equals(config.query_template, 'SELECT * FROM knowhere')
         assert_equals(config.query_parameters, [])
-        assert_equals(config.handler, 'athena:csirt')
         assert_equals(config.description, 'yoo hoo and a bottle of rum')
         assert_equals(config.tags, ['tag1', 'tag2'])
 
@@ -48,7 +46,6 @@ class TestConfiguration:
             name='helloworld',
             query="SELECT * FROM helloworld WHERE dt = '{date}'",
             params=['date'],
-            handler='athena:csirt',
             description='yoo hoo and a bottle of rum',
             tags=['tag1', 'tag2']
         )

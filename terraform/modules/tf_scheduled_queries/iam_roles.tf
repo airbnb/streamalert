@@ -1,7 +1,7 @@
 #
 # iam_roles
 #
-#   This file houses all IAM policies relevant to StreamQuery
+#   This file houses all IAM policies relevant to StreamAlert scheduled queries
 #
 
 #

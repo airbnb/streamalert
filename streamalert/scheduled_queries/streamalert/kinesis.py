@@ -46,7 +46,6 @@ class KinesisClient:
         streamquery_result = {
             "streamquery_schema_version": streamquery_version,
             "execution": {
-                "handler": query.handler,
                 "name": query.name,
                 "description": query.description,
                 "query": query_pack.query_execution.query,

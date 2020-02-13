@@ -19,15 +19,8 @@ PACKS_DIRECTORY = 'scheduled_queries/'
 
 
 class QueryPackConfiguration:
-    SUPPORTED_HANDLERS = {
-        'athena:csirt'
-    }
 
-    INTERVAL_DAILY = 'daily'
-    INTERVAL_HOURLY = 'hourly'
-    INTERVAL_TWO_HOURS = 'two_hours'
-
-    def __init__(self, query=None, params=None, handler=None, name=None,
+    def __init__(self, query=None, params=None, name=None,
                  description=None, tags=None):
         if not name:
             raise RuntimeError('Query Pack missing name')
@@ -35,15 +28,11 @@ class QueryPackConfiguration:
         if not query:
             raise RuntimeError('Query Pack "{}" missing query template'.format(name))
 
-        if handler not in self.SUPPORTED_HANDLERS:
-            raise RuntimeError('Query Pack "{}" specifying unsupported handler'.format(name))
-
         if not tags:
             raise RuntimeError('Query Pack "{}" has no tags?'.format(name))
 
         self._query_template = query
         self._query_parameters = params
-        self._handler = handler
         self._name = name
         self._description = description
         self._tags = tags if tags else []
@@ -76,8 +65,11 @@ Error:
 
     @property
     def handler(self):
-        """Returns one of the, signally which DBMS handles this query"""
-        return self._handler
+        """
+        @deprecated
+        Returns one of the, signally which DBMS handles this query
+        """
+        return None
 
     @property
     def name(self):

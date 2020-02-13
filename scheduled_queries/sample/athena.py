@@ -18,7 +18,6 @@ from streamalert.scheduled_queries.query_packs.configuration import QueryPackCon
 QueryPackConfiguration(
     name='athena_any_query',
     description='This query returns all Athena queries... how meta!',
-    handler='athena:csirt',
 
     # Make sure to edit the database name properly or this query will error with some
     # "insufficient privileges errors"
