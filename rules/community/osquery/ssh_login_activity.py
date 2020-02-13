@@ -1,5 +1,5 @@
 """Detect ssh login activity based on osquery last table"""
-from matchers.matchers import OsqueryMatcher
+from rules.matchers.matchers import OsqueryMatcher
 from streamalert.shared.rule import rule
 
 

@@ -1,5 +1,5 @@
 """Alert on GuardDuty"""
-from matchers.matchers import GuardDutyMatcher
+from rules.matchers.matchers import GuardDutyMatcher
 from streamalert.shared.rule import rule
 
 
