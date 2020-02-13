@@ -20,7 +20,7 @@ from collections import OrderedDict
 
 from botocore.exceptions import ClientError
 from mock import patch, MagicMock
-from moto import mock_kms, mock_s3, mock_ssm
+from moto import mock_kms, mock_ssm
 from nose.tools import (
     assert_true,
     assert_equal,
@@ -32,23 +32,20 @@ from nose.tools import (
 
 from streamalert.alert_processor.outputs.output_base import OutputProperty
 from streamalert.alert_processor.outputs.credentials.provider import (
-    S3Driver,
     SSMDriver,
     LocalFileDriver,
     Credentials,
     OutputCredentialsProvider,
     EphemeralUnencryptedDriver, SpooledTempfileDriver, get_formatted_output_credentials_name)
 from tests.unit.streamalert.alert_processor import (
+    PREFIX,
     CONFIG,
     KMS_ALIAS,
     REGION,
     MOCK_ENV
 )
-from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.streamalert.alert_processor.helpers import (
-    encrypt_with_kms,
-    put_mock_creds,
-    remove_temp_secrets
+    encrypt_with_kms
 )
 
 
@@ -280,180 +277,38 @@ class TestOutputCredentialsProvider:
                                          descriptor)
 
 #
-# Tests for S3Driver
+# class SSMDriver Tests
 #
 
 
-class TestS3Driver:
+@mock_kms
+class TestSSMDriver:
+
     def setup(self):
-        self._s3_driver = S3Driver('rawr', 'service_name', REGION)
+        self._ssm_driver = SSMDriver(PREFIX, 'service', REGION)
 
-    @patch('boto3.client')
-    @patch('logging.Logger.exception')
-    def test_load_credentials_s3_failure(self, logging_exception, boto3):
-        """S3Driver - Load String returns None on S3 Failure"""
-        descriptor = 'test_descriptor'
+    @mock_ssm
+    def test_save_and_has_credentials(self):
+        """SSMDriver - Save and Has Credentials"""
+        descriptor = 'unit-test'
 
-        # Pretend S3 fails to respond
-        boto3_client = MagicMock()
-        boto3.return_value = boto3_client
-        response = MagicMock()
-        boto3_client.download_fileobj.side_effect = ClientError(response, 's3_download_fileobj')
+        # Verify Credentials don't already exist
+        assert_is_none(self._ssm_driver.load_credentials(descriptor))
 
-        assert_is_none(self._s3_driver.load_credentials(descriptor))
-        logging_exception.assert_called_with(
-            "credentials for '%s' could not be downloaded from S3",
-            'service_name/test_descriptor'
-        )
+        credentials = Credentials('CREDS', is_encrypted=False)
+        self._ssm_driver.save_credentials(descriptor, credentials, KMS_ALIAS)
 
-    @mock_s3
-    def test_load_credentials_plain_object(self):
-        """S3Driver - Load String from S3
+        # Verify they saved correctly
+        result = self._ssm_driver.load_credentials(descriptor)
+        assert_is_not_none(result)
 
-        In this test we save a simple string, unencrypted, into a mock S3 file. We use the
-        driver to pull out this payload verbatim."""
-        test_data = 'encrypted credential test string'
-        descriptor = 'test_descriptor'
+    @mock_ssm
+    def test_save_and_has_credentials_2(self):
+        """SSMDriver - Save and Has Credentials ensure empty"""
+        descriptor = 'unit-test'
 
-        # Stick some fake data into the credentials bucket file.
-        bucket_name = self._s3_driver.get_s3_secrets_bucket()
-        key = self._s3_driver.get_s3_key(descriptor)
-        put_mock_s3_object(bucket_name, key, test_data, REGION)
-
-        credentials = self._s3_driver.load_credentials(descriptor)
-
-        # (!) Notably, in this test the credential contents are not encrypted when setup. They
-        #     are supposed to be encrypted PRIOR to putting it in.
-        assert_true(credentials.is_encrypted())
-        assert_equal(credentials.data(), test_data.encode())
-
-    @mock_s3
-    @mock_kms
-    def test_load_credentials_encrypted_credentials(self):
-        """S3Driver - Load Encrypted Credentials
-
-        In this test we save a (more or less) real credentials payload using S3 mocking. We
-        use the driver to pull the payload out and ensure the returned Credentials object is
-        in a stable state, and that we can retrieve the decrypt credentials from this object."""
-        descriptor = 'test_descriptor'
-
-        bucket = self._s3_driver.get_s3_secrets_bucket()
-        key = self._s3_driver.get_s3_key(descriptor)
-
-        creds = {'url': 'http://www.foo.bar/test',
-                 'token': 'token_to_encrypt'}
-
-        # Save encrypted credentials
-        put_mock_creds(key, creds, bucket, REGION, KMS_ALIAS)
-
-        credentials = self._s3_driver.load_credentials(descriptor)
-
-        assert_is_not_none(credentials)
-        assert_true(credentials.is_encrypted())
-
-        loaded_creds = json.loads(credentials.get_data_kms_decrypted())
-
-        assert_equal(len(loaded_creds), 2)
-        assert_equal(loaded_creds['url'], 'http://www.foo.bar/test')
-        assert_equal(loaded_creds['token'], 'token_to_encrypt')
-
-    def test_has_credentials(self):
-        """S3Driver - Has Credentials
-
-        Not much of a test; we assume that S3 always has the credentials.
-        """
-        assert_true(self._s3_driver.has_credentials('some_descriptor'))
-
-    @mock_s3
-    @mock_kms
-    def test_save_credentials_into_s3(self):
-        """S3Driver - Save Credentials
-
-        We test a full cycle of using save_credentials() then subsequently pulling them out with
-        load_credentials()."""
-        creds = {'url': 'http://best.website.ever/test'}
-        input_credentials = Credentials(creds, is_encrypted=False, region=REGION)
-        descriptor = 'test_descriptor'
-
-        # Annoyingly, moto needs us to create the bucket first
-        # We put a random unrelated object into the bucket and this will set up the bucket for us
-        put_mock_s3_object(self._s3_driver.get_s3_secrets_bucket(), 'aaa', 'bbb', REGION)
-
-        result = self._s3_driver.save_credentials_into_s3(descriptor, input_credentials, KMS_ALIAS)
-        assert_true(result)
-
-        credentials = self._s3_driver.load_credentials(descriptor)
-
-        assert_is_not_none(credentials)
-        assert_true(credentials.is_encrypted())
-
-        loaded_creds = json.loads(credentials.get_data_kms_decrypted())
-
-        assert_equal(loaded_creds, creds)
-
-    @mock_s3
-    def test_save_credentials_into_s3_blank_credentials(self):
-        """S3Driver - Save Credentials does nothing when Credentials are Blank"""
-        input_credentials = Credentials('', is_encrypted=False, region=REGION)
-        descriptor = 'test_descriptor22'
-
-        result = self._s3_driver.save_credentials_into_s3(descriptor, input_credentials, KMS_ALIAS)
-        assert_true(result)
-
-        assert_is_none(self._s3_driver.load_credentials(descriptor))
-
-    def test_get_s3_secrets_bucket(self):
-        """S3Driver - Get S3 Secrets Bucket Name"""
-        assert_equal(self._s3_driver.get_s3_secrets_bucket(), 'rawr.streamalert.secrets')
-
-
-class TestS3DriverWithFileDriver:
-    def setup(self):
-        service_name = 'test_service'
-        self._fs_driver = LocalFileDriver(REGION, service_name)
-        self._s3_driver = S3Driver('test_prefix', service_name, REGION, file_driver=self._fs_driver)
-
-    @mock_s3
-    @mock_kms
-    def test_load_credentials(self):
-        """S3Driver - With File Driver - Load Credentials - Pulls into LocalFileStore
-
-        Here we use the S3Driver's caching ability to yank stuff into a local driver."""
-        remove_temp_secrets()
-
-        creds = {'my_secret': 'i ate two portions of biscuits and gravy'}
-        input_credentials = Credentials(creds, is_encrypted=False, region=REGION)
-        descriptor = 'test_descriptor'
-
-        # Annoyingly, moto needs us to create the bucket first
-        # We put a random unrelated object into the bucket and this will set up the bucket for us
-        put_mock_s3_object(self._s3_driver.get_s3_secrets_bucket(), 'aaa', 'bbb', REGION)
-
-        # First, check if the Local driver can find the credentials (we don't expect it to)
-        assert_false(self._fs_driver.has_credentials(descriptor))
-
-        # Save the credentials using S3 driver
-        result = self._s3_driver.save_credentials_into_s3(descriptor, input_credentials, KMS_ALIAS)
-        assert_true(result)
-
-        # We still don't expect the Local driver to find the credentials
-        assert_false(self._fs_driver.has_credentials(descriptor))
-
-        # Use S3Driver to warm up the Local driver
-        self._s3_driver.load_credentials(descriptor)
-
-        # Now we should be able to get the credentials from the local fs
-        assert_true(self._fs_driver.has_credentials(descriptor))
-        credentials = self._fs_driver.load_credentials(descriptor)
-
-        assert_is_not_none(credentials)
-        assert_true(credentials.is_encrypted())
-
-        loaded_creds = json.loads(credentials.get_data_kms_decrypted())
-
-        assert_equal(loaded_creds, creds)
-
-        remove_temp_secrets()
+        # Verify Credentials don't already exist
+        assert_is_none(self._ssm_driver.load_credentials(descriptor))
 
 
 #
