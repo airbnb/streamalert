@@ -58,7 +58,7 @@ class CLIConfig:
 
     def generate_athena(self):
         """Generate a base Athena config"""
-        if 'athena' in self.config['global']['infrastructure']:
+        if 'athena_partition_refresh_config' in self.config['lambda']:
             LOGGER.warning('The Athena configuration already exists, skipping.')
             return
 
@@ -75,7 +75,7 @@ class CLIConfig:
             'third_party_libraries': []
         }
 
-        self.config['global']['infrastructure']['athena'] = athena_config_template
+        self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
         self.write()
 
         LOGGER.info('Athena configuration successfully created')
@@ -103,8 +103,8 @@ class CLIConfig:
             self.config['global']['terraform']['tfstate_bucket'] = (
                 '{}.streamalert.terraform.state'.format(prefix))
 
-        self.config['global']['infrastructure']['athena']['buckets'].clear()
-        self.config['global']['infrastructure']['athena']['buckets'] \
+        self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
+        self.config['lambda']['athena_partition_refresh_config']['buckets'] \
             ['{}.streamalerts'.format(prefix)] = 'alerts'
 
         self.write()

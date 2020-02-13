@@ -18,6 +18,7 @@ import os
 from streamalert.shared import (
     ALERT_MERGER_NAME,
     ALERT_PROCESSOR_NAME,
+    ATHENA_PARTITION_REFRESH_NAME,
     CLASSIFIER_FUNCTION_NAME,
     RULES_ENGINE_FUNCTION_NAME
 )
@@ -28,6 +29,8 @@ LOGGER = get_logger(__name__)
 CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 
 # The FUNC_PREFIXES dict acts as a simple map to a human-readable name
+# Add ATHENA_PARTITION_REFRESH_NAME: 'AthenaPartitionRefresh', to the
+# below when metrics are supported there
 FUNC_PREFIXES = {
     ALERT_MERGER_NAME: 'AlertMerger',
     CLASSIFIER_FUNCTION_NAME: 'Classifier',
@@ -86,6 +89,7 @@ class MetricLogger:
             ALERT_ATTEMPTS: (_default_filter.format(ALERT_ATTEMPTS), _default_value_lookup)
         },
         ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
+        ATHENA_PARTITION_REFRESH_NAME: {},  # Placeholder for future athena processor metrics
         CLASSIFIER_FUNCTION_NAME: {
             FAILED_PARSES: (_default_filter.format(FAILED_PARSES),
                             _default_value_lookup),

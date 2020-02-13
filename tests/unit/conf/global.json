@@ -17,12 +17,6 @@
     "classifier_sqs": {
       "use_prefix": true
     },
-    "athena": {
-      "buckets": {
-        "unit-test.streamalert.data": "data",
-        "unit-test.streamalerts": "alerts"
-      }
-    },
     "firehose": {
       "buffer_interval": 900,
       "buffer_size": 128,

@@ -81,7 +81,6 @@ class TestFirehoseGenerate:
                 }
             }
         }
-        print(cluster_dict)
         assert_equal(cluster_dict, expected_result)
 
     def test_firehose_enabled_log_alarm_defaults(self):

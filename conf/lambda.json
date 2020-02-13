@@ -50,6 +50,13 @@
       "subnet_ids": []
     }
   },
+  "athena_partition_refresh_config": {
+    "buckets": {
+      "PREFIX_GOES_HERE.streamalerts": "alerts"
+    },
+    "concurrency_limit": 10,
+    "log_level": "info"
+  },
   "classifier_config": {},
   "rule_promotion_config": {
     "enabled": false,
@@ -75,7 +82,7 @@
     "timeout": 120
   },
   "rules_engine_config": {
-    "concurrency_limit": 200,
+    "concurrency_limit": 10,
     "enable_custom_metrics": true,
     "log_level": "info",
     "log_retention_days": 14,

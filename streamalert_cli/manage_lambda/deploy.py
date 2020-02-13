@@ -100,6 +100,7 @@ class DeployCommand(CLICommand):
                 'alert',
                 'alert_merger',
                 'apps',
+                'athena',
                 'classifier',
                 'rule',
                 'rule_promo',
@@ -207,6 +208,11 @@ def _create(function_name, config, clusters=None):
              if 'app_name' in app_info},
             any(info['modules'].get('streamalert_apps')
                 for info in config['clusters'].values())
+        ),
+        'athena': PackageMap(
+            streamalert_packages.AthenaPackage,
+            {'module.streamalert_athena'},
+            True
         ),
         'classifier': PackageMap(
             streamalert_packages.ClassifierPackage,

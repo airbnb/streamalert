@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared import STREAMALERT_DATABASE
 from streamalert.shared.alert import Alert
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.logger import get_logger
@@ -32,8 +33,6 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'PARTITIONED BY (dt string) '
                           'STORED AS PARQUET '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
-
-_STREAMALERT_DATABASE = '{}_streamalert'
 
 
 class AthenaCommand(CLICommand):
@@ -194,10 +193,10 @@ def get_athena_database_name(config):
     if athena_config:
         return athena_config.get(
             'database_name',
-            _STREAMALERT_DATABASE.format(prefix)
+            STREAMALERT_DATABASE.format(prefix)
         )
 
-    return _STREAMALERT_DATABASE.format(prefix)
+    return STREAMALERT_DATABASE.format(prefix)
 
 
 def get_athena_client(config):
@@ -210,7 +209,7 @@ def get_athena_client(config):
         AthenaClient: instantiated client for performing athena actions
     """
     prefix = config['global']['account']['prefix']
-    athena_config = config['global']['infrastructure']['athena']
+    athena_config = config['lambda']['athena_partition_refresh_config']
 
     db_name = get_athena_database_name(config)
 
@@ -439,8 +438,8 @@ def create_table(table, bucket, config, schema_override=None):
 
     # Update the CLI config
     if (table != 'alerts' and
-            bucket not in config['global']['infrastructure']['athena']['buckets']):
-        config['global']['infrastructure']['athena']['buckets'][bucket] = 'data'
+            bucket not in config['lambda']['athena_partition_refresh_config']['buckets']):
+        config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
         config.write()
 
     LOGGER.info('The %s table was successfully created!', sanitized_table_name)

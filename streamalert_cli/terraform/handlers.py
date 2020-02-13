@@ -113,7 +113,7 @@ class TerraformInitCommand(CLICommand):
 
         LOGGER.info('Deploying Lambda Functions')
 
-        functions = ['rule', 'alert', 'alert_merger', 'classifier']
+        functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
 
         deploy(functions, config)
 
