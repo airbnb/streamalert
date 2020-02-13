@@ -41,7 +41,7 @@ AWS Kinesis Streams
 StreamAlert also utilizes AWS Kinesis Streams for real-time data ingestion and analysis.
 By default, StreamAlert creates an AWS Kinesis stream per `cluster <clusters.html>`_.
 
-Sending to AWS Kinesis Streams 
+Sending to AWS Kinesis Streams
 ------------------------------
 
 Log Forwarding Agents
@@ -49,10 +49,10 @@ Log Forwarding Agents
 
 Log forwarding agents that support AWS Kinesis Streams:
 
-* `aws-kinesis-agent <http://docs.aws.amazon.com/streams/latest/dev/writing-with-agents.html>`_ 
+* `aws-kinesis-agent <http://docs.aws.amazon.com/streams/latest/dev/writing-with-agents.html>`_
 * `fluentd <http://docs.fluentd.org/v0.12/articles/kinesis-stream>`_
 * `logstash <https://github.com/samcday/logstash-output-kinesis>`_
-* `osquery <https://osquery.readthedocs.io/en/stable/deployment/aws-logging/>`_ 
+* `osquery <https://osquery.readthedocs.io/en/stable/deployment/aws-logging/>`_
 
 Code/Applications
 ~~~~~~~~~~~~~~~~~
