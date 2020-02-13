@@ -49,7 +49,9 @@ from streamalert_cli.terraform.rule_promotion import generate_rule_promotion
 from streamalert_cli.terraform.classifier import generate_classifier
 from streamalert_cli.terraform.rules_engine import generate_rules_engine
 from streamalert_cli.terraform.s3_events import generate_s3_events
-from streamalert_cli.terraform.scheduled_queries import generate_scheduled_queries_module_configuration
+from streamalert_cli.terraform.scheduled_queries import (
+    generate_scheduled_queries_module_configuration
+)
 from streamalert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 from streamalert_cli.utils import CLICommand
 
