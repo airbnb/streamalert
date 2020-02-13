@@ -2,7 +2,7 @@
 #
 # https://www.terraform.io/docs/providers/aws/r/sfn_state_machine.html
 resource "aws_sfn_state_machine" "state_machine" {
-  name = "${var.prefix}_streamquery_state_machine"
+  name = "${var.prefix}_streamalert_scheduled_queries_state_machine"
 
   role_arn = aws_iam_role.iam_for_step_functions.arn
 
@@ -10,14 +10,14 @@ resource "aws_sfn_state_machine" "state_machine" {
   # https://docs.aws.amazon.com/step-functions/latest/dg/sample-project-job-poller.html
   definition = <<EOF
 {
-  "Comment": "Derek Wang testing a state machine for lambda",
+  "Comment": "State Machine definition for StreamQuery",
   "StartAt": "RunFunction",
   "TimeoutSeconds": 3000,
   "States": {
     "RunFunction": {
       "Comment":  "This task calls the lamdba over and over until done",
       "Type": "Task",
-      "Resource": "${module.streamquery_lambda.function_alias_arn}",
+      "Resource": "${module.scheduled_queries_lambda.function_alias_arn}",
       "Next": "CheckIfDone",
       "TimeoutSeconds": 60
     },

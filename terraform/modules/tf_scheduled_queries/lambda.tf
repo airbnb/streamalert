@@ -5,7 +5,7 @@
 # and send the Query Execution ID to a SQS queue for future process
 #
 
-module "streamquery_lambda" {
+module "scheduled_queries_lambda" {
   #
   # https://git.musta.ch/csirt/terraform-modules/tree/master/tf_lambda
   #
@@ -16,14 +16,14 @@ module "streamquery_lambda" {
 
   enabled       = true
 
-  function_name = "${var.prefix}_streamalert_streamquery_runner"
+  function_name = "${var.prefix}_streamalert_scheduled_queries_runner"
   description   = "Lambda function that powers StreamQuery, StreamAlert's scheduled query service"
   runtime       = "python3.7"
-  handler       = "main.handler"
+  handler       = "streamalert.scheduled_queries.main.handler"
 
   memory_size_mb        = var.lambda_memory
   timeout_sec           = var.lambda_timeout
-  filename              = "../streamquery.zip"
+  filename              = "scheduled_queries.zip"
 
   tags = {
     Component = "StreamQuery"
@@ -56,19 +56,19 @@ module "streamquery_lambda" {
 
 # CloudWatch schedules
 resource "aws_cloudwatch_event_rule" "every_hour" {
-  name                = "${var.prefix}_streamalert_streamquery_schedule_hourly"
+  name                = "${var.prefix}_streamalert_scheduled_queries_schedule_hourly"
   description         = "Fires every hour"
   schedule_expression = "rate(1 hour)"
 }
 
 resource "aws_cloudwatch_event_rule" "every_two_hours" {
-  name                = "${var.prefix}_streamalert_streamquery_schedule_two_hours"
+  name                = "${var.prefix}_streamalert_scheduled_queries_schedule_two_hours"
   description         = "Fires every two hours"
   schedule_expression = "rate(2 hours)"
 }
 
 resource "aws_cloudwatch_event_rule" "every_day" {
-  name                = "${var.prefix}_streamalert_streamquery_schedule_daily"
+  name                = "${var.prefix}_streamalert_scheduled_queries_schedule_daily"
   description         = "Fires every 24 hours"
   schedule_expression = "rate(24 hours)"
 }
@@ -112,7 +112,7 @@ resource "aws_cloudwatch_event_target" "run_step_function_every_hour" {
     }
     input_template = <<JSON
 {
-  "name": "streamalert_streamquery_cloudwatch_trigger",
+  "name": "streamalert_scheduled_queries_cloudwatch_trigger",
   "event_id": <id>,
   "source_arn": <source_arn>,
   "streamquery_configuration": {
@@ -138,7 +138,7 @@ resource "aws_cloudwatch_event_target" "run_step_function_every_two_hours" {
     }
     input_template = <<JSON
 {
-  "name": "streamalert_streamquery_cloudwatch_trigger",
+  "name": "streamalert_scheduled_queries_cloudwatch_trigger",
   "event_id": <id>,
   "source_arn": <source_arn>,
   "streamquery_configuration": {
@@ -164,7 +164,7 @@ resource "aws_cloudwatch_event_target" "run_step_function_every_day" {
     }
     input_template = <<JSON
 {
-  "name": "streamalert_streamquery_cloudwatch_trigger",
+  "name": "streamalert_scheduled_queries_cloudwatch_trigger",
   "event_id": <id>,
   "source_arn": <source_arn>,
   "streamquery_configuration": {

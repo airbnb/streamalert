@@ -598,7 +598,7 @@ def _generate_streamquery_module(config):
         'athena_results_bucket': results_bucket,
         # 'athena_results_bucket': '${module.streamalert_athena.results_bucket_arn}',
         'athena_s3_buckets': sorted(athena_config.get('buckets', [])),
-        'streamquery_environment': 'staging',
+        'streamquery_environment': 'example', # FIXME (derek.wang)
     }
 
     _create_terraform_module_file(generated_config, tf_file_name)

@@ -13,8 +13,8 @@
 
 # Attach additional permissions to the auto-generated Lambda IAM Role
 resource "aws_iam_role_policy" "lambda_permissions" {
-  name   = "${var.prefix}_streamquery_lambda_permissions"
-  role   = module.streamquery_lambda.role_id
+  name   = "${var.prefix}_streamalert_scheduled_queries_lambda_permissions"
+  role   = module.scheduled_queries_lambda.role_id
   policy = data.aws_iam_policy_document.lambda_permissions.json
 }
 
@@ -94,7 +94,7 @@ data "aws_iam_policy_document" "lambda_permissions" {
 
 # Setup the IAM Role for the Step Functions
 resource "aws_iam_role" "iam_for_step_functions" {
-  name               = "${var.prefix}_streamquery_state_machines"
+  name               = "${var.prefix}_streamalert_scheduled_queries_state_machines"
   assume_role_policy = data.aws_iam_policy_document.iam_step_function_assume_role.json
 }
 
@@ -114,7 +114,7 @@ data "aws_iam_policy_document" "iam_step_function_assume_role" {
 
 # Attach an additional policy to the IAM Role
 resource "aws_iam_role_policy" "stepfunction_permissions" {
-  name   = "${var.prefix}_streamquery_state_machine_permissions"
+  name   = "${var.prefix}_streamalert_scheduled_queries_state_machine_permissions"
   role   = aws_iam_role.iam_for_step_functions.id
   policy = data.aws_iam_policy_document.stepfunction_permissions.json
 }
@@ -129,7 +129,7 @@ data "aws_iam_policy_document" "stepfunction_permissions" {
       "lambda:InvokeFunction",
     ]
     resources = [
-      module.streamquery_lambda.function_alias_arn,
+      module.scheduled_queries_lambda.function_alias_arn,
     ]
   }
 }
@@ -140,7 +140,7 @@ data "aws_iam_policy_document" "stepfunction_permissions" {
 
 # Setup the IAM Role
 resource "aws_iam_role" "iam_for_cloudwatch_schedule" {
-  name               = "${var.prefix}_streamquery_cloudwatch_schedule"
+  name               = "${var.prefix}_streamalert_scheduled_queries_cloudwatch_schedule"
   assume_role_policy = data.aws_iam_policy_document.iam_cloudwatch_assume_role.json
 }
 
@@ -160,7 +160,7 @@ data "aws_iam_policy_document" "iam_cloudwatch_assume_role" {
 
 # Attach additional permissions to the IAM Role
 resource "aws_iam_role_policy" "cloudwatch_schedule_permissions" {
-  name   = "${var.prefix}_streamquery_cloudwatch_schedule_permissions"
+  name   = "${var.prefix}_streamalert_scheduled_queries_cloudwatch_schedule_permissions"
   role   = aws_iam_role.iam_for_cloudwatch_schedule.id
   policy = data.aws_iam_policy_document.cloudwatch_schedule_permission.json
 }

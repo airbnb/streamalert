@@ -28,7 +28,7 @@ SELECT
   useridentity['arn'] as user_identity_arn,
   dt
 FROM
-  "streamalert"."cloudwatch_cloudtrail"
+  "ATHENA_DATABASE_NAME"."cloudwatch_cloudtrail"
 WHERE
   dt = '{utcdatehour_minus1hour}'
 
@@ -44,5 +44,5 @@ WHERE
   AND upper(substr(requestparameters['querystring'], 1, 5)) NOT IN ('ALTER', 'SHOW ')
 """,
     params=['utcdatehour_minus1hour'],
-    tags=['hourly', 'production']
+    tags=['hourly', 'example']
 )

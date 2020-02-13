@@ -301,3 +301,16 @@ class RulePromotionPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'rule_promotion'
+
+
+class ScheduledQueriesPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert scheduled queries lambda function"""
+    config_key = 'scheduled_queries'
+    lambda_handler = 'streamalert.scheduled_queries.main.handler'
+    package_files = {
+        'conf',
+        'streamalert/__init__.py',
+        'streamalert/scheduled_queries',
+        'streamalert/shared'
+    }
+    package_name = 'scheduled_queries'
