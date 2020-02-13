@@ -40,7 +40,7 @@ WHERE
   AND eventname = 'StartQueryExecution'
 
   -- Only on the CSIRT Prod account
-  AND recipientaccountid = '569589067625'
+  AND recipientaccountid = '123456789012'
 
   -- Filter out noisy ALTER and SHOW queries. SHOW queries are commonly run in automation
   -- by API clients, and ALTER queries are run commonly by the Athena partition function.

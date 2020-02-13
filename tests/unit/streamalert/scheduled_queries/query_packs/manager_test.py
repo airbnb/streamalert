@@ -18,8 +18,9 @@ from mock import MagicMock
 from nose.tools import assert_equals, assert_false, assert_true
 
 from streamalert.scheduled_queries.query_packs.manager import (
-    QueryPack, QueryPacksManager, QueryParameterGenerator
+    QueryPack, QueryPacksManager
 )
+from streamalert.scheduled_queries.query_packs.parameters import QueryParameterGenerator
 
 
 class TestQueryPack:
@@ -123,6 +124,7 @@ class TestQueryPacksManager:
             'test_query_pack_name',
             'qwertyuiop'
         )
+
 
 class TestQueryParameterGenerator:
     def __init__(self):

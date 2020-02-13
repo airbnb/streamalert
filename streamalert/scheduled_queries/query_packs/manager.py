@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import timedelta
 import json
 from logging import Logger
 
@@ -21,6 +20,7 @@ from streamalert.scheduled_queries.handlers.athena import AthenaClient
 from streamalert.scheduled_queries.query_packs.configuration import (
     QueryPackConfiguration, QueryPackRepository
 )
+from streamalert.scheduled_queries.query_packs.parameters import QueryParameterGenerator
 from streamalert.scheduled_queries.state.state_manager import StateManager
 from streamalert.scheduled_queries.support.clock import Clock
 
@@ -310,48 +310,3 @@ class QueryPacksManager:
         query_pack.start_query()
 
         return query_pack
-
-
-class QueryParameterGenerator:
-    """This service helps queries generate dynamic parameters."""
-
-    def __init__(self, logger, clock):
-        self._logger = logger
-        self._clock = clock  # type: Clock
-
-    def generate(self, parameter):
-        if parameter == 'utcdatehour_minus7day':
-            # https://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
-            time = self._clock.now - timedelta(days=7)
-            return time.strftime('%Y-%m-%d-%H')
-
-        if parameter == 'utcdatehour_minus1hour':
-            time = self._clock.now - timedelta(hours=1)
-            return time.strftime('%Y-%m-%d-%H')
-
-        if parameter == 'utctimestamp_minus1hour':
-            time = self._clock.now - timedelta(hours=1)
-            return str(round(time.timestamp()))
-
-        if parameter == 'utcdatehour_minus2hour':
-            time = self._clock.now - timedelta(hours=2)
-            return time.strftime('%Y-%m-%d-%H')
-
-        if parameter == 'utcdatehour_minus1day':
-            time = self._clock.now - timedelta(days=1)
-            return time.strftime('%Y-%m-%d-%H')
-
-        if parameter == 'utcdatehour_minus2day':
-            time = self._clock.now - timedelta(days=2)
-            return time.strftime('%Y-%m-%d-%H')
-
-        if parameter == 'utcdatehour':
-            return self._clock.now.strftime('%Y-%m-%d-%H')
-
-        if parameter == 'utctimestamp':
-            return str(round(self._clock.now.timestamp()))
-
-        self._logger.error(
-            'Parameter generator does not know how to handle "{}"'.format(parameter)
-        )
-        return None
