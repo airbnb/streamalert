@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 from mock import Mock, patch, MagicMock
-from moto import mock_kms, mock_s3, mock_ssm
+from moto import mock_kms, mock_ssm
 from nose.tools import (
     assert_equal,
     assert_is_instance,
@@ -42,8 +42,6 @@ from tests.unit.streamalert.alert_processor import (
     PREFIX
 )
 from tests.unit.streamalert.alert_processor.helpers import (
-    put_mock_creds,
-    remove_temp_secrets,
     put_mock_ssm_parameters
 )
 

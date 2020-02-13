@@ -21,7 +21,7 @@ from abc import abstractmethod
 
 from botocore.exceptions import ClientError
 
-from streamalert.shared.helpers.aws_api_client import AwsKms, AwsS3, AwsSsm
+from streamalert.shared.helpers.aws_api_client import AwsKms, AwsSsm
 from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -411,136 +411,6 @@ class SSMDriver(CredentialsProvidingDriver):
         parameter_prefix = self.get_parameter_prefix()
         parameter_suffix = get_formatted_output_credentials_name(self._service_name, descriptor)
         return '/{}/{}'.format(parameter_prefix, parameter_suffix)
-
-
-class S3Driver(CredentialsProvidingDriver):
-    """Driver for fetching credentials from AWS S3"""
-
-    def __init__(self, prefix, service_name, region, file_driver=None, cache_driver=None):
-        """
-        Args:
-            prefix (str): StreamAlert account prefix in configs
-            service_name (str): The service name for the OutputDispatcher using this
-            region (str): AWS Region
-            file_driver (FileDescriptorProvider|None):
-                Optional. When provided, the file_driver will be used to provide a File handle
-                for downloading the S3 credentials into. This can be useful if it is desired to
-                download the S3 credentials into a specific file for examination.
-
-                If omitted, will defaulted to using SpooledTempfileDriver, which downloads
-                the S3 file into memory temporarily, and is cleaned up afterward.
-
-                In all cases, the credentials file is downloaded and stored in the file-like
-                handle in ENCRYPTED FORM.
-
-            cache_driver (CredentialsProvidingDriver|None):
-                Optional. When provided, the downloaded credentials will be cached in the given
-                driver. This is useful for reducing the number of S3/KMS calls and speeding up the
-                system.
-
-                (!) Storage encryption of the credentials is determined by the driver.
-        """
-        self._service_name = service_name
-        self._region = region
-        self._prefix = prefix
-        self._bucket = self.get_s3_secrets_bucket()
-
-        self._file_driver = file_driver  # type: FileDescriptorProvider
-        if not self._file_driver:
-            self._file_driver = SpooledTempfileDriver(self._service_name, self._region)
-
-        self._cache_driver = cache_driver  # type: CredentialsCachingDriver
-
-    def load_credentials(self, descriptor):
-        """Loads credentials from AWS S3.
-
-        Args:
-            descriptor (str): Service destination (ie: slack channel, pd integration)
-
-        Returns:
-            Credentials: The loaded Credentials. None on failure
-        """
-        try:
-            with self._file_driver.offer_fileobj(descriptor) as file_handle:
-                enc_creds = AwsS3.download_fileobj(
-                    file_handle,
-                    bucket=self._bucket,
-                    region=self._region,
-                    key=self.get_s3_key(descriptor)
-                )
-
-            credentials = Credentials(enc_creds, True, self._region)
-            if self._cache_driver:
-                self._cache_driver.save_credentials(descriptor, credentials)
-
-            return credentials
-        except ClientError:
-            LOGGER.exception('credentials for \'%s\' could not be downloaded from S3',
-                             get_formatted_output_credentials_name(self._service_name, descriptor))
-            return None
-
-    def has_credentials(self, descriptor):
-        """Always returns True, as S3 is the place where all encrypted credentials are
-           guaranteed to be cold-stored."""
-        return True
-
-    def save_credentials_into_s3(self, descriptor, credentials, kms_key_alias):
-        """Takes the given credentials, encrypts them, and saves them to AWS S3.
-
-        Notably, this implementation is NOT for the CredentialsCachingDriver interface, as the
-        S3Driver is not a caching driver.
-
-        Args:
-            descriptor (str): Descriptor of the current Output
-            credentials (Credentials): Credentials object to be saved into S3
-            kms_key_alias (str): KMS key alias for streamalert secrets
-
-        Returns:
-            bool: True on success, False otherwise.
-        """
-        s3_key = get_formatted_output_credentials_name(self._service_name, descriptor)
-
-        # Encrypt the creds and push them to S3
-        if not credentials.is_encrypted():
-            credentials.encrypt(self._region, kms_key_alias)
-
-        encrypted_credentials = credentials.data()
-        if not encrypted_credentials:
-            return True
-
-        try:
-            return AwsS3.put_object(
-                encrypted_credentials,
-                bucket=self._bucket,
-                key=s3_key,
-                region=self._region
-            )
-        except ClientError:
-            LOGGER.exception(
-                'An error occurred while sending credentials to S3 for key \'%s\' in bucket \'%s\'',
-                s3_key,
-                self._bucket
-            )
-            return False
-
-    def get_s3_key(self, descriptor):
-        """Returns an appropriate S3 bucket key for credentials relevant to this Output.
-
-        Args:
-            descriptor (str): Descriptor of the current Output
-
-        Returns:
-            string
-        """
-        return get_formatted_output_credentials_name(self._service_name, descriptor)
-
-    def get_s3_secrets_bucket(self):
-        """Returns an appropriate S3 bucket for all credentials relevant to this driver.
-
-        Returns:
-            string
-        """
-        return '{}.streamalert.secrets'.format(self._prefix)
 
 
 class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, CredentialsCachingDriver):
