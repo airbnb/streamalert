@@ -1,0 +1,88 @@
+[
+  {
+    "data": {
+      "action": "added",
+      "calendarTime": "Wed Feb 12 21:38:11 2020 UTC",
+      "columns": {
+        "host": "10.0.2.2",
+        "pid": 12345,
+        "time": 1581542540,
+        "tty": "ttys001",
+        "type": "7",
+        "username": "vagrant"
+      },
+      "decorations": {
+        "envIdentifier": "fake-environment",
+        "roleIdentifier": "fake-role"
+      },
+      "epoch": "0",
+      "hostIdentifier": "...",
+      "log_type": "result",
+      "name": "pack_incident-response_last",
+      "unixTime": "1581543491"
+    },
+    "description": "This rule alerts on ssh logins to a linux host",
+    "log": "osquery:differential",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "trigger_rules": [
+      "ssh_login_activity"
+    ]
+  },
+  {
+    "data": {
+      "action": "added",
+      "calendarTime": "Wed Feb 12 21:38:11 2020 UTC",
+      "columns": {
+        "host": "10.0.2.2",
+        "pid": 12345,
+        "time": 1581542540,
+        "tty": "ttys001",
+        "type": "7",
+        "username": "runlevel"
+      },
+      "decorations": {
+        "envIdentifier": "fake-environment",
+        "roleIdentifier": "fake-role"
+      },
+      "epoch": "0",
+      "hostIdentifier": "...",
+      "log_type": "result",
+      "name": "pack_incident-response_last",
+      "unixTime": "1581543491"
+    },
+    "description": "This rule will not alert on runlevel ssh logins",
+    "log": "osquery:differential",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "action": "added",
+      "calendarTime": "Wed Feb 12 21:38:11 2020 UTC",
+      "columns": {
+        "host": "10.0.2.2",
+        "pid": 12345,
+        "time": 1581542540,
+        "tty": "ttys001",
+        "type": "8",
+        "username": "runlevel"
+      },
+      "decorations": {
+        "envIdentifier": "fake-environment",
+        "roleIdentifier": "fake-role"
+      },
+      "epoch": "0",
+      "hostIdentifier": "...",
+      "log_type": "result",
+      "name": "pack_incident-response_last",
+      "unixTime": "1581543491"
+    },
+    "description": "This rule will not alert on ssh logout(type: 8)",
+    "log": "osquery:differential",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "trigger_rules": []
+  }
+]
