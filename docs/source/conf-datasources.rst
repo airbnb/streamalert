@@ -1,14 +1,16 @@
 Datasource Configuration
 ========================
-.. note:: As of release 3.0.0 data source configuration has moved 
-          from sources.json into the ``data_sources`` top level key for each your clusters.
+.. note::
+
+  As of release 3.0.0 data source configuration has moved
+  from sources.json into the ``data_sources`` top level key for each your clusters.
 
 For background on supported data source types, read `data sources <datasources.html>`_.
 
 Overview
 --------
 
-Data sources defined in each cluster file in the ``conf/clusters`` directory under the ``data_sources`` top level key control which data sources can send to and be analyzed by StreamAlert. 
+Data sources defined in each cluster file in the ``conf/clusters`` directory under the ``data_sources`` top level key control which data sources can send to and be analyzed by StreamAlert.
 
 Each data source (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific resource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
 

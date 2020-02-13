@@ -37,20 +37,33 @@ Configuration
 
 Adding a new configuration for a currently supported service is handled using ``manage.py``:
 
- - ``python manage.py output <SERVICE_NAME>``
-    - ``<SERVICE_NAME>`` above should be one of the following supported service identifiers:
-      ``aws-cloudwatch-log``, ``aws-firehose``, ``aws-lambda``, ``aws-s3``, ``aws-sns``, ``aws-sqs``,
-      ``carbonblack``, ``github``, ``jira``, ``komand``, ``pagerduty``, ``pagerduty-incident``,
-      ``pagerduty-v2``, ``phantom``, ``slack``
+
+.. code-block:: bash
+
+  $ python manage.py output <SERVICE_NAME>
+
+.. note::
+
+  ``<SERVICE_NAME>`` above should be one of the following supported service identifiers.
+  ``aws-cloudwatch-log``, ``aws-firehose``, ``aws-lambda``, ``aws-s3``, ``aws-sns``, ``aws-sqs``,
+  ``carbonblack``, ``github``, ``jira``, ``komand``, ``pagerduty``, ``pagerduty-incident``,
+  ``pagerduty-v2``, ``phantom``, ``slack``
 
 For example:
- - ``python manage.py output slack``
 
-.. note:: If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
- `An error occurred while sending credentials to S3 for key '<SERVICE>/<KEY>' in bucket '<PREFIX>-streamalert-secrets': The specified bucket does not exist`.
- If you encounter this error, first make sure you've followed the `Quick Start <getting-started.html#quick-start>`_ steps.
- If you've already configured StreamAlert in the past, you may just have to run `python manage.py build`.
- This ensures the S3 bucket used for storing encrypted secrets is created and only needs to be run once.
+.. code-block:: bash
+
+  $ python manage.py output slack
+
+.. note::
+
+  If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
+
+  `An error occurred while sending credentials to S3 for key '<SERVICE>/<KEY>' in bucket '<PREFIX>-streamalert-secrets': The specified bucket does not exist`.
+
+  If you encounter this error, first make sure you've followed the `Quick Start <getting-started.html#quick-start>`_ steps.
+  If you've already configured StreamAlert in the past, you may just have to run `python manage.py build`.
+  This ensures the S3 bucket used for storing encrypted secrets is created and only needs to be run once.
 
 The above command will then prompt the user for a ``descriptor`` to use for this configuration::
 

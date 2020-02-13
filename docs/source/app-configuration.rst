@@ -108,14 +108,23 @@ Flag                       Description
 ``--memory``               The AWS Lambda function max memory value, in megabytes. This should be an integer between 128 and 1536.
 =========================  ===========
 
-.. note:: Duo Security's Admin API is limited to two (2) requests per-minute. Therefore, setting the ``--timeout`` flag to any value between 10 and 60 will be of no additional value. A recommended timeout of 80 seconds will guarantee four (4) requests happen per-execution.
+.. note::
+
+  Duo Security's Admin API is limited to two (2) requests per-minute. Therefore, setting the
+  ``--timeout`` flag to any value between 10 and 60 will be of no additional value. A recommended
+  timeout of 80 seconds will guarantee four (4) requests happen per-execution.
 
 2. Enter the required authentication information
 ````````````````````````````````````````````````
 
 The above command will result in a few prompts asking for the required authentication information needed to configure this App.
 
-.. note:: After the last required authentication value is entered, the values are sent to AWS SSM's `Parameter Store <https://aws.amazon.com/ec2/systems-manager/parameter-store/>`_ as a ``SecureString`` to be used as part of this App's config. Due to this requirement, please ensure you have the correct and valid AWS credentials loaded before continuing.
+.. note::
+
+  After the last required authentication value is entered, the values are sent to AWS SSM's
+  `Parameter Store <https://aws.amazon.com/ec2/systems-manager/parameter-store/>`_ as a ``SecureString``
+  to be used as part of this App's config. Due to this requirement, please ensure you have the correct
+  and valid AWS credentials loaded before continuing.
 
 Example Prompts for Duo Auth
 ''''''''''''''''''''''''''''
@@ -173,5 +182,5 @@ How to set up the Intercom App
 
 The Intercom API requires an access token. Get an access token by following these `instructions <https://developers.intercom.com/building-apps/docs/authorization#section-how-to-get-an-access-token>`_.
 
-To specify an API version, follow `these instructions <https://developers.intercom.com/building-apps/docs/api-versioning>`_ to do so through Intercom's Developer Hub. 
-The default will be the latest stable version. The Intercom app works on versions 1.2 or later. 
+To specify an API version, follow `these instructions <https://developers.intercom.com/building-apps/docs/api-versioning>`_ to do so through Intercom's Developer Hub.
+The default will be the latest stable version. The Intercom app works on versions 1.2 or later.

@@ -23,36 +23,10 @@ By default, the rule staging feature is not enabled. It can be enabled with the 
 
   $ python manage.py rule-staging enable --true
 
-The change will be reflected in the ``conf/globals.json`` file:
+The change will be reflected in the ``conf/globals.json`` file.
 
-.. code-block:: json
-
-  {
-    "infrastructure": {
-      "rule_staging": {
-        "cache_refresh_minutes": 10,
-        "enabled": true,
-        "table_read_capacity": 20,
-        "table_write_capacity": 5
-      }
-    }
-  }
-
-Configuration Options
----------------------
-
-A few configuration options are available to customize the feature to your needs.
-
-===========================  =======  ===========
-Key                          Default  Description
----------------------------  -------  -----------
-``cache_refresh_minutes``    ``10``   Maximum amount of time (in minutes) the Rules Engine function
-                                      should wait to force refresh the rule staging information.
-``table.read_capacity``      ``20``   DynamoDB read capacity to allocate to the table that stores staging
-                                      information. The default setting should be sufficient in most use cases.
-``table.write_capacity``     ``5``    DynamoDB write capacity to allocate to the table that stores staging
-                                      information. The default setting should be sufficient in most use cases.
-===========================  =======  ===========
+For additional configuration options related to this feature, see the
+`Rule Staging <config-global.html#rule-staging>`_ section of the Global Settings.
 
 The initial implementation of the Rule Staging feature has a hard-coded 'staging period', or the time
 a rule should remain in staging before being auto-promoted to send to user-defined outputs. This is
