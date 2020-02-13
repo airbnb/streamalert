@@ -192,15 +192,18 @@ class RulesEngine:
         if not rule_result:
             return
 
+        # Define the outputs
+        outputs = self._configure_outputs(payload['record'], rule)
+
         alert = Alert(
-            rule.name, payload['record'], self._configure_outputs(payload['record'], rule),
+            rule.name, payload['record'], outputs,
             cluster=payload['cluster'],
             context=rule.context,
             log_source=payload['log_schema_type'],
             log_type=payload['data_type'],
             merge_by_keys=rule.merge_by_keys,
             merge_window=timedelta(minutes=rule.merge_window_mins),
-            publishers=self._configure_publishers(rule),
+            publishers=self._configure_publishers(rule, outputs),
             rule_description=rule.description,
             source_entity=payload['resource'],
             source_service=payload['service'],
@@ -335,7 +338,7 @@ class RulesEngine:
         return valid
 
     @classmethod
-    def _configure_publishers(cls, rule):
+    def _configure_publishers(cls, rule, requested_outputs):
         """Assigns publishers to each output.
 
         The @Rule publisher syntax accepts several formats, including a more permissive blanket
@@ -346,11 +349,11 @@ class RulesEngine:
 
         Args:
             rule (Rule): The rule to create publishers for
+            requested_outputs (set): A set containing the outputs
 
         Returns:
             dict: Maps string outputs names to lists of strings of their fully qualified publishers
         """
-        requested_outputs = rule.outputs_set
         requested_publishers = rule.publishers
         if not requested_publishers:
             return None
@@ -358,6 +361,10 @@ class RulesEngine:
         configured_publishers = {}
 
         for output in requested_outputs:
+            if output == "aws-firehose:alerts":
+                # This output doesn't require a publisher
+                continue
+
             assigned_publishers = []
 
             if cls.is_publisher_declaration(requested_publishers):

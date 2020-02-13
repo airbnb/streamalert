@@ -637,36 +637,39 @@ class TestRulesEngine:
 
     def test_configure_publishers_empty(self):
         """RulesEngine - _configure_publishers, Empty"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=None,
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = None
 
         assert_equal(publishers, expectation)
 
     def test_configure_publishers_single_string(self):
         """RulesEngine - _configure_publishers, Single string"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers='streamalert.shared.publisher.DefaultPublisher'
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': ['streamalert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
 
     def test_configure_publishers_single_reference(self):
         """RulesEngine - _configure_publishers, Single reference"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=DefaultPublisher
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': ['streamalert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
@@ -674,12 +677,13 @@ class TestRulesEngine:
     @patch('logging.Logger.warning')
     def test_configure_publishers_single_invalid_string(self, log_warn):
         """RulesEngine - _configure_publishers, Invalid string"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers='blah'
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': []}
 
         assert_equal(publishers, expectation)
@@ -688,12 +692,13 @@ class TestRulesEngine:
     @patch('logging.Logger.error')
     def test_configure_publishers_single_invalid_object(self, log_error):
         """RulesEngine - _configure_publishers, Invalid object"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=self  # just some random object that's not a publisher
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': []}
 
         assert_equal(publishers, expectation)
@@ -701,12 +706,13 @@ class TestRulesEngine:
 
     def test_configure_publishers_single_applies_to_multiple_outputs(self):
         """RulesEngine - _configure_publishers, Multiple outputs"""
+        outputs = {'slack:test', 'demisto:test', 'pagerduty:test'}
         rule = Mock(
-            outputs_set={'slack:test', 'demisto:test', 'pagerduty:test'},
+            outputs_set=outputs,
             publishers=DefaultPublisher
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {
             'slack:test': ['streamalert.shared.publisher.DefaultPublisher'],
             'demisto:test': ['streamalert.shared.publisher.DefaultPublisher'],
@@ -717,12 +723,13 @@ class TestRulesEngine:
 
     def test_configure_publishers_list(self):
         """RulesEngine - _configure_publishers, List"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=[DefaultPublisher, remove_internal_fields]
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': [
             'streamalert.shared.publisher.DefaultPublisher',
             'publishers.community.generic.remove_internal_fields',
@@ -732,8 +739,9 @@ class TestRulesEngine:
 
     def test_configure_publishers_mixed_list(self):
         """RulesEngine - _configure_publishers, Mixed List"""
+        outputs = {'slack:test', 'demisto:test'}
         rule = Mock(
-            outputs_set={'slack:test', 'demisto:test'},
+            outputs_set=outputs,
             publishers={
                 'demisto': 'streamalert.shared.publisher.DefaultPublisher',
                 'slack': [that_publisher],
@@ -741,7 +749,7 @@ class TestRulesEngine:
             },
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {
             'slack:test': [
                 'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
@@ -754,8 +762,9 @@ class TestRulesEngine:
 
     def test_configure_publishers_mixed_single(self):
         """RulesEngine - _configure_publishers, Mixed Single"""
+        outputs = {'slack:test', 'demisto:test'}
         rule = Mock(
-            outputs_set={'slack:test', 'demisto:test'},
+            outputs_set=outputs,
             publishers={
                 'demisto': 'streamalert.shared.publisher.DefaultPublisher',
                 'slack': that_publisher,
@@ -763,7 +772,7 @@ class TestRulesEngine:
             },
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {
             'slack:test': [
                 'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
