@@ -70,7 +70,6 @@ Table of Contents
 
    datatypes
    datasources
-   conf-datasources
    conf-schemas
    conf-schemas-examples
 
