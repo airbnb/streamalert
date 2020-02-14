@@ -22,11 +22,11 @@ resource "aws_cloudwatch_event_target" "run_step_function" {
   #     "id": "91190ee0-a078-9c42-15b6-f3d418fae67d",
   #     "detail-type": "Scheduled Event",
   #     "source": "aws.events",
-  #     "account": "009715504418",
+  #     "account": "123456789012",
   #     "time": "2019-06-14T18:39:21Z",
   #     "region": "us-east-1",
   #     "resources": [
-  #       "arn:aws:events:us-east-1:009715504418:rule/ryxias20190615_streamquery_schedule_hourly"
+  #       "arn:aws:events:us-east-1:123456789012:rule/something_streamalert_schedule_hourly"
   #     ],
   #     "detail": {}
   #   }
@@ -35,7 +35,7 @@ resource "aws_cloudwatch_event_target" "run_step_function" {
   #   {
   #     "name": "streamalert_scheduled_queries_cloudwatch_trigger",
   #     "event_id": "9119abcd-abcd-abcd-abcd-f3d418fae67d",
-  #     "source_arn": "arn:aws:events:us-east-1:009715504418:rule/something_streamalert_scheduled_queries",
+  #     "source_arn": "arn:aws:events:us-east-1:123456789012:rule/something_streamalert_scheduled_queries",
   #     "function_start_time": "2019-06-14T18:39:21Z",
   #     "tags": ["tag1", "tag2"]
   #   }

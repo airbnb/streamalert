@@ -19,11 +19,11 @@ How do scheduled queries work?
 This system leverages two main components: AWS Lambda and AWS Step Functions.
 
 First, a CloudWatch scheduled event triggers the execution of a new AWS Step Function State Machine.
-This State Machine manages the lifecycle of Athena queries through the Lambda function. Its role
+This State Machine manages the lifecycle of Athena queries through the Lambda function. Its sole
 responsibility is to execute the Lambda, wait a predefined window of time, and execute the Lambda again,
-repeating until the Lambda reports it is finshed.
+repeating until the Lambda reports it is finished.
 
-The Lambda function is a simple function that Starts Athena queries, caches their execution ids, checks
+The Lambda function is a simple function that starts Athena queries, caches their execution ids, checks
 on their execution status, and uploads results to StreamAlert via Kinesis. Instead of doing all of these
 steps in a blocking fashion and sleeping while it waits for Athena, it runs through all queries in a single
 nonblocking pass, and returns the result of its execution to the State Machine. Once all queries have
@@ -41,7 +41,7 @@ Scheduled Queries is configured via a single file, ``conf/scheduled_queries.json
   {
     "enabled": true,
     "config": {
-      "destination_kinesis": "ryxias20200212_prod_streamalert",
+      "destination_kinesis": "prefix_prod_streamalert",
       "sfn_timeout_secs": 3600,
       "sfn_wait_secs": 30
     },
@@ -70,7 +70,7 @@ Scheduled Queries is configured via a single file, ``conf/scheduled_queries.json
 * ``config.destination_kinesis`` — (str) The name of the Kinesis stream to upload results to.
 * ``config.sfn_timeout_secs`` - (int) Max number of seconds for the state machine to execute.
 * ``config.sfn_wait_secs`` - (int) Time to wait between checks of query status.
-
+* ``query_packs`` - (dict) The keys of this dict are the **names** of the query packs. This section is discussed in more depth below.
 
 
 Query Packs
@@ -79,17 +79,19 @@ Query Packs are batches of scheduled Athena queries that are executed together.
 
 .. code-block::
 
-  "hourly": {
-    "description": "Runs all hourly queries",
-    "schedule_expression": "rate(1 hour)"
+  "query_packs": {
+    ...
+    "hourly": {
+      "description": "Runs all hourly queries",
+      "schedule_expression": "rate(1 hour)"
+    },
+    ...
   }
 
-* ``packs`` - (dict) The Keys of this dict are the **names** of the query packs. This is important later.
-  Each value is another dict with two keys:
+- ``description`` - (str) A string summary of what queries belong in this pack.
+- ``schedule_expression`` - (str) A CloudWatch schedule expression defining how frequently to execute this query pack.
 
-  - ``description`` - (str) A string summary of what queries belong in this pack.
-  - ``schedule_expression`` - (str) A CloudWatch schedule expression defining how frequently to execute this query pack.
-
+Again, the keys to the ``query_packs`` dict are the **names** of the query packs. These names are used below.
 
 
 Writing Queries
@@ -268,7 +270,7 @@ Going to the console, you can observe that the Input event of a State Machine ex
     {
       "name": "streamalert_scheduled_queries_cloudwatch_trigger",
       "event_id": "12345678-53e7-b479-0601-1234567890",
-      "source_arn": "arn:aws:events:us-east-1:009715504418:rule/myprefix_streamalert_scheduled_queries_event_0",
+      "source_arn": "arn:aws:events:us-east-1:123456789012:rule/myprefix_streamalert_scheduled_queries_event_0",
       "streamquery_configuration": {
         "clock": "2020-02-13T22:06:20Z",
         "tags": [
