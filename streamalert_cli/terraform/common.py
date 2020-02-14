@@ -18,6 +18,7 @@ from collections import defaultdict
 
 DEFAULT_SNS_MONITORING_TOPIC_SUFFIX = '{}_streamalert_monitoring'
 DEFAULT_S3_LOGGING_BUCKET_SUFFIX = '{}-streamalert-s3-logging'
+DEFAULT_TERRAFORM_STATE_BUCKET_SUFFIX = '{}-streamalert-terraform-state'
 
 
 class InvalidClusterName(Exception):
@@ -77,6 +78,30 @@ def s3_access_logging_bucket(config):
         return default_name, True  # Use the default name and create the bucket
 
     bucket_name = config['global']['infrastructure']['s3_access_logging'].get(
+        'bucket_name',
+        default_name
+    )
+    return bucket_name, bucket_name == default_name
+
+
+def terraform_state_bucket(config):
+    """Get the bucket name to be used for the remote Terraform state
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        string: The bucket name to be used for the remote Terraform state
+    """
+    # If a bucket name is specified for the remote Terraform state, we can assume the bucket
+    # should NOT be created
+    default_name = DEFAULT_TERRAFORM_STATE_BUCKET_SUFFIX.format(
+        config['global']['account']['prefix']
+    )
+    if 'terraform' not in config['global']:
+        return default_name, True  # Use the default name and create the bucket
+
+    bucket_name = config['global']['terraform'].get(
         'bucket_name',
         default_name
     )

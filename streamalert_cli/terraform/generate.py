@@ -24,6 +24,7 @@ from streamalert_cli.terraform.common import (
     infinitedict,
     monitoring_topic_name,
     s3_access_logging_bucket,
+    terraform_state_bucket,
 )
 from streamalert_cli.terraform.alert_merger import generate_alert_merger
 from streamalert_cli.terraform.alert_processor import generate_alert_processor
@@ -168,13 +169,11 @@ def generate_main(config, init=False):
             'path': 'terraform.tfstate',
         }
     else:
+        terraform_bucket_name, _ = terraform_state_bucket(config)
         main_dict['terraform']['backend']['s3'] = {
-            'bucket': config['global'].get('terraform', {}).get(
-                'tfstate_bucket',
-                '{}-streamalert-terraform-state'.format(config['global']['account']['prefix'])
-            ),
+            'bucket': terraform_bucket_name,
             'key': config['global'].get('terraform', {}).get(
-                'tfstate_s3_key',
+                'state_key_name',
                 'streamalert_state/terraform.tfstate'
             ),
             'region': config['global']['account']['region'],
@@ -224,13 +223,11 @@ def generate_main(config, init=False):
             sse_algorithm='AES256'  # SSE-KMS doesn't seem to work with access logs
         )
 
+    terraform_bucket_name, create_state_bucket = terraform_state_bucket(config)
     # Create bucket for Terraform state (if applicable)
-    if config['global'].get('terraform', {}).get('create_bucket', True):
+    if create_state_bucket:
         main_dict['resource']['aws_s3_bucket']['terraform_remote_state'] = generate_s3_bucket(
-            bucket=config['global'].get('terraform', {}).get(
-                'tfstate_bucket',
-                '{}-streamalert-terraform-state'.format(config['global']['account']['prefix'])
-            ),
+            bucket=terraform_bucket_name,
             logging=logging_bucket
         )
 

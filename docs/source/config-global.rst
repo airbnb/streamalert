@@ -486,5 +486,33 @@ Options
 ================  ============  ====================================  ===============
 
 
+*********
 Terraform
----------
+*********
+StreamAlert uses Terraform for maintaining its infrastructure as code and Terraform will utilize a
+remote state that is stored on S3. By default, we will create a bucket for use by Terraform, but
+a bucket name can also be supplied to use instead. The ``terraform`` section of ``conf/global.json``
+file should be used to store these settings.
+
+
+Configuration
+=============
+.. code-block:: json
+
+  {
+    "terraform": {
+      "bucket_name": "<prefix>-streamalert-terraform-state",
+      "state_key_name": "streamalert_state/terraform.tfstate"
+    }
+  }
+
+
+Options
+-------
+===================  ============  =========================================  ===============
+**Key**              **Required**  **Default**                                **Description**
+-------------------  ------------  -----------------------------------------  ---------------
+``bucket_name``      No            ``<prefix>-streamalert-terraform-state``   Name of existing S3 bucket to use for the Terraform
+                                                                              remote state instead of the default bucket that will be created
+``state_key_name``   No            ``streamalert_state/terraform.tfstate``    Name to use as the key of the Terraform state object in S3
+===================  ============  =========================================  ===============
