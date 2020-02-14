@@ -16,6 +16,7 @@ limitations under the License.
 import json
 import os
 import re
+import string
 
 from streamalert.apps import StreamAlertApp
 from streamalert.shared import CLUSTERED_FUNCTIONS, config, metrics
@@ -86,8 +87,9 @@ class CLIConfig:
             LOGGER.error('Invalid prefix type, must be string')
             return False
 
-        if '_' in prefix:
-            LOGGER.error('Prefix cannot contain underscores')
+        acceptable_chars = set([*string.digits, *string.ascii_letters])
+        if not set(prefix).issubset(acceptable_chars):
+            LOGGER.error('Prefix must contain only letters and numbers')
             return False
 
         self.config['global']['account']['prefix'] = prefix
