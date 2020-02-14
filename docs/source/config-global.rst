@@ -1,17 +1,20 @@
+###############
 Global Settings
-===============
+###############
 Settings that apply *globally* for StreamAlert are stored in the ``conf/global.json`` file. This
 file has a few different sections to help organize the settings by purpose. These sections are
 described in further detail below.
 
 
+*******
 Account
--------
+*******
 The ``account`` section of ``conf/global.json`` file is used to store information specifically
 related to the AWS account used for your StreamAlert deployment.
 
+
 Configuration
-~~~~~~~~~~~~~
+=============
 .. code-block:: json
 
   {
@@ -24,7 +27,7 @@ Configuration
 
 
 Options
-```````
+-------
 ===================  ============  ==============  ===============
 **Key**              **Required**  **Default**     **Description**
 -------------------  ------------  --------------  ---------------
@@ -45,14 +48,15 @@ Options
   However, if a different `region` is desired, it must be changed manually.
 
 
+*******
 General
--------
+*******
 The ``general`` section of ``conf/global.json`` file is used to store general information related
 to your StreamAlert deployment. Notably, paths to ``rules`` and ``matchers`` can be supplied here.
 
 
 Configuration
-~~~~~~~~~~~~~
+=============
 .. code-block:: json
 
   {
@@ -68,7 +72,7 @@ Configuration
 
 
 Options
-```````
+-------
 ======================  ============  =================  ===============
 **Key**                 **Required**  **Default**        **Description**
 ----------------------  ------------  -----------------  ---------------
@@ -77,14 +81,16 @@ Options
 ======================  ============  =================  ===============
 
 
+**************
 Infrastructure
---------------
+**************
 The ``infrastructure`` section of ``conf/global.json`` file is used to store information related
 to settings for various global resources/infrastructure components needed by StreamAlert. There are
 various subsections within this section, each of which is outlined below.
 
+
 Alerts Firehose
-~~~~~~~~~~~~~~~
+===============
 By default, StreamAlert will send all alert payloads to S3 for historical retention and searching.
 These payloads include the original record data that triggered the alert, as well as the rule that
 was triggered, the source of the log, the date/time the alert was triggered, the cluster from
@@ -92,7 +98,7 @@ which the log came, and a variety of other fields.
 
 
 Configuration
-`````````````
+-------------
 The following ``alerts_firehose`` configuration settings can be defined within the ``infrastructure``
 section of ``global.json``:
 
@@ -112,7 +118,7 @@ section of ``global.json``:
 
 
 Options
-'''''''
+^^^^^^^
 =============================  ============  ==========================  ===============
 **Key**                        **Required**  **Default**                 **Description**
 -----------------------------  ------------  --------------------------  ---------------
@@ -128,14 +134,14 @@ Options
 
 
 Alerts Table
-~~~~~~~~~~~~
+============
 StreamAlert utilizes a DynamoDB Table as a temporary storage mechanism when alerts are triggered
 from the Rules Engine. This table can be configured as necessary to scale to the throughput of
 your alerts.
 
 
 Configuration
-`````````````
+-------------
 The following ``alerts_table`` configuration settings can be defined within the ``infrastructure``
 section of ``global.json``:
 
@@ -152,7 +158,7 @@ section of ``global.json``:
 
 
 Options
-'''''''
+^^^^^^^
 ===================  ============  ===========  ===============
 **Key**              **Required**  **Default**  **Description**
 -------------------  ------------  -----------  ---------------
@@ -162,13 +168,13 @@ Options
 
 
 Classifier SQS
-~~~~~~~~~~~~~~
+==============
 StreamAlert sends all classified logs to an SQS Queue. This queue is then read from by the Rules
 Engine function to perform rule analysis.
 
 
 Configuration
-`````````````
+-------------
 
 .. note::
 
@@ -190,7 +196,7 @@ section of ``global.json``:
 
 
 Options
-'''''''
+^^^^^^^
 ===============  ============  ===========  ===============
 **Key**          **Required**  **Default**  **Description**
 ---------------  ------------  -----------  ---------------
@@ -201,17 +207,17 @@ Options
 
 
 Firehose (Historical Data Retention)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+====================================
 StreamAlert also supports sending all logs to S3 for historical retention and searching based on
 classified type of the log. Kinesis Data Firehose Delivery Streams are used to send the data to S3.
 
 
 Configuration
-`````````````
+-------------
 The following ``firehose`` configuration settings can be defined within the ``infrastructure``
 section of ``global.json``:
 
-.. _firehose_example:
+.. _firehose_example_01:
 
 .. code-block:: json
 
@@ -241,7 +247,7 @@ section of ``global.json``:
 
 
 Options
-'''''''
+^^^^^^^
 =======================  ============  ==============================  ===============
 **Key**                  **Required**  **Default**                     **Description**
 -----------------------  ------------  ------------------------------  ---------------
@@ -266,7 +272,7 @@ Options
 
 
 Configuring ``enabled_logs``
-''''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The ``enabled_logs`` section of the ``firehose`` settings must explicitly specify the log types for
 which you would like to enable historical retention. There are two syntaxes you may use to specify
 log types:
@@ -280,6 +286,8 @@ will only create one Firehose for specifically the ``osquery:differential`` subt
 Since each Firehose that gets created can have additional settings applied to it, the proper way to
 simply *enable* given log types is to add items to ``enabled_logs`` as follows (**note the empty
 JSON object as the value**):
+
+.. _firehose_example_02:
 
 .. code-block:: json
 
@@ -295,9 +303,9 @@ JSON object as the value**):
   }
 
 
-That being said, each Firehose that is created can be configured with an alarm that will fire
-when the incoming log volume drops below a specified threshold. This is disabled by default, and
-can be enabled by setting ``enable_alarm`` to ``true`` within the configuration for the log type.
+Each Firehose that is created can be configured with an alarm that will fire when the incoming
+log volume drops below a specified threshold. This is disabled by default, and can be enabled
+by setting ``enable_alarm`` to ``true`` within the configuration for the log type.
 
 ============================  ============  ==============================================  ===============
 **Key**                       **Required**  **Default**                                     **Description**
@@ -311,17 +319,72 @@ can be enabled by setting ``enable_alarm`` to ``true`` within the configuration 
 
 .. note::
 
-  See the ``ghe`` log type in the :ref:`example <firehose_example>` ``firehose`` configuration above for how this can be performed.
+  See the ``ghe`` log type in the :ref:`example <firehose_example_01>` ``firehose`` configuration above for how this can be performed.
+
+
+Additional Info
+^^^^^^^^^^^^^^^
+When adding a log type to the ``enable_logs`` configuration, a dedicated Firehose is created for
+each of the log subtypes.
+
+For instance, suppose the following schemas are defined across one or more files in the ``conf/schemas`` directory:
+
+.. code-block:: json
+
+  {
+    "cloudwatch:events": {
+      "parser": "json",
+      "schema": {"key": "type"}
+    },
+    "cloudwatch:cloudtrail": {
+      "parser": "json",
+      "schema": {"key": "type"}
+    },
+    "osquery:differential": {
+      "parser": "json",
+      "schema": {"key": "type"}
+    },
+    "osquery:status": {
+      "parser": "json",
+      "schema": {"key": "type"}
+    }
+  }
+
+Supposing also that the above ``enabled_logs`` :ref:`example <firehose_example_02>` is used, the
+following Firehose resources will be created:
+
+* ``<prefix>_streamalert_data_cloudwatch_cloudtrail``
+* ``<prefix>_streamalert_data_osquery_differential``
+* ``<prefix>_streamalert_data_osquery_status``
+
+.. note::
+
+  Notice that there is no Firehose created for the ``cloudwatch:events`` log type. This is because
+  this log type was not included in the ``enabled_logs`` configuration, and only the
+  ``cloudwatch:cloudtrail`` subtype of ``cloudwatch`` was included.
+
+Each Delivery Stream delivers data to the same S3 bucket created by the module in a prefix based on the corresponding log type:
+
+* ``arn:aws:s3:::<prefix>-streamalert-data/cloudwatch_cloudtrail/YYYY/MM/DD/data_here``
+* ``arn:aws:s3:::<prefix>-streamalert-data/osquery_differential/YYYY/MM/DD/data_here``
+* ``arn:aws:s3:::<prefix>-streamalert-data/osquery_status/YYYY/MM/DD/data_here``
+
+
+Limits
+""""""
+Depending on your log volume, you may need to request limit increases for Firehose.
+* `Kinesis Firehose Limits <https://docs.aws.amazon.com/firehose/latest/dev/limits.html>`_
+* `Kinesis Firehose Delivery Settings <http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html>`_
 
 
 Monitoring
-~~~~~~~~~~
+==========
 StreamAlert can send notifications of issues with infrastructure to an SNS topic (aka "monitoring"
 the health of your infrastructure).
 
 
 Configuration
-`````````````
+-------------
 The following ``monitoring`` configuration settings can be defined within the ``infrastructure``
 section of ``global.json``:
 
@@ -337,7 +400,7 @@ section of ``global.json``:
 
 
 Options
-'''''''
+^^^^^^^
 ===================  ============  ====================================  ===============
 **Key**              **Required**  **Default**                           **Description**
 -------------------  ------------  ------------------------------------  ---------------
@@ -347,12 +410,12 @@ Options
 
 
 Rule Staging
-~~~~~~~~~~~~
+============
 StreamAlert comes with the ability to *stage* rules that have not been battle tested. This
 feature is backed by a DynamoDB table, for which there are a few configurable options.
 
 Configuration
-`````````````
+-------------
 .. code-block:: json
 
   {
@@ -368,7 +431,7 @@ Configuration
 
 
 Options
-'''''''
+^^^^^^^
 ==========================  ============  ===========  ===============
 **Key**                     **Required**  **Default**  **Description**
 --------------------------  ------------  -----------  ---------------
@@ -391,14 +454,14 @@ Options
 
 
 S3 Access Logging
-~~~~~~~~~~~~~~~~~
+=================
 StreamAlert will send S3 Server Access logs generated by all the buckets in your deployment to a
 logging bucket that will be created by default. However, if you have an existing bucket where you
 are already centralizing these logs, the name may be provided for use by StreamAlert's buckets.
 
 
 Configuration
-`````````````
+-------------
 The following ``s3_access_logging`` configuration settings can be defined within the
 ``infrastructure`` section of ``global.json``:
 
@@ -414,7 +477,7 @@ The following ``s3_access_logging`` configuration settings can be defined within
 
 
 Options
-'''''''
+^^^^^^^
 ================  ============  ====================================  ===============
 **Key**           **Required**  **Default**                           **Description**
 ----------------  ------------  ------------------------------------  ---------------

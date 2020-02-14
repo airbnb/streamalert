@@ -1,18 +1,19 @@
+###############
 Troubleshooting
-===============
+###############
 
+***************
 Kinesis Streams
----------------
-
+***************
 As detailed in other sections, StreamAlert utilizes AWS' Kinesis Streams.
 
 Review Kinesis Streams `key concepts`_
 
 .. _key concepts: https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
 
-Limits
-~~~~~~
 
+Limits
+======
 * `Kinesis Streams Limits`_
 * `Kinesis Streams PUT Limits`_
 
@@ -21,7 +22,7 @@ Limits
 
 
 ThroughputExceeded
-~~~~~~~~~~~~~~~~~~~~
+==================
 Pertains to ``WriteProvisionedThroughputExceeded`` or ``ProvisionedThroughputExceededException``
 
 The documentation above states:
@@ -57,15 +58,14 @@ StreamAlert enables AWS `Enhanced Monitoring`_ to help you diagnose these types 
 
 
 DescribeStream: Rate exceeded
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+=============================
 Or ``DescribeDeliveryStream: Rate exceeded.``
 
 This API call is limited to 10 requests/s. Your agent/code should not be using this API call to determine if the Kinesis Stream is available to receive data. The agent/code should simply attempt to send the data and gracefully handle any exceptions.
 
-certificate verify failed
-~~~~~~~~~~~~~~~~~~~~~~~~~
 
+certificate verify failed
+=========================
 Run the following command on the impacted host, choosing the correct region: ``openssl s_client -showcerts -connect kinesis.us-west-2.amazonaws.com:443``
 
 If this returns ``Verify return code: 0 (ok)``, your agent/code needs to use Amazon's root and/or intermediate certificates (PEM) for TLS to function properly

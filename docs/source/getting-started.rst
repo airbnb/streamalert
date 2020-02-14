@@ -1,11 +1,13 @@
+###############
 Getting Started
-===============
-
+###############
 It only takes a few minutes to get StreamAlert up and running! These instructions have been tested
 on MacOS, but should also work on most linux systems.
 
+
+********************
 Install Dependencies
---------------------
+********************
 
 1. Install Python 3.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
 2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ >= v0.12.9:
@@ -31,9 +33,10 @@ Install Dependencies
   sudo apt install python-dev    # Debian
   sudo yum install python-devel  # CentOS/RHEL
 
-Download StreamAlert
---------------------
 
+********************
+Download StreamAlert
+********************
 1. Clone the latest stable release of StreamAlert:
 
 .. code-block:: bash
@@ -60,9 +63,10 @@ Download StreamAlert
 
   tests/scripts/unit_tests.sh
 
-Configure AWS Credentials
--------------------------
 
+*************************
+Configure AWS Credentials
+*************************
 1. Create an AWS account and an `IAM user <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html>`_
 with permissions for at least the following services:
 
@@ -86,8 +90,10 @@ with permissions for at least the following services:
   pip install --user awscli
   aws configure
 
+
+******
 Deploy
-------
+******
 .. note:: StreamAlert supports Terraform's native ability to lock the remote s3 state file whenever a user is planning and applying Terraform configuration.
     This is to prevent multiple users from deploying StreamAlert at the same time potentially resulting in a broken state.
     StreamAlert will automatically create and destroy this table via the command line interface.
@@ -120,8 +126,10 @@ that were automatically created:
 
 You can also login to the AWS web console and see StreamAlert's CloudWatch logs, Lambda functions, etc.
 
+
+*********
 Live Test
----------
+*********
 Now let's upload some data and trigger an alert to see StreamAlert in action! This example uses
 SNS for both sending the log data and receiving the alert, but StreamAlert also supports many other
 `data sources <datasources.html>`_ and `alert outputs <outputs.html>`_.
@@ -156,19 +164,17 @@ Open ``conf/clusters/prod.json`` and change the ``streamalert`` module to look l
 .. code-block:: json
 
   {
-    "streamalert": {
-      "classifier_config": {
-        "enable_custom_metrics": true,
-        "inputs": {
-          "aws-sns": [
-            "arn:aws:sns:REGION:ACCOUNTID:streamalert-test-data"
-          ]
-        },
-        "log_level": "info",
-        "log_retention_days": 14,
-        "memory": 128,
-        "timeout": 60
-      }
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "inputs": {
+        "aws-sns": [
+          "arn:aws:sns:REGION:ACCOUNTID:streamalert-test-data"
+        ]
+      },
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
     }
   }
 
@@ -258,7 +264,7 @@ If all goes well, an alert should arrive in your inbox within a few minutes!
 If not, look for any errors in the CloudWatch Logs for the StreamAlert Lambda functions.
 
 10. After 10 minutes (the default refresh interval), the alert will also be searchable from
-`AWS Athena <https://console.aws.amazon.com/athena>`_. Select your StreamAlert database in the
+`Amazon Athena <https://console.aws.amazon.com/athena>`_. Select your StreamAlert database in the
 dropdown on the left and preview the ``alerts`` table:
 
 .. figure:: ../images/alerts-query.png

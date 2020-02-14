@@ -1,6 +1,6 @@
+###########
 StreamAlert
-===========
-
+###########
 .. image:: ../images/sa-banner.png
   :align: center
   :alt: StreamAlert
@@ -8,10 +8,12 @@ StreamAlert
 StreamAlert is a serverless, real-time data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using data sources and alerting logic you define.
 Computer security teams use StreamAlert to scan terabytes of log data every day for incident detection and response.
 
+
+********
 Overview
---------
-Incoming log data is classified and scanned by the StreamAlert rules engine running in your AWS account.
-Rule matches are reported to one or more alert outputs:
+********
+Incoming log data will be classified and then processed by the StreamAlert rules
+engine running in your AWS account. Rule matches are reported to one or more alert outputs:
 
 .. figure:: ../images/sa-high-level-arch.png
   :alt: StreamAlert High Level Architecture
@@ -20,9 +22,10 @@ Rule matches are reported to one or more alert outputs:
 
   (Click to enlarge)
 
-Features
---------
 
+********
+Features
+********
 * Rules are written in Python; they can utilize any Python libraries or functions
 * Ingested logs and generated alerts can be retroactively searched for compliance and research
 * Serverless design is cheaper, easier to maintain, and scales to terabytes per day
@@ -35,17 +38,16 @@ Features
 
 Ready? Let's `get started! <getting-started.html>`_
 
+*********
 Resources
------------
-
+*********
 * `Blog Post <https://medium.com/@airbnbeng/e8619e3e5043>`_
 * `GitHub <https://github.com/airbnb/streamalert>`_
 * `Slack (unofficial) <https://streamalert.herokuapp.com>`_
 
+*****************
 Table of Contents
-=================
-
-.. _introduction:
+*****************
 
 .. toctree::
    :maxdepth: 2
@@ -53,6 +55,8 @@ Table of Contents
 
    getting-started
    architecture
+   datatypes
+   datasources
 
 .. toctree::
   :maxdepth: 2
@@ -60,20 +64,7 @@ Table of Contents
 
   config-global
   config-clusters
-  historical-search
-
-.. _data_configuration:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Data Ingestion
-
-   datatypes
-   datasources
-   conf-schemas
-   conf-schemas-examples
-
-.. _user_guide:
+  config-schemas
 
 .. toctree::
    :maxdepth: 2
@@ -85,24 +76,12 @@ Table of Contents
    outputs
    publishers
    lookup-tables
+   apps
    metrics
+   rule-staging
+   rule-promotion
+   historical-search
+   conf-schemas-examples
    troubleshooting
    faq
    alternatives
-
-.. _rule_staging_and_promotion:
-
-.. toctree::
-  :maxdepth: 2
-  :caption: Rule Staging and Promotion
-
-  rule-staging
-  rule-promotion
-
-.. toctree::
-  :maxdepth: 2
-  :caption: StreamAlert Apps
-
-  app-configuration
-  app-auth-update
-  app-development

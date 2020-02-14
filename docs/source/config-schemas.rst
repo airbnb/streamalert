@@ -1,9 +1,6 @@
+#######
 Schemas
-=======
-
-Overview
---------
-
+#######
 Log schemas are required by StreamAlert to detect the correct log type of an incoming record.
 
 Schemas are defined in ``conf/schemas/<log-type>.json`` and used by rules to determine which records are analyzed.
@@ -16,40 +13,10 @@ Each key in a schema corresponds to the name of a field referenced by rules and 
 
 .. note:: Ordering is strict for the ``csv`` parser.
 
-Example log schema::
 
-  {
-    "example_log_name": {
-      "parser": "json",
-      "schema": {
-        "field_1": "string",
-        "field_2": "integer",
-        "field_3": "boolean",
-        "field_4": "float",
-        "field_5": [],
-        "field_6": {}
-      }
-    }
-  }
-
-Example rule:
-
-.. code-block:: python
-
-  @rule(logs=['example_log_name'],              # the log_name as defined above
-        outputs=['slack'])
-  def example_rule(rec):
-    """Description of the rule"""
-    return (
-      rec['field_1'] == 'string-value' and      # fields as defined in the schema above
-      rec['field_2'] < 5 and
-      'random-key-name' in rec['field_6']
-    )
-
-
+***********
 Log Options
------------
-
+***********
 =================  =========  ======================
 Key                Required   Description
 -----------------  ---------  ----------------------
@@ -58,8 +25,11 @@ Key                Required   Description
 ``configuration``  No         Configuration options specific to this log type (see table below for more information)
 =================  =========  ======================
 
-Configuration Options
----------------------
+
+*****************************
+Settings in ``configuration``
+*****************************
+The below settings may *optionally* be defined within the ``configuration`` block.
 
 ===========================  ======================
 Key                          Description
@@ -76,8 +46,9 @@ Key                          Description
 ===========================  ======================
 
 
+***************
 Writing Schemas
----------------
+***************
 Schema values are strongly typed and enforced.
 
 Normal types:
@@ -92,11 +63,49 @@ Special types:
 * ``{}`` - zero or more key/value pairs of any type
 * ``[]`` - zero or more elements of any type
 
+
+Basic Schema Definition
+=======================
+
+Example Schema
+--------------
+.. code-block:: json
+
+  {
+    "example_log_name": {
+      "parser": "json",
+      "schema": {
+        "field_1": "string",
+        "field_2": "integer",
+        "field_3": "boolean",
+        "field_4": "float",
+        "field_5": [],
+        "field_6": {}
+      }
+    }
+  }
+
+
+Example ``rule``
+----------------
+.. code-block:: python
+
+  @rule(logs=['example_log_name'],              # the log_name as defined above
+        outputs=['slack'])
+  def example_rule(rec):
+    """Description of the rule"""
+    return (
+      rec['field_1'] == 'string-value' and      # fields as defined in the schema above
+      rec['field_2'] < 5 and
+      'random-key-name' in rec['field_6']
+    )
+
+
 Casting Normal Types
-~~~~~~~~~~~~~~~~~~~~
+====================
 
-Example Schema:
-
+Example Schema
+--------------
 .. code-block:: json
 
   {
@@ -110,12 +119,20 @@ Example Schema:
     }
   }
 
-Example Log Before Parse::
 
-  '{"field_1": "test-string", "field_2": "100", "field_3": "true"}'
+Example Log Before Parse
+------------------------
+.. code-block:: json
 
-Example Log After Parsing:
+  {
+    "field_1": "test-string",
+    "field_2": "100",
+    "field_3": "true"
+  }
 
+
+Example Log After Parsing
+-------------------------
 .. code-block:: python
 
   {
@@ -124,7 +141,10 @@ Example Log After Parsing:
     'field_3': True
   }
 
-Example Rule with Casted Types:
+
+Example ``rule``
+----------------
+Notice the boolean comparison for the newly-cast types.
 
 .. code-block:: python
 
@@ -132,19 +152,20 @@ Example Rule with Casted Types:
         outputs=['example_output'])
   def example_rule(rec):
     return (
-      field_2 == 100 and
-      field_3 is not False
+      rec['field_2'] == 100 and
+      rec['field_3'] is not False
     )
 
-Casting Special Types
-~~~~~~~~~~~~~~~~~~~~~
 
+Casting Special Types
+=====================
 Schemas can be as rigid or permissive as you want (see Example: osquery).
 
 Usage of the special types normally indicates a loose schema, in that not every part of the incoming data is described.
 
-Example Schema:
 
+Example Schema
+--------------
 .. code-block:: json
 
   {
@@ -158,12 +179,23 @@ Example Schema:
     }
   }
 
-Example Log Before Parse::
 
-  '{"field_1": "test-string", "field_2": "100", "field_3": {"data": "misc-data", "time": "1491584265"}}'
+Example Log Before Parse
+------------------------
+.. code-block:: json
 
-Example Log After Parsing:
+  {
+    "field_1": "test-string",
+    "field_2": "100",
+    "field_3": {
+      "data": "misc-data",
+      "time": "1491584265"
+    }
+  }
 
+
+Example Log After Parsing
+-------------------------
 .. code-block:: python
 
   {
@@ -175,10 +207,8 @@ Example Log After Parsing:
     }
   }
 
-Note the values of ``field_3`` are strings, since no type(s) can be defined with ``{}``.
-
-Example Rule with a loose Schema:
-
+Example Rule with a Loose Schema
+--------------------------------
 .. code-block:: python
 
   @rule(logs=['example_log_name'],
@@ -190,29 +220,30 @@ Example Rule with a loose Schema:
       last_hour(int(rec['field_3']['time']))
     )
 
-Also note the usage of ``req_subkeys``.
+Also note the usage of ``req_subkeys`` above.
 
 This keyword argument ensures that the parsed log contains the required subkeys of ``rec['field_3']['time']``.
 
-Optional Top Level Keys
-~~~~~~~~~~~~~~~~~~~~~~~
 
+Optional Top Level Keys
+=======================
 If incoming logs occasionally include/exclude certain fields, this can be expressed in the ``configuration`` settings as ``optional_top_level_keys``.
 
 The value of ``optional_top_level_keys`` should be an array, with entries corresponding to the actual key in the schema that is optional. Any keys specified in this array should also be included in the defined schema.
 
 If any of the ``optional_top_level_keys`` do not exist in the log being parsed, defaults are appended to the parsed log depending on the declared value.
 
-Example Schema:
+Example Schema
+--------------
+.. code-block:: json
 
-.. code-block: json
   {
     "test_log_type_json": {
       "parser": "json",
       "schema": {
         "key1": [],
         "key2": "string",
-        "key3": "integer"
+        "key3": "integer",
         "key4": "boolean",
         "key5": "string"
       },
@@ -225,38 +256,39 @@ Example Schema:
     }
   }
 
-Example Logs Before Parse::
+Example Log Before Parse
+------------------------
+.. code-block:: json
 
-  '{"key1": [1, 2, 3], "key2": "test", "key3": 100}'
-  '{"key1": [3, 4, 5], "key2": "test", "key3": 200, "key4": true}'
+  {
+    "key1": [
+      1,
+      2,
+      3
+    ],
+    "key2": "test",
+    "key3": 100,
+    "key4": true
+  }
 
-Example Logs After Parsing:
-
+Example Log After Parsing
+-------------------------
 .. code-block:: python
 
-  [
-    {
-      'key1': [1, 2, 3],
-      'key2': 'test',
-      'key3': 100,
-      'key4': False,          # default value for boolean
-      'key5': ''              # default value for string
-    },
-    {
-      'key1': [3, 4, 5],
-      'key2': 'test',
-      'key3': 200,
-      'key4': True,           # default is overridden by parsed log
-      'key5': ''              # default value for string
-    }
-  ]
+  {
+    'key1': [3, 4, 5],
+    'key2': 'test',
+    'key3': 200,
+    'key4': True,     # default is overridden by parsed log
+    'key5': ''        # default value for string is inserted
+  }
 
 
 JSON Parsing
-------------
+============
 
 Options
-~~~~~~~
+-------
 
 .. code-block:: json
 
@@ -278,11 +310,15 @@ Options
     }
   }
 
-.. note:: Options related to nested JSON are defined within ``configuration``. The ``json_path`` key should hold the JSON path to the records, while ``envelope_keys`` is utilized to capture keys in the root of our nested structure.
+.. note::
+
+  Options related to nested JSON are defined within ``configuration``. The ``json_path`` key
+  should hold the JSON path to the records, while ``envelope_keys`` is utilized to capture keys
+  in the root of our nested structure.
+
 
 Nested JSON
-~~~~~~~~~~~
-
+-----------
 Normally, a log contains all fields to be parsed at the top level:
 
 .. code-block:: json
@@ -334,14 +370,14 @@ To extract these nested records, use the ``configuration`` option ``json_path``:
     }
   }
 
-Log Patterns
-~~~~~~~~~~~~
 
+Log Patterns
+------------
 Log patterns provide the ability to differentiate log schemas that are nearly identical.
 
 They can be added by using the ``configuration`` option ``log_patterns``.
 
-Log patterns are a collection of key/value pairs where the key is the name of the field, and the value is a list of expressions the log parser will search for in said field of the log. 
+Log patterns are a collection of key/value pairs where the key is the name of the field, and the value is a list of expressions the log parser will search for in said field of the log.
 
 If *any* of the log patterns listed exists in a specific field, the parser will consider the data valid.
 
@@ -403,9 +439,9 @@ Example logs:
   }
 .. note:: The above schema **will** match the configuration above.
 
-Envelope Keys
-~~~~~~~~~~~~~
 
+Envelope Keys
+-------------
 Continuing with the example above, if the ``id`` and ``application`` keys in the root of the log are needed for analysis, they can be added by using the ``configuration`` option ``envelope_keys``:
 
 .. code-block:: json
@@ -453,9 +489,9 @@ The resultant parsed records:
     }
   ]
 
-Nested JSON Regex Parsing
-~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Nested JSON Regex Parsing
+-------------------------
 When using forwarders such as ``fluentd``, ``logstash``, or ``rsyslog``, log data may be wrapped with additional context keys:
 
 .. code-block:: json
@@ -490,12 +526,12 @@ To parse the nested JSON string as the record, use the following schema options:
 
 Optionally, you can omit envelope keys if they provide no value in rules.
 
+
 CSV Parsing
------------
+===========
 
 Options
-~~~~~~~
-
+-------
 .. code-block:: json
 
   {
@@ -519,9 +555,9 @@ The ``configuration`` setting is optional.
 
 Ordering of the fields within ``schema`` is strict.
 
-Nested CSV
-~~~~~~~~~~
 
+Nested CSV
+----------
 Some CSV logs have nested fields.
 
 Example logs::
@@ -548,11 +584,12 @@ You can support this with a schema similar to the following:
     }
   }
 
+
 KV Parsing
-----------
+==========
 
 Options
-~~~~~~~
+-------
 
 .. code-block:: json
 
@@ -595,12 +632,12 @@ Example log::
 
   "time=1039395819 user=bob result=pass"
 
+
 Syslog Parsing
---------------
+==============
 
 Options
-~~~~~~~
-
+-------
 .. code-block:: json
 
   {
@@ -619,9 +656,9 @@ The ``syslog`` parser has no ``configuration`` options.
 
 The schema is also static for this parser because of the regex used to parse records.
 
-Log Format
-~~~~~~~~~~
 
+Log Format
+----------
 The ``syslog`` parser matches events with the following format::
 
   timestamp(Month DD HH:MM:SS) host application: message
@@ -632,6 +669,6 @@ Example logs::
   Jan 10 19:35:13 vagrant-ubuntu-precise-32 ssh[13941]: login for user
 
 More Examples
--------------
+=============
 
-For a list of schema examples, see `Schema Examples <conf-schemas-examples.html>`_
+For a list of schema examples, see `Example Schemas <conf-schemas-examples.html>`_

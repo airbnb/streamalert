@@ -1,5 +1,6 @@
+################
 Cluster Settings
-================
+################
 
 Inbound data is directed to one of StreamAlert's *clusters*, each with its own data sources
 and classifier function. For many applications, one cluster may be enough. However, adding
@@ -26,15 +27,15 @@ Changes to cluster configuration can be applied with one of the following:
   $ python manage.py build  # Apply all changes
   $ python manage.py build --target cloudwatch_monitoring_*  # Only apply changes to CloudWatch Monitoring module for all clusters
 
-
+*****************
 Required Settings
------------------
+*****************
 There are a few top-level settings that are required within each cluster configuration file.
 Notably, these settings configure the ``data_sources`` and ``classifier_config``.
 
 
 Datasource Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
+========================
 A cluster's classifier function knows what types of data it should parse based on defined
 ``data_sources`` within each cluster configuration file in the ``conf/clusters`` directory.
 
@@ -61,9 +62,9 @@ to parse incoming data as types that are defined for each resource. If new types
 fed into one of the sources defined here, but this configuration is not updated, it will
 result in failed parses in the classifier function.
 
-Example
-```````
 
+Example
+-------
 .. code-block:: json
 
   {
@@ -100,59 +101,65 @@ Example
 
 
 Classifier Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~
+========================
 A cluster's classifier function is a required component and configurable with a few settings that
 may be tweaked to help with performance or cost. These exist as part of the ``classifier_config``
 block within each cluster configuration file in the ``conf/clusters`` directory.
 
 
-Example: Minimal Cluster
-````````````````````````
+Example: Basic Cluster
+----------------------
 .. code-block:: json
 
   {
     "id": "minimal-cluster",
-    "modules": {
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
-        }
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "kinesis": {
+        "abc_corporate_streamalert": [
+          "cloudwatch"
+        ]
       }
     }
   }
 
 
 Example: Classifier with SNS Inputs
-```````````````````````````````````
+-----------------------------------
 .. code-block:: json
 
   {
     "id": "sns-inputs",
-    "modules": {
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "inputs": {
-            "aws-sns": [
-              "arn:aws:sns:REGION:ACCOUNT:TOPIC_NAME"
-            ]
-          },
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
-        }
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "inputs": {
+        "aws-sns": [
+          "arn:aws:sns:REGION:ACCOUNT:TOPIC_NAME"
+        ]
+      },
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "sns": {
+        "TOPIC_NAME": [
+          "cloudwatch"
+        ]
       }
     }
   }
 
 
 Options
-```````
+-------
 ==========================  ===========  ===============
 **Key**                     **Default**  **Description**
 --------------------------  -----------  ---------------
@@ -165,8 +172,9 @@ Options
 ==========================  ===========  ===============
 
 
+*******
 Modules
--------
+*******
 Optional configuration settings are divided into different modules, which should be defined within
 the ``modules`` section of each cluster configuration file in the ``conf/clusters`` directory.
 
@@ -174,30 +182,35 @@ the ``modules`` section of each cluster configuration file in the ``conf/cluster
 .. _cloudtrail:
 
 CloudTrail
-~~~~~~~~~~
+==========
 StreamAlert has native support for enabling and monitoring `AWS CloudTrail <https://aws.amazon.com/cloudtrail/>`_.
 
 This module is implemented by `terraform/modules/tf_cloudtrail <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudtrail>`_.
 
 
 Example: CloudTrail via S3 Events
-`````````````````````````````````
+---------------------------------
 .. code-block:: json
 
   {
     "id": "cloudtrail-s3-events",
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "s3": {
+        "abc-prod-streamalert-cloudtrail": [
+          "cloudtrail"
+        ]
+      }
+    },
     "modules": {
       "cloudtrail": {
         "enable_s3_events": true
-      },
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
-        }
       }
     }
   }
@@ -208,11 +221,25 @@ against the ``cloudtrail:events`` log type.
 
 
 Example: CloudTrail via CloudWatch Logs
-```````````````````````````````````````
+---------------------------------------
 .. code-block:: json
 
   {
     "id": "cloudtrail-via-cloudwatch",
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "kinesis": {
+        "abc_prod_streamalert": [
+          "cloudwatch"
+        ]
+      }
+    },
     "modules": {
       "cloudtrail": {
         "send_to_cloudwatch": true,
@@ -227,15 +254,6 @@ Example: CloudTrail via CloudWatch Logs
       "kinesis_events": {
         "batch_size": 10,
         "enabled": true
-      },
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
-        }
       }
     }
   }
@@ -247,7 +265,7 @@ large files from S3. In this case, rules should be written against the ``cloudwa
 
 
 Options
-```````
+-------
 ==============================  ===================================================  ===============
 **Key**                         **Default**                                          **Description**
 ------------------------------  ---------------------------------------------------  ---------------
@@ -266,7 +284,7 @@ Options
 .. _cloudwatch_events:
 
 CloudWatch Events
-~~~~~~~~~~~~~~~~~
+=================
 StreamAlert supports ingestion of events published to CloudWatch Events for processing.
 
 This module is implemented by `terraform/modules/tf_cloudwatch_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch_events>`_.
@@ -274,12 +292,26 @@ This module is implemented by `terraform/modules/tf_cloudwatch_events <https://g
 .. note:: The :ref:`Kinesis module <kinesis>` must also be enabled.
 
 
-Example: CloudWatch Events Cluster
-``````````````````````````````````
+Example
+-------
 .. code-block:: json
 
   {
     "id": "cloudwatch-events-example",
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "kinesis": {
+        "abc_prod_streamalert": [
+          "cloudwatch"
+        ]
+      }
+    },
     "modules": {
       "cloudwatch_events": {
         "event_pattern": {
@@ -303,15 +335,6 @@ Example: CloudWatch Events Cluster
       "kinesis_events": {
         "batch_size": 100,
         "enabled": true
-      },
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
-        }
       }
     }
   }
@@ -325,7 +348,7 @@ the ``cloudwatch:events`` log type.
 
 
 Options
-```````
+-------
 =====================  ===================================  ===============
 **Key**                **Default**                          **Description**
 ---------------------  -----------------------------------  ---------------
@@ -336,7 +359,7 @@ Options
 .. _cloudwatch_logs:
 
 CloudWatch Logs
-~~~~~~~~~~~~~~~
+===============
 StreamAlert makes it easy to ingest
 `CloudWatch Logs <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html>`_
 from any AWS account. A common use case is to ingest and scan CloudTrail from multiple AWS accounts
@@ -347,12 +370,26 @@ from any AWS account. A common use case is to ingest and scan CloudTrail from mu
 This module is implemented by `terraform/modules/tf_cloudwatch_logs_destination <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_cloudwatch_logs_destination>`_.
 
 
-Example: CloudWatch Logs Cluster
-````````````````````````````````
+Example
+-------
 .. code-block:: json
 
   {
     "id": "cloudwatch-logs-example",
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "kinesis": {
+        "abc_prod_streamalert": [
+          "cloudwatch"
+        ]
+      }
+    },
     "modules": {
       "cloudwatch_logs_destination": {
         "cross_account_ids": [
@@ -374,15 +411,6 @@ Example: CloudWatch Logs Cluster
       "kinesis_events": {
         "batch_size": 100,
         "enabled": true
-      },
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
-        }
       }
     }
   }
@@ -399,7 +427,7 @@ The CloudWatch logs destination ARN will be
 
 
 Options
-```````
+-------
 =====================  ===========  ===============
 **Key**                **Default**  **Description**
 ---------------------  -----------  ---------------
@@ -410,7 +438,7 @@ Options
 
 
 CloudWatch Monitoring
-~~~~~~~~~~~~~~~~~~~~~
+=====================
 To ensure data collection is running smoothly, we recommend enabling
 `CloudWatch metric alarms <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html#CloudWatchAlarms>`_
 to monitor the health the classifier Lambda function(s) and, if applicable, the respective Kinesis stream.
@@ -418,12 +446,26 @@ to monitor the health the classifier Lambda function(s) and, if applicable, the 
 This module is implemented by `terraform/modules/tf_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_monitoring>`_.
 
 
-Example: Enable CloudWatch Monitoring
-`````````````````````````````````````
+Example
+-------
 .. code-block:: json
 
   {
     "id": "cloudwatch-monitoring-example",
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "kinesis": {
+        "abc_prod_streamalert": [
+          "cloudwatch"
+        ]
+      }
+    },
     "modules": {
       "cloudwatch_monitoring": {
         "enabled": true,
@@ -434,15 +476,6 @@ Example: Enable CloudWatch Monitoring
           "lambda_throttle_error_threshold": 0,
           "kinesis_iterator_age_error_threshold": 1000000,
           "kinesis_write_throughput_exceeded_threshold": 10
-        }
-      },
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
         }
       }
     }
@@ -459,7 +492,7 @@ A total of 5 alarms will be created:
 
 
 Options
-```````
+-------
 ==========================  ===========  ===============
 **Key**                     **Default**  **Description**
 --------------------------  -----------  ---------------
@@ -499,7 +532,7 @@ The following options are available in the ``settings`` dictionary:
 
 
 Receiving CloudWatch Metric Alarms
-``````````````````````````````````
+----------------------------------
 By default, StreamAlert automatically creates a ``<prefix>_streamalert_monitoring`` SNS topic that receives
 CloudWatch metric alarm notifications. If you would instead like to use an existing SNS topic for
 metric alarms, see the Monitoring configuration settings for how
@@ -511,8 +544,8 @@ simply `subscribe to the SNS topic <https://docs.aws.amazon.com/sns/latest/dg/Su
 
 .. _kinesis:
 
-Kinesis Data Streams
-~~~~~~~~~~~~~~~~~~~~
+Kinesis (Data Streams)
+======================
 This module creates a
 `Kinesis Data Stream <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_
 in the cluster, which is the most common approach for StreamAlert data ingestion.
@@ -526,12 +559,26 @@ can have its own data stream whose shard counts can be configured individually.
 This module is implemented by `terraform/modules/tf_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_kinesis_streams>`_.
 
 
-Example: Kinesis Cluster
-````````````````````````
+Example
+-------
 .. code-block:: json
 
   {
     "id": "kinesis-example",
+    "classifier_config": {
+      "enable_custom_metrics": true,
+      "log_level": "info",
+      "log_retention_days": 14,
+      "memory": 128,
+      "timeout": 60
+    },
+    "data_sources": {
+      "kinesis": {
+        "abc_prod_streamalert": [
+          "cloudwatch"
+        ]
+      }
+    },
     "modules": {
       "kinesis": {
         "streams": {
@@ -557,15 +604,6 @@ Example: Kinesis Cluster
       "kinesis_events": {
         "batch_size": 100,
         "enabled": true
-      },
-      "streamalert": {
-        "classifier_config": {
-          "enable_custom_metrics": true,
-          "log_level": "info",
-          "log_retention_days": 14,
-          "memory": 128,
-          "timeout": 60
-        }
       }
     }
   }
@@ -576,7 +614,7 @@ Terraform to print the IAM username and access keypair for the newly created use
 
 
 Options
-```````
+-------
 The ``kinesis`` module expects a single key (``streams``) whose value is a dictionary with the
 following options:
 
@@ -593,7 +631,7 @@ following options:
 
 
 Kinesis Scaling
-```````````````
+---------------
 If the need arises to scale a Kinesis Stream, the process below is recommended.
 
 First, update the Kinesis Stream shard count with the following command:
@@ -623,7 +661,7 @@ Finally, apply the Terraform changes to ensure a consistent state.
 
 
 Kinesis Events
-~~~~~~~~~~~~~~
+==============
 The Kinesis Events module connects a Kinesis Stream to the classifier Lambda function.
 
 .. note:: The :ref:`Kinesis module <kinesis>` must also be enabled.
@@ -632,7 +670,7 @@ This module is implemented by `terraform/modules/tf_kinesis_events <https://gith
 
 
 Options
-```````
+-------
 ===============  ============  ===============
 **Key**          **Default**   **Description**
 ---------------  ------------  ---------------
@@ -644,8 +682,7 @@ Options
 .. _flow_logs:
 
 VPC Flow Logs
-~~~~~~~~~~~~~
-
+=============
 `VPC Flow Logs <https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html>`_
 capture information about the IP traffic going to and from an AWS VPC.
 
@@ -656,13 +693,26 @@ When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 This module is implemented by `terraform/modules/tf_flow_logs <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_flow_logs>`_.
 
 
-Example: Flow Logs Cluster
-``````````````````````````
-
+Example
+-------
 .. code-block:: json
 
     {
       "id": "prod",
+      "classifier_config": {
+        "enable_custom_metrics": true,
+        "log_level": "info",
+        "log_retention_days": 14,
+        "memory": 128,
+        "timeout": 60
+      },
+      "data_sources": {
+        "kinesis": {
+          "abc_prod_streamalert": [
+            "cloudwatch:flow_logs"
+          ]
+        }
+      },
       "modules": {
         "flow_logs": {
           "enis": [],
@@ -683,15 +733,6 @@ Example: Flow Logs Cluster
         "kinesis_events": {
           "batch_size": 2,
           "enabled": true
-        },
-        "streamalert": {
-          "classifier_config": {
-            "enable_custom_metrics": true,
-            "log_level": "info",
-            "log_retention_days": 14,
-            "memory": 128,
-            "timeout": 60
-          }
         }
       }
     }
@@ -702,7 +743,7 @@ Logs Subscription Filter to that log group to send to Kinesis for consumption by
 
 
 Options
-```````
+-------
 =====================  =============================================================================================================================================  ===============
 **Key**                **Default**                                                                                                                                    **Description**
 ---------------------  ---------------------------------------------------------------------------------------------------------------------------------------------  ---------------
@@ -720,7 +761,7 @@ Options
 .. _s3_events:
 
 S3 Events
-~~~~~~~~~
+=========
 You can enable `S3 event notifications <https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html>`_
 on any of your S3 buckets to invoke the StreamAlert classifier function. When the StreamAlert classifier
 function receives this notification, it downloads the object from S3 and runs each record
@@ -728,13 +769,31 @@ through the classification logic.
 
 This module is implemented by `terraform/modules/tf_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_s3_events>`_.
 
-Example: S3 Events Cluster
-``````````````````````````
+Example
+-------
+.. _s3_event_example:
 
 .. code-block:: json
 
     {
       "id": "s3-events-example",
+      "classifier_config": {
+        "enable_custom_metrics": true,
+        "log_level": "info",
+        "log_retention_days": 14,
+        "memory": 128,
+        "timeout": 60
+      },
+      "data_sources": {
+        "s3": {
+          "bucket_name_01": [
+            "cloudtrail"
+          ],
+          "bucket_name_02": [
+            "cloudtrail"
+          ]
+        }
+      },
       "modules": {
         "s3_events": {
           "bucket_name_01": [
@@ -747,15 +806,6 @@ Example: S3 Events Cluster
             }
           ],
           "bucket_name_02": []
-        },
-        "streamalert": {
-          "classifier_config": {
-            "enable_custom_metrics": true,
-            "log_level": "info",
-            "log_retention_days": 14,
-            "memory": 128,
-            "timeout": 60
-          }
         }
       }
     }
@@ -767,7 +817,7 @@ classifier to download objects from each bucket.
 
 
 Options
-```````
+-------
 The ``s3_events`` module expects a *dictionary/map* of bucket names, where the value for each key
 (bucket name) is a list of maps. Each map in the list can include optional prefixes (``filter_prefix``)
 and suffixes (``filter_suffix``) to which the notification should be applied. The mere existence of a
@@ -775,5 +825,6 @@ bucket name in this map within this module implicitly enables event notification
 Note that the value specified for the map of prefixes and suffixes can be an empty list (``[]``).
 An empty list will enable event notifications for **all** objects created in the bucket by default.
 
-See the above example for how prefixes/suffixes can be (optionally) specified (as in "bucket_name_01")
-and how to use the empty list to enable bucket-wide notifications (as in "bucket_name_02").
+See the above :ref:`example <s3_event_example>` for how prefixes/suffixes can be (optionally)
+specified (as in "bucket_name_01") and how to use the empty list to enable bucket-wide
+notifications (as in "bucket_name_02").

@@ -1,6 +1,6 @@
+#####
 Rules
-=====
-
+#####
 * Rules contain data analysis and alerting logic
 * Rules are written in native Python, not a proprietary language
 * A Rule can utilize any Python function or library
@@ -9,9 +9,10 @@ Rules
 * Rule alerts can be sent to one or more outputs, like S3, PagerDuty or Slack
 * Rules can be unit and integration tested
 
-Getting Started
----------------
 
+***************
+Getting Started
+***************
 All rules are located in the ``rules/`` directory.
 
 Within this directory are two folders: ``community/`` and ``default/``.
@@ -28,13 +29,16 @@ You may create any folder structure desired, as all rules folders are imported r
 
 .. note:: If you create additional folders within the ``rules`` directory, be sure to include a blank ``__init__.py`` file.
 
+
+********
 Overview
---------
+********
 A StreamAlert rule is a Python method that takes a parsed log record (dictionary) and returns True or False.
 A return value of ``True`` means an alert will be generated.
 
+
 Example: The Basics
-~~~~~~~~~~~~~~~~~~~
+===================
 The simplest possible rule looks like this:
 
 .. code-block:: python
@@ -49,9 +53,9 @@ The simplest possible rule looks like this:
 This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined in a schema file in the ``conf/schemas`` directory, i.e ``conf/schemas/cloudwatch.json``.
 In this case, *all* CloudWatch events will generate an alert, which will be sent to the `alerts Athena table <historical-search.html#athena-user-guide>`_.
 
-Example: Logic & Outputs
-~~~~~~~~~~~~~~~~~~~~~~~~
 
+Example: Logic & Outputs
+========================
 Let's modify the rule to page the security team if anyone ever uses AWS root credentials:
 
 .. code-block:: python
@@ -71,11 +75,11 @@ In order for this to work, your `datasources <conf-datasources.html>`_ and `outp
 * CloudTrail logs are being sent to StreamAlert via CloudWatch events
 * The ``pagerduty:csirt`` and ``slack:security`` outputs have the proper credentials
 
+
 .. _advanced_example:
 
 Example: More Rule Options
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+==========================
 The previous example suffers from the following problems:
 
 * It only works for CloudTrail data sent via CloudWatch
@@ -89,7 +93,7 @@ We can generalize the rule to alleviate these issues:
   from rules.helpers.base import get_first_key  # Find first key recursively in record
   from streamalert.shared.rule import rule
 
-  # This could alternatively be defined in rules/matchers/matchers.py to be shareable
+  # This could alternatively be defined in matchers/matchers.py to be shareable
   _PROD_ACCOUNTS = {'111111111111', '222222222222'}
 
   def prod_account(record):
@@ -119,8 +123,10 @@ These helpers are defined in ``rules/helpers/base.py`` and can be called from wi
 
 Since rules are written in Python, you can make them as sophisticated as you want!
 
+
+************
 Rule Options
-------------
+************
 The following table provides an overview of each rule option, with more details below:
 
 =====================  ========================  ===============
@@ -136,148 +142,147 @@ The following table provides an overview of each rule option, with more details 
 ``req_subkeys``        ``Dict[str, List[str]]``  Subkeys which must be present in the record
 =====================  ========================  ===============
 
-context
-~~~~~~~
 
-``context`` can pass extra instructions to the alert processor for more precise routing:
+:context:
 
-.. code-block:: python
+  ``context`` can pass extra instructions to the alert processor for more precise routing:
 
-  # Context provided to the pagerduty-incident output with
-  # instructions to assign the incident to a user.
+  .. code-block:: python
 
-  @rule(logs=['osquery:differential'],
-        outputs=['pagerduty:csirt'],
-        context={'pagerduty-incident': {'assigned_user': 'valid_user'}})
-  def my_rule(record, context):
-      context['pagerduty-incident']['assigned_user'] = record['username']
-      return True
+    # Context provided to the pagerduty-incident output with
+    # instructions to assign the incident to a user.
 
-datatypes
-~~~~~~~~~
+    @rule(logs=['osquery:differential'],
+          outputs=['pagerduty:csirt'],
+          context={'pagerduty-incident': {'assigned_user': 'valid_user'}})
+    def my_rule(record, context):
+        context['pagerduty-incident']['assigned_user'] = record['username']
+        return True
 
-``conf/normalized_types.json`` defines data normalization, whereby you can write rules against a common type instead of a specific field or schema:
+:datatypes:
 
-.. code-block:: python
+  ``conf/normalized_types.json`` defines data normalization, whereby you can write rules against a common type instead of a specific field or schema:
 
-  """These rules apply to several different log types, defined in conf/normalized_types.json"""
-  from streamalert.shared.rule import rule
-  from streamalert.shared.normalize import Normalizer
+  .. code-block:: python
 
-  @rule(datatypes=['sourceAddress'], outputs=['aws-sns:my-topic'])
-  def ip_watchlist_hit(record):
-      """Source IP address matches watchlist."""
-      return '127.0.0.1' in Normalizer.get_values_for_normalized_type(record, 'sourceAddress')
+    """These rules apply to several different log types, defined in conf/normalized_types.json"""
+    from streamalert.shared.rule import rule
+    from streamalert.shared.normalize import Normalizer
 
-  @rule(datatypes=['command'], outputs=['aws-sns:my-topic'])
-  def command_etc_shadow(record):
-      """Command line arguments include /etc/shadow"""
-      return any(
-          '/etc/shadow' in cmd.lower()
-          for cmd in Normalizer.get_values_for_normalized_type(record, 'command')
-      )
+    @rule(datatypes=['sourceAddress'], outputs=['aws-sns:my-topic'])
+    def ip_watchlist_hit(record):
+        """Source IP address matches watchlist."""
+        return '127.0.0.1' in Normalizer.get_values_for_normalized_type(record, 'sourceAddress')
 
-logs
-~~~~
+    @rule(datatypes=['command'], outputs=['aws-sns:my-topic'])
+    def command_etc_shadow(record):
+        """Command line arguments include /etc/shadow"""
+        return any(
+            '/etc/shadow' in cmd.lower()
+            for cmd in Normalizer.get_values_for_normalized_type(record, 'command')
+        )
 
-``logs`` define the log schema(s) supported by the rule.
+:logs:
 
-Log `sources <conf-datasources.html>`_ are defined under the ``data_sources`` field for a cluster defined in ``conf/clusters/<cluster>.json``
-and their `schemas <conf-schemas.html>`_ are defined in one or more files in the ``conf/schemas`` directory.
+  ``logs`` define the log schema(s) supported by the rule.
 
-.. note:: Either ``logs`` or ``datatypes`` must be specified for each rule
+  Log `sources <conf-datasources.html>`_ are defined under the ``data_sources`` field for a cluster defined in ``conf/clusters/<cluster>.json``
+  and their `schemas <conf-schemas.html>`_ are defined in one or more files in the ``conf/schemas`` directory.
 
-matchers
-~~~~~~~~
+  .. note::
 
-``matchers`` define conditions that must be satisfied in order for the rule to be evaluated.
-Default matchers are defined in ``rules/matchers/matchers.py`` but can also be defined
-in the rules file (see :ref:`example above <advanced_example>`).
+    Either ``logs`` or ``datatypes`` must be specified for each rule
 
-A matcher function should accept a single argument, just like rules. That argument will be the
-record that is being evaluated by the rule.
+:matchers:
 
-Rules can utilize matchers to reduce redundancy of code, allowing you to define the logic once
-and easily use it across multiple rules.
+  ``matchers`` define conditions that must be satisfied in order for the rule to be evaluated.
+  Default matchers are defined in ``matchers/matchers.py`` but can also be defined
+  in the rules file (see :ref:`example above <advanced_example>`).
 
-merge_by_keys / merge_window_mins
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  A matcher function should accept a single argument, just like rules. That argument will be the
+  record that is being evaluated by the rule.
 
-.. note:: Specify neither or both of these fields, not one of them in isolation
+  Rules can utilize matchers to reduce redundancy of code, allowing you to define the logic once
+  and easily use it across multiple rules.
 
-For a better alert triage experience, you can merge alerts whose records share one or more fields in common:
+:merge_by_keys \/ merge_window_mins:
 
-.. code-block:: python
+  .. note:: Specify neither or both of these fields, not one of them in isolation
 
-  @rule(logs=['your-schema'],
-        merge_by_keys=['alpha', 'beta', 'gamma'],
-        merge_window_mins=5):
-  def merged_rule(record):
-      return True
+  For a better alert triage experience, you can merge alerts whose records share one or more fields in common:
 
-The alert merger Lambda function will buffer all of these alerts until 5 minutes have elapsed,
-at which point
+  .. code-block:: python
 
-.. code-block:: json
+    @rule(logs=['your-schema'],
+          merge_by_keys=['alpha', 'beta', 'gamma'],
+          merge_window_mins=5):
+    def merged_rule(record):
+        return True
 
-  {
-    "alpha": "A",
-    "nested": {
-      "beta": "B"
-    },
-    "gamma": [1, 2, 3],
-    "timestamp": 123
-  }
+  The alert merger Lambda function will buffer all of these alerts until 5 minutes have elapsed,
+  at which point
 
-would be automatically merged with
+  .. code-block:: json
 
-.. code-block:: json
+    {
+      "alpha": "A",
+      "nested": {
+        "beta": "B"
+      },
+      "gamma": [1, 2, 3],
+      "timestamp": 123
+    }
 
-  {
-    "alpha": "A",
-    "nested": {
-      "beta": "B",
-      "extra": "field"
-    },
-    "gamma": [1, 2, 3],
-    "timestamp": 456
-  }
+  would be automatically merged with
 
-A single consolidated alert will be sent showing the common keys and the record differences.
-*All* of the specified merge keys must have the same value in order for two records to be merged,
-but those keys can be nested anywhere in the record structure.
+  .. code-block:: json
 
-.. note:: The original (unmerged) alert will always be sent to `Athena <historical-search.html#athena-user-guide>`_.
+    {
+      "alpha": "A",
+      "nested": {
+        "beta": "B",
+        "extra": "field"
+      },
+      "gamma": [1, 2, 3],
+      "timestamp": 456
+    }
 
-outputs
-~~~~~~~
+  A single consolidated alert will be sent showing the common keys and the record differences.
+  *All* of the specified merge keys must have the same value in order for two records to be merged,
+  but those keys can be nested anywhere in the record structure.
 
-Defines the alert destination if the return value of a rule is ``True``.
-Alerts are always sent to an `Athena table <historical-search.html#athena-user-guide>`_ which is easy to query.
-Any number of additional `outputs <outputs.html>`_ can be specified.
+  .. note::
 
-req_subkeys
-~~~~~~~~~~~
+    The original (unmerged) alert will always be sent to `Athena <historical-search.html#athena-user-guide>`_.
 
-``req_subkeys`` defines sub-keys that must exist in the incoming record (with a non-zero value) in order for it to be evaluated.
+:outputs:
 
-This feature should be used if you have logs with a loose schema defined in order to avoid raising a ``KeyError`` in rules.
+  Defines the alert destination if the return value of a rule is ``True``.
+  Alerts are always sent to an `Athena table <historical-search.html#athena-user-guide>`_ which is easy to query.
+  Any number of additional `outputs <outputs.html>`_ can be specified.
 
-.. code-block:: python
+:req_subkeys:
 
-  # The 'columns' key must contain sub-keys of 'address' and 'hostnames'
+  ``req_subkeys`` defines sub-keys that must exist in the incoming record (with a non-zero value) in order for it to be evaluated.
 
-  @rule(logs=['osquery:differential'],
-        outputs=['aws-lambda:my-function'],
-        req_subkeys={'columns':['address', 'hostnames']})
-  def osquery_host_check(rec):
-      # If all logs did not have the 'address' sub-key, this rule would
-      # throw a KeyError.  Using req_subkeys avoids this.
-      return rec['columns']['address'] == '127.0.0.1'
+  This feature should be used if you have logs with a loose schema defined in order to avoid raising a ``KeyError`` in rules.
 
+  .. code-block:: python
+
+    # The 'columns' key must contain sub-keys of 'address' and 'hostnames'
+
+    @rule(logs=['osquery:differential'],
+          outputs=['aws-lambda:my-function'],
+          req_subkeys={'columns':['address', 'hostnames']})
+    def osquery_host_check(rec):
+        # If all logs did not have the 'address' sub-key, this rule would
+        # throw a KeyError.  Using req_subkeys avoids this.
+        return rec['columns']['address'] == '127.0.0.1'
+
+
+***************
 Disabling Rules
----------------
-
+***************
 In the event that a rule must be temporarily disabled, the ``@disable`` decorator can be used.
 This allows you to keep the rule definition and tests in place instead of having to remove them entirely:
 
@@ -291,7 +296,7 @@ This allows you to keep the rule definition and tests in place instead of having
       return True
 
 
+*******
 Testing
--------
-
+*******
 For instructions on how to create and run tests to validate rules, see `Testing <testing.html>`_.

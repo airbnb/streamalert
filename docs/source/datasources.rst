@@ -1,25 +1,26 @@
+###########
 Datasources
-===========
-
+###########
 StreamAlert supports the following services as datasources:
 
 * Amazon S3
-* AWS Kinesis Streams
-* AWS SNS
+* Amazon Kinesis Data Streams
+* Amazon Simple Notification Service (SNS)
 
 These services above can accept data from:
 
 * Log Forwarding Agents
 * Custom Applications
 * AWS CloudTrail
-* AWS CloudWatch Events
+* Amazon CloudWatch Events
 * And more
 
 To configure datasources, read `datasource configuration <conf-datasources.html>`_
 
-Amazon S3
----------
 
+*********
+Amazon S3
+*********
 StreamAlert supports data analysis and alerting for logs written to Amazon S3 buckets.
 This is achieved via Amazon S3 Event Notifications from an event type of ``s3:ObjectCreated:*``.
 
@@ -35,18 +36,19 @@ Example non-AWS use-cases:
 * Web Application logs (Apache, nginx, ...)
 * SaaS logs (Box, GSuite, OneLogin, ...)
 
-AWS Kinesis Streams
--------------------
 
+**********************
+Amazon Kinesis Streams
+**********************
 StreamAlert also utilizes AWS Kinesis Streams for real-time data ingestion and analysis.
 By default, StreamAlert creates an AWS Kinesis stream per `cluster <clusters.html>`_.
 
-Sending to AWS Kinesis Streams
-------------------------------
+
+Sending to Amazon Kinesis Streams
+=================================
 
 Log Forwarding Agents
-~~~~~~~~~~~~~~~~~~~~~
-
+---------------------
 Log forwarding agents that support AWS Kinesis Streams:
 
 * `aws-kinesis-agent <http://docs.aws.amazon.com/streams/latest/dev/writing-with-agents.html>`_
@@ -54,16 +56,17 @@ Log forwarding agents that support AWS Kinesis Streams:
 * `logstash <https://github.com/samcday/logstash-output-kinesis>`_
 * `osquery <https://osquery.readthedocs.io/en/stable/deployment/aws-logging/>`_
 
-Code/Applications
-~~~~~~~~~~~~~~~~~
 
+Code/Applications
+-----------------
 Code can send data to an AWS Kinesis Stream via:
 
 * `AWS KPL (Amazon Kinesis Producer Library) <http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html>`_
 
-AWS SNS
--------
 
+**********
+Amazon SNS
+**********
 Amazon Simple Notification Service (SNS) is a flexible, fully managed pub/sub messaging notification service for coordinating the delivery of messages to subscribing endpoints and clients.
 
 StreamAlert can utilize SNS as an input for processing.

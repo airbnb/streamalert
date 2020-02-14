@@ -1,13 +1,13 @@
+#################
 Historical Search
-=================
+#################
 
-Athena Overview
----------------
-AWS Athena is a Serverless query service used to analyze large volumes of data stored in S3.
+The historical data retention and search feature in StreamAlert is backed by Amazon Athena and S3.
+Amazon Athena is a serverless query service used to analyze large volumes of data stored in S3.
 
 Data in Athena is searchable via ANSI SQL and powered by Presto.
 
-StreamAlert uses AWS Athena for historical searching of:
+StreamAlert uses Amazon Athena for historical searching of:
 
 * Generated alerts from StreamAlert, enabled within StreamAlert out of the box
 * All incoming log data sent to StreamAlert, configurable after StreamAlert initialization
@@ -19,16 +19,18 @@ This works by:
 * Using a Lambda function to periodically refresh Athena to make the data searchable
 
 
-Concepts
-~~~~~~~~
-* `AWS Athena details <https://aws.amazon.com/athena/details/>`_
-* `AWS Athena tables <http://docs.aws.amazon.com/athena/latest/ug/creating-tables.html>`_
+****************
+General Concepts
+****************
+* `Amazon Athena details <https://aws.amazon.com/athena/details/>`_
+* `Amazon Athena tables <http://docs.aws.amazon.com/athena/latest/ug/creating-tables.html>`_
 * `AWS Lambda FAQ <https://aws.amazon.com/athena/faqs/>`_
 * `AWS Lambda pricing <https://aws.amazon.com/athena/pricing/>`_
 
 
+***************
 Getting Started
-~~~~~~~~~~~~~~~
+***************
 Searching of alerts is enabled within StreamAlert out of the box, and can be further extended to search all incoming log data.
 
 To create tables for searching data sent to StreamAlert, run:
@@ -46,125 +48,8 @@ For example, if you have 'cloudwatch' in your sources, you would want to create 
 Repeat this process for all relevant data tables in your deployment.
 
 
-Configuration: Kinesis Firehose
--------------------------------
-
-Alerts
-~~~~~~
-By default, StreamAlert will send all alert payloads to S3 for historical retention and searching.
-These payloads include the original record data that triggered the alert, as well as the rule that
-was triggered, the source of the log, the date/time the alert was triggered, the cluster from
-which the log came, and a variety of other fields.
-
-
-Configuration
-`````````````
-The following ``alerts_firehose`` configuration settings can be defined within the ``infrastructure``
-section of ``global.json``:
-
-.. code-block:: json
-
-  {
-    "infrastructure": {
-      "alerts_firehose": {
-        "bucket_name": "<prefix>-streamalerts",
-        "buffer_size": 64,
-        "buffer_interval": 300,
-        "cloudwatch_log_retention": 14,
-        "compression_format": "GZIP"
-      }
-    }
-  }
-
-
-Options
-'''''''
-=============================  ========  ==========================  ===========
-Key                            Required  Default                     Description
------------------------------  --------  --------------------------  -----------
-``bucket_name``                No        ``<prefix>-streamalerts``   Bucket name to override the default name
-``buffer_size``                No        ``64 (MB)``                 Buffer incoming data to the specified size, in megabytes, before delivering it to S3
-``buffer_interval``            No        ``300 (seconds)``           Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
-``compression_format``         No        ``GZIP``                    The compression algorithm to use on data stored in S3
-``cloudwatch_log_retention``   No        ``14 (days)``               Days for which to retain error logs that are sent to CloudWatch in relation to this Kinesis Firehose Delivery Stream
-=============================  ========  ==========================  ===========
-
-Classified Data
-~~~~~~~~~~~~~~~
-StreamAlert also supports sending all logs to S3 for historical retention and searching based on
-classified type of the log.
-
-Configuration
-`````````````
-When enabling the Kinesis Firehose module, a dedicated Delivery Stream is created for each log type.
-
-For example, if the ``data_sources`` for a cluster named prod defined in ``conf/clusters/prod.json``
-contains the following:
-
-.. code-block:: json
-
-  {
-    "data_sources": {
-      "kinesis": {
-        "example_prod_streamalert": [
-          "cloudwatch",
-          "osquery"
-        ]
-      },
-      "s3": {
-        "example-prod-streamalert-cloudtrail": [
-          "cloudtrail"
-        ]
-      }
-    }
-  }
-
-And the following schemas are defined across one or more files in the ``conf/schemas`` directory:
-
-.. code-block:: json
-
-  {
-    "cloudwatch:events": {
-      "parser": "json",
-      "schema": {"key": "type"}
-    },
-    "cloudwatch:flow_logs": {
-      "parser": "json",
-      "schema": {"key": "type"}
-    },
-    "osquery": {
-      "parser": "json",
-      "schema": {"key": "type"}
-    },
-    "cloudtrail": {
-      "parser": "json",
-      "schema": {"key": "type"}
-    }
-  }
-
-The Firehose module will create four Delivery Streams, one for each type:
-
-- ``<prefix>_streamalert_data_cloudwatch_events``
-- ``<prefix>_streamalert_data_cloudwatch_flow_logs``
-- ``<prefix>_streamalert_data_osquery``
-- ``<prefix>_streamalert_data_cloudtrail``
-
-Each Delivery Stream delivers data to the same S3 bucket created by the module in a prefix based on the corresponding log type:
-
-- ``arn:aws:s3:::<prefix>-streamalert-data/cloudwatch_events/YYYY/MM/DD/data_here``
-- ``arn:aws:s3:::<prefix>-streamalert-data/cloudwatch_flow_logs/YYYY/MM/DD/data_here``
-- ``arn:aws:s3:::<prefix>-streamalert-data/osquery/YYYY/MM/DD/data_here``
-- ``arn:aws:s3:::<prefix>-streamalert-data/cloudtrail/YYYY/MM/DD/data_here``
-
-
-Limits
-~~~~~~
-* `Kinesis Firehose Limits <https://docs.aws.amazon.com/firehose/latest/dev/limits.html>`_
-* `Kinesis Firehose Delivery Settings <http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html>`_
-
-
 Deploying
-~~~~~~~~~
+=========
 Once the options above are set, deploy the infrastructure with the following commands:
 
 .. code-block:: bash
@@ -173,25 +58,26 @@ Once the options above are set, deploy the infrastructure with the following com
   $ python manage.py deploy --function classifier
 
 
+*******************
 Athena Architecture
--------------------
+*******************
 The Athena Partition Refresh function exists to periodically refresh Athena tables, enabling the searchability of alerts and log data.
 
 The default refresh interval is 10 minutes but can be configured by the user.
 
 
 Concepts
-~~~~~~~~
+========
 The Athena Partition Refresh function utilizes:
 
-* `AWS S3 Event Notifications <http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html>`_
-* `AWS SQS <https://aws.amazon.com/sqs/details/>`_
+* `Amazon S3 Event Notifications <http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html>`_
+* `Amazon SQS <https://aws.amazon.com/sqs/details/>`_
 * `AWS Lambda Invocations by Schedule <http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html>`_
-* `AWS Athena Repair Table <https://docs.aws.amazon.com/athena/latest/ug/msck-repair-table.html>`_
+* `Amazon Athena Repair Table <https://docs.aws.amazon.com/athena/latest/ug/msck-repair-table.html>`_
 
 
 Diagram
-```````
+-------
 .. figure:: ../images/athena-refresh-arch.png
   :alt: StreamAlert Athena Refresh Partition Diagram
   :align: center
@@ -199,7 +85,7 @@ Diagram
 
 
 Internals
-`````````
+---------
 Each time the Athena Partition Refresh Lambda function is invoked, it does the following:
 
 * Polls the SQS queue for the latest S3 event notifications (up to 100)
@@ -209,8 +95,9 @@ Each time the Athena Partition Refresh Lambda function is invoked, it does the f
 * Refreshes the Athena tables for data in the relevant S3 buckets, as specified below in the list of ``buckets``
 * Deletes messages off the queue once partitions are created
 
+
 Configure Lambda Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~
+=========================
 Open ``conf/lambda.json``, and fill in the following options:
 
 ===================================  ========  ====================   ===========
@@ -243,7 +130,7 @@ Key                                  Required  Default                Descriptio
 
 
 Deployment
-~~~~~~~~~~
+==========
 If any of the settings above are changed from the initialized defaults, the Lambda function will need to be deployed in order for them to take effect:
 
 .. code-block:: bash
@@ -254,7 +141,7 @@ Going forward, if the deploy flag ``--function all`` is used, it will redeploy t
 
 
 Monitoring
-``````````
+----------
 To ensure the function is operating as expected, monitor the following SQS metrics for ``<prefix>_streamalert_athena_s3_notifications``:
 
 * ``NumberOfMessagesReceived``
@@ -268,17 +155,18 @@ If the ``NumberOfMessagesSent`` is much higher than the other two metrics, the `
 For high throughput production environments, an interval of 1 to 2 minutes is recommended.
 
 
+*****************
 Athena User Guide
------------------
+*****************
 
 Concepts
-~~~~~~~~
+========
 * `SQL <https://www.w3schools.com/sql/sql_intro.asp>`_
 * `Athena Partitions <http://docs.aws.amazon.com/athena/latest/ug/partitions.html>`_
 
 
 Querying Data
-~~~~~~~~~~~~~
+=============
 All alerts generated by StreamAlert will be sent to an ``alerts`` S3 bucket via Firehose. These will then be searchable within Athena.
 
 To get started with querying of this data, navigate to the AWS Console, click Services, and type 'Athena'.
@@ -308,7 +196,7 @@ The query shown above will show the most recent 10 alerts.
 
 
 Tips
-~~~~
+====
 Data is partitioned in the following format ``YYYY-MM-DD-hh-mm``.
 
 An example is ``2017-08-01-22-00``.
