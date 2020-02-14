@@ -38,7 +38,7 @@ class TestKinesisClient:
         )
 
     def test_success(self):
-        """KinesisClient - send_query_results - positive case"""
+        """StreamQuery - KinesisClient - send_query_results - positive case"""
         query_pack = MagicMock()
         query_pack.query_result.headers = ['header1', 'header2']
         query_pack.query_result.data_as_dicts = [{'header1': 'a', 'header2': 'b'}]
@@ -66,7 +66,7 @@ class TestKinesisClient:
         self._logger.info.assert_any_call('Done.')
 
     def test_failure(self):
-        """KinesisClient - send_query_results - negative case"""
+        """StreamQuery - KinesisClient - send_query_results - negative case"""
         query_pack = MagicMock()
         query_pack.query_result.headers = ['header1', 'header2']
         query_pack.query_result.data_as_dicts = [{'header1': 'a', 'header2': 'b'}]
@@ -91,4 +91,34 @@ class TestKinesisClient:
         self._kinesis.send_query_results(query_pack)
 
         self._logger.info.assert_any_call('  ERROR!')
+        self._logger.info.assert_any_call('Done.')
+
+    def test_error_results(self):
+        """StreamQuery - KinesisClient - send_error_results - positive case"""
+        query_pack = MagicMock()
+        query_pack.query_result.headers = ['header1', 'header2']
+        query_pack.query_result.data_as_dicts = [{'header1': 'a', 'header2': 'b'}]
+        query_pack.query_result.count = 1
+
+        query_pack.query_execution.query_execution_id = '1111-aaaa-bbbb-2222'
+
+        query_pack.query_pack_configuration.name = 'test_name'
+        query_pack.query_pack_configuration.description = 'description?'
+        query_pack.query_execution.query = 'SELECT * FROM yayifications;'
+        query_pack.query_parameters = {'dt': '2020'}
+        query_pack.query_execution.data_scanned_in_bytes = 123
+        query_pack.query_execution.engine_execution_time_in_millis = 345
+        query_pack.query_pack_configuration.tags = ['daily']
+
+        query_pack.query_execution.status_description = 'ERROR'
+
+        self._client.put_records.return_value = {
+            'ResponseMetadata': {
+                'HTTPStatusCode': 200
+            }
+        }
+
+        self._kinesis.send_error_results(query_pack)
+
+        self._logger.info.assert_any_call('  Success.')
         self._logger.info.assert_any_call('Done.')

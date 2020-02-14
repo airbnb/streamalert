@@ -39,7 +39,7 @@ class TestAthenaClient:
         )
 
     def test_run_async_query(self):
-        """AthenaClient - run_async_query"""
+        """StreamQuery - AthenaClient - run_async_query"""
         self._athena_client.start_query_execution.return_value = {
             'QueryExecutionId': 'aaaa-bbbb-cccc-dddd'
         }
@@ -52,7 +52,7 @@ class TestAthenaClient:
         self._athena_client.start_query_execution.assert_called_once()
 
     def test_get_query_execution(self):
-        """AthenaClient - get_query_execution"""
+        """StreamQuery - AthenaClient - get_query_execution"""
 
         self._athena_client.get_query_execution.return_value = (
             TestAthenaQueryExecution.SAMPLE_RUNNING_RESPONSE
@@ -66,7 +66,7 @@ class TestAthenaClient:
         assert_equals(query_execution.query_execution_id, 'e5b4a7e1-270b-42f8-8062-cfc5daa1e97f')
 
     def test_get_query_result(self):
-        """AthenaClient - get_query_result"""
+        """StreamQuery - AthenaClient - get_query_result"""
 
         self._athena_client.get_query_execution.return_value = (
             TestAthenaQueryExecution.SAMPLE_RUNNING_RESPONSE
@@ -164,58 +164,58 @@ class TestAthenaQueryExecution:
         self._succeeded_execution = AthenaQueryExecution(self.SAMPLE_SUCCEEDED_RESPONSE)
 
     def test_query_execution_id(self):
-        """AthenaQueryExecution - query_execution_id"""
+        """StreamQuery - AthenaQueryExecution - query_execution_id"""
         assert_equals(
             self._running_execution.query_execution_id,
             'e5b4a7e1-270b-42f8-8062-cfc5daa1e97f'
         )
 
     def test_database(self):
-        """AthenaQueryExecution - database"""
+        """StreamQuery - AthenaQueryExecution - database"""
         assert_equals(self._running_execution.database, 'streamalert')
 
     def test_status(self):
-        """AthenaQueryExecution - status"""
+        """StreamQuery - AthenaQueryExecution - status"""
         assert_equals(self._running_execution.status, 'RUNNING')
         assert_equals(self._succeeded_execution.status, 'SUCCEEDED')
 
     def test_status_description(self):
-        """AthenaQueryExecution - status_description"""
+        """StreamQuery - AthenaQueryExecution - status_description"""
         assert_equals(self._running_execution.status_description, None)
 
     def test_completion_datetime(self):
-        """AthenaQueryExecution - completion_datetime"""
+        """StreamQuery - AthenaQueryExecution - completion_datetime"""
         assert_equals(
             self._succeeded_execution.completion_datetime,
             datetime(2019, 6, 5, 21, 50, 21, 770000, tzinfo=tzlocal())
         )
 
     def test_data_scanned_in_bytes(self):
-        """AthenaQueryExecution - data_scanned_in_bytes"""
+        """StreamQuery - AthenaQueryExecution - data_scanned_in_bytes"""
         assert_equals(self._succeeded_execution.data_scanned_in_bytes, 26358801)
 
     def test_engine_execution_time_in_millis(self):
-        """AthenaQueryExecution - engine_execution_time_in_millis"""
+        """StreamQuery - AthenaQueryExecution - engine_execution_time_in_millis"""
         assert_equals(self._succeeded_execution.engine_execution_time_in_millis, 6166)
 
     def test_output_location(self):
-        """AthenaQueryExecution - output_location"""
+        """StreamQuery - AthenaQueryExecution - output_location"""
         assert_equals(
             self._succeeded_execution.output_location,
             's3://aws-athena-query-results-569589067625.csv'
         )
 
     def test_query(self):
-        """AthenaQueryExecution - query"""
+        """StreamQuery - AthenaQueryExecution - query"""
         assert_equals(self._succeeded_execution.query, 'SELECT * FROM garbage_can')
 
     def test_is_still_running(self):
-        """AthenaQueryExecution - is_still_running"""
+        """StreamQuery - AthenaQueryExecution - is_still_running"""
         assert_true(self._running_execution.is_still_running())
         assert_false(self._succeeded_execution.is_still_running())
 
     def test_is_succeeded(self):
-        """AthenaQueryExecution - is_succeeded"""
+        """StreamQuery - AthenaQueryExecution - is_succeeded"""
         assert_false(self._running_execution.is_succeeded())
         assert_true(self._succeeded_execution.is_succeeded())
 
@@ -303,15 +303,15 @@ class TestAthenaQueryResult:
         )
 
     def test_query_execution(self):
-        """AthenaQueryResult - query_execution"""
+        """StreamQuery - AthenaQueryResult - query_execution"""
         assert_true(isinstance(self._result.query_execution, AthenaQueryExecution))
 
     def test_headers(self):
-        """AthenaQueryResult - headers"""
+        """StreamQuery - AthenaQueryResult - headers"""
         assert_equals(self._result.headers, ['date', 'assume_role', 'count'])
 
     def test_data_as_list(self):
-        """AthenaQueryResult - data_as_list"""
+        """StreamQuery - AthenaQueryResult - data_as_list"""
         assert_equals(
             self._result.data_as_list,
             [
@@ -321,7 +321,7 @@ class TestAthenaQueryResult:
         )
 
     def test_data_as_dicts(self):
-        """AthenaQueryResult - data_as_dicts"""
+        """StreamQuery - AthenaQueryResult - data_as_dicts"""
         assert_equals(
             self._result.data_as_dicts,
             [
@@ -335,7 +335,7 @@ class TestAthenaQueryResult:
         )
 
     def test_data_as_human_string(self):
-        """AthenaQueryResult - human_string"""
+        """StreamQuery - AthenaQueryResult - human_string"""
         assert_equals(
             self._result.data_as_human_string,
             """
@@ -355,5 +355,5 @@ class TestAthenaQueryResult:
         )
 
     def test_count(self):
-        """AthenaQueryResult - count"""
+        """StreamQuery - AthenaQueryResult - count"""
         assert_equals(self._result.count, 2)

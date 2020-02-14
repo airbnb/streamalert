@@ -35,7 +35,7 @@ class TestStateManager:
         self._state_manager = StateManager(logger=self._logger)
 
     def test_has_set_get(self):
-        """StateManager - has, set, get"""
+        """StreamQuery - StateManager - has, set, get"""
         key = 'aaa'
         assert_false(self._state_manager.has(key))
 
@@ -45,14 +45,14 @@ class TestStateManager:
         assert_equals(self._state_manager.get(key), 'bbbbb')
 
     def test_keys(self):
-        """StateManager - keys"""
+        """StreamQuery - StateManager - keys"""
         self._state_manager.set('aaa', 'bbbbb')
         self._state_manager.set('ccc', 'ddddd')
 
         assert_equals(self._state_manager.keys, ['aaa', 'ccc'])
 
     def test_data(self):
-        """StateManager - data"""
+        """StreamQuery - StateManager - data"""
         self._state_manager.set('aaa', 'bbbbb')
         self._state_manager.set('ccc', 'ddddd')
 
@@ -77,7 +77,7 @@ class TestStepFunctionStateManager:
         )
 
     def test_has_load_write_empty(self):
-        """StepFunctionStateManager - load and write"""
+        """StreamQuery - StepFunctionStateManager - load and write"""
         self._sfsm.load_from_step_function_event({})
 
         self._state_manager.set('asdf', 'qwerty')
@@ -99,7 +99,7 @@ class TestFileWritingStateManager:
 
     @staticmethod
     def test_write_then_load():
-        """FileWritingStateManager"""
+        """StreamQuery - FileWritingStateManager"""
         logger = MagicMock(name='MockLogger')
         sm1 = StateManager(logger=logger)
         file = os.path.dirname(os.path.realpath(__file__)) + '/testfile.json'

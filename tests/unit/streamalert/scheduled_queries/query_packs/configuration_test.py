@@ -24,7 +24,7 @@ class TestConfiguration:
 
     @staticmethod
     def test_basic_stuff():
-        """QueryPackConfiguration - basic stuff"""
+        """StreamQuery - QueryPackConfiguration - basic stuff"""
         config = QueryPackConfiguration(
             name='bubblebumblebaddabbabblerabblebarrelmumble',
             query='SELECT * FROM knowhere',
@@ -41,7 +41,7 @@ class TestConfiguration:
 
     @staticmethod
     def test_query_construction():
-        """QueryPackConfiguration - generate_query"""
+        """StreamQuery - QueryPackConfiguration - generate_query"""
         config = QueryPackConfiguration(
             name='helloworld',
             query="SELECT * FROM helloworld WHERE dt = '{date}'",
@@ -58,7 +58,7 @@ class TestQueryPackRepository:
 
     @staticmethod
     def test_load_and_get_packs():
-        """QueryPackRepository - get_packs"""
+        """StreamQuery - QueryPackRepository - get_packs"""
         QueryPackRepository.load_packs()
 
         assert_true(len(QueryPackRepository.get_packs()) >= 1)

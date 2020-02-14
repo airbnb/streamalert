@@ -44,7 +44,7 @@ class TestCommandProcessor:
         )
 
     def test_nonblocking_single_pass_not_finished(self):
-        """CommandProcessor - nonblocking_single_pass - Not Finished"""
+        """StreamQuery - CommandProcessor - nonblocking_single_pass - Not Finished"""
         self._manager.finished_query_packs = []
         self._manager.num_registered_queries = 1
 
@@ -53,7 +53,7 @@ class TestCommandProcessor:
         assert_false(result)
 
     def test_nonblocking_single_pass_finished_succeeded(self):
-        """CommandProcessor - nonblocking_single_pass - Finished"""
+        """StreamQuery - CommandProcessor - nonblocking_single_pass - Finished"""
         query_pack = MagicMock(name='MockQueryPack')
         query_pack.query_execution_id = '1111-2222'
         query_pack.query_execution.is_succeeded.return_value = True
@@ -71,7 +71,7 @@ class TestCommandProcessor:
         self._kinesis.send_query_results.assert_called_with(query_pack)
 
     def test_nonblocking_single_pass_finished_failed(self):
-        """CommandProcessor - nonblocking_single_pass - Failed"""
+        """StreamQuery - CommandProcessor - nonblocking_single_pass - Failed"""
         query_pack = MagicMock(name='MockQueryPack')
         query_pack.query_execution_id = '1111-2222'
         query_pack.query_execution.is_succeeded.return_value = False
@@ -90,7 +90,7 @@ class TestCommandProcessor:
 
     # pylint: disable=invalid-name
     def test_nonblocking_single_pass_finished_succeeded_already_sent(self):
-        """CommandProcessor - nonblocking_single_pass - Failed"""
+        """StreamQuery - CommandProcessor - nonblocking_single_pass - Failed"""
         query_pack = MagicMock(name='MockQueryPack')
         query_pack.query_execution_id = '1111-2222'
         query_pack.query_execution.is_succeeded.return_value = True

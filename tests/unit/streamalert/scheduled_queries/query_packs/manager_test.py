@@ -35,18 +35,18 @@ class TestQueryPack:
         self._query_pack = QueryPack(self._config, self._execution)
 
     def test_unique(self):
-        """QueryPack - unique_id - hourly"""
+        """StreamQuery - QueryPack - unique_id - hourly"""
         self._config.tags = ['hourly']
         self._config.name = 'test_pack_name'
 
         assert_equals(self._query_pack.unique_id, 'test_pack_name')
 
     def test_query_pack_configuration(self):
-        """QueryPack - query_pack_configuration"""
+        """StreamQuery - QueryPack - query_pack_configuration"""
         assert_equals(self._query_pack.query_pack_configuration, self._config)
 
     def test_load_from_cache(self):
-        """QueryPack - load_from_cache"""
+        """StreamQuery - QueryPack - load_from_cache"""
         self._execution.state_manager.has.return_value = True
         self._execution.state_manager.get.return_value = {
             'query_execution_id': '1111-2222-3333-4444'
@@ -56,7 +56,7 @@ class TestQueryPack:
         assert_true(self._query_pack.is_previously_started)
 
     def test_load_from_cache_none(self):
-        """QueryPack - load_from_cache - not in cache"""
+        """StreamQuery - QueryPack - load_from_cache - not in cache"""
         self._execution.state_manager.has.return_value = False
         self._query_pack.load_from_cache()
         assert_equals(self._query_pack.query_execution_id, None)
@@ -76,7 +76,7 @@ class TestQueryPacksManager:
         )
 
     def test_start_queries(self):
-        """QueryPacksManager - start_queries"""
+        """StreamQuery - QueryPacksManager - start_queries"""
         logger = MagicMock(name='Logger')
         self._execution_context.logger = logger
         self._execution_context.state_manager.has.return_value = False
@@ -101,7 +101,7 @@ class TestQueryPacksManager:
         assert_equals(self._manager.num_queries_still_running, 2)
 
     def test_start_queries_from_cache(self):
-        """QueryPacksManager - start_queries - from cache"""
+        """StreamQuery - QueryPacksManager - start_queries - from cache"""
         logger = MagicMock(name='Logger')
         self._execution_context.logger = logger
         self._execution_context.state_manager.has.return_value = True
@@ -140,39 +140,39 @@ class TestQueryParameterGenerator:
         self._generator = QueryParameterGenerator(self._logger, clock)
 
     def test_generate_utcdatehour_minus7day(self):
-        """QueryParameterGenerator - generate - utcdatehour_minus7day"""
+        """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus7day"""
         assert_equals(self._generator.generate('utcdatehour_minus7day'), '2018-12-25-01')
 
     def test_generate_utcdatehour_minus1hour(self):
-        """QueryParameterGenerator - generate - utcdatehour_minus1hour"""
+        """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus1hour"""
         assert_equals(self._generator.generate('utcdatehour_minus1hour'), '2019-01-01-00')
 
     def test_generate_utctimestamp_minus1hour(self):
-        """QueryParameterGenerator - generate - utctimestamp_minus1hour"""
+        """StreamQuery - QueryParameterGenerator - generate - utctimestamp_minus1hour"""
         assert_equals(self._generator.generate('utctimestamp_minus1hour'), '1546300861')
 
     def test_generate_utcdatehour_minus2hour(self):
-        """QueryParameterGenerator - generate - utcdatehour_minus2hour"""
+        """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus2hour"""
         assert_equals(self._generator.generate('utcdatehour_minus2hour'), '2018-12-31-23')
 
     def test_generate_utcdatehour_minus1day(self):
-        """QueryParameterGenerator - generate - utcdatehour_minus1day"""
+        """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus1day"""
         assert_equals(self._generator.generate('utcdatehour_minus1day'), '2018-12-31-01')
 
     def test_generate_utcdatehour_minus2day(self):
-        """QueryParameterGenerator - generate - utcdatehour_minus2day"""
+        """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus2day"""
         assert_equals(self._generator.generate('utcdatehour_minus2day'), '2018-12-30-01')
 
     def test_generate_utcdatehour(self):
-        """QueryParameterGenerator - generate - utcdatehour"""
+        """StreamQuery - QueryParameterGenerator - generate - utcdatehour"""
         assert_equals(self._generator.generate('utcdatehour'), '2019-01-01-01')
 
     def test_generate_utctimestamp(self):
-        """QueryParameterGenerator - generate - utctimestamp"""
+        """StreamQuery - QueryParameterGenerator - generate - utctimestamp"""
         assert_equals(self._generator.generate('utctimestamp'), '1546304461')
 
     def test_generate_unsupported(self):
-        """QueryParameterGenerator - generate - unsupported"""
+        """StreamQuery - QueryParameterGenerator - generate - unsupported"""
         self._generator.generate('unsupported')
 
         self._logger.error.assert_called_with(

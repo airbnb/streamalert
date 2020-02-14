@@ -22,19 +22,19 @@ from streamalert.scheduled_queries.container.container import ServiceContainer
 class TestServiceContainer:
     @staticmethod
     def test_get_parameter():
-        """ServiceContainer - get_parameter"""
+        """StreamQuery - ServiceContainer - get_parameter"""
         container = ServiceContainer({'a': 'b'})
         assert_equals(container.get_parameter('a'), 'b')
 
     @staticmethod
     def test_get_parameter_raise():
-        """ServiceContainer - get_parameter - raises on invalid"""
+        """StreamQuery - ServiceContainer - get_parameter - raises on invalid"""
         container = ServiceContainer({'a': 'b'})
         assert_raises(ValueError, container.get_parameter, 'q')
 
     @staticmethod
     def test_get_logger():
-        """ServiceContainer - get - logger"""
+        """StreamQuery - ServiceContainer - get - logger"""
         container = ServiceContainer({
             'command_name': "the_test",
             'log_level': 'INFO'
@@ -45,7 +45,7 @@ class TestServiceContainer:
 
     @staticmethod
     def test_get_logger_raises_on_missing_params():
-        """ServiceContainer - get - logger - raises"""
+        """StreamQuery - ServiceContainer - get - logger - raises"""
         container = ServiceContainer({})
         configure_container(container)
 
@@ -53,7 +53,7 @@ class TestServiceContainer:
 
     @staticmethod
     def test_get_everything_else():
-        """ServiceContainer - get - other"""
+        """StreamQuery - ServiceContainer - get - other"""
         container = ServiceContainer({
             'command_name': "the_test",
             'log_level': 'INFO',
@@ -78,7 +78,7 @@ class TestServiceContainer:
 
     @staticmethod
     def test_get_raises_on_missing():
-        """ServiceContainer - get - other"""
+        """StreamQuery - ServiceContainer - get - other"""
         container = ServiceContainer({})
         configure_container(container)
 
