@@ -80,9 +80,6 @@ variable "lambda_log_level" {
   type = string
   default = "info"
 }
-variable "lambda_log_retention_days" {
-  default = 14
-}
 
 # Due to StreamQuery being designed to run in small bursts of nonblocking operations, this
 # value can be intentionally set low.  Something like 30 seconds should be enough.
@@ -100,7 +97,7 @@ variable "lambda_memory" {
   default     = 128
 }
 
-variable "lambda_log_retention" {
+variable "lambda_log_retention_days" {
   description = "Number of days to retain CloudWatch logs for the Lambda function"
   type        = string
   default     = 14

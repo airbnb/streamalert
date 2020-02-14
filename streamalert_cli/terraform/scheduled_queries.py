@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert_cli.manage_lambda.package import ScheduledQueriesPackage
+from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
 def generate_scheduled_queries_module_configuration(config):
@@ -38,32 +39,52 @@ def generate_scheduled_queries_module_configuration(config):
         '{}.streamalert.athena-results'.format(prefix)
     ).strip()
 
-    generated_config = {'module': {}}
-    generated_config['module']['scheduled_queries'] = {
+    # Copy the config over directly
+    scheduled_queries_module = streamquery_config.get('config', {})
+
+    # Derive a bunch of required fields from other
+    scheduled_queries_module.update({
         'source': './modules/tf_scheduled_queries',
 
         'prefix': prefix,
-        'destination_kinesis_stream': streamquery_config['config']['destination_kinesis'],
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'athena_database': database,
         'athena_results_bucket': results_bucket,
         'athena_s3_buckets': sorted(athena_config.get('buckets', [])),
-        'sfn_timeout_secs': streamquery_config['config'].get('sfn_timeout_secs', None),
-        'sfn_wait_secs': streamquery_config['config'].get('sfn_wait_secs', None),
-
-        'query_packs': [
-            {
-                'name': key,
-                'schedule_expression': item['schedule_expression'],
-                'description': item['description']
-            }
-            for key, item
-            in streamquery_config.get('packs', {}).items()
-        ],
-
         'lambda_filename': ScheduledQueriesPackage.package_name + '.zip',
         'lambda_handler': ScheduledQueriesPackage.lambda_handler,
-    }
+    })
 
-    return generated_config
+    # Transforms the query_packs key
+    scheduled_queries_module['query_packs'] = [
+        {
+            'name': key,
+            'schedule_expression': item['schedule_expression'],
+            'description': item['description']
+        }
+        for key, item
+        in streamquery_config.get('packs', {}).items()
+    ]
+
+    # Take lambda_config and move stuff into here, prefixed with "lambda_*"
+    lambda_config = streamquery_config.get('lambda_config', {})
+    lambda_fields = [
+        'log_level', 'log_retention_days', 'memory', 'timeout',
+        'alarms_enabled', 'error_threshold', 'error_period_secs',
+        'error_evaluation_periods'
+    ]
+    for field in lambda_fields:
+        if field in lambda_config:
+            scheduled_queries_module['lambda_{}'.format(field)] = (
+                lambda_config[field]
+            )
+
+    if scheduled_queries_module.get('lambda_alarms_enabled', False):
+        scheduled_queries_module['lambda_alarm_actions'] = [monitoring_topic_arn(config)]
+
+    return {
+        'module': {
+            'scheduled_queries': scheduled_queries_module
+        }
+    }

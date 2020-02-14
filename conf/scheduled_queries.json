@@ -11,5 +11,14 @@
       "schedule_expression": "rate(1 hour)"
     }
   },
-  "lambda_config": {}
+  "lambda_config": {
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "timeout": 60,
+    "alarms_enabled": false,
+    "error_threshold": 1,
+    "error_period_secs": 3600,
+    "error_evaluation_periods": 2
+  }
 }
