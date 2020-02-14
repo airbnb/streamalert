@@ -1,6 +1,34 @@
 {
   "data_sources": {},
   "id": "advanced",
+  "classifier_config": {
+    "inputs": {
+      "aws-sns": []
+    },
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "metric_alarms": {
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      }
+    },
+    "timeout": 60,
+    "vpc_config": {
+      "security_group_ids": [],
+      "subnet_ids": []
+    }
+  },
+  "enable_threat_intel": false,
   "modules": {
     "cloudtrail": {
       "enable_logging": true
@@ -36,7 +64,12 @@
         "shard_level_metrics": [
           "IncomingBytes"
         ],
-        "shards": 1
+        "shards": 1,
+        "terraform_outputs": [
+          "username",
+          "access_key_id",
+          "secret_key"
+        ]
       }
     },
     "kinesis_events": {
@@ -50,44 +83,6 @@
         }
       ],
       "unit-test.cloudtrail.data": []
-    },
-    "streamalert": {
-      "classifier_config": {
-        "inputs": {
-          "aws-sns": []
-        },
-        "log_level": "info",
-        "log_retention_days": 14,
-        "memory": 128,
-        "metric_alarms": {
-          "errors": {
-            "enabled": true,
-            "evaluation_periods": 1,
-            "period_secs": 120,
-            "threshold": 0
-          },
-          "throttles": {
-            "enabled": true,
-            "evaluation_periods": 1,
-            "period_secs": 120,
-            "threshold": 0
-          }
-        },
-        "timeout": 60,
-        "vpc_config": {
-          "security_group_ids": [],
-          "subnet_ids": []
-        }
-      },
-      "enable_threat_intel": false
     }
-  },
-  "outputs": {
-    "kinesis": [
-      "username",
-      "access_key_id",
-      "secret_key"
-    ]
-  },
-  "region": "us-west-1"
+  }
 }

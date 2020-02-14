@@ -17,6 +17,7 @@ from collections import defaultdict, OrderedDict
 import json
 import os
 
+from streamalert.shared import CLUSTERED_FUNCTIONS
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
@@ -255,12 +256,25 @@ def _validate_config(config):
                 raise ConfigError("'data_sources' missing for cluster {}".format(cluster_name))
             _validate_sources(cluster_name, cluster_attrs['data_sources'], existing_sources)
 
-            if not cluster_attrs.get('modules', {}).get('streamalert'):
-                error = "'streamalert' module is missing in the '{}' cluster".format(
-                    cluster_name
-                )
-                if cluster_attrs.get('modules', {}).get('stream_alert'):
-                    error += ". 'stream_alert' should be renamed to 'streamalert'"
+            for func in CLUSTERED_FUNCTIONS:
+                config_name = '{}_config'.format(func)
+                if config_name in cluster_attrs:
+                    continue
+
+                error = "'{}' is missing in the '{}' cluster".format(config_name, cluster_name)
+
+                modules = cluster_attrs.get('modules', {})
+                old_format = None
+                for key in {'streamalert', 'stream_alert'}:
+                    if key in modules:
+                        old_format = key
+
+                if old_format:
+                    error += (
+                        ". The usage of the '{}' within 'modules' has been deprecated and '{}'"
+                        "should be included as a top level key"
+                    ).format(old_format, config_name)
+
                 raise ConfigError(error)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:

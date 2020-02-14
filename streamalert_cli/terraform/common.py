@@ -17,6 +17,7 @@ from collections import defaultdict
 
 
 DEFAULT_SNS_MONITORING_TOPIC_SUFFIX = '{}_streamalert_monitoring'
+DEFAULT_S3_LOGGING_BUCKET_SUFFIX = '{}-streamalert-s3-logging'
 
 
 class InvalidClusterName(Exception):
@@ -37,14 +38,17 @@ def infinitedict(initial_value=None):
 
 def monitoring_topic_name(config):
     """Return the name of the monitoring SNS topic"""
-    infra_monitoring_config = config['global']['infrastructure']['monitoring']
-    prefix = config['global']['account']['prefix']
-    topic_name = (
-        DEFAULT_SNS_MONITORING_TOPIC_SUFFIX.format(prefix)
-        if infra_monitoring_config.get('create_sns_topic')
-        else infra_monitoring_config['sns_topic_name']
+    default_topic = DEFAULT_SNS_MONITORING_TOPIC_SUFFIX.format(
+        config['global']['account']['prefix']
     )
-    return topic_name
+    if 'monitoring' not in config['global']['infrastructure']:
+        return default_topic, True  # Use the default name and create the sns topic
+
+    sns_topic_name = config['global']['infrastructure']['monitoring'].get(
+        'sns_topic_name',
+        default_topic
+    )
+    return sns_topic_name, sns_topic_name == default_topic
 
 
 def monitoring_topic_arn(config):
@@ -52,9 +56,44 @@ def monitoring_topic_arn(config):
     return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
         region=config['global']['account']['region'],
         account_id=config['global']['account']['aws_account_id'],
-        topic=monitoring_topic_name(config)
+        topic=monitoring_topic_name(config)[0]
     )
 
 
-class MisconfigurationError(ValueError):
-    """This error is thrown when StreamAlert is misconfigured."""
+def s3_access_logging_bucket(config):
+    """Get the bucket name to be used for S3 Server Access Logging
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        tuple (string, bool): The bucket name to be used for S3 Server Access Logging, and
+            False if the bucket should NOT be created (eg: a pre-existing bucket name is provided)
+    """
+    # If a bucket name is specified for S3 event logging, we can assume the bucket
+    # should NOT be created
+    default_name = DEFAULT_S3_LOGGING_BUCKET_SUFFIX.format(config['global']['account']['prefix'])
+    if 's3_access_logging' not in config['global']['infrastructure']:
+        return default_name, True  # Use the default name and create the bucket
+
+    bucket_name = config['global']['infrastructure']['s3_access_logging'].get(
+        'bucket_name',
+        default_name
+    )
+    return bucket_name, bucket_name == default_name
+
+
+def generate_tf_outputs(cluster_dict, module_name, outputs):
+    """Add the outputs to the Terraform cluster dict.
+
+    Args:
+        cluster_dict (defaultdict): The dict containing all Terraform config for
+            a given cluster.
+        module_name (str): The name of the terraform module for which outputs should be configured.
+            This is typically formatted like: module-name_cluster-name.
+        outputs (list): Names of outputs that should be included
+    """
+    for output_var in sorted(outputs):
+        cluster_dict['output']['{}_{}'.format(module_name, output_var)] = {
+            'value': '${{module.{}.{}}}'.format(module_name, output_var)
+        }

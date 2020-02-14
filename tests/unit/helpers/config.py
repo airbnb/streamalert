@@ -52,13 +52,10 @@ def basic_streamalert_config():
                 'region': 'us-west-2'
             },
             'infrastructure': {
-                'monitoring': {
-                    'create_sns_topic': True,
+                'monitoring': {},
+                's3_access_logging': {
+                    'bucket_name': 'unit-test-streamalert-s3-logging'
                 }
-            },
-            's3_access_logging': {
-                'create_bucket': True,
-                'logging_bucket': 'unit-test-streamalert-s3-logging'
             },
             'terraform': {
                 'create_bucket': True,
@@ -161,6 +158,23 @@ def basic_streamalert_config():
         'clusters': {
             'prod': {
                 'id': 'prod',
+                'classifier_config': {
+                    'enable_custom_metrics': True,
+                    'log_level': 'info',
+                    'memory': 128,
+                    'custom_metric_alarms': {
+                        'Prod Unit Testing Failed Parses Alarm': {
+                            'alarm_description': '',
+                            'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                            'evaluation_periods': 1,
+                            'metric_name': 'Classifier-FailedParses-PROD',
+                            'period': 300,
+                            'statistic': 'Sum',
+                            'threshold': 1.0
+                        }
+                    },
+                    'timeout': 10
+                },
                 'data_sources': {
                     'kinesis': {
                         'stream_1': [
@@ -174,10 +188,6 @@ def basic_streamalert_config():
                         'enabled': True
                     },
                     'kinesis': {
-                        'firehose': {
-                            'enabled': True,
-                            'bucket_name': 'streamalert-results'
-                        },
                         'streams': {
                             'retention': 24,
                             'shards': 1
@@ -185,25 +195,6 @@ def basic_streamalert_config():
                     },
                     'kinesis_events': {
                         'enabled': True
-                    },
-                    'streamalert': {
-                        'classifier_config': {
-                            'enable_custom_metrics': True,
-                            'log_level': 'info',
-                            'memory': 128,
-                            'custom_metric_alarms': {
-                                'Prod Unit Testing Failed Parses Alarm': {
-                                    'alarm_description': '',
-                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
-                                    'evaluation_periods': 1,
-                                    'metric_name': 'Classifier-FailedParses-PROD',
-                                    'period': 300,
-                                    'statistic': 'Sum',
-                                    'threshold': 1.0
-                                }
-                            },
-                            'timeout': 10
-                        }
                     }
                 },
                 'outputs': {
@@ -217,26 +208,24 @@ def basic_streamalert_config():
             },
             'corp': {
                 'id': 'corp',
-                'modules': {
-                    'streamalert': {
-                        'classifier_config': {
-                            'enable_custom_metrics': True,
-                            'log_level': 'info',
-                            'memory': 128,
-                            'custom_metric_alarms': {
-                                'Prod Unit Testing Failed Parses Alarm': {
-                                    'alarm_description': '',
-                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
-                                    'evaluation_periods': 1,
-                                    'metric_name': 'Classifier-FailedParses-PROD',
-                                    'period': 300,
-                                    'statistic': 'Sum',
-                                    'threshold': 1.0
-                                }
-                            },
-                            'timeout': 10
+                'classifier_config': {
+                    'enable_custom_metrics': True,
+                    'log_level': 'info',
+                    'memory': 128,
+                    'custom_metric_alarms': {
+                        'Prod Unit Testing Failed Parses Alarm': {
+                            'alarm_description': '',
+                            'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                            'evaluation_periods': 1,
+                            'metric_name': 'Classifier-FailedParses-PROD',
+                            'period': 300,
+                            'statistic': 'Sum',
+                            'threshold': 1.0
                         }
                     },
+                    'timeout': 10
+                },
+                'modules': {
                     'streamalert_apps': {
                         'unit-test_corp_box_admin_events_box_collector_app': {
                             'app_name': 'box_collector',

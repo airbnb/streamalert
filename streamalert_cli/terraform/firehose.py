@@ -32,7 +32,7 @@ def generate_firehose(logging_bucket, main_dict, config):
     firehose_config = config['global']['infrastructure']['firehose']
     firehose_s3_bucket_name = firehose_config.get(
         'bucket_name',
-        '{}-streamalert-data'.format(prefix)
+        '{}-streamalert-data'.format(prefix)  # The default name is <prefix>-streamalert-data
     )
 
     # Firehose Setup module

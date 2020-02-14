@@ -20,6 +20,7 @@ from streamalert_cli.helpers import run_command
 
 LOGGER = get_logger(__name__)
 
+
 def terraform_check():
     """Verify that Terraform is configured correctly
 
@@ -29,6 +30,7 @@ def terraform_check():
                        'your $PATH:\n'
                        '\t$ export PATH=$PATH:/usr/local/terraform/bin')
     return run_command(['terraform', 'version'], error_message=prereqs_message, quiet=True)
+
 
 def create_tf_state_lock_ddb_table(region, table):
     """Create the DynamoDB table for terraform remote state locking
@@ -56,6 +58,7 @@ def create_tf_state_lock_ddb_table(region, table):
     )
     waiter = ddb_client.get_waiter('table_exists')
     waiter.wait(TableName=table)
+
 
 def destroy_tf_state_lock_ddb_table(region, table):
     """Destroy the DynamoDB table for terraform remote state locking

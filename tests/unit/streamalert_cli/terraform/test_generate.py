@@ -234,6 +234,17 @@ class TestTerraformGenerate:
         assert_dict_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_dict_equal(tf_main['resource'], tf_main_expected['resource'])
 
+    def test_generate_main_s3_access_logging(self):
+        """CLI - Terraform Generate Main with Alternate S3 Access Logging Bucket"""
+        alt_bucket_name = 'alternative-bucket-name'
+        self.config['global']['infrastructure']['s3_access_logging'] = {
+            'bucket_name': alt_bucket_name
+        }
+        tf_main = generate.generate_main(config=self.config, init=False)
+
+        # Should not "create" the logging bucket
+        assert_true('logging_bucket' not in tf_main['resource']['aws_s3_bucket'])
+
     def test_generate_main_with_firehose(self):
         """CLI - Terraform Generate Main with Firehose Enabled"""
         self.config['global']['infrastructure']['firehose'] = {

@@ -356,7 +356,7 @@ class ThreatIntel:
         # Threat Intel can be disabled for any given cluster
         enabled_clusters = {
             cluster for cluster, values in config['clusters'].items()
-            if values['modules']['streamalert'].get('enable_threat_intel', False)
+            if values.get('enable_threat_intel', False)
         }
 
         if not enabled_clusters:

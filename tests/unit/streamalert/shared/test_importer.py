@@ -21,6 +21,7 @@ from pyfakefs import fake_filesystem_unittest
 
 from streamalert.shared.importer import import_folders, _path_to_module, _python_file_paths
 
+
 class RuleImportTest(fake_filesystem_unittest.TestCase):
     """Test rule import logic with a mocked filesystem."""
     # pylint: disable=protected-access
@@ -28,13 +29,13 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
     def setUp(self):
         self.setUpPyfakefs()
 
-        # Add rules files which should be imported.
-        self.fs.create_file('rules/matchers/matchers.py')
+        # Add rule and matcher files which should be imported.
+        self.fs.create_file('matchers/matchers.py')
         self.fs.create_file('rules/example.py')
         self.fs.create_file('rules/community/cloudtrail/critical_api.py')
 
         # Add other files which should NOT be imported.
-        self.fs.create_file('rules/matchers/README.md')
+        self.fs.create_file('matchers/README.md')
         self.fs.create_file('rules/__init__.py')
         self.fs.create_file('rules/example.pyc')
         self.fs.create_file('rules/community/REVIEWERS')
@@ -42,9 +43,9 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
     @staticmethod
     def test_python_rule_paths():
         """Rule - Python File Paths"""
-        result = set(_python_file_paths('rules'))
+        result = set(_python_file_paths('matchers', 'rules'))
         expected = {
-            'rules/matchers/matchers.py',
+            'matchers/matchers.py',
             'rules/example.py',
             'rules/community/cloudtrail/critical_api.py'
         }
@@ -69,9 +70,9 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
     @patch('importlib.import_module')
     def test_import_rules(mock_import):
         """Rule - Import Folders"""
-        import_folders('rules')
+        import_folders('matchers', 'rules')
         mock_import.assert_has_calls([
-            call('rules.matchers.matchers'),
+            call('matchers.matchers'),
             call('rules.example'),
             call('rules.community.cloudtrail.critical_api')
         ], any_order=True)

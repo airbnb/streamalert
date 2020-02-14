@@ -27,7 +27,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
 
     JSON Input from the config:
 
-        "streamalert": {
+        {
           "classifier_config": {
             "log_level": "info",
             "log_retention_days": 14,
@@ -54,9 +54,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
           }
         }
     """
-    classifier_config = (
-        config['clusters'][cluster_name]['modules']['streamalert']['classifier_config']
-    )
+    classifier_config = config['clusters'][cluster_name]['classifier_config']
 
     firehose_config = config['global']['infrastructure'].get('firehose', {})
     # The default value here must be consistent with the firehose client default

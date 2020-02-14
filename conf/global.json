@@ -14,6 +14,10 @@
     ]
   },
   "infrastructure": {
+    "alerts_table": {
+      "read_capacity": 5,
+      "write_capacity": 5
+    },
     "firehose": {
       "use_prefix": true,
       "buffer_interval": 900,
@@ -22,9 +26,7 @@
       "enabled": false,
       "enabled_logs": {}
     },
-    "monitoring": {
-      "create_sns_topic": true
-    },
+    "monitoring": {},
     "rule_staging": {
       "cache_refresh_minutes": 10,
       "enabled": false,
@@ -32,6 +34,9 @@
         "read_capacity": 20,
         "write_capacity": 5
       }
+    },
+    "s3_access_logging": {
+      "bucket_name": "specify bucket name here"
     },
     "classifier_sqs": {
       "use_prefix": true

@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from streamalert_cli.terraform.common import generate_tf_outputs
 
 
 def generate_kinesis_streams(cluster_name, cluster_dict, config):
@@ -35,10 +36,11 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
         '{}_{}_streamalert'.format(prefix, cluster_name)
     )
 
-    cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
+    module_name = 'kinesis_{}'.format(cluster_name)
+    cluster_dict['module'][module_name] = {
         'source': './modules/tf_kinesis_streams',
         'account_id': config['global']['account']['aws_account_id'],
-        'region': config['clusters'][cluster_name]['region'],
+        'region': kinesis_module.get('region', config['global']['account']['region']),
         'cluster': cluster_name,
         'prefix': config['global']['account']['prefix'],
         'stream_name': stream_name,
@@ -48,5 +50,9 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
         'create_user': kinesis_module.get('create_user', True),
         'trusted_accounts': kinesis_module.get('trusted_accounts', [])
     }
+
+    outputs = kinesis_module.get('terraform_outputs')
+    if outputs:
+        generate_tf_outputs(cluster_dict, module_name, outputs)
 
     return True
