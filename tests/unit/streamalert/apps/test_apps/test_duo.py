@@ -81,6 +81,7 @@ class TestDuoApp:
         """Helper function for returning sample duo (auth) logs"""
         return [{
             'access_device': {},
+            'alias': '',
             'device': '+1 123 456 1234',
             'factor': 'Duo Push',
             'integration': 'Test Access',
