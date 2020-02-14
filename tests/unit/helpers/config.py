@@ -47,7 +47,6 @@ def basic_streamalert_config():
         'global': {
             'account': {
                 'aws_account_id': '123456789123',
-                'kms_key_alias': 'streamalert_secrets',
                 'prefix': 'unit-test',
                 'region': 'us-west-2'
             },
@@ -56,12 +55,7 @@ def basic_streamalert_config():
                 's3_access_logging': {
                     'bucket_name': 'unit-test-streamalert-s3-logging'
                 }
-            },
-            'terraform': {
-                'create_bucket': True,
-                'tfstate_bucket': 'unit-test-streamalert-terraform-state',
-                'tfstate_s3_key': 'streamalert_state/terraform.tfstate'
-            },
+            }
         },
         'threat_intel': {
             'dynamodb_table_name': 'table_name',
@@ -273,7 +267,6 @@ def athena_cli_basic_config():
         'global': {
             'account': {
                 'aws_account_id': '123456789123',
-                'kms_key_alias': 'stream_alert_secrets',
                 'prefix': 'unit-test',
                 'region': 'us-west-2'
             },

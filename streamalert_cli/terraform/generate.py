@@ -169,15 +169,26 @@ def generate_main(config, init=False):
         }
     else:
         main_dict['terraform']['backend']['s3'] = {
-            'bucket': config['global']['terraform']['tfstate_bucket'],
-            'key': config['global']['terraform']['tfstate_s3_key'],
+            'bucket': config['global'].get('terraform', {}).get(
+                'tfstate_bucket',
+                '{}-streamalert-terraform-state'.format(config['global']['account']['prefix'])
+            ),
+            'key': config['global'].get('terraform', {}).get(
+                'tfstate_s3_key',
+                'streamalert_state/terraform.tfstate'
+            ),
             'region': config['global']['account']['region'],
             'encrypt': True,
             'dynamodb_table': '{}_streamalert_terraform_state_lock'.format(
                 config['global']['account']['prefix']
             ),
             'acl': 'private',
-            'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
+            'kms_key_id': 'alias/{}'.format(
+                config['global']['account'].get(
+                    'kms_key_alias',
+                    '{}_streamalert_secrets'.format(config['global']['account']['prefix'])
+                )
+            ),
         }
 
     # Configure initial S3 buckets
@@ -214,9 +225,12 @@ def generate_main(config, init=False):
         )
 
     # Create bucket for Terraform state (if applicable)
-    if config['global']['terraform'].get('create_bucket', True):
+    if config['global'].get('terraform', {}).get('create_bucket', True):
         main_dict['resource']['aws_s3_bucket']['terraform_remote_state'] = generate_s3_bucket(
-            bucket=config['global']['terraform']['tfstate_bucket'],
+            bucket=config['global'].get('terraform', {}).get(
+                'tfstate_bucket',
+                '{}-streamalert-terraform-state'.format(config['global']['account']['prefix'])
+            ),
             logging=logging_bucket
         )
 
@@ -269,7 +283,12 @@ def generate_main(config, init=False):
         'description': 'StreamAlert secret management'
     }
     main_dict['resource']['aws_kms_alias']['streamalert_secrets'] = {
-        'name': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
+        'name': 'alias/{}'.format(
+            config['global']['account'].get(
+                'kms_key_alias',
+                '{}_streamalert_secrets'.format(config['global']['account']['prefix'])
+            )
+        ),
         'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
     }
 

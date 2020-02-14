@@ -93,12 +93,6 @@ class CLIConfig:
             return False
 
         self.config['global']['account']['prefix'] = prefix
-        self.config['global']['account']['kms_key_alias'] = '{}_streamalert_secrets'.format(prefix)
-
-        # Set Terraform state bucket name only if we will be creating it
-        if self.config['global']['terraform'].get('create_bucket', True):
-            self.config['global']['terraform']['tfstate_bucket'] = (
-                '{}-streamalert-terraform-state'.format(prefix))
 
         self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
         self.config['lambda']['athena_partition_refresh_config']['buckets'] \

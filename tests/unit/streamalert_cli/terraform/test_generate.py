@@ -100,7 +100,7 @@ class TestTerraformGenerate:
                         'dynamodb_table': 'unit-test_streamalert_terraform_state_lock',
                         'encrypt': True,
                         'acl': 'private',
-                        'kms_key_id': 'alias/unit-test'
+                        'kms_key_id': 'alias/alternate-alias'
                     }
                 }
             },
@@ -122,7 +122,7 @@ class TestTerraformGenerate:
                         'target_key_id': '${aws_kms_key.server_side_encryption.key_id}'
                     },
                     'streamalert_secrets': {
-                        'name': 'alias/unit-test',
+                        'name': 'alias/alternate-alias',
                         'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
                     }
                 },

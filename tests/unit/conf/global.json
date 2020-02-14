@@ -1,7 +1,7 @@
 {
   "account": {
     "aws_account_id": "12345678910",
-    "kms_key_alias": "unit-test",
+    "kms_key_alias": "alternate-alias",
     "prefix": "unit-test",
     "region": "us-west-1"
   },
@@ -33,11 +33,6 @@
         "write_capacity": 5
       }
     }
-  },
-  "terraform": {
-    "create_bucket": true,
-    "tfstate_bucket": "unit-test-streamalert-terraform-state",
-    "tfstate_s3_key": "streamalert_state/terraform.tfstate"
   },
   "threat_intel": {
     "dynamodb_table": "test_table_name",
