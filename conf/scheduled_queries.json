@@ -1,7 +1,7 @@
 {
   "enabled": false,
   "config": {
-    "destination_kinesis": "KINESIS_STREAM",
+    "destination_kinesis_stream": "KINESIS_STREAM",
     "sfn_timeout_secs": 300,
     "sfn_wait_secs": 30
   },
