@@ -15,7 +15,7 @@ limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
 from streamalert_cli.terraform.common import monitoring_topic_arn
-from streamalert_cli.athena.handler import get_athena_database_name
+from streamalert.shared.utils import get_database_name
 
 
 def generate_firehose(logging_bucket, main_dict, config):
@@ -53,7 +53,7 @@ def generate_firehose(logging_bucket, main_dict, config):
 
     log_alarms_config = config['global']['infrastructure']['firehose'].get('enabled_logs', {})
 
-    db_name = get_athena_database_name(config)
+    db_name = get_database_name(config)
 
     # Add the Delivery Streams individually
     for log_stream_name, log_type_name in enabled_logs.items():

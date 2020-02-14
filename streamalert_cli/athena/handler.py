@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
-from streamalert.shared import STREAMALERT_DATABASE
+from streamalert.shared.utils import get_database_name
 from streamalert.shared.alert import Alert
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.logger import get_logger
@@ -181,24 +181,6 @@ class AthenaCommand(CLICommand):
                 options.schema_override)
 
 
-def get_athena_database_name(config):
-    """Get the name of the athena database using the current config settings
-    Args:
-        config (CLIConfig): Loaded StreamAlert config
-    Returns:
-        str: The name of the athena database
-    """
-    prefix = config['global']['account']['prefix']
-    athena_config = config['global']['infrastructure'].get('athena')
-    if athena_config:
-        return athena_config.get(
-            'database_name',
-            STREAMALERT_DATABASE.format(prefix)
-        )
-
-    return STREAMALERT_DATABASE.format(prefix)
-
-
 def get_athena_client(config):
     """Get an athena client using the current config settings
 
@@ -211,7 +193,7 @@ def get_athena_client(config):
     prefix = config['global']['account']['prefix']
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    db_name = get_athena_database_name(config)
+    db_name = get_database_name(config)
 
     # Get the S3 bucket to store Athena query results
     results_bucket = athena_config.get(

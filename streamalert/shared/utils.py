@@ -143,3 +143,20 @@ def get_keys(data, search_key, max_matches=-1):
                 if val and isinstance(val, _CONTAINER_TYPES):
                     containers.append(val)
     return results
+
+def get_database_name(config):
+    """Get the name of the athena database using the current config settings
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+    Returns:
+        str: The name of the athena database
+    """
+    prefix = config['global']['account']['prefix']
+    athena_config = config['lambda'].get('athena_partition_refresh_config')
+    if athena_config:
+        return athena_config.get(
+            'database_name',
+            '{}_streamalert'.format(prefix)
+        )
+
+    return '{}_streamalert'.format(prefix)

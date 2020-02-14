@@ -21,7 +21,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-from streamalert.shared import STREAMALERT_DATABASE
+from streamalert.shared.utils import get_database_name
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import load_config
 from streamalert.shared.logger import get_logger
@@ -58,10 +58,7 @@ class AthenaRefresher:
 
         self._athena_buckets = athena_config['buckets']
 
-        db_name = athena_config.get(
-            'database_name',
-            STREAMALERT_DATABASE.format(prefix)
-        )
+        db_name = get_database_name(config)
 
         # Get the S3 bucket to store Athena query results
         results_bucket = athena_config.get(

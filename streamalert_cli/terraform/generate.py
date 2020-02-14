@@ -18,7 +18,7 @@ import json
 import os
 
 from streamalert.shared.logger import get_logger
-from streamalert_cli.athena.handler import get_athena_database_name
+from streamalert.shared.utils import get_database_name
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
@@ -602,7 +602,7 @@ def _generate_global_module(config):
         'use_prefix', True
     )
 
-    alerts_db_name = get_athena_database_name(config)
+    alerts_db_name = get_database_name(config)
 
     global_module = {
         'source': './modules/tf_globals',
