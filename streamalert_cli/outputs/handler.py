@@ -54,19 +54,20 @@ class OutputCommand(CLICommand):
             'set': OutputSetSubCommand,
             'set-from-file': OutputSetFromFileSubCommand,
             'generate-skeleton': OutputGenerateSkeletonSubCommand,
-            'get': OutputGetSubCommand
+            'get': OutputGetSubCommand,
+            'list': OutputListSubCommand
         }
 
 
 class OutputSharedMethods:
     @staticmethod
-    def save_credentials(service, config, props):
+    def save_credentials(service, config, properties):
         """Save credentials for the provided service
 
         Args:
             service (str): The name of the service the output belongs too
             config (StreamAlert.config): The configuration of StreamAlert
-            props (OrderedDict): Contains various OutputProperty items
+            properties (OrderedDict): Contains various OutputProperty items
         Returns:
             bool: False if errors occurred, True otherwise
         """
@@ -80,35 +81,37 @@ class OutputSharedMethods:
             kms_key_alias = kms_key_alias.split('/')[1]
 
         provider = OutputCredentialsProvider(service, config=config, region=region, prefix=prefix)
-        result = provider.save_credentials(props['descriptor'].value, kms_key_alias, props)
+        result = provider.save_credentials(
+            properties['descriptor'].value, kms_key_alias, properties
+        )
         if not result:
             LOGGER.error('An error occurred while saving \'%s\' '
-                         'output configuration for service \'%s\'', props['descriptor'].value,
+                         'output configuration for service \'%s\'', properties['descriptor'].value,
                          service)
         return result
 
     @staticmethod
-    def update_config(options, config, props, output, service):
+    def update_config(options, config, properties, output, service):
         """Update the local config files
 
         Args:
             options (argparse.Namespace): Basically a namedtuple with the service setting
             config (StreamAlert.config): The configuration of StreamAlert
-            props (OrderedDict): Contains various OutputProperty items
+            properties (OrderedDict): Contains various OutputProperty items
             output (StreamAlert.OutputDispatcher): The output to update
             service (str): The name of the service the output belongs too
         """
         output_config = config['outputs']
-        descriptor = props['descriptor'].value
+        descriptor = properties['descriptor'].value
 
-        if options.update and output_exists(output_config, props, service, log_message=False):
+        if options.update and output_exists(output_config, properties, service, log_message=False):
             # Don't update the config if the output already existed, this will prevent duplicates
             LOGGER.debug(
                 'Output already exists, don\'t update the config for descriptor %s and service %s',
                 descriptor, service
                 )
         else:
-            updated_config = output.format_output_config(output_config, props)
+            updated_config = output.format_output_config(output_config, properties)
             output_config[service] = updated_config
             config.write()
 
@@ -173,28 +176,28 @@ class OutputSetSubCommand(CLICommand, OutputSharedMethods):
             return False
 
         # get dictionary of OutputProperty items to be used for user prompting
-        props = output.get_user_defined_properties()
+        properties = output.get_user_defined_properties()
 
-        for name, prop in props.items():
+        for name, prop in properties.items():
             # pylint: disable=protected-access
-            props[name] = prop._replace(
+            properties[name] = prop._replace(
                 value=user_input(prop.description, prop.mask_input, prop.input_restrictions))
 
         service = output.__service__
 
-        if not options.update and output_exists(config['outputs'], props, service):
+        if not options.update and output_exists(config['outputs'], properties, service):
             # If the output already exists and update is not set
             # ask for user input again for a unique configuration
             return cls.handler(options, config)
 
-        if not cls.save_credentials(service, config, props):
+        if not cls.save_credentials(service, config, properties):
             # Error message is already logged so no need to log a new one
             return False
 
-        cls.update_config(options, config, props, output, service)
+        cls.update_config(options, config, properties, output, service)
 
         LOGGER.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                    props['descriptor'].value, service)
+                    properties['descriptor'].value, service)
         return True
 
 
@@ -242,11 +245,16 @@ class OutputSetFromFileSubCommand(CLICommand, OutputSharedMethods):
         Returns:
             bool: False if errors occurred, True otherwise
         """
-        with open(options.file, "r") as json_file_fp:
-            file_contents = json.load(json_file_fp)
+        try:
+            with open(options.file, 'r') as json_file_fp:
+                file_contents = json.load(json_file_fp)
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.error("Error opening file %s", options.file)
+            return False
 
         if not file_contents:
             LOGGER.error('File %s is empty', options.file)
+            return False
 
         for service, configurations in file_contents.items():
             LOGGER.debug('Setting outputs for service %s', service)
@@ -254,20 +262,20 @@ class OutputSetFromFileSubCommand(CLICommand, OutputSharedMethods):
             output = StreamAlertOutput.get_dispatcher(service)
 
             for configuration in configurations:
-                props = cls.convert_configuration_to_props(configuration, output)
-                if not props:
+                properties = cls.convert_configuration_to_properties(configuration, output)
+                if not properties:
                     # Configuration was not valid
                     return False
 
-                if not options.update and output_exists(config['outputs'], props, service):
+                if not options.update and output_exists(config['outputs'], properties, service):
                     # If the output already exists and update is not set
                     # return early
                     return False
 
                 # For each configuration for this service, save the creds and update the config
-                if not cls.save_credentials(service, config, props):
+                if not cls.save_credentials(service, config, properties):
                     return False
-                cls.update_config(options, config, props, output, service)
+                cls.update_config(options, config, properties, output, service)
 
             LOGGER.info('Saved %s configurations for service: %s', len(configurations), service)
 
@@ -275,7 +283,7 @@ class OutputSetFromFileSubCommand(CLICommand, OutputSharedMethods):
         return True
 
     @staticmethod
-    def convert_configuration_to_props(configuration, output):
+    def convert_configuration_to_properties(configuration, output):
         """Check the configuration meets all input_restrictions
 
         Args:
@@ -284,21 +292,21 @@ class OutputSetFromFileSubCommand(CLICommand, OutputSharedMethods):
         Returns:
             OrderedDict: If the configuration is valid for the passed OutputDispatcher else None
         """
-        props = output.get_user_defined_properties()
+        properties = output.get_user_defined_properties()
 
         for name, value in configuration.items():
-            if name not in props:
+            if name not in properties:
                 LOGGER.error('unknown key %s passed for service: %s', name, output.__service__)
                 break
 
-            prop = props[name]
+            prop = properties[name]
             if not response_is_valid(value, prop.input_restrictions):
                 # Error messages are handled by response_is_valid
                 break
 
-            props[name] = prop._replace(value=value)
+            properties[name] = prop._replace(value=value)
         else:
-            return props
+            return properties
 
 
 class OutputGenerateSkeletonSubCommand(CLICommand):
@@ -355,18 +363,22 @@ class OutputGenerateSkeletonSubCommand(CLICommand):
             output = StreamAlertOutput.get_dispatcher(service)
 
             # get dictionary of OutputProperty items to be used for user prompting
-            props = output.get_user_defined_properties()
+            properties = output.get_user_defined_properties()
             skeleton[service] = [
                 {
                     name: 'desc: {}, restrictions: {}'.format(
                         prop.description, prop.input_restrictions
                     )
-                    for name, prop in props.items()
+                    for name, prop in properties.items()
                 }
             ]
 
-        with open(options.file, 'w') as json_file_fp:
-            json.dump(skeleton, json_file_fp, indent=2, sort_keys=True)
+        try:
+            with open(options.file, 'w') as json_file_fp:
+                json.dump(skeleton, json_file_fp, indent=2, sort_keys=True)
+        except Exception as err:  # pylint: disable=broad-except
+            LOGGER.error(err)
+            return False
 
         LOGGER.info(
             'Successfully generated the Skeleton file %s for services: %s',
@@ -415,7 +427,7 @@ class OutputGetSubCommand(CLICommand):
 
     @classmethod
     def handler(cls, options, config):
-        """Configure a new output for this service
+        """Fetches the configuration for a service
         Args:
             options (argparse.Namespace): Basically a namedtuple with the service setting
             config (StreamAlert.config): The configuration of StreamAlert
@@ -448,3 +460,52 @@ class OutputGetSubCommand(CLICommand):
 
         print('\nService Name:', service)
         print(json.dumps(credentials, indent=2, sort_keys=True), '\n')
+
+
+class OutputListSubCommand(CLICommand):
+    description = 'List the currently configured outputs'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add the output list subparser: manage.py output list [options]"""
+        outputs = sorted(StreamAlertOutput.get_all_outputs().keys())
+
+        list_parser = generate_subparser(
+            subparser,
+            'list',
+            description=cls.description,
+            help=cls.description,
+            subcommand=True,
+        )
+
+        # Add the optional arg of service
+        list_parser.add_argument(
+            '--service',
+            '-s',
+            choices=outputs,
+            default=outputs,
+            nargs='*',
+            metavar='SERVICE',
+            help='Pass Services to list configured output descriptors, select from: {}'.format(
+                ', '.join(outputs)
+            )
+        )
+
+    @classmethod
+    def handler(cls, options, config):
+        """List configured outputs
+        Args:
+            options (argparse.Namespace): Basically a namedtuple with the service setting
+            config (StreamAlert.config): The configuration of StreamAlert
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        outputs = config["outputs"]
+
+        print("\nConfigured outputs 'service:descriptor':")
+        for output in options.service:
+            if output not in outputs:
+                continue
+            for descriptor in outputs[output]:
+                print("\t{}:{}".format(output, descriptor))
+            print()  # ensure a newline between each service for easier reading
