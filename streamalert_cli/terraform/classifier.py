@@ -59,6 +59,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
     )
 
     firehose_config = config['global']['infrastructure'].get('firehose', {})
+    # The default value here must be consistent with the firehose client default
     use_firehose_prefix = firehose_config.get('use_prefix', True)
 
     tf_module_prefix = 'classifier_{}'.format(cluster_name)
