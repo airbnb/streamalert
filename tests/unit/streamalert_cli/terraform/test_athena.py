@@ -24,10 +24,6 @@ def test_generate_athena():
     """CLI - Terraform Generate Athena"""
 
     CONFIG['lambda']['athena_partition_refresh_config'] = {
-        'buckets': {
-            'unit-test-streamalerts': 'alerts',
-            'unit-test-streamalert-data': 'data'
-        },
         'timeout': '60',
         'memory': '128',
         'third_party_libraries': []

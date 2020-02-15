@@ -17,6 +17,7 @@ from fnmatch import fnmatch
 import json
 import os
 
+from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
@@ -198,10 +199,7 @@ def generate_main(config, init=False):
             logging=logging_bucket
         ),
         'streamalerts': generate_s3_bucket(
-            bucket=(
-                config['global']['infrastructure'].get('alerts_firehose', {}).get('bucket_name')
-                or '{}-streamalerts'.format(config['global']['account']['prefix'])
-            ),
+            bucket=firehose_alerts_bucket(config),
             logging=logging_bucket
         )
     }

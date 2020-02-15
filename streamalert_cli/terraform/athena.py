@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from streamalert.athena_partition_refresh.main import AthenaRefresher
 from streamalert.shared import metrics
 from streamalert_cli.manage_lambda.package import AthenaPackage
 from streamalert_cli.terraform.common import (
@@ -34,7 +35,7 @@ def generate_athena(config):
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    data_buckets = sorted(athena_config['buckets'])
+    data_buckets = sorted(AthenaRefresher.buckets_from_config(config))
 
     prefix = config['global']['account']['prefix']
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))

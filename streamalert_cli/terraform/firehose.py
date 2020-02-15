@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.config import firehose_data_bucket
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -29,11 +30,9 @@ def generate_firehose(logging_bucket, main_dict, config):
         return
 
     prefix = config['global']['account']['prefix']
-    firehose_config = config['global']['infrastructure']['firehose']
-    firehose_s3_bucket_name = firehose_config.get(
-        'bucket_name',
-        '{}-streamalert-data'.format(prefix)  # The default name is <prefix>-streamalert-data
-    )
+
+    # This can return False but the check above ensures that that should never happen
+    firehose_s3_bucket_name = firehose_data_bucket(config)
 
     # Firehose Setup module
     main_dict['module']['kinesis_firehose_setup'] = {

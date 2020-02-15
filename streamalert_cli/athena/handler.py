@@ -17,6 +17,7 @@ from streamalert.athena_partition_refresh.main import AthenaRefresher
 from streamalert.classifier.clients import FirehoseClient
 from streamalert.shared.alert import Alert
 from streamalert.shared.athena import AthenaClient
+from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
 from streamalert.shared.logger import get_logger
 from streamalert_cli.athena import helpers
 from streamalert_cli.helpers import continue_prompt, record_to_schema
@@ -34,6 +35,7 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
                           'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\') '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
+
 
 class AthenaCommand(CLICommand):
     description = 'Perform actions related to Athena'
@@ -140,8 +142,10 @@ class AthenaCommand(CLICommand):
         """Adds the default required arguments for athena subcommands (bucket and table)"""
         athena_parser.add_argument(
             '-b', '--bucket',
-            help='Name of the S3 bucket where log data is located',
-            required=True
+            help=(
+                'Name of the S3 bucket where log data is located. If not supplied, default will '
+                'be "<prefix>-streamalert-data"'
+            )
         )
 
         athena_parser.add_argument(
@@ -178,7 +182,8 @@ class AthenaCommand(CLICommand):
                 options.table_name,
                 options.bucket,
                 config,
-                options.schema_override)
+                options.schema_override
+            )
 
 
 def get_athena_client(config):
@@ -363,6 +368,8 @@ def create_table(table, bucket, config, schema_override=None):
 
     athena_client = get_athena_client(config)
 
+    config_data_bucket = firehose_data_bucket(config)
+
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
         LOGGER.info('The \'%s\' table already exists.', sanitized_table_name)
@@ -375,10 +382,17 @@ def create_table(table, bucket, config, schema_override=None):
         schema = record_to_schema(output)
         athena_schema = helpers.logs_schema_to_athena_schema(schema)
 
+        # Use the bucket if supplied, otherwise use the default alerts bucket
+        bucket = bucket or firehose_alerts_bucket(config)
+
         query = _construct_create_table_statement(
-            schema=athena_schema, table_name=table, bucket=bucket)
+            schema=athena_schema, table_name=table, bucket=bucket
+        )
 
     else:  # all other tables are log types
+
+        # Use the bucket if supplied, otherwise use the default data bucket
+        bucket = bucket or config_data_bucket
 
         log_info = config['logs'][table.replace('_', ':', 1)]
 
@@ -414,7 +428,8 @@ def create_table(table, bucket, config, schema_override=None):
                     )
 
         query = _construct_create_table_statement(
-            schema=athena_schema, table_name=sanitized_table_name, bucket=bucket)
+            schema=athena_schema, table_name=sanitized_table_name, bucket=bucket
+        )
 
     success = athena_client.run_query(query=query)
     if not success:
@@ -422,10 +437,15 @@ def create_table(table, bucket, config, schema_override=None):
         return False
 
     # Update the CLI config
-    if (table != 'alerts' and
-            bucket not in config['lambda']['athena_partition_refresh_config']['buckets']):
-        config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
-        config.write()
+    if table != 'alerts' and bucket != config_data_bucket:
+        # Only add buckets to the config if they are not one of the default/configured buckets
+        # Ensure 'buckets' exists in the config (since it is not required)
+        config['lambda']['athena_partition_refresh_config']['buckets'] = (
+            config['lambda']['athena_partition_refresh_config'].get('buckets', {})
+        )
+        if bucket not in config['lambda']['athena_partition_refresh_config']['buckets']:
+            config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
+            config.write()
 
     LOGGER.info('The %s table was successfully created!', sanitized_table_name)
 

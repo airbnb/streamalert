@@ -107,12 +107,6 @@ def basic_streamalert_config():
             'athena_partition_refresh_config': {
                 'enable_custom_metrics': False,
                 'memory': 128,
-                'partitioning': {
-                    'firehose': {},
-                    'normal': {
-                        'unit-test-streamalerts': 'alerts'
-                    }
-                },
                 'timeout': 60
             },
             'rules_engine_config': {
@@ -287,11 +281,6 @@ def athena_cli_basic_config():
             }
         },
         'lambda': {
-            'athena_partition_refresh_config': {
-                'buckets': {
-                    'unit-test-streamalert-data': 'data',
-                    'unit-test-streamalerts': 'alerts'
-                },
-            }
+            'athena_partition_refresh_config': {}
         }
     }

@@ -159,6 +159,7 @@ class TestAthenaRefresher:
                 } for val in range(count)
             ]
         }
+
     @staticmethod
     def _s3_record_placeholder_file():
         return {

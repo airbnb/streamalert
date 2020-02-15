@@ -67,6 +67,44 @@ class SchemaSorter:
         return self.max_index if value == -1 else value
 
 
+def firehose_data_bucket(config):
+    """Get the bucket name to be used for historical data retention
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        string|bool: The bucket name to be used for historical data retention. Returns
+            False if firehose is not configured
+    """
+    # The default name is <prefix>-streamalert-data but can be overridden
+    firehose_config = config['global']['infrastructure'].get('firehose')
+    if not firehose_config:
+        return False
+
+    return firehose_config.get(
+        'bucket_name',
+        '{}-streamalert-data'.format(config['global']['account']['prefix'])
+    )
+
+
+def firehose_alerts_bucket(config):
+    """Get the bucket name to be used for historical alert retention
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        string: The bucket name to be used for historical alert retention
+    """
+    # The default name is <prefix>-streamalerts but can be overridden
+    # The alerts firehose is not optional, so this should always return a value
+    return config['global']['infrastructure'].get('alerts_firehose', {}).get(
+        'bucket_name',
+        '{}-streamalerts'.format(config['global']['account']['prefix'])
+    )
+
+
 def parse_lambda_arn(function_arn):
     """Extract info on the current environment from the lambda function ARN
 

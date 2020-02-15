@@ -18,6 +18,7 @@ import json
 import os
 import shutil
 
+from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert_cli.athena.handler import create_table
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
@@ -88,7 +89,7 @@ class TerraformInitCommand(CLICommand):
         init_targets = [
             'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
             'aws_s3_bucket.streamalert_secrets', 'aws_s3_bucket.terraform_remote_state',
-            'aws_s3_bucket-streamalerts',
+            'aws_s3_bucket.streamalerts',
             'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
             'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets'
         ]
@@ -112,7 +113,7 @@ class TerraformInitCommand(CLICommand):
 
         # we need to manually create the streamalerts table since terraform does not support this
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        alerts_bucket = '{}-streamalerts'.format(config['global']['account']['prefix'])
+        alerts_bucket = firehose_alerts_bucket(config)
         create_table('alerts', alerts_bucket, config)
 
         LOGGER.info('Building remainding infrastructure')

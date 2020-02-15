@@ -121,7 +121,7 @@ Key                                  Required  Default                Descriptio
       "log_level": "info",
       "memory": 128,
       "buckets": {
-        "<prefix>-streamalerts": "alerts"
+        "alternative_bucket": "data"
       },
       "...": "...",
       "timeout": 60

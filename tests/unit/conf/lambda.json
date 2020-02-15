@@ -29,10 +29,6 @@
     }
   },
   "athena_partition_refresh_config": {
-    "buckets": {
-      "unit-test-streamalert-data": "data",
-      "unit-test-streamalerts": "alerts"
-    },
     "memory": "128",
     "timeout": "60"
   },
