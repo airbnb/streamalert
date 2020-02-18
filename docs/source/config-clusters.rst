@@ -584,7 +584,6 @@ Example
         "streams": {
           "create_user": true,
           "retention": 24,
-          "region": "us-east-1",
           "shard_level_metrics": [
             "IncomingBytes",
             "IncomingRecords",

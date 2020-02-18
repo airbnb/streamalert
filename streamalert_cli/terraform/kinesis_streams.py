@@ -40,7 +40,11 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
     cluster_dict['module'][module_name] = {
         'source': './modules/tf_kinesis_streams',
         'account_id': config['global']['account']['aws_account_id'],
-        'region': kinesis_module.get('region', config['global']['account']['region']),
+        # Lambda event source mappings do not support streams in other regions,
+        # so force this to be the same region that all other resources exist in
+        # NOTE: Fully regional clusters should be implemented at some point:
+        #  https://github.com/airbnb/streamalert/issues/418
+        'region': config['global']['account']['region'],
         'cluster': cluster_name,
         'prefix': config['global']['account']['prefix'],
         'stream_name': stream_name,
