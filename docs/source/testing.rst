@@ -1,6 +1,6 @@
-#####
-Tests
-#####
+#######
+Testing
+#######
 To test the accuracy of new rules, local tests can be written to verify that alerts trigger against valid input.
 
 The ``manage.py`` CLI tool comes built-in with a ``test`` command which does exactly this.

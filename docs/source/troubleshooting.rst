@@ -2,10 +2,10 @@
 Troubleshooting
 ###############
 
-***************
-Kinesis Streams
-***************
-As detailed in other sections, StreamAlert utilizes AWS' Kinesis Streams.
+********************
+Kinesis Data Streams
+********************
+As detailed in other sections, StreamAlert utilizes Amazon Kinesis Data Streams.
 
 Review Kinesis Streams `key concepts`_
 
@@ -14,11 +14,11 @@ Review Kinesis Streams `key concepts`_
 
 Limits
 ======
-* `Kinesis Streams Limits`_
-* `Kinesis Streams PUT Limits`_
+* `Kinesis Data Streams Limits`_
+* `Kinesis Data Streams PUT Limits`_
 
-.. _Kinesis Streams Limits: https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html
-.. _Kinesis Streams PUT Limits: https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
+.. _Kinesis Data Streams Limits: https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html
+.. _Kinesis Data Streams PUT Limits: https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html
 
 
 ThroughputExceeded

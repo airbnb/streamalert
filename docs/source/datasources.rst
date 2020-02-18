@@ -37,19 +37,19 @@ Example non-AWS use-cases:
 * SaaS logs (Box, GSuite, OneLogin, ...)
 
 
-**********************
-Amazon Kinesis Streams
-**********************
-StreamAlert also utilizes AWS Kinesis Streams for real-time data ingestion and analysis.
-By default, StreamAlert creates an AWS Kinesis stream per `cluster <clusters.html>`_.
+***************************
+Amazon Kinesis Data Streams
+***************************
+StreamAlert also utilizes Amazon Kinesis Data Streams for real-time data ingestion and analysis.
+By default, StreamAlert creates an Amazon Kinesis Data Stream per `cluster <clusters.html>`_.
 
 
-Sending to Amazon Kinesis Streams
-=================================
+Sending to Amazon Kinesis Data Streams
+======================================
 
 Log Forwarding Agents
 ---------------------
-Log forwarding agents that support AWS Kinesis Streams:
+Log forwarding agents that support Amazon Kinesis Data Streams:
 
 * `aws-kinesis-agent <http://docs.aws.amazon.com/streams/latest/dev/writing-with-agents.html>`_
 * `fluentd <http://docs.fluentd.org/v0.12/articles/kinesis-stream>`_
@@ -59,7 +59,7 @@ Log forwarding agents that support AWS Kinesis Streams:
 
 Code/Applications
 -----------------
-Code can send data to an AWS Kinesis Stream via:
+Code can send data to an Amazon Kinesis Data Stream via:
 
 * `AWS KPL (Amazon Kinesis Producer Library) <http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html>`_
 

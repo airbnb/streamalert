@@ -63,8 +63,6 @@ class CLIConfig:
             LOGGER.warning('The Athena configuration already exists, skipping.')
             return
 
-        prefix = self.config['global']['account']['prefix']
-
         athena_config_template = {
             'enable_custom_metrics': False,
             'timeout': '60',

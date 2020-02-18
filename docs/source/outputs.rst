@@ -8,10 +8,10 @@ Out of the box, StreamAlert supports:
 * **Amazon CloudWatch Logs**
 * **Amazon Kinesis Firehose**
 * **AWS Lambda**
-* **Amazon S3**
+* **Amazon Simple Storage Service (S3)**
 * **Amazon Simple Notification Service (SNS)**
 * **Amazon Simple Queue Service (SQS)**
-* **CarbonBlack**
+* **Carbon Black**
 * **Demisto**
 * **GitHub**
 * **Jira**
@@ -174,7 +174,7 @@ Strategy
 ========
 A common strategy that has been found to be effective:
 
-* Write your rule and only designate Slack as an output
+* Write your rule and only designate a notification-style service, such as Slack, as an output
 * Identify false positives, refine the rule over a period of time
 * "Promote" the rule to production by removing Slack and adding PagerDuty and S3 as outputs
 

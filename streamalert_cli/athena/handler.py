@@ -161,13 +161,13 @@ class AthenaCommand(CLICommand):
     def handler(cls, options, config):
         """Main Athena handler
 
-            Args:
-                options (argparse.Namespace): The parsed args passed from the CLI
-                config (CLIConfig): Loaded StreamAlert config
+        Args:
+            options (argparse.Namespace): The parsed args passed from the CLI
+            config (CLIConfig): Loaded StreamAlert config
 
-            Returns:
-                bool: False if errors occurred, True otherwise
-            """
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
         if options.subcommand == 'rebuild-partitions':
             return rebuild_partitions(
                 options.table_name,

@@ -17,7 +17,7 @@ from fnmatch import fnmatch
 import json
 import os
 
-from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
+from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
