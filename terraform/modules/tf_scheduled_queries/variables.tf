@@ -1,6 +1,6 @@
-#
-#
-#
+/*
+ *
+ */
 variable "prefix" {
   description = "Namespace under which all AWS resources are named"
   type        = string
@@ -11,9 +11,11 @@ variable "destination_kinesis_stream" {
   type        = string
 }
 
-# The AWS Account Id is used to generate the ARN of various resources. This configuration
-# ASSUMES that both the Athena and Kinesis streams being accessed belong to the same AWS acccount
-# that StreamQuery is being deployed to.
+/*
+ * The AWS Account Id is used to generate the ARN of various resources. This configuration
+ * ASSUMES that both the Athena and Kinesis streams being accessed belong to the same AWS acccount
+ * that StreamQuery is being deployed to.
+ */
 variable "account_id" {
   description = "The AWS Account Id that StreamQuery is deployed to"
   type        = string
@@ -52,10 +54,12 @@ variable "sfn_wait_secs" {
 variable "query_packs" {
   description = "The configuration of each query pack"
 
-  # The structure of each item in this list is a dictionary with 3 keys:
-  #  - name: Name of the query pack. This is passed to the cloudwatch event as a tag
-  #  - schedule_expression: CloudWatch event schedule expression (e.g. "rate(1 hour)")
-  #  - description: A string describing the query pack
+  /*
+   * The structure of each item in this list is a dictionary with 3 keys:
+   *  - name: Name of the query pack. This is passed to the cloudwatch event as a tag
+   *  - schedule_expression: CloudWatch event schedule expression (e.g. "rate(1 hour)")
+   *  - description: A string describing the query pack
+   */
   default = [
 //    {
 //      name: "sample",
@@ -81,16 +85,20 @@ variable "lambda_log_level" {
   default = "info"
 }
 
-# Due to StreamQuery being designed to run in small bursts of nonblocking operations, this
-# value can be intentionally set low.  Something like 30 seconds should be enough.
+/*
+ * Due to StreamQuery being designed to run in small bursts of nonblocking operations, this
+ * value can be intentionally set low.  Something like 30 seconds should be enough.
+ */
 variable "lambda_timeout" {
   description = "The timeout in seconds for the StreamQuery lambda"
   type        = string
   default     = 30
 }
 
-# StreamQuery is not a particularly CPU intensive system as it delegates the majority of work
-# to AWS Athena. Currently 128 MB seems to be plenty.
+/*
+ * StreamQuery is not a particularly CPU intensive system as it delegates the majority of work
+ * to AWS Athena. Currently 128 MB seems to be plenty.
+ */
 variable "lambda_memory" {
   description = "The memory in megabytes allocated to the StreamQuery lambda function"
   type        = string

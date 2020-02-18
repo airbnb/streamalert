@@ -1,15 +1,17 @@
-#
-# iam_roles
-#
-#   This file houses all IAM policies relevant to StreamAlert scheduled queries
-#
-
-#
-# Permissions for Lambda -> Athena, Kinesis, and other stuff
-#
-#   Notably, because we use a reusable Lambda module for the Lambda function, it automatically
-#   creates the IAM Role
-#
+/*
+ * iam_roles
+ *
+ *
+ *
+ *   This file houses all IAM policies relevant to StreamAlert scheduled queries
+ *
+ *
+ *
+ * Permissions for Lambda -> Athena, Kinesis, and other stuff
+ *
+ *   Notably, because we use a reusable Lambda module for the Lambda function, it automatically
+ *   creates the IAM Role
+ */
 
 # Attach additional permissions to the auto-generated Lambda IAM Role
 resource "aws_iam_role_policy" "lambda_permissions" {
@@ -88,9 +90,9 @@ data "aws_iam_policy_document" "lambda_permissions" {
   }
 }
 
-#
-# IAM Roles and Permissions for StepFunction -> Lambda
-#
+/*
+ * IAM Roles and Permissions for StepFunction -> Lambda
+ */
 
 # Setup the IAM Role for the Step Functions
 resource "aws_iam_role" "iam_for_step_functions" {
@@ -134,9 +136,9 @@ data "aws_iam_policy_document" "stepfunction_permissions" {
   }
 }
 
-#
-# IAM Roles and Permissions for CloudWatch -> Step Functions
-#
+/*
+ * IAM Roles and Permissions for CloudWatch -> Step Functions
+ */
 
 # Setup the IAM Role
 resource "aws_iam_role" "iam_for_cloudwatch_schedule" {

@@ -1,6 +1,7 @@
-# Builds the StepFunction that powers most of StreamQuery
-#
-# https://www.terraform.io/docs/providers/aws/r/sfn_state_machine.html
+/*
+ * Builds the StepFunction that powers most of StreamQuery
+ * https://www.terraform.io/docs/providers/aws/r/sfn_state_machine.html
+ */
 resource "aws_sfn_state_machine" "state_machine" {
   name = "${var.prefix}_streamalert_scheduled_queries_state_machine"
 
