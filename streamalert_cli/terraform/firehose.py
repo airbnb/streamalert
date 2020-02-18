@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
-from streamalert_cli.terraform.common import monitoring_topic_arn
 from streamalert.shared.utils import get_database_name
+from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
 def generate_firehose(logging_bucket, main_dict, config):
