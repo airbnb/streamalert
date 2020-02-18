@@ -594,7 +594,7 @@ Example
           ],
           "shards": 1,
           "terraform_outputs": [
-            "username",
+            "user_arn",
             "access_key_id",
             "secret_key"
           ]
@@ -609,7 +609,8 @@ Example
 
 This creates a Kinesis stream and an associated IAM user and hooks up stream events to the
 StreamAlert classifier function in this cluster. The ``terraform_outputs`` section instructs
-Terraform to print the IAM username and access keypair for the newly created user.
+Terraform to print the IAM User's ARN, along with the access key ID and secret key
+for the newly created user.
 
 
 Options

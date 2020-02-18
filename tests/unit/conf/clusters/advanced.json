@@ -66,7 +66,7 @@
         ],
         "shards": 1,
         "terraform_outputs": [
-          "username",
+          "user_arn",
           "access_key_id",
           "secret_key"
         ]

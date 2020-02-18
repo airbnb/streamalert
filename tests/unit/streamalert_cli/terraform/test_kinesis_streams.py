@@ -53,8 +53,8 @@ def test_kinesis_streams():
             'kinesis_advanced_secret_key': {
                 'value': '${module.kinesis_advanced.secret_key}'
             },
-            'kinesis_advanced_username': {
-                'value': '${module.kinesis_advanced.username}'
+            'kinesis_advanced_user_arn': {
+                'value': '${module.kinesis_advanced.user_arn}'
             }
         }
     }
@@ -142,8 +142,8 @@ def test_kinesis_streams_with_custom_name():
             'kinesis_advanced_secret_key': {
                 'value': '${module.kinesis_advanced.secret_key}'
             },
-            'kinesis_advanced_username': {
-                'value': '${module.kinesis_advanced.username}'
+            'kinesis_advanced_user_arn': {
+                'value': '${module.kinesis_advanced.user_arn}'
             }
         }
     }
