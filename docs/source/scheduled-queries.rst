@@ -77,7 +77,7 @@ Query Packs
 ```````````
 Query Packs are batches of scheduled Athena queries that are executed together.
 
-.. code-block:: json
+.. code-block::
 
   "query_packs": {
     ...

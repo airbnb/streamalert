@@ -51,13 +51,14 @@ class TestStateManager:
 
         assert_equals(self._state_manager.keys, ['aaa', 'ccc'])
 
+    # pylint: disable=protected-access
     def test_data(self):
         """StreamQuery - StateManager - data"""
         self._state_manager.set('aaa', 'bbbbb')
         self._state_manager.set('ccc', 'ddddd')
 
         assert_equals(
-            self._state_manager.data,
+            self._state_manager._dangerously_get_all_data,
             {'aaa': 'bbbbb', 'ccc': 'ddddd'}
         )
 

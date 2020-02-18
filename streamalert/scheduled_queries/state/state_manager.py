@@ -52,10 +52,6 @@ class StateManager:
         """
         return self._data
 
-    @property
-    def data(self):
-        return self._data
-
 
 class FileWritingStateManager:
     def __init__(self, state_manager, cache_file, logger):
