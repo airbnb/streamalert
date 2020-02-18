@@ -58,7 +58,7 @@ class TestStateManager:
         self._state_manager.set('ccc', 'ddddd')
 
         assert_equals(
-            self._state_manager._dangerously_get_all_data,
+            self._state_manager._dangerously_get_all_data(),
             {'aaa': 'bbbbb', 'ccc': 'ddddd'}
         )
 
