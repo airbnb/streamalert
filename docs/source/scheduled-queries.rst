@@ -36,7 +36,7 @@ Configuration
 -------------
 Scheduled Queries is configured via a single file, ``conf/scheduled_queries.json``.
 
-.. code-block::
+.. code-block:: json
 
   {
     "enabled": true,
@@ -77,7 +77,7 @@ Query Packs
 ```````````
 Query Packs are batches of scheduled Athena queries that are executed together.
 
-.. code-block::
+.. code-block:: json
 
   "query_packs": {
     ...
@@ -101,7 +101,7 @@ After you've defined a few Query Packs, it's time to add actual scheduled querie
 All scheduled queries are located in the ``scheduled_queries/`` directory, located in the root of the project.
 
 
-.. code-block::
+.. code-block:: python
 
     from streamalert.scheduled_queries.query_packs.configuration import QueryPackConfiguration
 
@@ -146,7 +146,7 @@ What does a scheduled query result look like?
 `````````````````````````````````````````````
 Below is an example of what StreamAlert may receive as a result from a scheduled query.
 
-.. code-block::
+.. code-block:: json
 
     {
         "streamquery_schema_version": "1.0.0",
@@ -199,7 +199,7 @@ Building the Step Function, Lambda, and Query Packs
 
 Anytime you change the configured query packs, you will need to run this to update the AWS Resources.
 
-.. code-block::
+.. code-block:: bash
 
     % ./manage.py built -t scheduled_queries
 
@@ -207,7 +207,7 @@ Anytime you change the configured query packs, you will need to run this to upda
 Deploying Python Code to Lambda
 ```````````````````````````````
 
-.. code-block::
+.. code-block:: bash
 
     % ./manage.py deploy -f scheduled_queries
 
@@ -265,7 +265,7 @@ Failed State Machine Executions are Retriable
 AWS Step Functions record every single execution of each State Machine, as well as each state change.
 Going to the console, you can observe that the Input event of a State Machine execution is simply a JSON blob:
 
-.. code-block::
+.. code-block:: json
 
     {
       "name": "streamalert_scheduled_queries_cloudwatch_trigger",
