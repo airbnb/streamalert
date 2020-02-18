@@ -15,11 +15,11 @@ limitations under the License.
 """
 import json
 
-from streamalert.scheduled_queries import __version__ as streamquery_version
-
 
 class KinesisClient:
     """Encapsulation of all communication with and data structures sent to StreamAlert Kinesis"""
+
+    STREAMQUERY_SCHEMA_VERSION = '1.0.0'
 
     def __init__(self, logger, client=None, kinesis_stream=None):
         self._logger = logger
@@ -30,10 +30,7 @@ class KinesisClient:
         """Generates a request to Kinesis given the streamquery results, and dispatches them.
 
         Args:
-            query_pack (QueryPack):
-
-        Return:
-            void
+            query_pack (QueryPack): The QueryPack that successfully completed.
         """
         result = query_pack.query_result  # type: AthenaQueryResult
         query = query_pack.query_pack_configuration  # type: QueryPackConfiguration
@@ -44,7 +41,7 @@ class KinesisClient:
             '?region=us-east-1#query/history/{}'
         ).format(query_execution_id)
         streamquery_result = {
-            "streamquery_schema_version": streamquery_version,
+            "streamquery_schema_version": self.STREAMQUERY_SCHEMA_VERSION,
             "execution": {
                 "name": query.name,
                 "description": query.description,
@@ -90,6 +87,9 @@ class KinesisClient:
         """Send Kinesis record to StreamAlert upon query failure
 
         In this case, there is no result.
+
+        Args:
+            query_pack (QueryPack): The QueryPack that failed to complete.
         """
         query = query_pack.query_pack_configuration  # type: QueryPackConfiguration
 
@@ -99,7 +99,7 @@ class KinesisClient:
             '?region=us-east-1#query/history/{}'
         ).format(query_execution_id)
         streamquery_result = {
-            "streamquery_schema_version": streamquery_version,
+            "streamquery_schema_version": self.STREAMQUERY_SCHEMA_VERSION,
             "execution": {
                 "name": query.name,
                 "description": query.description,

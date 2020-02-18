@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
-from streamalert.scheduled_queries import __version__ as streamquery_version
 
 parameters = {
-    'command_name': 'StreamQuery (Lambda) v{}'.format(streamquery_version),
+    'command_name': 'StreamQuery',
     'aws_region': os.environ['REGION'],
     'log_level': os.environ['LOGGER_LEVEL'],
     'athena_database': os.environ['ATHENA_DATABASE'],

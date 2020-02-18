@@ -16,4 +16,3 @@ limitations under the License.
 
 StreamQuery base module
 """
-__version__ = '1.0.0'

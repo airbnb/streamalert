@@ -87,10 +87,10 @@ class AthenaClient:
         ))
 
     def get_query_result(self, query_execution):
-        """
+        """Returns a query result payload, wrapped in a AthenaQueryResult object
 
         Args:
-            query_execution (AthenaQueryExecution):
+            query_execution (AthenaQueryExecution)
 
         Returns:
             AthenaQueryResult
