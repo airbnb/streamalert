@@ -86,3 +86,32 @@ Table of Contents
    troubleshooting
    faq
    alternatives
+
+.. _historical_search:
+
+.. toctree::
+  :maxdepth: 2
+  :caption: Historical Search
+
+  athena-overview
+  athena-arch
+  athena-user-guide
+  firehose
+  scheduled-queries
+
+.. _rule_staging_and_promotion:
+
+.. toctree::
+  :maxdepth: 2
+  :caption: Rule Staging and Promotion
+
+  rule-staging
+  rule-promotion
+
+.. toctree::
+  :maxdepth: 2
+  :caption: StreamAlert Apps
+
+  app-configuration
+  app-auth-update
+  app-development

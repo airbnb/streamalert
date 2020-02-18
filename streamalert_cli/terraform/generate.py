@@ -52,6 +52,9 @@ from streamalert_cli.terraform.rule_promotion import generate_rule_promotion
 from streamalert_cli.terraform.classifier import generate_classifier
 from streamalert_cli.terraform.rules_engine import generate_rules_engine
 from streamalert_cli.terraform.s3_events import generate_s3_events
+from streamalert_cli.terraform.scheduled_queries import (
+    generate_scheduled_queries_module_configuration
+)
 from streamalert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 from streamalert_cli.utils import CLICommand
 
@@ -483,6 +486,9 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Setup Lookup Tables if applicable
     _generate_lookup_tables_settings(config)
 
+    # Setup StreamQuery
+    _generate_streamquery_module(config)
+
     return True
 
 
@@ -546,6 +552,21 @@ def _generate_lookup_tables_settings(config):
         }
 
     _create_terraform_module_file(generated_config, tf_file_name)
+
+
+def _generate_streamquery_module(config):
+    """
+    Generates .tf.json file for scheduled queries
+    """
+    tf_file_name = 'terraform/scheduled_queries.tf.json'
+    if not config.get('scheduled_queries', {}).get('enabled', False):
+        remove_temp_terraform_file(tf_file_name, 'Removing old scheduled queries Terraform file')
+        return
+
+    _create_terraform_module_file(
+        generate_scheduled_queries_module_configuration(config),
+        tf_file_name
+    )
 
 
 def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_file, message):
