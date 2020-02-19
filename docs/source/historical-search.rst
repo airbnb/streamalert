@@ -58,6 +58,8 @@ Once the options above are set, deploy the infrastructure with the following com
   $ python manage.py deploy --function classifier
 
 
+.. _athena-architecture:
+
 *******************
 Athena Architecture
 *******************
