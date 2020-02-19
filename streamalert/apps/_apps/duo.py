@@ -99,19 +99,30 @@ class DuoApp(AppIntegration):
         Returns:
             [
                 {
-                    'timestamp': <int:unix timestamp>,
-                    'device': <str:device>,
-                    'username': <str:username>,
-                    'factor': <str:factor>,
-                    'result': <str:result>,
-                    'ip': <str:ip address>,
-                    'new_enrollment': <bool:if event corresponds to enrollment>,
-                    'integration': <str:integration>,
+                    'access_device': {
+                        'browser': 'Chrome',
+                        'browser_version': '1.2.3',
+                        'flash_version': 'uninstalled',
+                        'java_version': 'uninstalled',
+                        'os': 'Mac OS X',
+                        'os_version': '10.15.3',
+                        'trusted_endpoint_status': 'unknown'
+                    },
+                    'alias': '',
+                    'device': '123-456-7890',
+                    'factor': 'Duo Push',
+                    'integration': 'web.site.com',
+                    'ip': '1.1.1.1',
                     'location': {
-                        'state': '<str:state>',
-                        'city': '<str:city>',
-                        'country': '<str:country>'
-                    }
+                        'city': 'Portland',
+                        'country': 'US',
+                        'state': 'Oregon'
+                    },
+                    'new_enrollment': False,
+                    'reason': 'User approved',
+                    'result': 'SUCCESS',
+                    'timestamp': 1581705165,
+                    'username': 'user.name@site.com'
                 }
             ]
         """

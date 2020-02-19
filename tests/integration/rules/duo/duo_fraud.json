@@ -10,6 +10,7 @@
         "os_version": "10.12.6",
         "trusted_endpoint_status": "not trusted"
       },
+      "alias": "",
       "device": "555-123-4567",
       "factor": "Duo Push",
       "integration": "Test Integration",
@@ -44,6 +45,7 @@
         "os_version": "10.12.6",
         "trusted_endpoint_status": "not trusted"
       },
+      "alias": "",
       "device": "555-123-5678",
       "factor": "Duo Push",
       "integration": "Test Integration",

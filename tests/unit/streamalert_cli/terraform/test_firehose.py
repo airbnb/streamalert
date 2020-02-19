@@ -34,7 +34,7 @@ class TestFirehoseGenerate:
             'prefix': 'unit-test',
             'region': 'us-west-1',
             's3_logging_bucket': self._logging_bucket_name,
-            's3_bucket_name': 'unit-test.streamalert.data',
+            's3_bucket_name': 'unit-test-streamalert-data',
             'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
         }
 
@@ -74,7 +74,7 @@ class TestFirehoseGenerate:
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-test.streamalert.data',
+                    's3_bucket_name': 'unit-test-streamalert-data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 }
             }
@@ -107,7 +107,7 @@ class TestFirehoseGenerate:
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-test.streamalert.data',
+                    's3_bucket_name': 'unit-test-streamalert-data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
                     'alarm_actions': [
@@ -147,7 +147,7 @@ class TestFirehoseGenerate:
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-test.streamalert.data',
+                    's3_bucket_name': 'unit-test-streamalert-data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
                     'evaluation_periods': 10,
@@ -188,7 +188,7 @@ class TestFirehoseGenerate:
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-                    's3_bucket_name': 'unit-test.streamalert.data',
+                    's3_bucket_name': 'unit-test-streamalert-data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
                     'alarm_actions': ['do something crazy']

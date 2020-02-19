@@ -47,7 +47,7 @@ class RulePromoter:
         # Get the S3 bucket to store Athena query results
         results_bucket = athena_config.get(
             'results_bucket',
-            's3://{}.streamalert.athena-results'.format(prefix)
+            's3://{}-streamalert-athena-results'.format(prefix)
         )
 
         self._athena_client = AthenaClient(db_name, results_bucket, self.ATHENA_S3_PREFIX)

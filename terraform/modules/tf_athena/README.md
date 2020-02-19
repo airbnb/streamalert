@@ -13,7 +13,7 @@ module "streamalert_athena" {
   source                       = "../modules/tf_athena"
   lambda_s3_bucket             = "my-source-bucket"
   lambda_s3_key                = "source/athena_partition_refresh_code.zip"
-  athena_data_buckets          = ["my-org.streamalerts"]
+  athena_data_buckets          = ["my-org-streamalerts"]
 }
 ```
 

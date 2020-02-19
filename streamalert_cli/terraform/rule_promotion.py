@@ -15,6 +15,7 @@ limitations under the License.
 """
 from streamalert.rule_promotion.publisher import StatsPublisher
 from streamalert.shared import RULE_PROMOTION_NAME
+from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
 from streamalert_cli.manage_lambda.package import RulePromotionPackage
 from streamalert_cli.terraform.common import infinitedict
 from streamalert_cli.terraform.lambda_module import generate_lambda
@@ -37,7 +38,11 @@ def generate_rule_promotion(config):
     result = infinitedict()
 
     athena_config = config['lambda']['athena_partition_refresh_config']
-    data_buckets = sorted(athena_config['buckets'])
+    data_buckets = set(athena_config.get('buckets', []))
+    data_buckets.add(firehose_alerts_bucket(config))
+    data_bucket = firehose_data_bucket(config)  # Data retention is optional, so check for this
+    if data_bucket:
+        data_buckets.add(data_bucket)
 
     # Set variables for the IAM permissions, etc module
     result['module']['rule_promotion_iam'] = {
@@ -50,7 +55,7 @@ def generate_rule_promotion(config):
         'function_alias_arn': '${module.rule_promotion_lambda.function_alias_arn}',
         'function_name': '${module.rule_promotion_lambda.function_name}',
         'athena_results_bucket_arn': '${module.streamalert_athena.results_bucket_arn}',
-        'athena_data_buckets': data_buckets,
+        'athena_data_buckets': sorted(data_buckets),
         's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
     }
 
