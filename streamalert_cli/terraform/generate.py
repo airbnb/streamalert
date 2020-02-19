@@ -17,12 +17,15 @@ from fnmatch import fnmatch
 import json
 import os
 
+from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
     infinitedict,
     monitoring_topic_name,
+    s3_access_logging_bucket,
+    terraform_state_bucket,
 )
 from streamalert_cli.terraform.alert_merger import generate_alert_merger
 from streamalert_cli.terraform.alert_processor import generate_alert_processor
@@ -156,6 +159,8 @@ def generate_main(config, init=False):
     """
     main_dict = _terraform_defaults(config['global']['account']['region'])
 
+    logging_bucket, create_logging_bucket = s3_access_logging_bucket(config)
+
     # Setup the Backend depending on the deployment phase.
     # When first setting up StreamAlert, the Terraform statefile
     # is stored locally.  After the first dependencies are created,
@@ -165,36 +170,45 @@ def generate_main(config, init=False):
             'path': 'terraform.tfstate',
         }
     else:
+        terraform_bucket_name, _ = terraform_state_bucket(config)
         main_dict['terraform']['backend']['s3'] = {
-            'bucket': config['global']['terraform']['tfstate_bucket'],
-            'key': config['global']['terraform']['tfstate_s3_key'],
+            'bucket': terraform_bucket_name,
+            'key': config['global'].get('terraform', {}).get(
+                'state_key_name',
+                'streamalert_state/terraform.tfstate'
+            ),
             'region': config['global']['account']['region'],
             'encrypt': True,
             'dynamodb_table': '{}_streamalert_terraform_state_lock'.format(
                 config['global']['account']['prefix']
             ),
             'acl': 'private',
-            'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
+            'kms_key_id': 'alias/{}'.format(
+                config['global']['account'].get(
+                    'kms_key_alias',
+                    '{}_streamalert_secrets'.format(config['global']['account']['prefix'])
+                )
+            ),
         }
 
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
         'streamalert_secrets': generate_s3_bucket(
             # FIXME (derek.wang) DRY out by using OutputCredentialsProvider?
-            bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
-            logging=_config_get_logging_bucket(config)
+            bucket='{}-streamalert-secrets'.format(config['global']['account']['prefix']),
+            logging=logging_bucket
         ),
         'streamalerts': generate_s3_bucket(
-            bucket='{}.streamalerts'.format(config['global']['account']['prefix']),
-            logging=_config_get_logging_bucket(config)
+            bucket=firehose_alerts_bucket(config),
+            logging=logging_bucket
         )
     }
 
     # Create bucket for S3 access logs (if applicable)
-    if config['global']['s3_access_logging'].get('create_bucket', True):
+    if create_logging_bucket:
         main_dict['resource']['aws_s3_bucket']['logging_bucket'] = generate_s3_bucket(
-            bucket=_config_get_logging_bucket(config),
-            logging=_config_get_logging_bucket(config),
+            bucket=logging_bucket,
+            logging=logging_bucket,
             acl='log-delivery-write',
             lifecycle_rule={
                 'prefix': '/',
@@ -207,15 +221,16 @@ def generate_main(config, init=False):
             sse_algorithm='AES256'  # SSE-KMS doesn't seem to work with access logs
         )
 
+    terraform_bucket_name, create_state_bucket = terraform_state_bucket(config)
     # Create bucket for Terraform state (if applicable)
-    if config['global']['terraform'].get('create_bucket', True):
+    if create_state_bucket:
         main_dict['resource']['aws_s3_bucket']['terraform_remote_state'] = generate_s3_bucket(
-            bucket=config['global']['terraform']['tfstate_bucket'],
-            logging=_config_get_logging_bucket(config)
+            bucket=terraform_bucket_name,
+            logging=logging_bucket
         )
 
     # Setup Firehose Delivery Streams
-    generate_firehose(_config_get_logging_bucket(config), main_dict, config)
+    generate_firehose(logging_bucket, main_dict, config)
 
     # Configure global resources like Firehose alert delivery and alerts table
     main_dict['module']['globals'] = _generate_global_module(config)
@@ -263,41 +278,23 @@ def generate_main(config, init=False):
         'description': 'StreamAlert secret management'
     }
     main_dict['resource']['aws_kms_alias']['streamalert_secrets'] = {
-        'name': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
+        'name': 'alias/{}'.format(
+            config['global']['account'].get(
+                'kms_key_alias',
+                '{}_streamalert_secrets'.format(config['global']['account']['prefix'])
+            )
+        ),
         'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
     }
 
     # Global infrastructure settings
-    infrastructure_config = config['global'].get('infrastructure')
-    if infrastructure_config and 'monitoring' in infrastructure_config:
-        if infrastructure_config['monitoring'].get('create_sns_topic'):
-            main_dict['resource']['aws_sns_topic']['monitoring'] = {
-                'name': monitoring_topic_name(config)
-            }
+    topic_name, create_topic = monitoring_topic_name(config)
+    if create_topic:
+        main_dict['resource']['aws_sns_topic']['monitoring'] = {
+            'name': topic_name
+        }
 
     return main_dict
-
-
-def generate_outputs(cluster_name, cluster_dict, config):
-    """Add the outputs to the Terraform cluster dict.
-
-    Args:
-        cluster_name (str): The name of the currently generating cluster
-        cluster_dict (defaultdict): The dict containing all Terraform config for
-                                    a given cluster.
-        config (dict): The loaded config from the 'conf/' directory
-
-    Returns:
-        bool: Result of applying all outputs
-    """
-    output_config = config['clusters'][cluster_name].get('outputs')
-    if output_config:
-        for tf_module, output_vars in sorted(output_config.items()):
-            for output_var in output_vars:
-                cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
-                    'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}
-
-    return True
 
 
 def generate_cluster(config, cluster_name):
@@ -325,11 +322,6 @@ def generate_cluster(config, cluster_name):
 
     if modules.get('kinesis'):
         if not generate_kinesis_streams(cluster_name, cluster_dict, config):
-            return
-
-    outputs = config['clusters'][cluster_name].get('outputs')
-    if outputs:
-        if not generate_outputs(cluster_name, cluster_dict, config):
             return
 
     if modules.get('kinesis_events'):
@@ -607,28 +599,46 @@ def _generate_global_module(config):
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],
         'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
-        'alerts_table_read_capacity': (
-            config['global']['infrastructure']['alerts_table']['read_capacity']
-        ),
-        'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity']
-        ),
         'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout'],
         'sqs_use_prefix': use_prefix,
     }
 
-    if config['global']['infrastructure']['rule_staging'].get('enabled'):
-        global_module['enable_rule_staging'] = True
-        global_module['rules_table_read_capacity'] = (
-            config['global']['infrastructure']['rule_staging']['table']['read_capacity'])
-        global_module['rules_table_write_capacity'] = (
-            config['global']['infrastructure']['rule_staging']['table']['write_capacity'])
+    # The below code applies settings for resources only if the settings are explicitly
+    # defined. This is because these resources have defaults defined in the
+    # ./modules/tf_globals module. This will allow for overriding these setting, but
+    # avoids storing defaults in mulitple locations
+    if 'alerts_table' in config['global']['infrastructure']:
+        for setting in {'read_capacity', 'write_capacity'}:
+            value = config['global']['infrastructure']['alerts_table'].get(setting)
+            if value:
+                global_module['alerts_table_{}'.format(setting)] = value
+
+    alert_fh_settings_with_defaults = {
+        'bucket_name',
+        'buffer_size',
+        'buffer_interval',
+        'cloudwatch_log_retention',
+        'compression_format',
+    }
+
+    if 'alerts_firehose' in config['global']['infrastructure']:
+        for setting in alert_fh_settings_with_defaults:
+            value = config['global']['infrastructure']['alerts_firehose'].get(setting)
+            if not value:
+                continue
+
+            global_module['alerts_firehose_{}'.format(setting)] = value
+
+    if 'rule_staging' in config['global']['infrastructure']:
+        if config['global']['infrastructure']['rule_staging'].get('enabled'):
+            global_module['enable_rule_staging'] = True
+            for setting in {'table_read_capacity', 'table_write_capacity'}:
+                value = config['global']['infrastructure']['rule_staging'].get(setting)
+                if value:
+                    # Defaults are set for this in the terraform module, so skip
+                    global_module['rules_{}'.format(setting)] = value
 
     return global_module
-
-
-def _config_get_logging_bucket(config):
-    return config['global']['s3_access_logging']['logging_bucket']
 
 
 def _create_terraform_module_file(generated_config, filename):

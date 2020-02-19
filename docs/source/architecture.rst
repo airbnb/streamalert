@@ -1,6 +1,6 @@
+############
 Architecture
-============
-
+############
 StreamAlert consists of multiple AWS components connected together and managed by Terraform.
 
 .. figure:: ../images/sa-complete-arch.png
@@ -8,9 +8,10 @@ StreamAlert consists of multiple AWS components connected together and managed b
   :align: center
   :target: _images/sa-complete-arch.png
 
-Data Lifecycle
---------------
 
+**************
+Data Lifecycle
+**************
 1. Log data can come through any of the supported `data sources <datasources.html>`_.
 This includes Kinesis, S3, SNS, or using a `StreamAlert App <app-configuration.html>`_ to periodically
 poll data from a third-party API.

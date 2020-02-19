@@ -18,6 +18,7 @@ import json
 import os
 import shutil
 
+from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert_cli.athena.handler import create_table
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
@@ -112,7 +113,7 @@ class TerraformInitCommand(CLICommand):
 
         # we need to manually create the streamalerts table since terraform does not support this
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+        alerts_bucket = firehose_alerts_bucket(config)
         create_table('alerts', alerts_bucket, config)
 
         LOGGER.info('Building remainding infrastructure')
@@ -189,7 +190,7 @@ class TerraformDestroyCommand(CLICommand):
                 '''\
                 Example:
 
-                    manage.py destroy --target aws_s3_bucket.streamalerts
+                    manage.py destroy --target aws_s3_bucket-streamalerts
                 '''
             )
         )

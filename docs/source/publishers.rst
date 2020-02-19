@@ -1,29 +1,27 @@
+##########
 Publishers
-==========
-
-Overview
---------
+##########
 
 Publishers are a framework for transforming alerts prior to dispatching to outputs, on a per-rule basis.
 This allows users to customize the look and feel of alerts.
 
 
+***********************
 How do Publishers work?
------------------------
+***********************
 
 Publishers are blocks of code that are run during alert processing, immediately prior to dispatching
 an alert to an output.
 
 
-
+***************************
 Implementing new Publishers
----------------------------
-
+***************************
 All publishers must be added to the ``publishers`` directory. Publishers have two valid syntaxes:
 
 
-**Function**
-
+Function
+========
 Implement a top-level function with that accepts two arguments: An Alert and a dict. Decorate this function
 with the ``@Register`` decorator.
 
@@ -37,8 +35,8 @@ with the ``@Register`` decorator.
     return {}
 
 
-**Class**
-
+Class
+=====
 Implement a class that inherits from the ``AlertPublisher`` and fill in the implementations for ``publish()``.
 Decorate the class with the ``@Register`` decorator.
 
@@ -54,8 +52,8 @@ Decorate the class with the ``@Register`` decorator.
       return {}
 
 
-**Recommended Implementation**
-
+Recommended Implementation
+==========================
 Publishers should always return dicts containing only simple types (str, int, list, dict).
 
 Publishers are executed in series, each passing its published ``Alert`` to the next publisher. The ``publication``
@@ -75,9 +73,9 @@ doing in-place modifications of the publications, and should prefer to copy-and-
     return publication
 
 
+*****************
 Preparing Outputs
------------------
-
+*****************
 In order to take advantage of Publishers, all outputs must be implemented with the following guidelines:
 
 **Use compose_alert()**
@@ -101,8 +99,8 @@ All data returned by ``compose_alert()`` should be assumed as optional.
     make_api_call(misc_data=publication)
 
 
-**"Default" Implementations**
-
+"Default" Implementations
+=========================
 For output-specific fields that are mandatory (such as an incident Title or assignee), each output
 should offer a default implementation:
 
@@ -114,8 +112,8 @@ should offer a default implementation:
     # ...
 
 
-**Custom fields**
-
+Custom Fields
+=============
 Outputs can be implemented to offer custom fields that can be filled in by Publishers. This (optionally)
 grants fine-grained control of outputs to Publishers. Such fields should adhere to the following conventions:
 
@@ -143,8 +141,8 @@ Below is an example of how you could implement an output:
     make_api_call(title, body_html, data=publication)
 
 
-**Alert Fields**
-
+Alert Fields
+============
 When outputs require mandatory fields that are not subject to publishers, they should reference the ``alert``
 fields directly:
 
@@ -155,9 +153,9 @@ fields directly:
     # ...
 
 
+**********************
 Registering Publishers
-----------------------
-
+**********************
 Register publishers on a rule using the ``publisher`` argument on the ``@rule`` decorator:
 
 .. code-block:: python
@@ -176,8 +174,9 @@ Register publishers on a rule using the ``publisher`` argument on the ``@rule`` 
 The ``publishers`` argument is a structure containing references to **Publishers** and can follow any of the
 following structures:
 
-**Single Publisher**
 
+Single Publisher
+================
 .. code-block:: python
 
   publishers=publisher_1
@@ -185,8 +184,8 @@ following structures:
 When using this syntax, the given publisher will be applied to all outputs.
 
 
-**List of Publishers**
-
+List of Publishers
+==================
 .. code-block:: python
 
   publishers=[publisher_1, publisher_2, publisher_3]
@@ -194,8 +193,8 @@ When using this syntax, the given publisher will be applied to all outputs.
 When using this syntax, all given publishers will be applied to all outputs.
 
 
-**Dict mapping Output strings to Publisher**
-
+Dict mapping Output strings to Publisher
+========================================
 .. code-block:: python
 
   publishers={
@@ -211,18 +210,18 @@ specific outputs (e.g. ``pagerduty:analyst``).
 The order in which publishers are loaded will dictate the order in which they are executed.
 
 
+****************
 DefaultPublisher
-----------------
-
+****************
 When the ``publishers`` argument is omitted from a ``@rule``, a ``DefaultPublisher`` is loaded and used. This
 also occurs when the ``publishers`` are misconfigured.
 
 The ``DefaultPublisher`` is reverse-compatible with old implementations of ``alert.output_dict()``.
 
 
-Putting It All Together...
---------------------------
-
+***********************
+Putting It All Together
+***********************
 Here's a real-world example of how to effectively use Publishers and Outputs:
 
 PagerDuty requires all Incidents be created with an `Incident Summary`, which appears at as the title of every

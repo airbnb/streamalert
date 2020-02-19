@@ -7,7 +7,7 @@ variable "cluster" {
 }
 
 variable "cloudwatch_logs_destination_arn" {
-  type = "string"
+  type = string
 }
 
 variable "flow_log_filter" {
@@ -32,4 +32,3 @@ variable "vpcs" {
   type    = list(string)
   default = []
 }
-

@@ -17,6 +17,7 @@ from collections import defaultdict, OrderedDict
 import json
 import os
 
+from streamalert.shared import CLUSTERED_FUNCTIONS
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
@@ -64,6 +65,44 @@ class SchemaSorter:
         # If the index is -1 (or unset), use the current "max_index"
         # Otherwise, return the actual priority value
         return self.max_index if value == -1 else value
+
+
+def firehose_data_bucket(config):
+    """Get the bucket name to be used for historical data retention
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        string|bool: The bucket name to be used for historical data retention. Returns
+            False if firehose is not configured
+    """
+    # The default name is <prefix>-streamalert-data but can be overridden
+    firehose_config = config['global']['infrastructure'].get('firehose')
+    if not firehose_config:
+        return False
+
+    return firehose_config.get(
+        'bucket_name',
+        '{}-streamalert-data'.format(config['global']['account']['prefix'])
+    )
+
+
+def firehose_alerts_bucket(config):
+    """Get the bucket name to be used for historical alert retention
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        string: The bucket name to be used for historical alert retention
+    """
+    # The default name is <prefix>-streamalerts but can be overridden
+    # The alerts firehose is not optional, so this should always return a value
+    return config['global']['infrastructure'].get('alerts_firehose', {}).get(
+        'bucket_name',
+        '{}-streamalerts'.format(config['global']['account']['prefix'])
+    )
 
 
 def parse_lambda_arn(function_arn):
@@ -255,12 +294,25 @@ def _validate_config(config):
                 raise ConfigError("'data_sources' missing for cluster {}".format(cluster_name))
             _validate_sources(cluster_name, cluster_attrs['data_sources'], existing_sources)
 
-            if not cluster_attrs.get('modules', {}).get('streamalert'):
-                error = "'streamalert' module is missing in the '{}' cluster".format(
-                    cluster_name
-                )
-                if cluster_attrs.get('modules', {}).get('stream_alert'):
-                    error += ". 'stream_alert' should be renamed to 'streamalert'"
+            for func in CLUSTERED_FUNCTIONS:
+                config_name = '{}_config'.format(func)
+                if config_name in cluster_attrs:
+                    continue
+
+                error = "'{}' is missing in the '{}' cluster".format(config_name, cluster_name)
+
+                modules = cluster_attrs.get('modules', {})
+                old_format = None
+                for key in {'streamalert', 'stream_alert'}:
+                    if key in modules:
+                        old_format = key
+
+                if old_format:
+                    error += (
+                        ". The usage of the '{}' within 'modules' has been deprecated and '{}'"
+                        "should be included as a top level key"
+                    ).format(old_format, config_name)
+
                 raise ConfigError(error)
 
     if TopLevelConfigKeys.THREAT_INTEL in config:
