@@ -262,18 +262,15 @@ class TestQueryParameterGenerator:
         )
 
 
-class TestQueryPacksManagerFactory:
-    """This is just here for coverage..."""
+@patch('streamalert.scheduled_queries.query_packs.manager.QueryPacksManager')
+def test_new_manager(constructor_spy):
+    """StreamQuery - QueryPacksManagerFactory - new_manager"""
+    context = MagicMock(name='MockedExecutionContext')
+    factory = QueryPacksManagerFactory(context)
 
-    @patch('streamalert.scheduled_queries.query_packs.manager.QueryPacksManager')
-    def test_new_manager(self, constructor_spy):
-        """StreamQuery - QueryPacksManagerFactory - new_manager"""
-        context = MagicMock(name='MockedExecutionContext')
-        factory = QueryPacksManagerFactory(context)
+    instance = MagicMock(name='MockedManager')
+    constructor_spy.return_value = instance
 
-        instance = MagicMock(name='MockedManager')
-        constructor_spy.return_value = instance
+    assert_equals(factory.new_manager(), instance)
 
-        assert_equals(factory.new_manager(), instance)
-
-        constructor_spy.assert_called_with(context)
+    constructor_spy.assert_called_with(context)
