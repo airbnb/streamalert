@@ -88,51 +88,51 @@ def configure_container(container):
     container.register(ServiceDefinition('boto3_kinesis_client', _make_boto3_kinesis_client))
 
 
-def _make_command_processor(_container):
+def _make_command_processor(container):
     return CommandProcessor(
-        logger=_container.get('logger'),
-        kinesis=_container.get('streamalert_forwarder'),
-        state_manager=_container.get('state_manager'),
-        manager_factory=_container.get('query_pack_manager_factory')
+        logger=container.get('logger'),
+        kinesis=container.get('streamalert_forwarder'),
+        state_manager=container.get('state_manager'),
+        manager_factory=container.get('query_pack_manager_factory')
     )
 
 
-def _make_logger(_container):
-    logger = logging.getLogger(_container.get_parameter('command_name'))
-    logger.setLevel(_container.get_parameter('log_level').upper())
+def _make_logger(container):
+    logger = logging.getLogger(container.get_parameter('command_name'))
+    logger.setLevel(container.get_parameter('log_level').upper())
     logging.basicConfig(
         format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s'
     )
     return logger
 
 
-def _make_kinesis(_container):
+def _make_kinesis(container):
     return KinesisClient(
-        logger=_container.get('logger'),
-        client=_container.get('boto3_kinesis_client'),
-        kinesis_stream=_container.get_parameter('kinesis_stream')
+        logger=container.get('logger'),
+        client=container.get('boto3_kinesis_client'),
+        kinesis_stream=container.get_parameter('kinesis_stream')
     )
 
 
-def _make_cache(_container):
+def _make_cache(container):
     cache = StateManager(
-        logger=_container.get('logger')
+        logger=container.get('logger')
     )
 
     return cache
 
 
-def _make_athena(_container):
+def _make_athena(container):
     return AthenaClient(
-        logger=_container.get('logger'),
-        client=_container.get('boto3_athena_client'),
-        database=_container.get_parameter('athena_database'),
-        results_bucket=_container.get_parameter('athena_results_bucket')
+        logger=container.get('logger'),
+        client=container.get('boto3_athena_client'),
+        database=container.get_parameter('athena_database'),
+        results_bucket=container.get_parameter('athena_results_bucket')
     )
 
 
-def _make_param_generator(_container):
-    return QueryParameterGenerator(_container.get('logger'), _container.get('clock'))
+def _make_param_generator(container):
+    return QueryParameterGenerator(container.get('logger'), container.get('clock'))
 
 
 def _make_query_pack_repo(_):
@@ -141,20 +141,20 @@ def _make_query_pack_repo(_):
     return repo
 
 
-def _make_query_pack_factory(_container):
+def _make_query_pack_factory(container):
     return QueryPacksManagerFactory(
-        _container.get('query_pack_execution_context')
+        container.get('query_pack_execution_context')
     )
 
 
-def _make_execution_context(_container):
+def _make_execution_context(container):
     return QueryPackExecutionContext(
-        cache=_container.get('state_manager'),
-        athena=_container.get('athena'),
-        logger=_container.get('logger'),
-        params=_container.get('query_parameter_generator'),
-        repository=_container.get('query_pack_repository'),
-        clock=_container.get('clock')
+        cache=container.get('state_manager'),
+        athena=container.get('athena'),
+        logger=container.get('logger'),
+        params=container.get('query_parameter_generator'),
+        repository=container.get('query_pack_repository'),
+        clock=container.get('clock')
     )
 
 
@@ -162,9 +162,9 @@ def _make_clock(_):
     return Clock()
 
 
-def _make_boto3_athena_client(_container):
-    region = _container.get_parameter('aws_region')
-    logger = _container.get('logger')
+def _make_boto3_athena_client(container):
+    region = container.get_parameter('aws_region')
+    logger = container.get('logger')
 
     config = botocore_client.Config(
         connect_timeout=5,
@@ -183,9 +183,9 @@ def _make_boto3_athena_client(_container):
         logger.error('AWS Athena Connection via Profile Failed')
 
 
-def _make_boto3_kinesis_client(_container):
-    region = _container.get_parameter('aws_region')
-    logger = _container.get('logger')
+def _make_boto3_kinesis_client(container):
+    region = container.get_parameter('aws_region')
+    logger = container.get('logger')
 
     config = botocore_client.Config(
         connect_timeout=5,
