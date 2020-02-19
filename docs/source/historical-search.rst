@@ -155,6 +155,8 @@ If the ``NumberOfMessagesSent`` is much higher than the other two metrics, the `
 For high throughput production environments, an interval of 1 to 2 minutes is recommended.
 
 
+.. _athena_user_guide:
+
 *****************
 Athena User Guide
 *****************
