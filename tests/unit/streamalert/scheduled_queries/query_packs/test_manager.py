@@ -14,13 +14,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime, timezone
-from mock import MagicMock
+from mock import MagicMock, patch
 from nose.tools import assert_equals, assert_false, assert_true
 
 from streamalert.scheduled_queries.query_packs.manager import (
-    QueryPack, QueryPacksManager
+    QueryPack, QueryPacksManager,
+    QueryPackExecutionContext,
+    QueryPacksManagerFactory,
 )
 from streamalert.scheduled_queries.query_packs.parameters import QueryParameterGenerator
+
+
+class TestQueryPackExecutionContext:
+    def __init__(self):
+        self._cache = MagicMock(name='cache')
+        self._athena = MagicMock(name='athena')
+        self._logger = MagicMock(name='logger')
+        self._params = MagicMock(name='params')
+        self._repo = MagicMock(name='repo')
+        self._clock = MagicMock(name='clock')
+        self._context = QueryPackExecutionContext(
+            cache=self._cache, athena=self._athena, logger=self._logger,
+            params=self._params, repository=self._repo, clock=self._clock
+        )
+
+    def test_methods(self):
+        """StreamQuery - QueryPackExecutionContext - Test methods"""
+        assert_equals(self._cache, self._context.state_manager)
+        assert_equals(self._athena, self._context.athena_client)
+        assert_equals(self._logger, self._context.logger)
+        assert_equals(self._params, self._context.parameter_generator)
+        assert_equals(self._repo, self._context.query_pack_repository)
+        assert_equals(self._clock, self._context.clock)
 
 
 class TestQueryPack:
@@ -61,6 +86,63 @@ class TestQueryPack:
         self._query_pack.load_from_cache()
         assert_equals(self._query_pack.query_execution_id, None)
         assert_false(self._query_pack.is_previously_started)
+
+    def test_query_execution_before_start(self):
+        """StreamQuery - QueryPack - query_execution - before start"""
+        assert_equals(self._query_pack.query_execution, None)
+
+    def test_query_execution_start(self):
+        """StreamQuery - QueryPack - query_execution - start"""
+
+        self._config.generate_query.return_value = 'MOCK QUERY STRING'
+        self._execution.athena_client.run_async_query.return_value = 'query_id'
+
+        assert_equals(self._query_pack.start_query(), 'query_id')
+
+        self._execution.athena_client.run_async_query.assert_called_with('MOCK QUERY STRING')
+
+    def test_query_execution_load(self):
+        """StreamQuery - QueryPack - load_query_execution"""
+
+        self._config.generate_query.return_value = 'MOCK QUERY STRING'
+        self._execution.athena_client.run_async_query.return_value = 'query_id'
+
+        self._query_pack.start_query()
+
+        mock_execution = MagicMock(name='MockedQueryExecution')
+        self._execution.athena_client.get_query_execution.return_value = mock_execution
+
+        assert_equals(self._query_pack.load_query_execution(), mock_execution)
+        assert_equals(self._query_pack.query_execution, mock_execution)
+
+    def test_fetch_results_done(self):
+        """StreamQuery - QueryPack - fetch_results - done"""
+        self._config.generate_query.return_value = 'MOCK QUERY STRING'
+        self._execution.athena_client.run_async_query.return_value = 'query_id'
+        self._query_pack.start_query()
+
+        mock_execution = MagicMock(name='MockedQueryExecution')
+        self._execution.athena_client.get_query_execution.return_value = mock_execution
+        self._query_pack.load_query_execution()
+
+        mock_execution.is_succeeded.return_value = True
+        mocked_res = MagicMock(name='MockedResult')
+        self._execution.athena_client.get_query_result.return_value = mocked_res
+
+        assert_equals(self._query_pack.fetch_results(), mocked_res)
+
+    def test_fetch_results_not_done(self):
+        """StreamQuery - QueryPack - fetch_results - not done"""
+        self._config.generate_query.return_value = 'MOCK QUERY STRING'
+        self._execution.athena_client.run_async_query.return_value = 'query_id'
+        self._query_pack.start_query()
+
+        mock_execution = MagicMock(name='MockedQueryExecution')
+        self._execution.athena_client.get_query_execution.return_value = mock_execution
+        self._query_pack.load_query_execution()
+
+        mock_execution.is_succeeded.return_value = False
+        assert_equals(self._query_pack.fetch_results(), None)
 
 
 class TestQueryPacksManager:
@@ -178,3 +260,20 @@ class TestQueryParameterGenerator:
         self._logger.error.assert_called_with(
             'Parameter generator does not know how to handle "unsupported"'
         )
+
+
+class TestQueryPacksManagerFactory:
+    """This is just here for coverage..."""
+
+    @patch('streamalert.scheduled_queries.query_packs.manager.QueryPacksManager')
+    def test_new_manager(self, constructor_spy):
+        """StreamQuery - QueryPacksManagerFactory - new_manager"""
+        context = MagicMock(name='MockedExecutionContext')
+        factory = QueryPacksManagerFactory(context)
+
+        instance = MagicMock(name='MockedManager')
+        constructor_spy.return_value = instance
+
+        assert_equals(factory.new_manager(), instance)
+
+        constructor_spy.assert_called_with(context)

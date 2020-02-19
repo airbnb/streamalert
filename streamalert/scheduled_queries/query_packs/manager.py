@@ -80,7 +80,7 @@ class QueryPack:
             param: self._execution_context.parameter_generator.generate(param)
             for param in self._configuration.query_parameters
         }
-        self._query_string = self.generate_query_string()
+        self._query_string = None
 
     @property
     def unique_id(self):
@@ -185,7 +185,8 @@ class QueryPack:
         self._execution_context.logger.debug(
             'Generated Parameters: {}'.format(json.dumps(params, indent=2))
         )
-        return self._configuration.generate_query(**params)
+        self._query_string = self._configuration.generate_query(**params)
+        return self._query_string
 
 
 class QueryPacksManagerFactory:
