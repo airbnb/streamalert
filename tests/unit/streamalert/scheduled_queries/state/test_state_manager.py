@@ -13,13 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import os
+from datetime import datetime
 
 from mock import MagicMock
 from nose.tools import assert_equals, assert_true, assert_false
 
 from streamalert.scheduled_queries.state.state_manager import (
-    FileWritingStateManager,
     StateManager,
     StepFunctionStateManager,
 )
@@ -67,14 +66,17 @@ class TestStepFunctionStateManager:
     def __init__(self):
         self._state_manager = None
         self._logger = None
+        self._clock = None
         self._sfsm = None
 
     def setup(self):
         self._logger = MagicMock(name='MockLogger')
+        self._clock = MagicMock(name='Clock')
         self._state_manager = StateManager(logger=self._logger)
         self._sfsm = StepFunctionStateManager(
             state_manager=self._state_manager,
-            logger=self._logger
+            logger=self._logger,
+            clock=self._clock
         )
 
     def test_has_load_write_empty(self):
@@ -95,32 +97,51 @@ class TestStepFunctionStateManager:
             }
         })
 
+    def test_first_load_will_properly_set_clock(self):
+        """StreamQuery - StepFunctionStateManager - First load sets clock"""
+        self._sfsm.load_from_step_function_event({
+            "streamquery_configuration": {
+                "clock": "2020-02-18T23:55:16Z",
+                "tags": [
+                    "hourly",
+                    "production"
+                ]
+            }
+        })
 
-class TestFileWritingStateManager:
+        self._clock.time_machine.assert_called_with(datetime(2020, 2, 18, 23, 55, 16))
 
-    @staticmethod
-    def test_write_then_load():
-        """StreamQuery - FileWritingStateManager"""
-        logger = MagicMock(name='MockLogger')
-        sm1 = StateManager(logger=logger)
-        file = os.path.dirname(os.path.realpath(__file__)) + '/testfile.json'
+    def test_subsequent_load_will_properly_set_clock(self):
+        """StreamQuery - StepFunctionStateManager - Subsequent load sets clock"""
+        self._sfsm.load_from_step_function_event({
+            "step_function_state": {
+                "streamquery_configuration": {
+                    "clock": "2020-02-18T23:55:16Z",
+                    "tags": [
+                        "hourly",
+                        "production"
+                    ]
+                }
+            }
+        })
 
-        sm1.set('key1', 'value1')
-        sm1.set('key2', 'value2')
+        self._clock.time_machine.assert_called_with(datetime(2020, 2, 18, 23, 55, 16))
 
-        fm1 = FileWritingStateManager(sm1, file, logger)
-        fm1.write_to_file()
+    def test_load_will_properly_set_tags(self):
+        """StreamQuery - StepFunctionStateManager - Load will set tags"""
+        self._sfsm.load_from_step_function_event({
+            "step_function_state": {
+                "streamquery_configuration": {
+                    "clock": "2020-02-18T23:55:16Z",
+                    "tags": [
+                        "hourly",
+                        "production"
+                    ]
+                }
+            }
+        })
 
-        # Now a new file should be created with the keys and values
-
-        sm2 = StateManager(logger=logger)
-
-        assert_false(sm2.has('key1'))
-
-        fm2 = FileWritingStateManager(sm2, file, logger)
-        fm2.load_from_file()
-
-        assert_true(sm2.has('key1'))
-        assert_equals(sm2.get('key1'), 'value1')
-
-        os.remove(file)
+        assert_equals(
+            self._state_manager.get('streamquery_configuration').get('tags'),
+            ['hourly', 'production']
+        )
