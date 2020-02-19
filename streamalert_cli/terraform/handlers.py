@@ -24,11 +24,7 @@ from streamalert_cli.athena.handler import create_table
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
 from streamalert_cli.terraform.generate import terraform_generate_handler
-from streamalert_cli.terraform.helpers import (
-    create_tf_state_lock_ddb_table,
-    destroy_tf_state_lock_ddb_table,
-    terraform_check
-)
+from streamalert_cli.terraform.helpers import terraform_check
 from streamalert_cli.utils import (
     add_clusters_arg,
     CLICommand,
@@ -65,11 +61,7 @@ class TerraformInitCommand(CLICommand):
         Returns:
             bool: False if errors occurred, True otherwise
         """
-        # Create the DynamoDB table for tf state locking before any terraform commands.
-        create_tf_state_lock_ddb_table(
-            config['global']['account']['region'],
-            '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
-        )
+
         # Stop here if only initializing the backend
         if options.backend:
             return cls._terraform_init_backend()
@@ -91,7 +83,8 @@ class TerraformInitCommand(CLICommand):
             'aws_s3_bucket.streamalert_secrets', 'aws_s3_bucket.terraform_remote_state',
             'aws_s3_bucket.streamalerts',
             'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
-            'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets'
+            'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets',
+            'aws_dynamodb_table.terraform_remote_state_lock'
         ]
         if not tf_runner(targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')
@@ -245,11 +238,6 @@ class TerraformDestroyCommand(CLICommand):
         if not tf_runner(action='destroy', auto_approve=True):
             return False
 
-        # Destroy DynamoDB state lock table
-        destroy_tf_state_lock_ddb_table(
-            config['global']['account']['region'],
-            '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
-        )
         # Remove old Terraform files
         return TerraformCleanCommand.handler(options, config)
 
