@@ -23,6 +23,9 @@ class AthenaQueryExecutionError(Exception):
     """Exception to be raised when an Athena query fails"""
 
 
+# FIXME (ryxias)
+#   At some point we should DRY out the implementation of this API client with the one in
+#   streamalert/shared/athena.py
 class AthenaClient:
     """A StreamAlert Athena Client for creating tables, databases, and executing queries"""
 
