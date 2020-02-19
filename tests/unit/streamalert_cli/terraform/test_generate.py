@@ -126,6 +126,20 @@ class TestTerraformGenerate:
                         'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
                     }
                 },
+                'aws_dynamodb_table': {
+                    'terraform_remote_state_lock': {
+                        'name': 'unit-test_streamalert_terraform_state_lock',
+                        'billing_mode': 'PAY_PER_REQUEST',
+                        'hash_key': 'LockID',
+                        'attribute': {
+                            'name': 'LockID',
+                            'type': 'S'
+                        },
+                        'tags': {
+                            'Name': 'StreamAlert'
+                        }
+                    }
+                },
                 'aws_s3_bucket': {
                     'streamalert_secrets': {
                         'bucket': 'unit-test-streamalert-secrets',
