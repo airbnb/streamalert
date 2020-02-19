@@ -93,8 +93,7 @@ Table of Contents
   :maxdepth: 2
   :caption: Historical Search
 
-  athena-overview
-  athena-arch
+  athena-architecture
   athena-user-guide
   firehose
   scheduled-queries
