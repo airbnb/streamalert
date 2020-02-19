@@ -1,6 +1,6 @@
+#######
 Metrics
-=======
-
+#######
 StreamAlert allows to enable `Enhanced Monitoring`_ to surface infrastructure metrics at a granular level.
 
 .. _Enhanced Monitoring: https://docs.aws.amazon.com/kinesis/latest/APIReference/API_EnableEnhancedMonitoring.html
@@ -27,14 +27,15 @@ All of CloudWatch's features are at your disposal: graphing, dashboards, alertin
 
 These metrics are useful for debugging, alerting on infrastructure metrics you care about, or for just getting a sense of the scale at which you're analyzing and alerting on data.
 
+
 .. _custom_metrics:
 
+**************
 Custom Metrics
---------------
+**************
+By default, StreamAlert will log various custom metrics to AWS CloudWatch Metrics via Amazon CloudWatch Logs `Metric Filters <http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/MonitoringLogData.html>`_.
 
-By default, StreamAlert will log various custom metrics to AWS CloudWatch via AWS CloudWatch Logs `Metric Filters <http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/MonitoringLogData.html>`_.
-
-AWS CloudWatch Logs Metric Filters utilize `Filter Patterns <http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html>`_ to provide an extremely low-cost and highly scalable
+Amazon CloudWatch Logs Metric Filters utilize `Filter Patterns <http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html>`_ to provide an extremely low-cost and highly scalable
 approach to tracking custom metrics.
 
 The decision to use Metric Filters vs `CloudWatch PutMetricData <http://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricData.html>`_ was made easy due to the
@@ -51,8 +52,7 @@ Custom metrics are logged to a unique `StreamAlert` namespace within CloudWatch 
 Custom metrics definitions are found within ``streamalert/shared/metrics.py``.
 
 Classifier Custom Metrics
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
+=========================
 - FailedParses
 - FirehoseFailedRecords
 - FirehoseRecordsSent
@@ -68,20 +68,19 @@ Classifier Custom Metrics
 
 
 Rules Engine Custom Metrics
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+===========================
 - FailedDynamoWrites
 - TriggeredAlerts
 
-Alert Merger Custom Metrics
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Alert Merger Custom Metrics
+===========================
 - AlertAttempts
 
 
+***********************
 Toggling Custom Metrics
------------------------
-
+***********************
 Logging of custom metrics will be enabled by default for the Lambda functions that support this feature.
 
 To globally (for all clusters) disable custom metrics for the classifier function:
@@ -101,9 +100,9 @@ To disable custom metrics for the classifier function within specific cluster:
 Swap the ``--disable`` flag for ``--enable`` in the above commands to have the inverse affect.
 
 
+*************************
 Alarms for Custom Metrics
--------------------------
-
+*************************
 With the addition of custom metrics comes the added bonus of CloudWatch alarms for custom metrics.
 StreamAlert's CLI can be used to add alarms on custom metrics as you see fit. Custom metric alarms
 can be applied to both **aggregate** metrics (across all clusters), or one or more **cluster**.
@@ -122,11 +121,12 @@ To get an up-to-date list of metrics to which alarms can be assigned on an aggre
 
 
 The required arguments for the ``create-alarm`` and ``create-cluster-alarm`` commands mimic what is
-required by AWS CloudWatch's `PutMetricAlarm API <http://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html>`_.
+required by AWS CloudWatch Metric's `PutMetricAlarm API <http://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html>`_.
 
 
-Example: FailedParses Alarm at the ``prod`` Cluster Level
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example: FailedParses, Cluster
+==============================
+FailedParses alarm at the ``prod`` cluster level
 
 .. code-block:: bash
 
@@ -142,8 +142,9 @@ Example: FailedParses Alarm at the ``prod`` Cluster Level
   --statistic Sum
 
 
-Example: TotalRecords Alarm on a Global Level
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example: TotalRecords, Global
+=============================
+TotalRecords alarm on a global level
 
 .. code-block:: bash
 

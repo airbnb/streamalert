@@ -7,7 +7,11 @@ output "stream_name" {
 }
 
 output "username" {
-  value = aws_iam_access_key.streamalert.*.user
+  value = aws_iam_user.streamalert.*.name
+}
+
+output "user_arn" {
+  value = aws_iam_user.streamalert.*.arn
 }
 
 output "access_key_id" {

@@ -59,6 +59,9 @@ project = u'streamalert'
 copyright = u''
 author = u''
 
+# Use a custom favicon
+html_favicon = '../images/sa-square-logo-standalone.png'
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.

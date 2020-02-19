@@ -63,7 +63,8 @@ class FirehoseClient:
     def __init__(self, prefix, firehose_config=None, log_sources=None):
         self._prefix = (
             '{}_'.format(prefix)
-            if firehose_config and firehose_config.get('use_prefix')
+            # This default value must be consistent with the classifier Terraform config
+            if firehose_config and firehose_config.get('use_prefix', True)
             else ''
         )
         self._client = boto3.client('firehose', config=boto_helpers.default_config())

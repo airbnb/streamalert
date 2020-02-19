@@ -406,7 +406,7 @@ class TestS3Driver:
 
     def test_get_s3_secrets_bucket(self):
         """S3Driver - Get S3 Secrets Bucket Name"""
-        assert_equal(self._s3_driver.get_s3_secrets_bucket(), 'rawr.streamalert.secrets')
+        assert_equal(self._s3_driver.get_s3_secrets_bucket(), 'rawr-streamalert-secrets')
 
 
 class TestS3DriverWithFileDriver:

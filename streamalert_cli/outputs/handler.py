@@ -56,7 +56,10 @@ class OutputCommand(CLICommand):
         account_config = config['global']['account']
         region = account_config['region']
         prefix = account_config['prefix']
-        kms_key_alias = account_config['kms_key_alias']
+        kms_key_alias = account_config.get(
+            'kms_key_alias',
+            '{}_streamalert_secrets'.format(prefix)
+        )
         # Verify that the word alias is not in the config.
         # It is interpolated when the API call is made.
         if 'alias/' in kms_key_alias:

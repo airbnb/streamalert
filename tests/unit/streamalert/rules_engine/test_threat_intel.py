@@ -64,11 +64,7 @@ class TestThreatIntel:
             },
             'clusters': {
                 'prod': {
-                    'modules': {
-                        'streamalert': {
-                            'enable_threat_intel': True
-                        }
-                    }
+                    'enable_threat_intel': True
                 }
             }
         }
@@ -522,11 +518,7 @@ class TestThreatIntel:
             },
             'clusters': {
                 'prod': {
-                    'modules': {
-                        'streamalert': {
-                            'enable_threat_intel': False
-                        }
-                    }
+                    'enable_threat_intel': False
                 }
             }
         }

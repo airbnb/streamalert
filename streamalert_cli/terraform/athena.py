@@ -13,9 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from streamalert.athena_partition_refresh.main import AthenaRefresher
 from streamalert.shared import metrics
 from streamalert_cli.manage_lambda.package import AthenaPackage
-from streamalert_cli.terraform.common import infinitedict, monitoring_topic_name
+from streamalert_cli.terraform.common import (
+    infinitedict,
+    monitoring_topic_arn,
+    s3_access_logging_bucket,
+)
 
 
 def generate_athena(config):
@@ -30,14 +35,14 @@ def generate_athena(config):
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    data_buckets = sorted(athena_config['buckets'])
+    data_buckets = sorted(AthenaRefresher.buckets_from_config(config))
 
     prefix = config['global']['account']['prefix']
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
     results_bucket_name = athena_config.get(
         'results_bucket',
-        '{}.streamalert.athena-results'.format(prefix)
+        '{}-streamalert-athena-results'.format(prefix)
     ).strip()
 
     queue_name = athena_config.get(
@@ -45,8 +50,9 @@ def generate_athena(config):
         '{}_streamalert_athena_s3_notifications'.format(prefix)
     ).strip()
 
+    logging_bucket, _ = s3_access_logging_bucket(config)
     athena_dict['module']['streamalert_athena'] = {
-        's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
+        's3_logging_bucket': logging_bucket,
         'source': './modules/tf_athena',
         'database_name': database,
         'queue_name': queue_name,
@@ -63,14 +69,9 @@ def generate_athena(config):
     }
 
     # Cloudwatch monitoring setup
-    sns_topic_name = monitoring_topic_name(config)
     athena_dict['module']['athena_monitoring'] = {
         'source': './modules/tf_monitoring',
-        'sns_topic_arn': 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-            region=config['global']['account']['region'],
-            account_id=config['global']['account']['aws_account_id'],
-            topic=sns_topic_name
-        ),
+        'sns_topic_arn': monitoring_topic_arn(config),
         'lambda_functions': ['{}_streamalert_athena_partition_refresh'.format(prefix)],
         'kinesis_alarms_enabled': False
     }

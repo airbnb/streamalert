@@ -51,7 +51,7 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
 
         config_data = basic_streamalert_config()
 
-        mock_cluster_contents = '{"data_sources": {}, "modules": {"streamalert": {"foo": "bar"}}}'
+        mock_cluster_contents = '{"data_sources": {}, "classifier_config": {"foo": "bar"}}'
 
         # Add config files which should be loaded
         self.fs.create_file('conf/clusters/prod.json', contents=mock_cluster_contents)
@@ -248,7 +248,7 @@ class TestConfigValidation:
     def test_missing_streamalert_module(self):
         """Shared - Config Validator, Missing streamalert Module"""
         config = basic_streamalert_config()
-        del config['clusters']['prod']['modules']['streamalert']
+        del config['clusters']['prod']['classifier_config']
         assert_raises(ConfigError, _validate_config, config)
 
     def test_config_invalid_ioc_types(self):
