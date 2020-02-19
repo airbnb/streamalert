@@ -82,34 +82,8 @@ Table of Contents
    rule-staging
    rule-promotion
    historical-search
+   scheduled-queries
    conf-schemas-examples
    troubleshooting
    faq
    alternatives
-
-.. _historical_search:
-
-.. toctree::
-  :maxdepth: 2
-  :caption: Historical Search
-
-  athena-architecture
-  athena-user-guide
-  scheduled-queries
-
-.. _rule_staging_and_promotion:
-
-.. toctree::
-  :maxdepth: 2
-  :caption: Rule Staging and Promotion
-
-  rule-staging
-  rule-promotion
-
-.. toctree::
-  :maxdepth: 2
-  :caption: StreamAlert Apps
-
-  app-configuration
-  app-auth-update
-  app-development
