@@ -75,6 +75,7 @@ def _terraform_defaults(region):
         },
     })
 
+
 def generate_s3_bucket(bucket, logging, **kwargs):
     """Generate an S3 Bucket dict
 
