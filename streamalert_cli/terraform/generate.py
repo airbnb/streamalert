@@ -161,6 +161,9 @@ def generate_main(config, init=False):
 
     logging_bucket, create_logging_bucket = s3_access_logging_bucket(config)
 
+    state_lock_table_name = '{}_streamalert_terraform_state_lock'.format(
+        config['global']['account']['prefix']
+    )
     # Setup the Backend depending on the deployment phase.
     # When first setting up StreamAlert, the Terraform statefile
     # is stored locally.  After the first dependencies are created,
@@ -179,9 +182,7 @@ def generate_main(config, init=False):
             ),
             'region': config['global']['account']['region'],
             'encrypt': True,
-            'dynamodb_table': '{}_streamalert_terraform_state_lock'.format(
-                config['global']['account']['prefix']
-            ),
+            'dynamodb_table': state_lock_table_name,
             'acl': 'private',
             'kms_key_id': 'alias/{}'.format(
                 config['global']['account'].get(
@@ -202,6 +203,22 @@ def generate_main(config, init=False):
             bucket=firehose_alerts_bucket(config),
             logging=logging_bucket
         )
+    }
+
+    # Configure remote state locking table
+    main_dict['resource']['aws_dynamodb_table'] = {
+        'terraform_remote_state_lock': {
+            'name': state_lock_table_name,
+            'billing_mode': 'PAY_PER_REQUEST',
+            'hash_key': 'LockID',
+            'attribute': {
+                'name': 'LockID',
+                'type': 'S'
+            },
+            'tags': {
+                'Name': 'StreamAlert'
+            }
+        }
     }
 
     # Create bucket for S3 access logs (if applicable)
