@@ -1,0 +1,17 @@
+{
+  "streamquery:version1": {
+    "parser": "json",
+    "schema": {
+      "streamquery_schema_version": "string",
+      "execution": {},
+      "data": {}
+    },
+    "configuration": {
+      "log_patterns": {
+        "streamquery_schema_version": [
+          "1.*.*"
+        ]
+      }
+    }
+  }
+}

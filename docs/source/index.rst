@@ -82,6 +82,7 @@ Table of Contents
    rule-staging
    rule-promotion
    historical-search
+   scheduled-queries
    conf-schemas-examples
    troubleshooting
    faq
