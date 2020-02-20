@@ -1,0 +1,199 @@
+[
+  {
+    "data": {
+      "Records": [
+        {
+          "additionalEventData": {
+            "configRuleArn": "...",
+            "configRuleInputParameters": "{}",
+            "configRuleName": "s3-bucket-logging-enabled",
+            "notificationJobType": "SCHEDULED_NOTIFICATION"
+          },
+          "awsRegion": "...",
+          "eventID": "...",
+          "eventName": "PutEvaluations",
+          "eventSource": "config.amazonaws.com",
+          "eventTime": "...",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "...",
+          "requestID": "...",
+          "requestParameters": {
+            "evaluations": [
+              {
+                "complianceResourceId": "BUCKET_ONE",
+                "complianceResourceType": "AWS::S3::Bucket",
+                "complianceType": "NON_COMPLIANT",
+                "orderingTimestamp": "..."
+              },
+              {
+                "complianceResourceId": "BUCKET_TWO",
+                "complianceResourceType": "AWS::S3::Bucket",
+                "complianceType": "COMPLIANT",
+                "orderingTimestamp": "..."
+              }
+            ],
+            "resultToken": "...",
+            "testMode": false
+          },
+          "responseElements": null,
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "...",
+            "arn": "...",
+            "principalId": "...",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "..."
+              },
+              "sessionIssuer": {
+                "accountId": "...",
+                "arn": "...",
+                "principalId": "...",
+                "type": "Role",
+                "userName": "..."
+              },
+              "webIdFederationData": {}
+            },
+            "type": "AssumedRole"
+          }
+        }
+      ]
+    },
+    "description": "Triggers an alert caused by a config compliance change of NON_COMPLIANT",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "config_compliance"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "additionalEventData": {
+            "configRuleArn": "...",
+            "configRuleInputParameters": "{}",
+            "configRuleName": "s3-bucket-logging-enabled",
+            "notificationJobType": "SCHEDULED_NOTIFICATION"
+          },
+          "awsRegion": "...",
+          "eventID": "...",
+          "eventName": "PutEvaluations",
+          "eventSource": "config.amazonaws.com",
+          "eventTime": "...",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "...",
+          "requestID": "...",
+          "requestParameters": {
+            "evaluations": [
+              {
+                "complianceResourceId": "BUCKET_ONE",
+                "complianceResourceType": "AWS::S3::Bucket",
+                "complianceType": "COMPLIANT",
+                "orderingTimestamp": "..."
+              },
+              {
+                "complianceResourceId": "BUCKET_TWO",
+                "complianceResourceType": "AWS::S3::Bucket",
+                "complianceType": "COMPLIANT",
+                "orderingTimestamp": "..."
+              }
+            ],
+            "resultToken": "...",
+            "testMode": false
+          },
+          "responseElements": null,
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "...",
+            "arn": "...",
+            "principalId": "...",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "..."
+              },
+              "sessionIssuer": {
+                "accountId": "...",
+                "arn": "...",
+                "principalId": "...",
+                "type": "Role",
+                "userName": "..."
+              },
+              "webIdFederationData": {}
+            },
+            "type": "AssumedRole"
+          }
+        }
+      ]
+    },
+    "description": "Will not trigger an alert caused by a config compliance change of COMPLIANT",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "eu-west-1",
+          "eventID": "...",
+          "eventName": "StartAutomationExecution",
+          "eventSource": "ssm.amazonaws.com",
+          "eventTime": "...",
+          "eventType": "...",
+          "eventVersion": "1.05",
+          "recipientAccountId": "...",
+          "requestID": "...",
+          "requestParameters": {
+            "domain": "vpc"
+          },
+          "responseElements": {
+            "allocationId": "..",
+            "domain": "vpc",
+            "networkBorderGroup": "...",
+            "publicIp": "...",
+            "publicIpv4Pool": "amazon",
+            "requestId": "..."
+          },
+          "sourceIPAddress": "config.amazonaws.com",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "...",
+            "arn": "...",
+            "principalId": "...",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "..."
+              },
+              "sessionIssuer": {
+                "accountId": "...",
+                "arn": "...",
+                "principalId": "...",
+                "type": "Role",
+                "userName": "..."
+              },
+              "webIdFederationData": {}
+            },
+            "type": "AssumedRole"
+          }
+        }
+      ]
+    },
+    "description": "Triggers an alert when auto-remediation of Config NON_COMPLIANT takes place",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "config_auto_remediation"
+    ]
+  }
+]
