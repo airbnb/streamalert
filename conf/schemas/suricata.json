@@ -1,0 +1,62 @@
+{
+  "suricata:alert": {
+    "schema": {
+      "alert": {
+        "action": "string",
+        "category": "string",
+        "gid": "integer",
+        "rev": "integer",
+        "severity": "string",
+        "signature": "string",
+        "signature_id": "integer"
+      },
+      "http": {
+        "url": "string",
+        "hostname": "string",
+        "protocol": "string",
+        "http_method": "string",
+        "status": "string",
+        "http_refer": "string",
+        "http_content_type": "string",
+        "http_user_agent": "string",
+        "length": "string"
+      },
+      "tls": {
+        "session_resumed": "string",
+        "sni": "string",
+        "fingerprint": "string",
+        "issuerdn": "string",
+        "notafter": "string",
+        "notbefore": "string",
+        "serial": "string",
+        "subject": "string",
+        "version": "string"
+      },
+      "packet_info": {
+        "linktype": "string"
+      },
+      "dest_ip": "string",
+      "event_type": "string",
+      "packet": "string",
+      "proto": "string",
+      "src_ip": "string",
+      "stream": "string",
+      "timestamp": "string",
+      "payload": "string",
+      "payload_printable": "string",
+      "tx_id": "string",
+      "app_proto": "string",
+      "vlan": "string",
+      "flow_id": "string",
+      "dest_port": "string",
+      "in_iface": "string",
+      "src_port": "string",
+      "icmp_code": "string",
+      "icmp_type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optinal_top_level_keys": []
+    }
+  }
+}
