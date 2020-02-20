@@ -1,18 +1,23 @@
+###############
 Dynamic Outputs
-===============
+###############
 
+
+*************
 Prerequisites
--------------
+*************
 
 * Any output assigned must be added with ``python manage.py output``
 * ``functions`` must return ``None``, ``str`` or ``List[str]`` which maps to an output configured with the above.
 * Only pass ``context`` if the ``rule`` sets context.
 
+
+********
 Overview
---------
+********
 
 Adds the ability to have custom logic run to define an ``output`` or ``outputs`` based on information within the ``record``.
-For information on supported outputs and how to add support for additional outputs, see `outputs <outputs.html>`_
+For information on supported outputs and how to add support for additional outputs, see `outputs`_
 
 As can be seen by the examples below, they are easy to configure, but add a very useful feature to StreamAlert. 
 
@@ -23,8 +28,8 @@ As can be seen by the examples below, they are easy to configure, but add a very
   Any ``output`` passed must be configured with ``./manage.py output -h``
 
 
-Dynamic Outputs, Simple
------------------------
+Example: Simple
+===============
 
 The below code block is considered a simple ``dynamic_output`` function, because the outputs are dynamically configured, but the information used still lives within the code. It also:
 
@@ -61,10 +66,10 @@ The below code block is considered a simple ``dynamic_output`` function, because
     # Rule logic
 
 
-Dynamic Outputs, With LookupTables
-----------------------------------
+Example: With LookupTables
+==========================
 
-With the simple addition of a `lookup-table <lookup-tables.html>`_ you can take a rule like ``cloudtrail_root_account_usage`` and configure it as such:
+With the simple addition of a `lookup-table`_ you can take a rule like ``cloudtrail_root_account_usage`` and configure it as such:
 
 .. code-block:: python
 
@@ -94,8 +99,8 @@ The above has the benefit of using information that lives outside of StreamAlert
 without having to alter StreamAlert code.
 
 
-Dynamic Outputs, With Other Data Source
----------------------------------------
+Example:  With Other Data Source
+================================
 
 .. code-block:: python
 
@@ -120,10 +125,17 @@ Dynamic Outputs, With Other Data Source
   def cloudtrail_root_account_usage(rec):
       # Rule logic
 
-
 The above example uses an external API to get the output map, which is to be queried with the ``account_id`` on the record.
 This is just an example, but hopefully highlights many ways in which ``dynamic_outputs`` can be used.
 
 .. warning:: 
   The above example could result in many queries to the API in use and could potentially slow down StreamAlert
   Lambdas when processing ``Alerts``.
+
+
+..
+   All references should be placed here for easy updating
+   This section is not included in the generated documentation
+
+.. _`lookup-table`: lookup-tables.html
+.. _`outputs`: outputs.html

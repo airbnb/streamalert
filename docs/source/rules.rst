@@ -258,8 +258,8 @@ The following table provides an overview of each rule option, with more details 
 
 :dynamic_outputs:
 
-The ``dynamic_outputs`` keyword argument defines additional `outputs <outputs.html>`_ to an Alert which are dynamically generated.
-See `dynamic_outputs <dynamic_outputs.html>`_ for more info
+  The ``dynamic_outputs`` keyword argument defines additional `outputs <outputs.html>`_ to an Alert which are dynamically generated.
+  See `dynamic_outputs <dynamic-outputs.html>`_ for more info
 
 :outputs:
 
