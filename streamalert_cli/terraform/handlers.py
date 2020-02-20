@@ -18,16 +18,13 @@ import json
 import os
 import shutil
 
+from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert_cli.athena.handler import create_table
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
 from streamalert_cli.terraform.generate import terraform_generate_handler
-from streamalert_cli.terraform.helpers import (
-    create_tf_state_lock_ddb_table,
-    destroy_tf_state_lock_ddb_table,
-    terraform_check
-)
+from streamalert_cli.terraform.helpers import terraform_check
 from streamalert_cli.utils import (
     add_clusters_arg,
     CLICommand,
@@ -64,11 +61,7 @@ class TerraformInitCommand(CLICommand):
         Returns:
             bool: False if errors occurred, True otherwise
         """
-        # Create the DynamoDB table for tf state locking before any terraform commands.
-        create_tf_state_lock_ddb_table(
-            config['global']['account']['region'],
-            '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
-        )
+
         # Stop here if only initializing the backend
         if options.backend:
             return cls._terraform_init_backend()
@@ -90,7 +83,8 @@ class TerraformInitCommand(CLICommand):
             'aws_s3_bucket.streamalert_secrets', 'aws_s3_bucket.terraform_remote_state',
             'aws_s3_bucket.streamalerts',
             'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
-            'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets'
+            'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets',
+            'aws_dynamodb_table.terraform_remote_state_lock'
         ]
         if not tf_runner(targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')
@@ -112,7 +106,7 @@ class TerraformInitCommand(CLICommand):
 
         # we need to manually create the streamalerts table since terraform does not support this
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+        alerts_bucket = firehose_alerts_bucket(config)
         create_table('alerts', alerts_bucket, config)
 
         LOGGER.info('Building remainding infrastructure')
@@ -189,7 +183,7 @@ class TerraformDestroyCommand(CLICommand):
                 '''\
                 Example:
 
-                    manage.py destroy --target aws_s3_bucket.streamalerts
+                    manage.py destroy --target aws_s3_bucket-streamalerts
                 '''
             )
         )
@@ -233,7 +227,7 @@ class TerraformDestroyCommand(CLICommand):
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
         # Do not check for terraform or aws creds again since these were checked above
-        if not terraform_generate_handler(config=config, init=False, check_tf=False,
+        if not terraform_generate_handler(config=config, init=True, check_tf=False,
                                           check_creds=False):
             return False
 
@@ -244,11 +238,6 @@ class TerraformDestroyCommand(CLICommand):
         if not tf_runner(action='destroy', auto_approve=True):
             return False
 
-        # Destroy DynamoDB state lock table
-        destroy_tf_state_lock_ddb_table(
-            config['global']['account']['region'],
-            '{}_streamalert_terraform_state_lock'.format(config['global']['account']['prefix'])
-        )
         # Remove old Terraform files
         return TerraformCleanCommand.handler(options, config)
 

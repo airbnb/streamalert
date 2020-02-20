@@ -16,6 +16,7 @@ limitations under the License.
 import json
 import os
 import re
+import string
 
 from streamalert.apps import StreamAlertApp
 from streamalert.shared import CLUSTERED_FUNCTIONS, config, metrics
@@ -62,13 +63,8 @@ class CLIConfig:
             LOGGER.warning('The Athena configuration already exists, skipping.')
             return
 
-        prefix = self.config['global']['account']['prefix']
-
         athena_config_template = {
             'enable_custom_metrics': False,
-            'buckets': {
-                '{}.streamalerts'.format(prefix): 'alert'
-            },
             'timeout': '60',
             'memory': '128',
             'log_level': 'info',
@@ -86,26 +82,12 @@ class CLIConfig:
             LOGGER.error('Invalid prefix type, must be string')
             return False
 
-        if '_' in prefix:
-            LOGGER.error('Prefix cannot contain underscores')
+        acceptable_chars = set([*string.digits, *string.ascii_letters])
+        if not set(prefix).issubset(acceptable_chars):
+            LOGGER.error('Prefix must contain only letters and numbers')
             return False
 
         self.config['global']['account']['prefix'] = prefix
-        self.config['global']['account']['kms_key_alias'] = '{}_streamalert_secrets'.format(prefix)
-
-        # Set logging bucket name only if we will be creating it
-        if self.config['global']['s3_access_logging'].get('create_bucket', True):
-            self.config['global']['s3_access_logging']['logging_bucket'] = (
-                '{}.streamalert.s3-logging'.format(prefix))
-
-        # Set Terraform state bucket name only if we will be creating it
-        if self.config['global']['terraform'].get('create_bucket', True):
-            self.config['global']['terraform']['tfstate_bucket'] = (
-                '{}.streamalert.terraform.state'.format(prefix))
-
-        self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
-        self.config['lambda']['athena_partition_refresh_config']['buckets'] \
-            ['{}.streamalerts'.format(prefix)] = 'alerts'
 
         self.write()
 
@@ -155,8 +137,9 @@ class CLIConfig:
             else:
                 # Classifier - toggle for each cluster
                 for cluster in clusters:
-                    self.config['clusters'][cluster]['modules']['streamalert'] \
-                        [function_config]['enable_custom_metrics'] = enabled
+                    self.config['clusters'][cluster][function_config]['enable_custom_metrics'] = (
+                        enabled
+                    )
 
         self.write()
 
@@ -199,9 +182,7 @@ class CLIConfig:
         for func in funcs:
             func_config = '{}_config'.format(func)
             for cluster, cluster_config in self.config['clusters'].items():
-                func_alarms = cluster_config['modules']['streamalert'][func_config].get(
-                    'custom_metric_alarms', {}
-                )
+                func_alarms = cluster_config[func_config].get('custom_metric_alarms', {})
                 if alarm_name in func_alarms:
                     LOGGER.error('An alarm with name \'%s\' already exists in the '
                                  '\'conf/clusters/%s.json\' cluster. %s', alarm_name, cluster,
@@ -222,8 +203,7 @@ class CLIConfig:
         return {
             cluster
             for cluster, cluster_config in self.config['clusters'].items()
-            if (self.config['clusters'][cluster]['modules']['streamalert']
-                [function_config].get('enable_custom_metrics'))
+            if (self.config['clusters'][cluster][function_config].get('enable_custom_metrics'))
         }
 
     def _add_cluster_metric_alarm(self, alarm_info):
@@ -240,7 +220,7 @@ class CLIConfig:
         config_name = '{}_config'.format(function_name)
         for cluster in alarm_info['clusters']:
             function_config = (
-                self.config['clusters'][cluster]['modules']['streamalert'][config_name])
+                self.config['clusters'][cluster][config_name])
 
             if not function_config.get('enable_custom_metrics'):
                 prompt = ('Metrics are not currently enabled for the \'{}\' function '

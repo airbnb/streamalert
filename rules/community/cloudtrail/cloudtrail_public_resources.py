@@ -51,7 +51,7 @@ def cloudtrail_public_resources(rec):
             policy_string = rec['requestParameters'].get('attributeValue', '')
     elif rec['eventName'] == 'CreateTopic':
         policy_string = (
-            rec.get('requestParameters', {}).get('attributes', '').get('Policy', '')
+            rec.get('requestParameters', {}).get('attributes', {}).get('Policy', '')
         )
 
     # Check ECR

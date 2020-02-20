@@ -83,7 +83,7 @@ data "aws_iam_policy_document" "default_outputs" {
     resources = ["${local.firehose_arn_prefix}:deliverystream/${var.prefix}_streamalert_alert_delivery"]
   }
 
-  // Allow saving alerts to the default .streamalerts bucket
+  // Allow saving alerts to the default -streamalerts bucket
   statement {
     effect = "Allow"
 
@@ -94,8 +94,8 @@ data "aws_iam_policy_document" "default_outputs" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}.streamalerts",
-      "arn:aws:s3:::${var.prefix}.streamalerts/*",
+      "arn:aws:s3:::${var.prefix}-streamalerts",
+      "arn:aws:s3:::${var.prefix}-streamalerts/*",
     ]
   }
 }

@@ -128,7 +128,6 @@ def test_generate_cloudwatch_monitoring_custom_sns():
 
     # Test a custom SNS topic name
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring'] = {'enabled': True}
-    CONFIG['global']['infrastructure']['monitoring']['create_sns_topic'] = False
     CONFIG['global']['infrastructure']['monitoring']['sns_topic_name'] = 'unit_test_monitoring'
 
     cluster_dict = common.infinitedict()

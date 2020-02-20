@@ -17,6 +17,7 @@ from streamalert.shared.logger import get_logger
 from streamalert_cli.terraform.cloudwatch_destinations import (
     generate_cloudwatch_destinations_internal,
 )
+from streamalert_cli.terraform.common import s3_access_logging_bucket
 from streamalert_cli.terraform.s3_events import generate_s3_events_by_bucket
 
 LOGGER = get_logger(__name__)
@@ -54,6 +55,8 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     account_ids.add(primary_account_id)
     account_ids = sorted(account_ids)
 
+    logging_bucket, _ = s3_access_logging_bucket(config)  # Just get the bucket name from the tuple
+
     module_info = {
         'source': './modules/tf_cloudtrail',
         'primary_account_id': primary_account_id,
@@ -61,7 +64,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'prefix': prefix,
         'cluster': cluster_name,
         's3_cross_account_ids': account_ids,
-        's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
+        's3_logging_bucket': logging_bucket,
         's3_bucket_name': s3_bucket_name,
     }
 

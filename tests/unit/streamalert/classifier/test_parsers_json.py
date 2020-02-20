@@ -1091,3 +1091,35 @@ class TestJSONParser:
         parser = JSONParser(options)
         result = parser._extract_via_json_regex_key(record_data)
         assert_equal(result, False)
+
+    def test_parse_record_not_dict_mismatch(self):
+        """JSONParser - Parse record not in dict type and doesn't match schema"""
+        options = {
+            'schema': {
+                'key': 'string'
+            },
+            'parser': 'json'
+        }
+        record_data = "[{\"key\": \"value\"}]"
+
+        parser = JSONParser(options)
+        assert_equal(parser.parse(record_data), False)
+
+    def test_parse_record_not_dict_matched(self):
+        """JSONParser - Parse record not in dict type but match the schema"""
+        options = {
+            'schema': {
+                'key': 'string'
+            },
+            'parser': 'json',
+            'configuration': {
+                'json_path': "[*]"
+            }
+        }
+        record_data = "[{\"key\": \"value\"}]"
+
+        parser = JSONParser(options)
+        assert_equal(parser.parse(record_data), True)
+
+        expected_result = [{'key': 'value'}]
+        assert_equal(parser.parsed_records, expected_result)

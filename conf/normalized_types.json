@@ -243,5 +243,10 @@
       "srcuser",
       "dstuser"
     ]
+  },
+  "trendmicro": {
+    "sourceAccount": [
+      "HostOwnerID"
+    ]
   }
 }

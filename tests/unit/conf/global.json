@@ -1,7 +1,7 @@
 {
   "account": {
     "aws_account_id": "12345678910",
-    "kms_key_alias": "unit-test",
+    "kms_key_alias": "alternate-alias",
     "prefix": "unit-test",
     "region": "us-west-1"
   },
@@ -25,9 +25,7 @@
       "enabled_logs": {},
       "use_prefix": true
     },
-    "monitoring": {
-      "create_sns_topic": true
-    },
+    "monitoring": {},
     "rule_staging": {
       "enabled": false,
       "table": {
@@ -35,15 +33,6 @@
         "write_capacity": 5
       }
     }
-  },
-  "s3_access_logging": {
-    "create_bucket": true,
-    "logging_bucket": "unit-test.streamalert.s3-logging"
-  },
-  "terraform": {
-    "create_bucket": true,
-    "tfstate_bucket": "unit-test.streamalert.terraform.state",
-    "tfstate_s3_key": "streamalert_state/terraform.tfstate"
   },
   "threat_intel": {
     "dynamodb_table": "test_table_name",

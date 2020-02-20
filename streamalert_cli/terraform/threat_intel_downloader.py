@@ -27,7 +27,7 @@ def generate_threat_intel_downloader(config):
         dict: Athena dict to be marshalled to JSON
     """
     # Use the monitoring topic as a dead letter queue
-    dlq_topic = monitoring_topic_name(config)
+    dlq_topic, _ = monitoring_topic_name(config)
 
     # Threat Intel Downloader module
     ti_downloader_config = config['lambda']['threat_intel_downloader_config']
