@@ -11,15 +11,15 @@ analyze, and alert on data from any environment, using data sources and alerting
 Computer security teams use StreamAlert to scan terabytes of log data every day for incident
 detection and response.
 
-Incoming log data will be classified and then processed by the StreamAlert rules
-engine running in your AWS account. Rule matches are reported to one or more alert outputs:
+Incoming log data will be classified and processed by the rules engine. Alerts are then sent
+to one or more outputs.
 
 .. figure:: ../images/sa-high-level-arch.png
   :alt: StreamAlert High Level Architecture
   :align: center
   :target: _images/sa-high-level-arch.png
 
-  (Click to enlarge)
+  (click to enlarge)
 
 
 ********

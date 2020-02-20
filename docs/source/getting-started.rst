@@ -272,5 +272,5 @@ dropdown on the left and preview the ``alerts`` table:
 (Here, my name prefix is ``testv2``.) If no records are returned, look for errors
 in the ``athena_partition_refresh`` function or try invoking it directly.
 
-And there you have it! Ingested log data is parsed, classified, and scanned by the StreamAlert rules
-engine and any resulting alerts are delivered to your configured output(s) within a matter of minutes.
+And there you have it! Ingested log data is parsed, classified, and scanned by the rules engine.
+Any resulting alerts are delivered to your configured output(s) within a matter of minutes.
