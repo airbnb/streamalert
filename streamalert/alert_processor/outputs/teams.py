@@ -132,7 +132,8 @@ class TeamsOutput(OutputDispatcher):
         This adds the entire record to a section as key/value pairs
 
         Args:
-            record (dict): asd
+            record (dict): The record that triggered the alert
+
         Returns:
             record_section (pymsteams.cardsection): record section for the outgoing card
         """
@@ -154,6 +155,7 @@ class TeamsOutput(OutputDispatcher):
 
         Args:
             alert (Alert): The alert
+
         Returns:
             alert_section (pymsteams.cardsection): alert section for the outgoing card
         """
