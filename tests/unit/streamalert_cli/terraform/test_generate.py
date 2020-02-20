@@ -141,28 +141,6 @@ class TestTerraformGenerate:
                     }
                 },
                 'aws_s3_bucket': {
-                    'streamalert_secrets': {
-                        'bucket': 'unit-test-streamalert-secrets',
-                        'acl': 'private',
-                        'force_destroy': True,
-                        'versioning': {
-                            'enabled': True
-                        },
-                        'logging': {
-                            'target_bucket': 'unit-test-streamalert-s3-logging',
-                            'target_prefix': 'unit-test-streamalert-secrets/'
-                        },
-                        'server_side_encryption_configuration': {
-                            'rule': {
-                                'apply_server_side_encryption_by_default': {
-                                    'sse_algorithm': 'aws:kms',
-                                    'kms_master_key_id': (
-                                        '${aws_kms_key.server_side_encryption.key_id}')
-                                }
-                            }
-                        },
-                        'policy': ANY
-                    },
                     'terraform_remote_state': {
                         'bucket': 'unit-test-streamalert-terraform-state',
                         'acl': 'private',
