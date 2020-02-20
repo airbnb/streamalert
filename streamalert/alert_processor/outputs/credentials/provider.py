@@ -405,7 +405,7 @@ class SSMDriver(CredentialsProvidingDriver):
 
     def get_parameter_prefix(self):
         """Generate the parameter prefix from prefix and descriptor"""
-        return "{}_streamalert_secrets".format(self._prefix)
+        return "{}/streamalert/outputs".format(self._prefix)
 
     def get_parameter_name(self, descriptor):
         parameter_prefix = self.get_parameter_prefix()

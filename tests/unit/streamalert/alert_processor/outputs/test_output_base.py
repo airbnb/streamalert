@@ -168,7 +168,7 @@ class TestOutputDispatcher:
     @mock_kms
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
-        param_name = '/{}_streamalert_secrets/{}'.format(
+        param_name = '/{}/streamalert/outputs/{}'.format(
             PREFIX, get_formatted_output_credentials_name('test_service', self._descriptor)
         )
 

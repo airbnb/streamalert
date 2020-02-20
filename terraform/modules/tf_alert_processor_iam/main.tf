@@ -63,7 +63,7 @@ data "aws_iam_policy_document" "output_secrets" {
   statement {
     effect    = "Allow"
     actions   = ["ssm:GetParameter"]
-    resources = ["arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.prefix}_streamalert_secrets/*"]
+    resources = ["arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.prefix}/streamalert/outputs/*"]
   }
 }
 
