@@ -37,7 +37,7 @@ To create tables for searching data sent to StreamAlert, run:
 
 .. code-block:: bash
 
-  $ python manage.py athena create-table \
+  python manage.py athena create-table \
     --bucket <prefix>-streamalert-data \
     --table-name <log_name>
 
@@ -54,8 +54,8 @@ Once the options above are set, deploy the infrastructure with the following com
 
 .. code-block:: bash
 
-  $ python manage.py build
-  $ python manage.py deploy --function classifier
+  python manage.py build
+  python manage.py deploy --function classifier
 
 
 *******************
@@ -135,7 +135,7 @@ If any of the settings above are changed from the initialized defaults, the Lamb
 
 .. code-block:: bash
 
-  $ python manage.py deploy --function athena
+  python manage.py deploy --function athena
 
 Going forward, if the deploy flag ``--function all`` is used, it will redeploy this function along with the ``rule`` function and ``alert`` function.
 

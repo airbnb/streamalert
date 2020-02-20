@@ -8,6 +8,7 @@ StreamAlert consists of multiple AWS components connected together and managed b
   :align: center
   :target: _images/sa-complete-arch.png
 
+  (click to enlarge)
 
 **************
 Data Lifecycle

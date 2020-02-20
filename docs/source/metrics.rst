@@ -87,14 +87,14 @@ To globally (for all clusters) disable custom metrics for the classifier functio
 
 .. code-block:: bash
 
-  $ python manage.py custom-metrics --disable --functions classifier
+  python manage.py custom-metrics --disable --functions classifier
 
 
 To disable custom metrics for the classifier function within specific cluster:
 
 .. code-block:: bash
 
-  $ python manage.py custom-metrics --disable --functions classifier --clusters <CLUSTER>
+  python manage.py custom-metrics --disable --functions classifier --clusters <CLUSTER>
 
 
 Swap the ``--disable`` flag for ``--enable`` in the above commands to have the inverse affect.
@@ -111,13 +111,13 @@ To get an up-to-date list of metrics to which alarms can be assigned on a cluste
 
 .. code-block:: bash
 
-  $ python manage.py create-cluster-alarm --help
+  python manage.py create-cluster-alarm --help
 
 To get an up-to-date list of metrics to which alarms can be assigned on an aggregate/global level, run:
 
 .. code-block:: bash
 
-  $ python manage.py create-alarm --help
+  python manage.py create-alarm --help
 
 
 The required arguments for the ``create-alarm`` and ``create-cluster-alarm`` commands mimic what is
@@ -130,16 +130,16 @@ FailedParses alarm at the ``prod`` cluster level
 
 .. code-block:: bash
 
-  $ manage.py create-cluster-alarm FailedParsesAlarm \
-  --metric FailedParses \
-  --metric-target cluster \
-  --comparison-operator GreaterThanOrEqualToThreshold \
-  --evaluation-periods 1 \
-  --period 600 \
-  --threshold 5.0 \
-  --alarm-description 'Trigger this alarm if 5 or more failed parses occur within a 10 minute period in the cluster "prod"' \
-  --clusters prod \
-  --statistic Sum
+  python manage.py create-cluster-alarm FailedParsesAlarm \
+    --metric FailedParses \
+    --metric-target cluster \
+    --comparison-operator GreaterThanOrEqualToThreshold \
+    --evaluation-periods 1 \
+    --period 600 \
+    --threshold 5.0 \
+    --alarm-description 'Trigger this alarm if 5 or more failed parses occur within a 10 minute period in the cluster "prod"' \
+    --clusters prod \
+    --statistic Sum
 
 
 Example: TotalRecords, Global
@@ -148,14 +148,14 @@ TotalRecords alarm on a global level
 
 .. code-block:: bash
 
-  $ manage.py create-alarm MinimumTotalRecordsAlarm \
-  --metric TotalRecords \
-  --metric-target aggregate \
-  --comparison-operator LessThanThreshold \
-  --evaluation-periods 3 \
-  --period 600 \
-  --threshold 200000 \
-  --alarm-description 'Trigger this alarm if the total incoming records (aggregate) drops below 200000 for 3 consecutive 10 minute time periods in a row' \
-  --statistic Sum
+  python manage.py create-alarm MinimumTotalRecordsAlarm \
+    --metric TotalRecords \
+    --metric-target aggregate \
+    --comparison-operator LessThanThreshold \
+    --evaluation-periods 3 \
+    --period 600 \
+    --threshold 200000 \
+    --alarm-description 'Trigger this alarm if the total incoming records (aggregate) drops below 200000 for 3 consecutive 10 minute time periods in a row' \
+    --statistic Sum
 
 The custom metric alarms will notify StreamAlert's default SNS topic for monitoring: ``<prefix>_streamalert_monitoring``

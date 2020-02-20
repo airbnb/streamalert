@@ -55,8 +55,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'streamalert'
-copyright = u''
+project = u'StreamAlert'
+copyright = u'Airbnb, Inc.'
 author = u''
 
 # Use a custom favicon
