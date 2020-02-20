@@ -149,7 +149,7 @@ Running tests to ensure test events classify properly:
 
 .. code-block:: bash
 
-  $ python manage.py test classifier
+  python manage.py test classifier
 
 .. note:: The ``classifier`` test command does not test the efficacy of rules, and simply ensures
   defined test events classify as their expected schema type.
@@ -161,7 +161,7 @@ Running tests to ensure test events classify properly **and** trigger the design
 
 .. code-block:: bash
 
-  $ python manage.py test rules
+  python manage.py test rules
 
 
 Live Tests
@@ -170,7 +170,7 @@ Running tests to actually send alerts to a rule's configured outputs:
 
 .. code-block:: bash
 
-  $ python manage.py test live
+  python manage.py test live
 
 .. note:: The ``live`` test command does **not** invoke any deployed Lambda functions, and only
   uses the local code, test events, and rules. However, authentication secrets needed to send alerts
@@ -183,7 +183,7 @@ Any of the test commands above can be restricted to **specific files** to reduce
 
 .. code-block:: bash
 
-  $ python manage.py test classifier --test-files <test_file_01.json> <test_file_02>
+  python manage.py test classifier --test-files <test_file_01.json> <test_file_02>
 
 .. note:: Only the name of the file is required, with or without the file extension, not the entire path.
 
@@ -191,7 +191,7 @@ Tests can also be restricted to **specific rules**:
 
 .. code-block:: bash
 
-  $ python manage.py test rules --test-rules <rule_01> <rule_02>
+  python manage.py test rules --test-rules <rule_01> <rule_02>
 
 .. note:: Note that this is the name of the rule(s) themselves, not the name of the Python file containing the rule(s).
 
@@ -199,7 +199,7 @@ Tests can be directed to run against an alternative directory of test event file
 
 .. code-block:: bash
 
-  $ python manage.py test rules --files-dir /path/to/alternate/test/files/directory
+  python manage.py test rules --files-dir /path/to/alternate/test/files/directory
 
 .. note:: Note that this is the name of the rule(s) themselves, not the name of the Python file containing the rule(s).
 
@@ -210,7 +210,7 @@ Here is a sample command showing how to run tests against two test event files i
 
 .. code-block:: bash
 
-  $ python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
 
 This will produce output similar to the following::
 
@@ -283,7 +283,7 @@ rule that does not actually exist.
 
 .. code-block:: bash
 
-  $ python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
 
 ::
 

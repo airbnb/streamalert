@@ -38,7 +38,7 @@ Adding a new configuration for a currently supported service is handled using ``
 
 .. code-block:: bash
 
-  $ python manage.py output <SERVICE_NAME>
+  python manage.py output <SERVICE_NAME>
 
 .. note::
 
@@ -51,7 +51,7 @@ For example:
 
 .. code-block:: bash
 
-  $ python manage.py output slack
+  python manage.py output slack
 
 .. note::
 

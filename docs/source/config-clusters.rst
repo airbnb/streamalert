@@ -24,8 +24,8 @@ Changes to cluster configuration can be applied with one of the following:
 
 .. code-block:: bash
 
-  $ python manage.py build  # Apply all changes
-  $ python manage.py build --target cloudwatch_monitoring_*  # Only apply changes to CloudWatch Monitoring module for all clusters
+  python manage.py build  # Apply all changes
+  python manage.py build --target cloudwatch_monitoring_*  # Only apply changes to CloudWatch Monitoring module for all clusters
 
 *****************
 Required Settings
@@ -638,7 +638,7 @@ First, update the Kinesis Stream shard count with the following command:
 
 .. code-block:: bash
 
-  $ aws kinesis update-shard-count \
+  aws kinesis update-shard-count \
     --stream-name <prefix>_<cluster>_streamalert_kinesis \
     --target-shard-count <new_shard_count> \
     --scaling-type UNIFORM_SCALING
@@ -657,7 +657,7 @@ Finally, apply the Terraform changes to ensure a consistent state.
 
 .. code-block:: bash
 
-  $ python manage.py build --target kinesis
+  python manage.py build --target kinesis
 
 
 Kinesis Events

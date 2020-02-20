@@ -1,17 +1,16 @@
-###########
-StreamAlert
-###########
 .. image:: ../images/sa-banner.png
   :align: center
   :alt: StreamAlert
 
-StreamAlert is a serverless, real-time data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using data sources and alerting logic you define.
-Computer security teams use StreamAlert to scan terabytes of log data every day for incident detection and response.
 
-
-********
+########
 Overview
-********
+########
+StreamAlert is a serverless, real-time data analysis framework which empowers you to ingest,
+analyze, and alert on data from any environment, using data sources and alerting logic you define.
+Computer security teams use StreamAlert to scan terabytes of log data every day for incident
+detection and response.
+
 Incoming log data will be classified and then processed by the StreamAlert rules
 engine running in your AWS account. Rule matches are reported to one or more alert outputs:
 
