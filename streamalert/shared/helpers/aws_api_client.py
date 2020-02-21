@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import json
 import boto3
 
 from botocore.exceptions import ClientError
@@ -182,3 +183,71 @@ class AwsS3:
         except ClientError:
             LOGGER.error('An error occurred during S3 DownloadFileobj')
             raise
+
+
+class AwsSsm:
+    """Class containing helper functions for aws ssm"""
+
+    @staticmethod
+    def get_parameter(parameter_name, region, with_decryption=True):
+        """gets the parameter_name from SSM Parameter store
+
+        Args:
+            parameter_name (str): The name of the parameter to fetch
+            region (str): AWS region
+            with_decryption (bool): Should decryption be attempted via this call
+
+        Returns:
+            str: The parameter either encrypted or not
+
+        Raises:
+            ClientError
+        """
+        client = boto3.client('ssm', config=default_config(region=region))
+
+        try:
+            response = client.get_parameter(Name=parameter_name, WithDecryption=with_decryption)
+        except ClientError:
+            LOGGER.error('Error getting parameter %s', parameter_name)
+            raise
+        else:
+            return response["Parameter"]["Value"]
+
+    @staticmethod
+    def put_parameter(name, value, region, kms_key_alias):
+        """puts a parameter into SSM Parameter store
+
+        Args:
+            name (str): The name of the parameter to save
+            value (str or dict): The value of the parameter to save
+            region (str): AWS region
+            kms_key_alias (str): The kms key alias in use for secrets
+
+        Returns:
+            bool: True if successful else False
+        """
+        client = boto3.client('ssm', config=default_config(region=region))
+        result = False
+
+        key_id = 'alias/{}'.format(kms_key_alias)
+        parameter_value = json.dumps(value) if isinstance(value, dict) else str(value)
+        try:
+            client.put_parameter(
+                Name=name,
+                Description='StreamAlert Secret',
+                Value=parameter_value,
+                Type='SecureString',
+                KeyId=key_id,
+                Overwrite=True,
+                Tier='Standard'
+            )
+        except ClientError as err:
+            LOGGER.exception(
+                'Error saving parameter %s to SSM Param Store\n%s',
+                name, err
+            )
+            result = False
+        else:
+            result = True
+
+        return result

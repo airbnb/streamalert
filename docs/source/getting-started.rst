@@ -17,16 +17,13 @@ Install Dependencies
   brew install terraform  # MacOS Homebrew
   terraform --version     # Must be >= v0.12.9
 
-.. note:: Terraform versions lower than 0.12 are not supported. Recommend to install terraform version 0.12.9 or up.
+.. note::
 
-3. Install `virtualenv <https://virtualenv.pypa.io/en/stable/installation/>`_:
+  Terraform versions lower than 0.12 are not supported. We recommend installing Terraform
+  version 0.12.9 or greater.
 
-.. code-block:: bash
 
-  pip install --user virtualenv
-  virtualenv --version
-
-4. If you're on a Linux system, you may need to install the Python development libraries:
+3. If you are using Linux, you may need to install the Python development libraries:
 
 .. code-block:: bash
 
@@ -48,7 +45,7 @@ Download StreamAlert
 .. code-block:: bash
 
   cd streamalert
-  virtualenv -p python3.7 venv
+  python3.7 -m virtualenv venv
   source venv/bin/activate
 
 3. Install the StreamAlert requirements:
@@ -103,14 +100,14 @@ Deploy
 
 .. code-block:: bash
 
-  $ python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
-  $ python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
+  python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
+  python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
 2. Build the StreamAlert infrastructure for the first time:
 
 .. code-block:: bash
 
-  $ python manage.py init
+  python manage.py init
 
 There will be multiple Terraform prompts, type "yes" at each one to continue.
 
@@ -197,7 +194,7 @@ Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look
 
 .. code-block:: bash
 
-  $ python manage.py output aws-sns
+  python manage.py output aws-sns
 
   Please supply a short and unique descriptor for this SNS topic: test-email
 
@@ -223,10 +220,10 @@ alerts on any usage of the root AWS account. Change the rule decorator to:
 .. code-block:: bash
 
   # Hook the streamalert-test-data SNS topic up to the StreamAlert Classifier function
-  $ python manage.py build
+  python manage.py build
 
   # Deploy a new version of all of the Lambda functions with the updated rule and config files
-  $ python manage.py deploy --function all
+  python manage.py deploy --function all
 
 .. note:: Use ``build`` and ``deploy`` to apply any changes to StreamAlert's
    configuration or Lambda functions, respectively. Some changes (like this example) require both.
@@ -275,5 +272,5 @@ dropdown on the left and preview the ``alerts`` table:
 (Here, my name prefix is ``testv2``.) If no records are returned, look for errors
 in the ``athena_partition_refresh`` function or try invoking it directly.
 
-And there you have it! Ingested log data is parsed, classified, and scanned by the StreamAlert rules
-engine and any resulting alerts are delivered to your configured output(s) within a matter of minutes.
+And there you have it! Ingested log data is parsed, classified, and scanned by the rules engine.
+Any resulting alerts are delivered to your configured output(s) within a matter of minutes.

@@ -12,7 +12,7 @@ To initialize StreamAlert:
 
 .. code-block:: bash
 
-  $ python manage.py init
+  python manage.py init
 
 This will perform the following:
 
@@ -35,32 +35,32 @@ To deploy new changes for all AWS Lambda functions:
 
 .. code-block:: bash
 
-  $ python manage.py deploy --function all
+  python manage.py deploy --function all
 
 Optionally, to deploy changes for only a specific AWS Lambda function:
 
 .. code-block:: bash
 
-  $ python manage.py deploy --function alert
-  $ python manage.py deploy --function alert_merger
-  $ python manage.py deploy --function apps
-  $ python manage.py deploy --function athena
-  $ python manage.py deploy --function classifier
-  $ python manage.py deploy --function rule
-  $ python manage.py deploy --function rule_promo
-  $ python manage.py deploy --function threat_intel_downloader
+  python manage.py deploy --function alert
+  python manage.py deploy --function alert_merger
+  python manage.py deploy --function apps
+  python manage.py deploy --function athena
+  python manage.py deploy --function classifier
+  python manage.py deploy --function rule
+  python manage.py deploy --function rule_promo
+  python manage.py deploy --function threat_intel_downloader
 
 To apply infrastructure level changes (additional Kinesis Shards, new CloudTrails, etc), run:
 
 .. code-block:: bash
 
-  $ python manage.py build
+  python manage.py build
 
 To apply specific changes to speed up terraform run, use the ``list-targets`` command and the ``build`` command with the ``--target`` option:
 
 .. code-block:: bash
 
-  $ python manage.py list-targets
+  python manage.py list-targets
 
     Target                                                                                Type
     ----------------------------------------------------------------------------------------------
@@ -75,9 +75,9 @@ To apply specific changes to speed up terraform run, use the ``list-targets`` co
     metric_filters_Classifier_FirehoseRecordsSent_PROD                                    module
     ...
 
-  $ python manage.py build --target cloudwatch_monitoring_prod        # apply to single module
-  $ python manage.py build --target kinesis_prod classifier_prod_iam  # apply to two modules
-  $ python manage.py build --target metric_filters_Classifier_*_PROD  # apply to three modules
+  python manage.py build --target cloudwatch_monitoring_prod        # apply to single module
+  python manage.py build --target kinesis_prod classifier_prod_iam  # apply to two modules
+  python manage.py build --target metric_filters_Classifier_*_PROD  # apply to three modules
 
 
 Monitoring Functions
@@ -95,8 +95,8 @@ to point to the previous version:
 
 .. code-block:: bash
 
-  $ python manage.py rollback --function rule
-  $ python manage.py rollback --function alert
-  $ python manage.py rollback --function all
+  python manage.py rollback --function rule
+  python manage.py rollback --function alert
+  python manage.py rollback --function all
 
 This is helpful to quickly revert changes to Lambda functions, e.g. if a bad rule was deployed.

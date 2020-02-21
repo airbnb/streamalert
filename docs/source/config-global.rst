@@ -42,8 +42,8 @@ Options
 
   .. code-block:: bash
 
-    $ python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
-    $ python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
+    python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
+    python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
   However, if a different `region` is desired, it must be changed manually.
 
@@ -450,7 +450,7 @@ Options
 
   .. code-block:: bash
 
-    $ python manage.py rule-staging enable --true
+    python manage.py rule-staging enable --true
 
 
 S3 Access Logging

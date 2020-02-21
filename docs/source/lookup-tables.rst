@@ -168,9 +168,9 @@ It is **not** advisable (yet) for StreamAlert Lambdas to write values into Looku
 advisable for external Lambdas (or other processes) to manage the data in LookupTables.
 
 
-manage.py lookup-tables
-=======================
-Out of the box, there's a new StreamAlert CLI command, ``lookup-tables``, with three subcommands:
+CLI Management
+==============
+There is a StreamAlert CLI command for managing LookupTables, ``python manage.py lookup-tables``, with three subcommands:
 
 * ``describe-tables``
 * ``get``

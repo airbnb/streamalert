@@ -76,7 +76,7 @@ To get help configuring a new App, use:
 
 .. code-block:: bash
 
-  $ python manage.py app new --help
+  python manage.py app new --help
 
 
 Configuring an App
@@ -85,7 +85,7 @@ The StreamAlert CLI is used to add a new App configuration.
 
 .. code-block:: bash
 
-  $ python manage.py app new \
+  python manage.py app new \
   --type duo_auth \
   --cluster prod \
   --name duo_prod_collector \
@@ -150,7 +150,7 @@ The recommended process is to deploy both the `apps` function and the `classifie
 
 .. code-block:: bash
 
-  $ python manage.py deploy --function classifier apps
+  python manage.py deploy --function classifier apps
 
 
 Authorizing the Slack App
@@ -198,7 +198,7 @@ To list currently configured Apps (grouped by cluster), use the CLI command:
 
 .. code-block:: bash
 
-  $ python manage.py app list
+  python manage.py app list
 
 Example output::
 
@@ -221,7 +221,7 @@ To update an App's credentials, run the the following command:
 
 .. code-block:: bash
 
-  $ python manage.py app update-auth --cluster <cluster> --name <app_name>
+  python manage.py app update-auth --cluster <cluster> --name <app_name>
 
 
 This will have you follow a process similar to `configuring a new App <app-configuration.html#example-prompts-for-duo-auth>`_.
