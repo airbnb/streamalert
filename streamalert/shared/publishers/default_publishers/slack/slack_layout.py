@@ -16,9 +16,11 @@ limitations under the License.
 import calendar
 import cgi
 import json
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
-from streamalert.shared.publisher import AlertPublisher, Register
+from streamalert.shared.publishers import AlertPublisher, Register
 from streamalert.shared.description import RuleDescriptionParser
 
 RAUSCH = '#ff5a5f'

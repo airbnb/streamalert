@@ -15,7 +15,7 @@ limitations under the License.
 """
 from collections import deque, OrderedDict
 import re
-from streamalert.shared.publisher import Register, AlertPublisher
+from streamalert.shared.publishers import AlertPublisher, Register
 from streamalert.shared.normalize import Normalizer
 from streamalert.shared.utils import get_keys
 

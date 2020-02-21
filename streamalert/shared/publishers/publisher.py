@@ -19,6 +19,7 @@ from inspect import isclass
 
 from streamalert.shared.importer import import_folders
 from streamalert.shared.logger import get_logger
+# from streamalert.shared.publishers.default_publishers import g  # TODO: change this?
 
 LOGGER = get_logger(__name__)
 
@@ -117,16 +118,16 @@ class AlertPublisherRepository:
     As a usability optimization, using this Repository will eagerly load and register all
     publishers in the application.
     """
-    _PUBLISHERS_DIRECTORY = 'publishers'
+    _PUBLISHERS_DIRECTORY = 'default_publishers'
     _publishers = {}
     _is_imported = False
 
+    # TODO: change this?
     @classmethod
     def import_publishers(cls):
         if not cls._is_imported:
             import_folders(cls._PUBLISHERS_DIRECTORY)
             cls._is_imported = True
-
 
     @staticmethod
     def is_valid_publisher(thing):

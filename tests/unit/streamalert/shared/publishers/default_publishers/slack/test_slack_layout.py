@@ -17,7 +17,7 @@ limitations under the License.
 from datetime import datetime
 from nose.tools import assert_equal, assert_dict_equal, assert_less_equal
 
-from publishers.community.slack.slack_layout import (
+from streamalert.shared.publishers.default_publishers.slack.slack_layout import (
     AttachFullRecord,
     AttachPublication,
     AttachRuleInfo,

@@ -29,7 +29,9 @@ def test_shorten_title():
     alert = get_alert(context={'context': 'value'})
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
-        'pagerduty': 'publishers.community.pagerduty.pagerduty_layout.ShortenTitle',
+        'pagerduty':
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.ShortenTitle',
     }
     output = MagicMock(spec=OutputDispatcher)
     output.__service__ = 'pagerduty'
@@ -51,8 +53,9 @@ def test_as_custom_details_default():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'streamalert.shared.publisher.DefaultPublisher',
-            'publishers.community.pagerduty.pagerduty_layout.as_custom_fields'
+            'streamalert.shared.publishers.publisher.DefaultPublisher',
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.as_custom_fields'
         ]
     }
     output = MagicMock(spec=OutputDispatcher)
@@ -64,8 +67,9 @@ def test_as_custom_details_default():
     expectation = {
         'publishers': {
             'pagerduty': [
-                'streamalert.shared.publisher.DefaultPublisher',
-                'publishers.community.pagerduty.pagerduty_layout.as_custom_fields'
+                'streamalert.shared.publishers.publisher.DefaultPublisher',
+                'streamalert.shared.publishers.default_publishers.pagerduty.'
+                'pagerduty_layout.as_custom_fields'
             ]
         },
         'source_entity': 'corp-prefix.prod.cb.region',
@@ -96,9 +100,11 @@ def test_as_custom_details_ignores_custom_fields():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'streamalert.shared.publisher.DefaultPublisher',
-            'publishers.community.pagerduty.pagerduty_layout.ShortenTitle',
-            'publishers.community.pagerduty.pagerduty_layout.as_custom_details',
+            'streamalert.shared.publishers.publisher.DefaultPublisher',
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.ShortenTitle',
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.as_custom_details',
         ]
     }
     output = MagicMock(spec=OutputDispatcher)
@@ -130,7 +136,8 @@ def test_v2_high_urgency():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'publishers.community.pagerduty.pagerduty_layout.v2_high_urgency'
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.v2_high_urgency'
         ]
     }
     output = MagicMock(spec=OutputDispatcher)
@@ -149,7 +156,8 @@ def test_v2_low_urgency():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'publishers.community.pagerduty.pagerduty_layout.v2_low_urgency'
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.v2_low_urgency'
         ]
     }
     output = MagicMock(spec=OutputDispatcher)
@@ -168,9 +176,10 @@ def test_pretty_print_arrays():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'streamalert.shared.publisher.DefaultPublisher',
-            'publishers.community.generic.populate_fields',
-            'publishers.community.pagerduty.pagerduty_layout.PrettyPrintArrays'
+            'streamalert.shared.publishers.publisher.DefaultPublisher',
+            'streamalert.shared.publishers.default_publishers.generic.populate_fields',
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.PrettyPrintArrays'
         ]
     }
     output = MagicMock(spec=OutputDispatcher)
@@ -183,9 +192,11 @@ def test_pretty_print_arrays():
         'publishers': [
             {
                 'pagerduty': (
-                    'streamalert.shared.publisher.DefaultPublisher\n\n----------\n\n'
-                    'publishers.community.generic.populate_fields\n\n----------\n\n'
-                    'publishers.community.pagerduty.pagerduty_layout.PrettyPrintArrays'
+                    'streamalert.shared.publishers.publisher.DefaultPublisher\n\n----------\n\n'
+                    'streamalert.shared.publishers.default_publishers.generic.'
+                    'populate_fields\n\n----------\n\n'
+                    'streamalert.shared.publishers.default_publishers.pagerduty.'
+                    'pagerduty_layout.PrettyPrintArrays'
                 )
             }
         ],
@@ -201,7 +212,8 @@ def test_attach_image():
     alert.created = datetime(2019, 1, 1)
     alert.publishers = {
         'pagerduty': [
-            'publishers.community.pagerduty.pagerduty_layout.AttachImage'
+            'streamalert.shared.publishers.default_publishers.pagerduty.'
+            'pagerduty_layout.AttachImage'
         ]
     }
 

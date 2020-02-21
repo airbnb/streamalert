@@ -19,7 +19,10 @@ from datetime import datetime
 from mock import MagicMock
 from nose.tools import assert_equal, assert_true, assert_false
 
-from publishers.community.generic import _delete_dictionary_fields, StringifyArrays
+from streamalert.shared.publishers.default_publishers.generic import (
+    _delete_dictionary_fields,
+    StringifyArrays,
+)
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import OutputDispatcher
 from streamalert.alert_processor.outputs.slack import SlackOutput
@@ -34,9 +37,9 @@ class TestPublishersForOutput:
         alert = get_alert(context={'context': 'value'})
         alert.created = datetime(2019, 1, 1)
         alert.publishers = {
-            'slack': 'streamalert.shared.publisher.DefaultPublisher',
-            'slack:unit_test_channel': 'publishers.community.generic.remove_internal_fields',
-            'demisto': 'publishers.community.generic.blank',
+            'slack': 'streamalert.shared.publishers.publisher.DefaultPublisher',
+            'slack:unit_test_channel': 'streamalert.shared.publishers.default_publishers.generic.remove_internal_fields',
+            'demisto': 'streamalert.shared.publishers.default_publishers.generic.blank',
         }
         output = MagicMock(spec=OutputDispatcher)
         output.__service__ = 'slack'
@@ -70,7 +73,7 @@ class TestPublishersForOutput:
 
 
 class TestDefaultPublisher:
-    PUBLISHER_NAME = 'streamalert.shared.publisher.DefaultPublisher'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.publisher.DefaultPublisher'
 
     def setup(self):
         self._alert = get_alert(context={'context': 'value'})
@@ -82,7 +85,7 @@ class TestDefaultPublisher:
         """AlertPublisher - DefaultPublisher - Positive Case"""
         publication = compose_alert(self._alert, self._output, 'test')
         expectation = {
-            'publishers': ['streamalert.shared.publisher.DefaultPublisher'],
+            'publishers': ['streamalert.shared.publishers.publisher.DefaultPublisher'],
             'source_entity': 'corp-prefix.prod.cb.region',
             'outputs': ['slack:unit_test_channel'],
             'cluster': '',
@@ -110,7 +113,7 @@ class TestDefaultPublisher:
 
 
 class TestRecordPublisher:
-    PUBLISHER_NAME = 'publishers.community.generic.add_record'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.default_publishers.generic.add_record'
 
     def setup(self):
         self._alert = get_alert(context={'context': 'value'})
@@ -137,7 +140,7 @@ class TestRecordPublisher:
 
 
 class TestRemoveInternalFieldsPublisher:
-    PUBLISHER_NAME = 'publishers.community.generic.remove_internal_fields'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.default_publishers.generic.remove_internal_fields'
 
     def setup(self):
         self._alert = get_alert(context={'context': 'value'})
@@ -175,7 +178,7 @@ class TestRemoveInternalFieldsPublisher:
 
 
 class TestRemoveStreamAlertNormalizationFields:
-    PUBLISHER_NAME = 'publishers.community.generic.remove_streamalert_normalization'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.default_publishers.generic.remove_streamalert_normalization'
 
     def setup(self):
         self._alert = get_alert(context={'context': 'value'})
@@ -204,8 +207,8 @@ class TestRemoveStreamAlertNormalizationFields:
         expectation = {
             'staged': False,
             'publishers': [
-                'streamalert.shared.publisher.DefaultPublisher',
-                'publishers.community.generic.remove_streamalert_normalization'
+                'streamalert.shared.publishers.publisher.DefaultPublisher',
+                'streamalert.shared.publishers.default_publishers.generic.remove_streamalert_normalization'
             ],
             'source_entity': 'corp-prefix.prod.cb.region',
             'rule_name': 'cb_binarystore_file_added',
@@ -236,7 +239,7 @@ class TestRemoveStreamAlertNormalizationFields:
 
 
 class TestEnumerateFields:
-    PUBLISHER_NAME = 'publishers.community.generic.enumerate_fields'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.default_publishers.generic.enumerate_fields'
 
     def setup(self):
         self._alert = get_alert(context={
@@ -269,8 +272,8 @@ class TestEnumerateFields:
             'log_source': 'carbonblack:binarystore.file.added',
             'log_type': 'json',
             'outputs[0]': 'slack:unit_test_channel',
-            'publishers[0]': 'streamalert.shared.publisher.DefaultPublisher',
-            'publishers[1]': 'publishers.community.generic.enumerate_fields',
+            'publishers[0]': 'streamalert.shared.publishers.publisher.DefaultPublisher',
+            'publishers[1]': 'streamalert.shared.publishers.default_publishers.generic.enumerate_fields',
             'record.timestamp': '1496947381.18',
             'record.compressed_size': '9982',
             'record.cb_server': 'cbserver',
@@ -370,7 +373,7 @@ def test_delete_dictionary_fields():
 
 
 class TestRemoveFields:
-    PUBLISHER_NAME = 'publishers.community.generic.remove_fields'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.default_publishers.generic.remove_fields'
 
     def setup(self):
         self._alert = get_alert(context={
@@ -411,7 +414,7 @@ class TestRemoveFields:
 
 
 class TestPopulateFields:
-    PUBLISHER_NAME = 'publishers.community.generic.populate_fields'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.default_publishers.generic.populate_fields'
 
     def setup(self):
         self._alert = get_alert(context={
@@ -445,7 +448,7 @@ class TestPopulateFields:
 
 
 class TestStringifyArrays:
-    PUBLISHER_NAME = 'publishers.community.generic.StringifyArrays'
+    PUBLISHER_NAME = 'streamalert.shared.publishers.default_publishers.generic.StringifyArrays'
 
     def setup(self):
         self._alert = get_alert(context={

@@ -27,7 +27,7 @@ with the ``@Register`` decorator.
 
 .. code-block:: python
 
-  from streamalert.shared.publisher import Register
+  from streamalert.shared.publishers import Register
 
   @Register
   def my_publisher(alert: Alert, publication: dict) -> dict:
@@ -42,7 +42,7 @@ Decorate the class with the ``@Register`` decorator.
 
 .. code-block:: python
 
-  from streamalert.shared.publisher import AlertPublisher, Register
+  from streamalert.shared.publishers import AlertPublisher, Register
 
   @Register
   class MyPublisherClass(AlertPublisher):
@@ -63,7 +63,7 @@ doing in-place modifications of the publications, and should prefer to copy-and-
 
 .. code-block:: python
 
-  from streamalert.shared.publisher import Register
+  from streamalert.shared.publishers import Register
 
   @Register
   def sample_publisher(alert, publication):
@@ -243,7 +243,7 @@ The publisher can also simplify the PagerDuty title:
 
 .. code-block:: python
 
-  from streamalert.shared.publisher import Register
+  from streamalert.shared.publishers import Register
 
   @Register
   def simplify_pagerduty_output(alert, publication):
