@@ -1,0 +1,4 @@
+include README.rst
+include LICENSE
+recursive-include examples *.json
+recursive-include streamalert_cli/_infrastructure *.tf *.md
