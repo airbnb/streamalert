@@ -12,6 +12,7 @@
   "duo:authentication": {
     "schema": {
       "access_device": {},
+      "alias": "string",
       "device": "string",
       "factor": "string",
       "integration": "string",

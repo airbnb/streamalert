@@ -61,7 +61,7 @@ on ec2 instance
   $ rm -rf $HOME/.cache/pip/
 
   # Create and source venv
-  $ virtualenv -p python3.7 $HOME/venv
+  $ python3.7 -m virtualenv $HOME/venv
   $ source $HOME/venv/bin/activate
 
   # Upgrade pip and setuptools (they are super old)
@@ -125,8 +125,8 @@ SSH and Build Dependencies
   # make sure you create virtual environment with python3.7
   $ which python3.7
 
-  # Create virtual environment using virtualenvwrapper which is pre-installed
-  $ mkvirtualenv -p /usr/bin/python3.7 test_venv
+  # Create and source venv
+  $ python3.7 -m virtualenv venv && source venv/bin/activate
 
   # upgrade pip and setuptools if neccessary
   $ pip install --upgrade pip setuptools

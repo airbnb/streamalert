@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ def generate_threat_intel_downloader(config):
         dict: Athena dict to be marshalled to JSON
     """
     # Use the monitoring topic as a dead letter queue
-    dlq_topic = monitoring_topic_name(config)
+    dlq_topic, _ = monitoring_topic_name(config)
 
     prefix = config['global']['account']['prefix']
 

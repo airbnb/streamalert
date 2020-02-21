@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -176,30 +176,9 @@ def user_input(requested_info, mask, input_restrictions):
 
     if not mask:
         while not response:
-            response = input(prompt) # nosec
+            response = input(prompt)  # nosec
 
-        # Restrict having spaces or colons in items (applies to things like
-        # descriptors, etc)
-        if isinstance(input_restrictions, re.Pattern):
-            valid_response = input_restrictions.match(response)
-            if not valid_response:
-                LOGGER.error('The supplied input should match the following '
-                             'regular expression: %s', input_restrictions.pattern)
-        elif callable(input_restrictions):
-            # Functions can be passed here to perform complex validation of input
-            # Transform the response with the validating function
-            response = input_restrictions(response)
-            valid_response = response is not None and response is not False
-            if not valid_response:
-                LOGGER.error('The supplied input failed to pass the validation '
-                             'function: %s', input_restrictions.__doc__)
-        else:
-            valid_response = not any(x in input_restrictions for x in response)
-            if not valid_response:
-                restrictions = ', '.join(
-                    '\'{}\''.format(restriction) for restriction in input_restrictions)
-                LOGGER.error('The supplied input should not contain any of the following: %s',
-                             restrictions)
+        valid_response = response_is_valid(response, input_restrictions)
 
         if not valid_response:
             return user_input(requested_info, mask, input_restrictions)
@@ -208,6 +187,41 @@ def user_input(requested_info, mask, input_restrictions):
             response = getpass(prompt=prompt)
 
     return response
+
+
+def response_is_valid(response, input_restrictions):
+    """Check if the response meets the input_restrictions
+
+    Args:
+        response (str): Description of the information needed
+
+    Returns:
+        bool: True if input_restrictions are met else False
+    """
+    valid_response = False
+    # Restrict having spaces or colons in items (applies to things like
+    # descriptors, etc)
+    if isinstance(input_restrictions, re.Pattern):
+        valid_response = input_restrictions.match(response)
+        if not valid_response:
+            LOGGER.error('The supplied input should match the following '
+                         'regular expression: %s', input_restrictions.pattern)
+    elif callable(input_restrictions):
+        # Functions can be passed here to perform complex validation of input
+        # Transform the response with the validating function
+        response = input_restrictions(response)
+        valid_response = response is not None and response is not False
+        if not valid_response:
+            LOGGER.error('The supplied input failed to pass the validation '
+                         'function: %s', input_restrictions.__doc__)
+    else:
+        valid_response = not any(x in input_restrictions for x in response)
+        if not valid_response:
+            restrictions = ', '.join(
+                '\'{}\''.format(restriction) for restriction in input_restrictions)
+            LOGGER.error('The supplied input should not contain any of the following: %s',
+                         restrictions)
+    return valid_response
 
 
 def save_parameter(region, name, value, description, force_overwrite=False):

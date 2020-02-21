@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import urllib.error
 
 from streamalert.shared.utils import get_database_name
 from streamalert.shared.athena import AthenaClient
-from streamalert.shared.config import load_config
+from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket, load_config
 from streamalert.shared.logger import get_logger
 
 
@@ -56,19 +56,38 @@ class AthenaRefresher:
         prefix = config['global']['account']['prefix']
         athena_config = config['lambda']['athena_partition_refresh_config']
 
-        self._athena_buckets = athena_config['buckets']
+        self._athena_buckets = self.buckets_from_config(config)
 
         db_name = get_database_name(config)
 
         # Get the S3 bucket to store Athena query results
         results_bucket = athena_config.get(
             'results_bucket',
-            's3://{}.streamalert.athena-results'.format(prefix)
+            's3://{}-streamalert-athena-results'.format(prefix)
         )
 
         self._s3_buckets_and_keys = defaultdict(set)
 
         self._create_client(db_name, results_bucket)
+
+    @classmethod
+    def buckets_from_config(cls, config):
+        """Get the buckets from default buckets and additionally configured ones
+
+        Args:
+            config (dict): The loaded config from the 'conf/' directory
+
+        Returns:
+            list: Bucket names for which Athena is enabled
+        """
+        athena_config = config['lambda']['athena_partition_refresh_config']
+        data_buckets = athena_config.get('buckets', {})
+        data_buckets[firehose_alerts_bucket(config)] = 'alerts'
+        data_bucket = firehose_data_bucket(config)  # Data retention is optional, so check for this
+        if data_bucket:
+            data_buckets[data_bucket] = 'data'
+
+        return data_buckets
 
     @classmethod
     def _create_client(cls, db_name, results_bucket):

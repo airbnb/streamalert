@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ class TestRulePromotion:
                     'digest_sns_topic': 'unit-test_streamalert_rule_staging_stats',
                     'athena_results_bucket_arn': '${module.streamalert_athena.results_bucket_arn}',
                     'athena_data_buckets': [
-                        'unit-test.streamalert.data',
-                        'unit-test.streamalerts'
+                        'unit-test-streamalert-data',
+                        'unit-test-streamalerts'
                     ],
                     's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },

@@ -1,13 +1,14 @@
-Tests
-=====
-
+#######
+Testing
+#######
 To test the accuracy of new rules, local tests can be written to verify that alerts trigger against valid input.
 
 The ``manage.py`` CLI tool comes built-in with a ``test`` command which does exactly this.
 
-Configuration
-~~~~~~~~~~~~~
 
+*************
+Configuration
+*************
 To test a new rule, first create a new JSON file anywhere within the 'tests/integration/rules/' directory with the ``.json`` extension.
 
 This file should contain the following structure:
@@ -94,11 +95,13 @@ Let's say a rule is only checking the value of ``source`` in the test event.  In
 
 Both test events would have the same result, but with much less effort.
 
-.. note:: Either "override_record" or "data" is required in the test event
+.. note::
+
+  Either ``override_record`` or ``data`` is required in the test event
+
 
 Rule Test Reference
--------------------
-
+===================
 =========================  ======================  ========  ===========
 Key                        Type                    Required  Description
 -------------------------  ----------------------  --------  -----------
@@ -126,9 +129,10 @@ Key                        Type                    Required  Description
 
 For more examples, see the provided default rule tests in ``tests/integration/rules``
 
-Running Tests
-~~~~~~~~~~~~~
 
+*************
+Running Tests
+*************
 Tests are run via the ``manage.py`` script. These tests include the ability to validate defined
 log schemas for accuracy, as well as rules efficacy. Additionally, alerts can be sent from the local
 system to a real, live alerting output (if configured).
@@ -138,48 +142,48 @@ here includes all of the prior tests. For instance, the ``rules`` command will a
 that the ``classifier`` command tests. See the `Test Options`_ section for available options for
 all of these commands.
 
-Classifier Tests
-----------------
 
+Classifier Tests
+================
 Running tests to ensure test events classify properly:
 
 .. code-block:: bash
 
-  $ python manage.py test classifier
+  python manage.py test classifier
 
 .. note:: The ``classifier`` test command does not test the efficacy of rules, and simply ensures
   defined test events classify as their expected schema type.
 
-Rule Tests
-----------
 
+Rule Tests
+==========
 Running tests to ensure test events classify properly **and** trigger the designated rules:
 
 .. code-block:: bash
 
-  $ python manage.py test rules
+  python manage.py test rules
+
 
 Live Tests
-----------
-
+==========
 Running tests to actually send alerts to a rule's configured outputs:
 
 .. code-block:: bash
 
-  $ python manage.py test live
+  python manage.py test live
 
 .. note:: The ``live`` test command does **not** invoke any deployed Lambda functions, and only
   uses the local code, test events, and rules. However, authentication secrets needed to send alerts
   are in fact read from S3 during this process, so AWS credentials must still be set up properly.
 
-Test Options
-------------
 
+Test Options
+============
 Any of the test commands above can be restricted to **specific files** to reduce time and output:
 
 .. code-block:: bash
 
-  $ python manage.py test classifier --test-files <test_file_01.json> <test_file_02>
+  python manage.py test classifier --test-files <test_file_01.json> <test_file_02>
 
 .. note:: Only the name of the file is required, with or without the file extension, not the entire path.
 
@@ -187,7 +191,7 @@ Tests can also be restricted to **specific rules**:
 
 .. code-block:: bash
 
-  $ python manage.py test rules --test-rules <rule_01> <rule_02>
+  python manage.py test rules --test-rules <rule_01> <rule_02>
 
 .. note:: Note that this is the name of the rule(s) themselves, not the name of the Python file containing the rule(s).
 
@@ -195,18 +199,18 @@ Tests can be directed to run against an alternative directory of test event file
 
 .. code-block:: bash
 
-  $ python manage.py test rules --files-dir /path/to/alternate/test/files/directory
+  python manage.py test rules --files-dir /path/to/alternate/test/files/directory
 
 .. note:: Note that this is the name of the rule(s) themselves, not the name of the Python file containing the rule(s).
 
-Test Examples
--------------
 
+Test Examples
+=============
 Here is a sample command showing how to run tests against two test event files included in the default StreamAlert configuration:
 
 .. code-block:: bash
 
-  $ python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
 
 This will produce output similar to the following::
 
@@ -279,7 +283,7 @@ rule that does not actually exist.
 
 .. code-block:: bash
 
-  $ python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
 
 ::
 
@@ -308,21 +312,21 @@ rule that does not actually exist.
   Fail: 1
 
 
+*******
 Helpers
-~~~~~~~
-
+*******
 It may occasionally be necessary to dynamically fill in values in the test event data. For instance, if a
 rule relies on the time of an event, the ``last_hour`` helper can be embedded in a test event as a key's value.
 The embedded helper string will be replaced with the value returned by the helper function.
 
-Available Helpers
------------------
 
+Available Helpers
+=================
 ``last_hour``: Generates a unix epoch time within the last hour (ex: ``1489105783``).
 
-Usage
------
 
+Usage
+=====
 To use these helpers in rule testing, replace a specific log field value with the following::
 
   "<helper:helper_name_goes_here>"

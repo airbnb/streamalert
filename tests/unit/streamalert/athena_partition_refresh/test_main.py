@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ class TestAthenaRefresher:
                 b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
                 b'alerts/dt=2020-02-13-08/prefix_streamalert_alert_delivery-0123-abcd.parquet'
             },
-            'unit-test.streamalert.data': {
+            'unit-test-streamalert-data': {
                 b'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
@@ -78,38 +78,38 @@ class TestAthenaRefresher:
         """AthenaRefresher - Get Partitions From Keys"""
         expected_result = {
             'alerts': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalerts/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalerts/'
                                              'alerts/dt=2017-08-26-14\''),
-                '(dt = \'2017-08-27-14\')': ('\'s3://unit-test.streamalerts/'
+                '(dt = \'2017-08-27-14\')': ('\'s3://unit-test-streamalerts/'
                                              'alerts/dt=2017-08-27-14\''),
-                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test.streamalerts/'
+                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalerts/'
                                              'alerts/dt=2017-08-26-15\'')
             },
             'log_type_1': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_1/dt=2017-08-26-14\'')
             },
             'log_type_2': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_2/dt=2017-08-26-14\''),
-                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_2/dt=2017-08-26-15\''),
-                '(dt = \'2017-08-26-16\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-16\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_2/dt=2017-08-26-16\''),
             },
             'log_type_3': {
-                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test.streamalert.data/'
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
                                              'log_type_3/dt=2017-08-26-14\''),
             }
         }
 
         self._refresher._s3_buckets_and_keys = {
-            'unit-test.streamalerts': {
+            'unit-test-streamalerts': {
                 b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.parquet',
                 b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
                 b'alerts/dt=2017-08-26-15/rule_name_alerts-1304134918401.parquet'
             },
-            'unit-test.streamalert.data': {
+            'unit-test-streamalert-data': {
                 b'log_type_1/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
                 b'log_type_2/dt=2017-08-26-14/test-data-11111-22222-33334.snappy',
@@ -132,7 +132,7 @@ class TestAthenaRefresher:
         """AthenaRefresher - Get Partitions From Keys, Bad Key"""
         bad_key = b'bad_match_string'
         self._refresher._s3_buckets_and_keys = {
-            'unit-test.streamalerts': {
+            'unit-test-streamalerts': {
                 bad_key
             }
         }
@@ -150,7 +150,7 @@ class TestAthenaRefresher:
                 {
                     's3': {
                         'bucket': {
-                            'name': 'unit-test.streamalerts'
+                            'name': 'unit-test-streamalerts'
                         },
                         'object': {
                             'key': ('alerts/dt=2017-08-{:02d}-'
@@ -160,6 +160,7 @@ class TestAthenaRefresher:
                 } for val in range(count)
             ]
         }
+
     @staticmethod
     def _s3_record_placeholder_file():
         return {
@@ -167,7 +168,7 @@ class TestAthenaRefresher:
                 {
                     's3': {
                         'bucket': {
-                            'name': 'unit-test.streamalerts'
+                            'name': 'unit-test-streamalerts'
                         },
                         'object': {
                             'key': 'alerts/dt=2017-08-01-14/02/test.json_$folder$'
@@ -206,7 +207,7 @@ class TestAthenaRefresher:
         log_mock.assert_called_with(
             'Received notification for object \'%s\' in bucket \'%s\'',
             'alerts/dt=2017-08-01-14/02/test.json'.encode(),
-            'unit-test.streamalerts'
+            'unit-test-streamalerts'
         )
 
     @patch('logging.Logger.info')

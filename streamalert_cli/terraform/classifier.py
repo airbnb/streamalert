@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
 
     JSON Input from the config:
 
-        "streamalert": {
+        {
           "classifier_config": {
             "log_level": "info",
             "log_retention_days": 14,
@@ -54,11 +54,10 @@ def generate_classifier(cluster_name, cluster_dict, config):
           }
         }
     """
-    classifier_config = (
-        config['clusters'][cluster_name]['modules']['streamalert']['classifier_config']
-    )
+    classifier_config = config['clusters'][cluster_name]['classifier_config']
 
     firehose_config = config['global']['infrastructure'].get('firehose', {})
+    # The default value here must be consistent with the firehose client default
     use_firehose_prefix = firehose_config.get('use_prefix', True)
 
     tf_module_prefix = 'classifier_{}'.format(cluster_name)

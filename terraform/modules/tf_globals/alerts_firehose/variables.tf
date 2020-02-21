@@ -10,16 +10,20 @@ variable "prefix" {
   type = string
 }
 
+variable "bucket_name" {
+  type = string
+}
+
 variable "buffer_size" {
-  default = 128
+  type = number
 }
 
 variable "buffer_interval" {
-  default = 300
+  type = number
 }
 
 variable "cloudwatch_log_retention" {
-  default = 14
+  type = number
 }
 
 variable "kms_key_arn" {

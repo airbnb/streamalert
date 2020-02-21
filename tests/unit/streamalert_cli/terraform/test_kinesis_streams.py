@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,6 +45,17 @@ def test_kinesis_streams():
                 'create_user': True,
                 'trusted_accounts': []
             }
+        },
+        'output': {
+            'kinesis_advanced_access_key_id': {
+                'value': '${module.kinesis_advanced.access_key_id}'
+            },
+            'kinesis_advanced_secret_key': {
+                'value': '${module.kinesis_advanced.secret_key}'
+            },
+            'kinesis_advanced_user_arn': {
+                'value': '${module.kinesis_advanced.user_arn}'
+            }
         }
     }
 
@@ -77,6 +88,17 @@ def test_kinesis_streams_with_trusted_account():
                 'trusted_accounts': [
                     '98765432100'
                 ]
+            }
+        },
+        'output': {
+            'kinesis_trusted_access_key_id': {
+                'value': '${module.kinesis_trusted.access_key_id}'
+            },
+            'kinesis_trusted_secret_key': {
+                'value': '${module.kinesis_trusted.secret_key}'
+            },
+            'kinesis_trusted_username': {
+                'value': '${module.kinesis_trusted.username}'
             }
         }
     }
@@ -111,6 +133,17 @@ def test_kinesis_streams_with_custom_name():
                 'retention': 24,
                 'create_user': True,
                 'trusted_accounts': []
+            }
+        },
+        'output': {
+            'kinesis_advanced_access_key_id': {
+                'value': '${module.kinesis_advanced.access_key_id}'
+            },
+            'kinesis_advanced_secret_key': {
+                'value': '${module.kinesis_advanced.secret_key}'
+            },
+            'kinesis_advanced_user_arn': {
+                'value': '${module.kinesis_advanced.user_arn}'
             }
         }
     }

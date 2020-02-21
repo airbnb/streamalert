@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -94,13 +94,13 @@ class TestTerraformGenerate:
                 'required_version': '~> 0.12.9', # Changes to this should require unit test update
                 'backend': {
                     's3': {
-                        'bucket': 'unit-test.streamalert.terraform.state',
+                        'bucket': 'unit-test-streamalert-terraform-state',
                         'key': 'streamalert_state/terraform.tfstate',
                         'region': 'us-west-1',
                         'dynamodb_table': 'unit-test_streamalert_terraform_state_lock',
                         'encrypt': True,
                         'acl': 'private',
-                        'kms_key_id': 'alias/unit-test'
+                        'kms_key_id': 'alias/alternate-alias'
                     }
                 }
             },
@@ -122,43 +122,35 @@ class TestTerraformGenerate:
                         'target_key_id': '${aws_kms_key.server_side_encryption.key_id}'
                     },
                     'streamalert_secrets': {
-                        'name': 'alias/unit-test',
+                        'name': 'alias/alternate-alias',
                         'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
                     }
                 },
+                'aws_dynamodb_table': {
+                    'terraform_remote_state_lock': {
+                        'name': 'unit-test_streamalert_terraform_state_lock',
+                        'billing_mode': 'PAY_PER_REQUEST',
+                        'hash_key': 'LockID',
+                        'attribute': {
+                            'name': 'LockID',
+                            'type': 'S'
+                        },
+                        'tags': {
+                            'Name': 'StreamAlert'
+                        }
+                    }
+                },
                 'aws_s3_bucket': {
-                    'streamalert_secrets': {
-                        'bucket': 'unit-test.streamalert.secrets',
-                        'acl': 'private',
-                        'force_destroy': True,
-                        'versioning': {
-                            'enabled': True
-                        },
-                        'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
-                            'target_prefix': 'unit-test.streamalert.secrets/'
-                        },
-                        'server_side_encryption_configuration': {
-                            'rule': {
-                                'apply_server_side_encryption_by_default': {
-                                    'sse_algorithm': 'aws:kms',
-                                    'kms_master_key_id': (
-                                        '${aws_kms_key.server_side_encryption.key_id}')
-                                }
-                            }
-                        },
-                        'policy': ANY
-                    },
                     'terraform_remote_state': {
-                        'bucket': 'unit-test.streamalert.terraform.state',
+                        'bucket': 'unit-test-streamalert-terraform-state',
                         'acl': 'private',
                         'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
                         'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
-                            'target_prefix': 'unit-test.streamalert.terraform.state/'
+                            'target_bucket': 'unit-test-streamalert-s3-logging',
+                            'target_prefix': 'unit-test-streamalert-terraform-state/'
                         },
                         'server_side_encryption_configuration': {
                             'rule': {
@@ -172,15 +164,15 @@ class TestTerraformGenerate:
                         'policy': ANY
                     },
                     'logging_bucket': {
-                        'bucket': 'unit-test.streamalert.s3-logging',
+                        'bucket': 'unit-test-streamalert-s3-logging',
                         'acl': 'log-delivery-write',
                         'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
                         'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
-                            'target_prefix': 'unit-test.streamalert.s3-logging/'
+                            'target_bucket': 'unit-test-streamalert-s3-logging',
+                            'target_prefix': 'unit-test-streamalert-s3-logging/'
                         },
                         'lifecycle_rule': {
                             'prefix': '/',
@@ -200,15 +192,15 @@ class TestTerraformGenerate:
                         'policy': ANY
                     },
                     'streamalerts': {
-                        'bucket': 'unit-test.streamalerts',
+                        'bucket': 'unit-test-streamalerts',
                         'acl': 'private',
                         'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
                         'logging': {
-                            'target_bucket': 'unit-test.streamalert.s3-logging',
-                            'target_prefix': 'unit-test.streamalerts/'
+                            'target_bucket': 'unit-test-streamalert-s3-logging',
+                            'target_prefix': 'unit-test-streamalerts/'
                         },
                         'server_side_encryption_configuration': {
                             'rule': {
@@ -234,11 +226,22 @@ class TestTerraformGenerate:
         assert_dict_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_dict_equal(tf_main['resource'], tf_main_expected['resource'])
 
+    def test_generate_main_s3_access_logging(self):
+        """CLI - Terraform Generate Main with Alternate S3 Access Logging Bucket"""
+        alt_bucket_name = 'alternative-bucket-name'
+        self.config['global']['infrastructure']['s3_access_logging'] = {
+            'bucket_name': alt_bucket_name
+        }
+        tf_main = generate.generate_main(config=self.config, init=False)
+
+        # Should not "create" the logging bucket
+        assert_true('logging_bucket' not in tf_main['resource']['aws_s3_bucket'])
+
     def test_generate_main_with_firehose(self):
         """CLI - Terraform Generate Main with Firehose Enabled"""
         self.config['global']['infrastructure']['firehose'] = {
             'enabled': True,
-            's3_bucket_suffix': 'my-data',
+            'bucket_name': 'my-data',
             'buffer_size': 10,
             'buffer_interval': 650,
             'enabled_logs': {
@@ -265,7 +268,7 @@ class TestTerraformGenerate:
 
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['s3_bucket_name'],
-            'unit-test.my-data'
+            'my-data'
         )
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['buffer_size'],
@@ -274,6 +277,23 @@ class TestTerraformGenerate:
         assert_equal(
             generated_modules['kinesis_firehose_cloudwatch_test_match_types']['buffer_interval'],
             650
+        )
+
+    def test_generate_main_alerts_firehose(self):
+        """CLI - Terraform Generate Main with Alerts Firehose Config"""
+        self.config['global']['infrastructure']['alerts_firehose'] = {
+            'bucket_name': 'test-bucket-name',
+            'buffer_interval': 600
+        }
+        tf_main = generate.generate_main(config=self.config, init=False)
+
+        assert_equal(
+            tf_main['module']['globals']['alerts_firehose_bucket_name'],
+            'test-bucket-name'
+        )
+        assert_equal(
+            tf_main['module']['globals']['alerts_firehose_buffer_interval'],
+            600
         )
 
     def test_generate_flow_logs(self):
@@ -350,7 +370,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
             }
         }
 
@@ -380,7 +400,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-bucket',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
             },
             'cloudtrail_s3_events_unit-test_advanced_unit-test-bucket': {
                 'source': './modules/tf_s3_events',
@@ -461,7 +481,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
                 'cloudwatch_logs_role_arn': (
                     '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
                 ),
@@ -531,7 +551,7 @@ class TestTerraformGenerate:
                 'prefix': 'unit-test',
                 'region': 'us-west-1',
                 's3_bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
-                's3_logging_bucket': 'unit-test.streamalert.s3-logging',
+                's3_logging_bucket': 'unit-test-streamalert-s3-logging',
                 'cloudwatch_logs_role_arn': (
                     '${module.cloudtrail_cloudwatch_advanced.cloudtrail_to_cloudwatch_logs_role}'
                 ),

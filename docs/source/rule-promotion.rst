@@ -1,5 +1,6 @@
+##############
 Rule Promotion
-==============
+##############
 
 To complement the Rule Staging feature, StreamAlert includes an optional Rule Promotion Lambda function.
 This Lambda function is invoked on a user-defined interval, and can automatically 'promote' rules out
@@ -9,9 +10,10 @@ Once rules are promoted, they will send alerts to all user-defined outputs. The 
 is also capable of sending digest emails to a Simple Notification Service (SNS) topic with statistics
 on how many alerts staged rules have generated.
 
-Enabling Rule Promotion
------------------------
 
+***********************
+Enabling Rule Promotion
+***********************
 Open the ``conf/lambda.json`` file, and find the ``rule_promotion_config`` section. Toggling the
 ``enabled`` flag to ``true`` will allow for deployment of the Rule Promotion Lambda function.
 
@@ -32,9 +34,10 @@ Open the ``conf/lambda.json`` file, and find the ``rule_promotion_config`` secti
     }
   }
 
-Configuration Options
----------------------
 
+*********************
+Configuration Options
+*********************
 A few additional configuration options are available to customize the function to your needs.
 
 =====================================  ===========
@@ -63,9 +66,10 @@ staging period (default of 48 hours hours) will not be auto-promoted. Manual pro
 via the command outlined in the `Rule Staging CLI Commands <rule-staging.html#toggling-staged-status>`_
 section.
 
-Deployment
-----------
 
+**********
+Deployment
+**********
 Deploying the Rule Promotion Lambda function is similar to all of StreamAlert's Lambda functions.
 The following command will create all of the necessary infrastructure and deploy the Rule Promotion
 function code.
@@ -80,15 +84,17 @@ function code.
   `subscribe to the SNS topic <https://docs.aws.amazon.com/sns/latest/dg/SubscribeTopic.html>`_
   that is created in order to receive the alert statistics digest emails.
 
-Alert Statistics Digest
------------------------
 
+***********************
+Alert Statistics Digest
+***********************
 The alert statistics digest that is sent to the SNS topic will contain information on staging times,
 as well as the amount of alerts the staged rule has generated to date. If alerts have been triggered,
 a link to Athena query results will also be included to assist in triaging them.
 
-**Sample Digest Email**
 
+Sample Digest Email
+===================
 *Alert statistics for 2 staged rule(s) [2018-07-25 13:30:25.915131 UTC]*
 
 ::

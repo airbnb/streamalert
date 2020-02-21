@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
-from streamalert.shared.utils import get_database_name
+from streamalert.shared.config import firehose_data_bucket
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -29,16 +29,16 @@ def generate_firehose(logging_bucket, main_dict, config):
     if not config['global']['infrastructure'].get('firehose', {}).get('enabled'):
         return
 
-    firehose_config = config['global']['infrastructure']['firehose']
-    firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
-    firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
-                                             firehose_s3_bucket_suffix)
+    prefix = config['global']['account']['prefix']
+
+    # This can return False but the check above ensures that that should never happen
+    firehose_s3_bucket_name = firehose_data_bucket(config)
 
     # Firehose Setup module
     main_dict['module']['kinesis_firehose_setup'] = {
         'source': './modules/tf_kinesis_firehose_setup',
         'account_id': config['global']['account']['aws_account_id'],
-        'prefix': config['global']['account']['prefix'],
+        'prefix': prefix,
         'region': config['global']['account']['region'],
         's3_logging_bucket': logging_bucket,
         's3_bucket_name': firehose_s3_bucket_name,
@@ -69,7 +69,7 @@ def generate_firehose(logging_bucket, main_dict, config):
                 config['global']['infrastructure']['firehose'].get('compression_format', 'GZIP')
             ),
             'use_prefix': config['global']['infrastructure']['firehose'].get('use_prefix', True),
-            'prefix': config['global']['account']['prefix'],
+            'prefix': prefix,
             'log_name': log_stream_name,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,

@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ class StatusCommand(CLICommand):
 
         cluster_non_func_keys = sorted(['enable_threat_intel'])
         for cluster in sorted(config['clusters']):
-            sa_config = config['clusters'][cluster]['modules']['streamalert']
+            sa_config = config['clusters'][cluster]
 
             print(_format_header('Cluster: {}'.format(cluster), True))
             for key in cluster_non_func_keys:

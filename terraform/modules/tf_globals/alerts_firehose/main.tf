@@ -1,3 +1,7 @@
+locals {
+  stream_name = "${var.prefix}_streamalert_alert_delivery"
+}
+
 // AWS Firehose Stream for Alerts to S3
 resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
   name        = "${var.prefix}_streamalert_alert_delivery"
@@ -34,10 +38,20 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
 
     cloudwatch_logging_options {
       enabled         = true
-      log_group_name  = "/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery"
+      log_group_name  = aws_cloudwatch_log_group.firehose.name
       log_stream_name = "S3Delivery"
     }
   }
+
+  tags = {
+    Name = "StreamAlert"
+  }
+}
+
+// CloudWatch Log Group: Firehose
+resource "aws_cloudwatch_log_group" "firehose" {
+  name              = "/aws/kinesisfirehose/${local.stream_name}"
+  retention_in_days = var.cloudwatch_log_retention
 
   tags = {
     Name = "StreamAlert"

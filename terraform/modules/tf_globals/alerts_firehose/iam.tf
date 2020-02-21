@@ -45,8 +45,8 @@ data "aws_iam_policy_document" "firehose_s3" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}.streamalerts",
-      "arn:aws:s3:::${var.prefix}.streamalerts/*",
+      "arn:aws:s3:::${var.bucket_name}",
+      "arn:aws:s3:::${var.bucket_name}/*",
     ]
   }
 }
@@ -118,7 +118,7 @@ data "aws_iam_policy_document" "firehose_cloudwatch" {
     ]
 
     resources = [
-      "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery:*",
+      "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/${local.stream_name}:*",
     ]
   }
 }

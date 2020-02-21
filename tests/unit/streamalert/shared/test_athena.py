@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ class TestAthenaClient:
 
         self.client = AthenaClient(
             self._db_name,
-            's3://{}.streamalert.athena-results'.format(prefix),
+            's3://{}-streamalert-athena-results'.format(prefix),
             'unit-test'
         )
 
@@ -57,11 +57,11 @@ class TestAthenaClient:
         date_now = datetime.utcnow()
         date_mock.utcnow.return_value = date_now
         date_format = date_now.strftime('%Y/%m/%d')
-        expected_path = 's3://test.streamalert.athena-results/unit-test/{}'.format(date_format)
+        expected_path = 's3://test-streamalert-athena-results/unit-test/{}'.format(date_format)
         with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-west-1'}):
             client = AthenaClient(
                 self._db_name,
-                'test.streamalert.athena-results',
+                'test-streamalert-athena-results',
                 'unit-test'
             )
             assert_equal(client._s3_results_path, expected_path)

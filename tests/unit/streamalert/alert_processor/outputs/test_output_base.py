@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 from mock import Mock, patch, MagicMock
-from moto import mock_kms, mock_s3
+from moto import mock_kms, mock_ssm
 from nose.tools import (
     assert_equal,
     assert_is_instance,
@@ -25,8 +25,6 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout as ReqTimeout
 
-from streamalert.alert_processor.outputs.credentials.provider import \
-    get_formatted_output_credentials_name
 from streamalert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -38,11 +36,11 @@ from tests.unit.streamalert.alert_processor import (
     CONFIG,
     KMS_ALIAS,
     MOCK_ENV,
-    REGION
+    REGION,
+    PREFIX
 )
 from tests.unit.streamalert.alert_processor.helpers import (
-    put_mock_creds,
-    remove_temp_secrets
+    put_mock_ssm_parameters
 )
 
 
@@ -166,29 +164,24 @@ class TestOutputDispatcher:
         result = self._dispatcher._check_http_response(mock_response)
         assert_equal(result, False)
 
-    @mock_s3
+    @mock_ssm
     @mock_kms
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
-        remove_temp_secrets()
-        key = get_formatted_output_credentials_name(
-            'test_service',
-            self._descriptor
-        )
+        param_name = '/{}/streamalert/outputs/test_service/desc_test'.format(PREFIX)
+        creds = {
+            'url': 'http://www.foo.bar/test',
+            'token': 'token_to_encrypt'
+        }
 
-        creds = {'url': 'http://www.foo.bar/test',
-                 'token': 'token_to_encrypt'}
-
-        put_mock_creds(key, creds,
-                       self._dispatcher._credentials_provider._core_driver._bucket,
-                       REGION, KMS_ALIAS)
+        put_mock_ssm_parameters(param_name, creds, KMS_ALIAS, region=REGION)
 
         loaded_creds = self._dispatcher._load_creds(self._descriptor)
 
         assert_is_not_none(loaded_creds)
         assert_equal(len(loaded_creds), 2)
-        assert_equal(loaded_creds['url'], 'http://www.foo.bar/test')
-        assert_equal(loaded_creds['token'], 'token_to_encrypt')
+        assert_equal(loaded_creds['url'], creds['url'])
+        assert_equal(loaded_creds['token'], creds['token'])
 
     def test_format_output_config(self):
         """OutputDispatcher - Format Output Config"""

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -202,12 +202,13 @@ def set_parser_epilog(parser, epilog):
     parser.epilog = textwrap.dedent(epilog) if epilog else None
 
 
-def generate_subparser(parser, name, description=None, subcommand=False):
+def generate_subparser(parser, name, description=None, subcommand=False, **kwargs):
     """Helper function to return a subparser with the given options"""
     subparser = parser.add_parser(
         name,
         description=description,
-        formatter_class=RawDescriptionHelpFormatter
+        formatter_class=RawDescriptionHelpFormatter,
+        **kwargs
     )
 
     if subcommand:
@@ -223,7 +224,7 @@ def add_default_lambda_args(lambda_parser):
 
     functions = sorted([
         'alert', 'alert_merger', 'apps', 'athena', 'classifier',
-        'rule', 'rule_promo', 'threat_intel_downloader'
+        'rule', 'rule_promo', 'scheduled_queries', 'threat_intel_downloader'
     ])
     # require the name of the function being deployed/rolled back
     lambda_parser.add_argument(

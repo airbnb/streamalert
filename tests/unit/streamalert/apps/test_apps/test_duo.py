@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -81,6 +81,7 @@ class TestDuoApp:
         """Helper function for returning sample duo (auth) logs"""
         return [{
             'access_device': {},
+            'alias': '',
             'device': '+1 123 456 1234',
             'factor': 'Duo Push',
             'integration': 'Test Access',

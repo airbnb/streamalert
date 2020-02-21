@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,37 +39,33 @@ class TestTerraformGenerateClassifier:
             },
             'clusters': {
                 'test': {
-                    'modules': {
-                        'streamalert': {
-                            'classifier_config': {
-                                'inputs': {
-                                    'aws-sns': [
-                                        'arn:aws:sns:us-east-1:123456789012:foo_bar'
-                                    ]
-                                },
-                                'log_level': 'info',
-                                'log_retention_days': 14,
-                                'memory': 128,
-                                'metric_alarms': {
-                                    'errors': {
-                                        'enabled': True,
-                                        'evaluation_periods': 1,
-                                        'period_secs': 120,
-                                        'threshold': 0
-                                    },
-                                    'throttles': {
-                                        'enabled': True,
-                                        'evaluation_periods': 1,
-                                        'period_secs': 120,
-                                        'threshold': 0
-                                    }
-                                },
-                                'timeout': 60,
-                                'vpc_config': {
-                                    'security_group_ids': [],
-                                    'subnet_ids': []
-                                }
+                    'classifier_config': {
+                        'inputs': {
+                            'aws-sns': [
+                                'arn:aws:sns:us-east-1:123456789012:foo_bar'
+                            ]
+                        },
+                        'log_level': 'info',
+                        'log_retention_days': 14,
+                        'memory': 128,
+                        'metric_alarms': {
+                            'errors': {
+                                'enabled': True,
+                                'evaluation_periods': 1,
+                                'period_secs': 120,
+                                'threshold': 0
+                            },
+                            'throttles': {
+                                'enabled': True,
+                                'evaluation_periods': 1,
+                                'period_secs': 120,
+                                'threshold': 0
                             }
+                        },
+                        'timeout': 60,
+                        'vpc_config': {
+                            'security_group_ids': [],
+                            'subnet_ids': []
                         }
                     }
                 }

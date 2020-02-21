@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -128,7 +128,6 @@ def test_generate_cloudwatch_monitoring_custom_sns():
 
     # Test a custom SNS topic name
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring'] = {'enabled': True}
-    CONFIG['global']['infrastructure']['monitoring']['create_sns_topic'] = False
     CONFIG['global']['infrastructure']['monitoring']['sns_topic_name'] = 'unit_test_monitoring'
 
     cluster_dict = common.infinitedict()

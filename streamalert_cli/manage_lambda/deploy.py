@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -104,6 +104,7 @@ class DeployCommand(CLICommand):
                 'classifier',
                 'rule',
                 'rule_promo',
+                'scheduled_queries',
                 'threat_intel_downloader'
             }
 
@@ -230,6 +231,11 @@ def _create(function_name, config, clusters=None):
             streamalert_packages.RulePromotionPackage,
             {'module.rule_promotion_iam', 'module.rule_promotion_lambda'},
             config['lambda'].get('rule_promotion_config', {}).get('enabled', False)
+        ),
+        'scheduled_queries': PackageMap(
+            streamalert_packages.ScheduledQueriesPackage,
+            {'module.scheduled_queries'},
+            config['scheduled_queries'].get('enabled', False)
         ),
         'threat_intel_downloader': PackageMap(
             streamalert_packages.ThreatIntelDownloaderPackage,

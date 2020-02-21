@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -356,7 +356,7 @@ class ThreatIntel:
         # Threat Intel can be disabled for any given cluster
         enabled_clusters = {
             cluster for cluster, values in config['clusters'].items()
-            if values['modules']['streamalert'].get('enable_threat_intel', False)
+            if values.get('enable_threat_intel', False)
         }
 
         if not enabled_clusters:

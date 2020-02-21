@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the 'License');
 you may not use this file except in compliance with the License.
@@ -122,10 +122,7 @@ class TestCLIConfig:
         }
 
         self.config.add_metric_alarm(alarm_info)
-        result = (
-            self.config['clusters']['prod']['modules']['streamalert']
-            ['classifier_config']['custom_metric_alarms']
-        )
+        result = self.config['clusters']['prod']['classifier_config']['custom_metric_alarms']
 
         assert_equal(result, expected_result)
 

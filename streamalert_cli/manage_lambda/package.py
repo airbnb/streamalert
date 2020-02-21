@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -301,3 +301,17 @@ class RulePromotionPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'rule_promotion'
+
+
+class ScheduledQueriesPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert scheduled queries lambda function"""
+    config_key = 'scheduled_queries'
+    lambda_handler = 'streamalert.scheduled_queries.main.handler'
+    package_files = {
+        'conf',
+        'streamalert/__init__.py',
+        'streamalert/scheduled_queries',
+        'streamalert/shared',
+        'scheduled_queries'
+    }
+    package_name = 'scheduled_queries'
