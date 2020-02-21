@@ -44,7 +44,7 @@ class TestAthenaRefresher:
     def test_add_partitions(self):
         """AthenaRefresher - Add Partitions"""
         self._refresher._s3_buckets_and_keys = {
-            'unit-test.streamalerts': {
+            'unit-test-streamalerts': {
                 b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
                 b'alerts/dt=2020-02-13-08/prefix_streamalert_alert_delivery-0123-abcd.parquet'
             },

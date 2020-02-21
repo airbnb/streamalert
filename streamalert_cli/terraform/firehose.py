@@ -15,6 +15,7 @@ limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
 from streamalert.shared.config import firehose_data_bucket
+from streamalert.shared.utils import get_database_name
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
