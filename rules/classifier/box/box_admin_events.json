@@ -24,8 +24,6 @@
     "description": "Box admin event log example (validation only)",
     "log": "box:admin_events",
     "service": "streamalert_app",
-    "source": "prefix_cluster_box_admin_events_sm-app-name_app",
-    "trigger_rules": [],
-    "validate_schema_only": true
+    "source": "prefix_cluster_box_admin_events_sm-app-name_app"
   }
 ]
