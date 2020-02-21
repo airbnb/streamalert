@@ -27,8 +27,8 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 
 from streamalert import __version__ as version
-from streamalert_cli.runner import cli_runner, StreamAlertCLICommandRepository
-from streamalert_cli.utils import generate_subparser
+from .runner import cli_runner, StreamAlertCLICommandRepository
+from .utils import generate_subparser
 
 
 def build_parser():
