@@ -25,8 +25,6 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout as ReqTimeout
 
-from streamalert.alert_processor.outputs.credentials.provider import \
-    get_formatted_output_credentials_name
 from streamalert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -168,10 +166,7 @@ class TestOutputDispatcher:
     @mock_kms
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
-        param_name = '/{}_streamalert_secrets/{}'.format(
-            PREFIX, get_formatted_output_credentials_name('test_service', self._descriptor)
-        )
-
+        param_name = '/{}/streamalert/outputs/test_service/desc_test'.format(PREFIX)
         creds = {
             'url': 'http://www.foo.bar/test',
             'token': 'token_to_encrypt'

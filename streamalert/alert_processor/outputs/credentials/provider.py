@@ -363,7 +363,7 @@ class SSMDriver(CredentialsProvidingDriver):
         Returns:
             Credentials: The loaded Credentials. None on failure
         """
-        parameter_name = self.get_parameter_name(descriptor)
+        parameter_name = self._get_parameter_name(descriptor)
         try:
             plaintext_creds = AwsSsm.get_parameter(parameter_name, self._region)
             credentials = Credentials(plaintext_creds, is_encrypted=False, region=self._region)
@@ -399,18 +399,31 @@ class SSMDriver(CredentialsProvidingDriver):
             else credentials.data()
         )
 
-        parameter_name = self.get_parameter_name(descriptor)
+        parameter_name = self._get_parameter_name(descriptor)
 
         return AwsSsm.put_parameter(parameter_name, unencrypted_creds, self._region, kms_key_alias)
 
-    def get_parameter_prefix(self):
-        """Generate the parameter prefix from prefix and descriptor"""
-        return "{}_streamalert_secrets".format(self._prefix)
+    def _get_parameter_name(self, descriptor):
+        """
+        Returns the name of the AWS SSM Parameter Store parameter in which the current output
+        service stores its credentials.
 
-    def get_parameter_name(self, descriptor):
-        parameter_prefix = self.get_parameter_prefix()
+        FIXME (Ryxias) DRY out this SSM parameter name with what is configured in the
+          tf_alert_processor_iam Terraform module.
+
+        @see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services
+                /ssm.html#SSM.Client.put_parameter
+
+        Params:
+            descriptor (str): Descriptor of current output
+
+        Returns:
+            str
+        """
         parameter_suffix = get_formatted_output_credentials_name(self._service_name, descriptor)
-        return '/{}/{}'.format(parameter_prefix, parameter_suffix)
+
+        # The leading forward slash character is intentional for parameters in a hierarchy
+        return "/{}/streamalert/outputs/{}".format(self._prefix, parameter_suffix)
 
 
 class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, CredentialsCachingDriver):
