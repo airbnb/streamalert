@@ -165,6 +165,8 @@ class TestAlertProcessor:
         mock_logger.error.assert_called_once_with(
             '%s does not exist in the alerts table', self.alert.dynamo_key)
 
+    @patch('streamalert.alert_processor.main.load_config',
+           Mock(return_value=load_config('tests/unit/conf/', validate=True)))
     @patch.dict(os.environ, MOCK_ENV)
     @patch.object(AlertProcessor, 'run', return_value={'output': True})
     def test_handler(self, mock_run):
