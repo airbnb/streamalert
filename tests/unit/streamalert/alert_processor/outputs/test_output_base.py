@@ -25,8 +25,6 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout as ReqTimeout
 
-from streamalert.alert_processor.outputs.credentials.provider import \
-    get_formatted_output_credentials_name
 from streamalert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
