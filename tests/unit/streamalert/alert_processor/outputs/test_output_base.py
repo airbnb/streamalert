@@ -168,7 +168,7 @@ class TestOutputDispatcher:
     @mock_kms
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
-        param_name = '/airbnb/streamalert/outputs/test_service/desc_test'
+        param_name = '/{}/streamalert/outputs/test_service/desc_test'.format(PREFIX)
         creds = {
             'url': 'http://www.foo.bar/test',
             'token': 'token_to_encrypt'
