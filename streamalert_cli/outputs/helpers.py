@@ -19,20 +19,24 @@ from streamalert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-def output_exists(config, props, service):
+def output_exists(config, props, service, log_message=True):
     """Determine if this service and destination combo has already been created
 
     Args:
         config (dict): The outputs config that has been read from disk
         props (OrderedDict): Contains various OutputProperty items
         service (str): The service for which the user is adding a configuration
+        log_message (bool): Optionally log the error message
 
     Returns:
         [boolean] True if the service/destination exists already
     """
     if service in config and props['descriptor'].value in config[service]:
-        LOGGER.error('This descriptor is already configured for %s. '
-                     'Please select a new and unique descriptor', service)
+        if log_message:
+            LOGGER.error('This descriptor %s is already configured for %s. '
+                         'Please select a new and unique descriptor',
+                         props['descriptor'].value, service
+                         )
         return True
 
     return False
