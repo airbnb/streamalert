@@ -411,9 +411,6 @@ class SSMDriver(CredentialsProvidingDriver):
         FIXME (Ryxias) DRY out this SSM parameter name with what is configured in the
           tf_alert_processor_iam Terraform module.
 
-        (!) NOTE: The leading forward slash character is intentional for parameters that are
-            in a hierarchy.
-
         @see https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services
                 /ssm.html#SSM.Client.put_parameter
 
@@ -423,9 +420,10 @@ class SSMDriver(CredentialsProvidingDriver):
         Returns:
             str
         """
-        parameter_prefix = "{}/streamalert/outputs".format(self._prefix)
         parameter_suffix = get_formatted_output_credentials_name(self._service_name, descriptor)
-        return '/{}/{}'.format(parameter_prefix, parameter_suffix)
+
+        # The leading forward slash character is intentional for parameters in a hierarchy
+        return '/{}/streamalert/outputs/{}'.format(self._prefix, parameter_suffix)
 
 
 class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, CredentialsCachingDriver):
