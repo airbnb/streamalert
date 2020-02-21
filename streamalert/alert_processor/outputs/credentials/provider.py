@@ -423,7 +423,7 @@ class SSMDriver(CredentialsProvidingDriver):
         parameter_suffix = get_formatted_output_credentials_name(self._service_name, descriptor)
 
         # The leading forward slash character is intentional for parameters in a hierarchy
-        return '/{}/streamalert/outputs/{}'.format(self._prefix, parameter_suffix)
+        return "/{}/streamalert/outputs/{}".format(self._prefix, parameter_suffix)
 
 
 class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, CredentialsCachingDriver):
