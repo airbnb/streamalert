@@ -47,9 +47,9 @@ def run_command(runner_args, **kwargs):
         error_message (str): Message to output if command fails
         quiet (bool): Set to True to suppress command output
     """
-    default_error_message = "An error occurred while running: {}".format(' '.join(runner_args))
+    default_error_message = 'An error occurred while running: {}'.format(' '.join(runner_args))
     error_message = kwargs.get('error_message', default_error_message)
-    default_cwd = 'terraform'
+    default_cwd = os.path.join(os.path.dirname(__file__), '_infrastructure')
     cwd = kwargs.get('cwd', default_cwd)
 
     # Add the -force-copy flag for s3 state copying to suppress dialogs that
@@ -91,7 +91,7 @@ def continue_prompt(message=None):
 
     response = ''
     while response not in required_responses:
-        response = input('\n{} (yes or no): '.format(message)) # nosec
+        response = input('\n{} (yes or no): '.format(message))  # nosec
 
     return response == 'yes'
 

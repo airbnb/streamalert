@@ -107,10 +107,9 @@ def main():
     """Entry point for the CLI."""
     parser = build_parser()
     options = parser.parse_args()
-
-    # Exit with the result, which will be False if an error occurs, or True otherwise
-    sys.exit(not cli_runner(options))
+    return not cli_runner(options)
 
 
 if __name__ == "__main__":
-    main()
+    # Exit with the result, which will be False if an error occurs, or True otherwise
+    sys.exit(main())
