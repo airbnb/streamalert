@@ -59,13 +59,15 @@ data "aws_iam_policy_document" "output_secrets" {
     resources = [var.kms_key_arn, var.sse_kms_key_arn]
   }
 
-  // Allow retrieving encrypted output secrets
+  # FIXME (Ryxias) DRY out this SSM parameter name with what is configured in the SSMDriver
+  # Allow retrieving encrypted output secrets
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.prefix}-streamalert-secrets/*"]
+    actions   = ["ssm:GetParameter"]
+    resources = ["arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.prefix}/streamalert/outputs/*"]
   }
 }
+
 
 // Allow the Alert Processor to send to default firehose and S3 outputs
 resource "aws_iam_role_policy" "default_outputs" {

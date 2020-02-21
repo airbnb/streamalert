@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -126,29 +126,21 @@ class TestTerraformGenerate:
                         'target_key_id': '${aws_kms_key.streamalert_secrets.key_id}'
                     }
                 },
+                'aws_dynamodb_table': {
+                    'terraform_remote_state_lock': {
+                        'name': 'unit-test_streamalert_terraform_state_lock',
+                        'billing_mode': 'PAY_PER_REQUEST',
+                        'hash_key': 'LockID',
+                        'attribute': {
+                            'name': 'LockID',
+                            'type': 'S'
+                        },
+                        'tags': {
+                            'Name': 'StreamAlert'
+                        }
+                    }
+                },
                 'aws_s3_bucket': {
-                    'streamalert_secrets': {
-                        'bucket': 'unit-test-streamalert-secrets',
-                        'acl': 'private',
-                        'force_destroy': True,
-                        'versioning': {
-                            'enabled': True
-                        },
-                        'logging': {
-                            'target_bucket': 'unit-test-streamalert-s3-logging',
-                            'target_prefix': 'unit-test-streamalert-secrets/'
-                        },
-                        'server_side_encryption_configuration': {
-                            'rule': {
-                                'apply_server_side_encryption_by_default': {
-                                    'sse_algorithm': 'aws:kms',
-                                    'kms_master_key_id': (
-                                        '${aws_kms_key.server_side_encryption.key_id}')
-                                }
-                            }
-                        },
-                        'policy': ANY
-                    },
                     'terraform_remote_state': {
                         'bucket': 'unit-test-streamalert-terraform-state',
                         'acl': 'private',

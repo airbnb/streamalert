@@ -35,5 +35,5 @@ Resources
 -----------
 
 * `Blog Post <https://medium.com/@airbnbeng/e8619e3e5043>`_
-* `User Guide <https://streamalert.readthedocs.io/>`_
+* `User Guide <https://streamalert.io/>`_
 * `Slack <https://streamalert.herokuapp.com>`_ (unofficial)
