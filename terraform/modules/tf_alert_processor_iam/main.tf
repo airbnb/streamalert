@@ -59,7 +59,8 @@ data "aws_iam_policy_document" "output_secrets" {
     resources = [var.kms_key_arn, var.sse_kms_key_arn]
   }
 
-  // Allow retrieving encrypted output secrets
+  # FIXME (Ryxias) DRY out this SSM parameter name with what is configured in the SSMDriver
+  # Allow retrieving encrypted output secrets
   statement {
     effect    = "Allow"
     actions   = ["ssm:GetParameter"]

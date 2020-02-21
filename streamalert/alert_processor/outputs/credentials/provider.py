@@ -408,6 +408,9 @@ class SSMDriver(CredentialsProvidingDriver):
         Returns the name of the AWS SSM Parameter Store parameter in which the current output
         service stores its credentials.
 
+        FIXME (Ryxias) DRY out this SSM parameter name with what is configured in the
+          tf_alert_processor_iam Terraform module.
+
         (!) NOTE: The leading forward slash character is intentional for parameters that are
             in a hierarchy.
 
