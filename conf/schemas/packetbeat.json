@@ -11,7 +11,10 @@
     },
     "parser": "json",
     "configuration": {
-      "optional_top_level_keys": ["bytes_in", "bytes_out"]
+      "optional_top_level_keys": [
+        "bytes_in", 
+        "bytes_out"
+      ]
     }
   },
   "packetbeat:flow": {
@@ -24,7 +27,6 @@
       "dest": {},
       "source": {}
     },
-    "parser": "json",
-    "configuration": {}
+    "parser": "json"
   }
 }
