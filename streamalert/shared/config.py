@@ -115,6 +115,40 @@ def firehose_alerts_bucket(config):
     )
 
 
+def athena_partition_buckets(config):
+    """Get the buckets from default buckets and additionally configured ones
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+    Returns:
+        list: Bucket names for which Athena is enabled
+    """
+    athena_config = config['lambda']['athena_partition_refresh_config']
+    data_buckets = athena_config.get('buckets', {})
+    data_buckets[firehose_alerts_bucket(config)] = 'alerts'
+    data_bucket = firehose_data_bucket(config)  # Data retention is optional, so check for this
+    if data_bucket:
+        data_buckets[data_bucket] = 'data'
+
+    return data_buckets
+
+
+def athena_query_results_bucket(config):
+    """Get the S3 bucket where Athena queries store results to.
+
+    Args:
+        config (dict): The loaded config
+    Returns:
+        str: The name of the S3 bucket.
+    """
+    athena_config = config['lambda']['athena_partition_refresh_config']
+    prefix = config['global']['account']['prefix']
+
+    return athena_config.get(
+        'results_bucket',
+        '{}.streamalert.athena-results'.format(prefix)
+    ).strip()
+
+
 def parse_lambda_arn(function_arn):
     """Extract info on the current environment from the lambda function ARN
 
@@ -191,7 +225,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     schema_files = []
 
     if (os.path.exists(schemas_dir) and TopLevelConfigKeys.SCHEMAS not in exclusions
-            and (not include or TopLevelConfigKeys.SCHEMAS in include)):
+        and (not include or TopLevelConfigKeys.SCHEMAS in include)):
         schema_files = [
             schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
         ]
