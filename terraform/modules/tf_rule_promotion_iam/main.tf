@@ -119,6 +119,9 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
       "s3:ListBucket",
     ]
 
-    resources = formatlist("arn:aws:s3:::%s*", var.athena_data_buckets)
+    resources = [
+      "arn:aws:s3:::${var.alerts_bucket}",
+      "arn:aws:s3:::${var.alerts_bucket}/*"
+    ]
   }
 }
