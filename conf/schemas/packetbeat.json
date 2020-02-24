@@ -1,0 +1,32 @@
+{
+  "packetbeat:dns": {
+    "schema": {
+      "@timestamp": "string",
+      "client_ip": "string",
+      "type": "string",
+      "transport": "string",
+      "bytes_in": "integer",
+      "bytes_out": "integer",
+      "dns": {}
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "bytes_in", 
+        "bytes_out"
+      ]
+    }
+  },
+  "packetbeat:flow": {
+    "schema": {
+      "@timestamp": "string",
+      "start_time": "string",
+      "last_time": "string",
+      "type": "string",
+      "final": "boolean",
+      "dest": {},
+      "source": {}
+    },
+    "parser": "json"
+  }
+}
