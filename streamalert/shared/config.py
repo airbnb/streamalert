@@ -225,7 +225,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     schema_files = []
 
     if (os.path.exists(schemas_dir) and TopLevelConfigKeys.SCHEMAS not in exclusions
-        and (not include or TopLevelConfigKeys.SCHEMAS in include)):
+            and (not include or TopLevelConfigKeys.SCHEMAS in include)):
         schema_files = [
             schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
         ]
