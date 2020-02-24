@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
 from streamalert_cli.manage_lambda.package import ScheduledQueriesPackage
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
@@ -39,6 +40,11 @@ def generate_scheduled_queries_module_configuration(config):
         '{}.streamalert.athena-results'.format(prefix)
     ).strip()
 
+    athena_s3_buckets = [
+        firehose_alerts_bucket(config),
+        firehose_data_bucket(config),
+    ]
+
     # Copy the config over directly
     scheduled_queries_module = streamquery_config.get('config', {})
 
@@ -51,7 +57,7 @@ def generate_scheduled_queries_module_configuration(config):
         'region': config['global']['account']['region'],
         'athena_database': database,
         'athena_results_bucket': results_bucket,
-        'athena_s3_buckets': sorted(athena_config.get('buckets', [])),
+        'athena_s3_buckets': athena_s3_buckets,
         'lambda_filename': ScheduledQueriesPackage.package_name + '.zip',
         'lambda_handler': ScheduledQueriesPackage.lambda_handler,
     })
