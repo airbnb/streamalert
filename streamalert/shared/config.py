@@ -78,8 +78,8 @@ def firehose_data_bucket(config):
             False if firehose is not configured
     """
     # The default name is <prefix>-streamalert-data but can be overridden
-    firehose_config = config['global']['infrastructure'].get('firehose')
-    if not firehose_config:
+    firehose_config = config['global']['infrastructure'].get('firehose', {})
+    if not firehose_config.get('enabled', False):
         return False
 
     return firehose_config.get(
