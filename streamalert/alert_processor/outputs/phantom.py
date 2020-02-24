@@ -63,6 +63,7 @@ class PhantomOutput(OutputDispatcher):
             ('url',
              OutputProperty(description='the endpoint url for this Phantom integration',
                             mask_input=True,
+                            input_restrictions={' '},
                             cred_requirement=True))
         ])
 
