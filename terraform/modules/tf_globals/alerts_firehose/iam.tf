@@ -72,16 +72,6 @@ data "aws_iam_policy_document" "firehose_glue_catalog" {
   }
 }
 
-// CloudWatch Log Group: Firehose
-resource "aws_cloudwatch_log_group" "firehose" {
-  name              = "/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery"
-  retention_in_days = var.cloudwatch_log_retention
-
-  tags = {
-    Name = "StreamAlert"
-  }
-}
-
 // CloudWatch Log Stream: S3Delivery
 resource "aws_cloudwatch_log_stream" "s3_delivery" {
   name           = "S3Delivery"

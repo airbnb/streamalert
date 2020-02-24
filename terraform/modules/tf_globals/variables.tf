@@ -34,11 +34,6 @@ variable "alerts_firehose_cloudwatch_log_retention" {
   default = 14
 }
 
-variable "alerts_firehose_compression_format" {
-  type    = string
-  default = "GZIP"
-}
-
 variable "alerts_table_read_capacity" {
   type    = number
   default = 5
