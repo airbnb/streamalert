@@ -157,6 +157,41 @@ class TestTeamsOutput:
             pymsteams.cardsection,
         )
 
+    def test_single_link_button(self):
+        """TeamsOutput - _add_buttons - single button"""
+        teams_card = Mock(
+            addLinkButton=Mock()
+        )
+
+        button = ("button_text", "button_url")
+        teams_card = self._dispatcher._add_buttons(teams_card, [button])
+
+        # Tests
+        teams_card.addLinkButton.assert_called()
+        teams_card.addLinkButton.assert_called_with(*button)
+
+    def test_multiple_link_butons(self):
+        """TeamsOutput - _add_buttons - multiple buttons"""
+        teams_card = Mock(
+            addLinkButton=Mock()
+        )
+
+        buttons = [
+            ("button_one", "url_one"),
+            ("button_two", "url_two")
+        ]
+        teams_card = self._dispatcher._add_buttons(teams_card, buttons)
+
+        # Tests
+        teams_card.addLinkButton.assert_called()
+        teams_card.addLinkButton.assert_has_calls(
+            [
+                call(*buttons[0]),
+                call(*buttons[1])
+            ],
+            any_order=False
+        )
+
     @patch.object(TeamsOutput, "_generate_record_section")
     @patch.object(TeamsOutput, "_generate_alert_section")
     @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
@@ -456,6 +491,64 @@ class TestTeamsOutput:
             ],
             any_order=False
         )
+
+    @patch.object(TeamsOutput, "_add_buttons")
+    @patch.object(TeamsOutput, "_generate_alert_section")
+    @patch("pymsteams.connectorcard", spec=pymsteams.connectorcard)
+    def test_format_message_buttons(
+            self,
+            _,
+            alert_section_mock,
+            add_buttons_mock
+    ):
+        """TeamsOutput - Format Message - Buttons"""
+        rule_name = "test_rule_default"
+        alert = get_random_alert(25, rule_name)
+        output = MagicMock(spec=TeamsOutput)
+        alert_publication = compose_alert(alert, output, "asdf")
+        alert_publication["@teams.with_record"] = False
+
+        alert_section_mock.return_value = "Alert_Section"
+        add_buttons_mock.side_effect = (lambda teams_card, _: teams_card)
+
+        # Pass buttons in via publication
+        buttons = [("button_text", "button_url")]
+        alert_publication["@teams.buttons"] = buttons
+
+        loaded_message = self._dispatcher._format_message(
+            alert, alert_publication, self.CREDS["url"]
+        )
+
+        # Tests
+
+        # Verify title
+        loaded_message.title.assert_called()
+        loaded_message.title.assert_called_with(
+            "StreamAlert Rule Triggered: {}".format(alert.rule_name)
+        )
+
+        # Verify text/description
+        loaded_message.text.assert_called()
+        loaded_message.text.assert_called_with(alert.rule_description)
+
+        # Verify card color
+        loaded_message.color.assert_called()
+        loaded_message.color.assert_called_with("E81123")
+
+        # Verify Sections
+        alert_section_mock.assert_called()
+        alert_section_mock.assert_called_with(alert)
+        loaded_message.addSection.assert_called()
+        loaded_message.addSection.assert_has_calls(
+            [
+                call('Alert_Section')
+            ],
+            any_order=False
+        )
+
+        # Verify buttons
+        add_buttons_mock.assert_called()
+        assert_equal(add_buttons_mock.call_count, 1)
 
     @patch("logging.Logger.info")
     @patch.object(TeamsOutput, "_format_message")
