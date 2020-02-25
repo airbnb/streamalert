@@ -15,6 +15,7 @@
     "description": "basic schema validation check for slack:access",
     "log": "slack:access",
     "service": "streamalert_app",
-    "source": "prefix_cluster_slack_access_sm-app-name_app"
+    "source": "prefix_cluster_slack_access_sm-app-name_app",
+    "classify_only": true
   }
 ]

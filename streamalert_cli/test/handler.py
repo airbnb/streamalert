@@ -385,7 +385,7 @@ class TestRunner:
                 if not test_result:
                     continue
 
-                if original_event.get('validate_schema_only'):
+                if original_event.get('classify_only'):
                     continue  # Do not run rules on events that are only for validation
 
                 if self._type in {self.Types.RULES, self.Types.LIVE}:
@@ -686,8 +686,15 @@ class TestRunner:
         if not test_event_keys & acceptable_data_keys:
             return False, 'Test event must contain either \'data\' or \'override_record\''
 
-        optional_keys = {'compress', 'trigger_rules', 'validate_schema_only'}
+        if not test_event.get('classify_only'):
+            if 'trigger_rules' not in test_event_keys:
+                error = (
+                    'Test events that are not \'classify_only\' should have \'trigger_rules\' '
+                    'defined'
+                )
+                return False, error
 
+        optional_keys = {'compress', 'trigger_rules', 'classify_only'}
         key_diff = test_event_keys.difference(required_keys | optional_keys | acceptable_data_keys)
 
         # Log a warning if there are extra keys declared in the test log

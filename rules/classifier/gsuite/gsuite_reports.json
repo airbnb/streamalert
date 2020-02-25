@@ -34,6 +34,7 @@
     "description": "G Suite Admin Report Log example (validation only)",
     "log": "gsuite:reports",
     "service": "streamalert_app",
-    "source": "prefix_cluster_gsuite_admin_sm-app-name_app"
+    "source": "prefix_cluster_gsuite_admin_sm-app-name_app",
+    "classify_only": true
   }
 ]

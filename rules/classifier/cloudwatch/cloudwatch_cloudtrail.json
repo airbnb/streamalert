@@ -19,6 +19,7 @@
     "description": "CloudTrail logs via CloudWatch logs DATA_MESSAGE (validation only)",
     "log": "cloudwatch:cloudtrail",
     "service": "kinesis",
-    "source": "prefix_cluster1_streamalert"
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
   }
 ]

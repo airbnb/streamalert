@@ -19,7 +19,8 @@
     "description": "RDS Aurora logs via CloudWatch logs DATA_MESSAGE (validation only)",
     "log": "cloudwatch:rds_aurora",
     "service": "kinesis",
-    "source": "prefix_cluster1_streamalert"
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
   },
   {
     "data": {
@@ -41,7 +42,8 @@
     "description": "RDS Aurora logs via CloudWatch logs DATA_MESSAGE, with quoted field (validation only)",
     "log": "cloudwatch:rds_aurora",
     "service": "kinesis",
-    "source": "prefix_cluster1_streamalert"
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
   },
   {
     "data": {
@@ -63,6 +65,7 @@
     "description": "RDS Aurora logs via CloudWatch logs DATA_MESSAGE, with escaped string in query (validation only)",
     "log": "cloudwatch:rds_aurora",
     "service": "kinesis",
-    "source": "prefix_cluster1_streamalert"
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
   }
 ]

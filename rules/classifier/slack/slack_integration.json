@@ -13,7 +13,8 @@
     "description": "schema validation check for slack:integration with service log type",
     "log": "slack:integration",
     "service": "streamalert_app",
-    "source": "prefix_cluster_slack_integration_sm-app-name_app"
+    "source": "prefix_cluster_slack_integration_sm-app-name_app",
+    "classify_only": true
   },
   {
     "data": {
@@ -28,6 +29,7 @@
     "description": "schema validation check for slack:integration with app log type",
     "log": "slack:integration",
     "service": "streamalert_app",
-    "source": "prefix_cluster_slack_integration_sm-app-name_app"
+    "source": "prefix_cluster_slack_integration_sm-app-name_app",
+    "classify_only": true
   }
 ]
