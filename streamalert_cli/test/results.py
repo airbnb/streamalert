@@ -61,7 +61,7 @@ class TestResult:
     _PASS_STRING = format_green('Pass')
     _FAIL_STRING = format_red('Fail')
     _SIMPLE_TEMPLATE = '{header}:'
-    _PASS_TEMPLATE = '{header}: {pass}' # nosec
+    _PASS_TEMPLATE = '{header}: {pass}'  # nosec
     _DESCRIPTION_LINE = (
         '''
     Description: {description}'''
@@ -88,9 +88,9 @@ class TestResult:
         Errors:
 {publisher_errors}'''
     )
-    _VALIDATION_ONLY = (
+    _CLASSIFY_ONLY = (
         '''
-    Validation Only: True'''
+    Classify Only: True'''
     )
     _ALERTS_TEMPLATE = (
         '''
@@ -142,8 +142,8 @@ class TestResult:
         )
 
         # If it was classification-only, note it down
-        if self.validate_schema_only:
-            template += self._VALIDATION_ONLY
+        if self.classify_only:
+            template += self._CLASSIFY_ONLY
 
         # Render the result of rules engine run
         if self.rule_tests_were_run:
@@ -177,9 +177,9 @@ class TestResult:
 
             num_pass = 0
             num_total = 0
-            for _, result in self._publication_results.items():
-                num_total += 1
+            for num_total, result in enumerate(self._publication_results.values(), start=1):
                 num_pass += 1 if result['success'] else 0
+
             fmt['publishers_status'] = (
                 format_green('{}/{} Passed'.format(num_pass, num_total))
                 if num_pass == num_total
@@ -278,9 +278,9 @@ class TestResult:
         return self._NONE_STRING if not result_block else '\n{}'.format('\n'.join(result_block))
 
     @property
-    def validate_schema_only(self):
+    def classify_only(self):
         """Returns True if the testcase only requires classification and skips rules"""
-        return self._test_event.get('validate_schema_only')
+        return self._test_event.get('classify_only')
 
     @property
     def skip_publishers(self):
@@ -290,7 +290,7 @@ class TestResult:
     @property
     def rule_tests_were_run(self):
         """Returns True if this testcase ran Rules Engine tests"""
-        return not self.validate_schema_only and self._with_rules
+        return not self.classify_only and self._with_rules
 
     @property
     def publisher_tests_were_run(self):

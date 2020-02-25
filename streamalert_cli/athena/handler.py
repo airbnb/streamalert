@@ -25,7 +25,7 @@ from streamalert_cli.utils import (
     CLICommand,
     generate_subparser,
     set_parser_epilog,
-    UniqueSetAction
+    UniqueSortedListAction
 )
 
 LOGGER = get_logger(__name__)
@@ -93,8 +93,8 @@ class AthenaCommand(CLICommand):
                 'The provided input should be space-separated '
                 'directives like "column_name=value_type"'
             ),
-            action=UniqueSetAction,
-            default=set(),
+            action=UniqueSortedListAction,
+            default=[],
             type=_validate_override
         )
 

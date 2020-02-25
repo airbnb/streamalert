@@ -24,7 +24,7 @@ from streamalert_cli.utils import (
     add_timeout_arg,
     CLICommand,
     generate_subparser,
-    UniqueSetAction,
+    UniqueSortedListAction,
 )
 
 LOGGER = get_logger(__name__)
@@ -105,7 +105,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
             '--ioc-keys',
             help='One or more IOC keys to store in DynamoDB table',
             nargs='+',
-            action=UniqueSetAction,
+            action=UniqueSortedListAction,
             default=['expiration_ts', 'itype', 'source', 'type', 'value']
         )
 
@@ -114,7 +114,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
             '--ioc-filters',
             help='One or more filters to apply when retrieving IOCs from Threat Feed',
             nargs='+',
-            action=UniqueSetAction,
+            action=UniqueSortedListAction,
             default=['crowdstrike', '@airbnb.com']
         )
 
@@ -123,7 +123,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
             '--ioc-types',
             help='One or more IOC type defined by the Threat Feed. IOC types can vary by feed',
             nargs='+',
-            action=UniqueSetAction,
+            action=UniqueSortedListAction,
             default=['domain', 'ip', 'md5']
         )
 
@@ -131,7 +131,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
             '-x',
             '--excluded-sub-types',
             help='IOC subtypes to be excluded',
-            action=UniqueSetAction,
+            action=UniqueSortedListAction,
             default=['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip']
         )
 

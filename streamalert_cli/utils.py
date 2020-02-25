@@ -56,12 +56,12 @@ class CLICommand:
         """
 
 
-class UniqueSetAction(Action):
+class UniqueSortedListAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
 
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = set(values)
-        setattr(namespace, self.dest, unique_items)
+        setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
 
 
 class MutuallyExclusiveStagingAction(Action):
@@ -183,7 +183,7 @@ def add_clusters_arg(parser, required=False):
             'If omitted, this action will be performed against all clusters.'
         ) if not required else 'One or more clusters to target',
         'nargs': '+',
-        'action': UniqueSetAction,
+        'action': UniqueSortedListAction,
         'required': required
     }
 
@@ -236,7 +236,7 @@ def add_default_lambda_args(lambda_parser):
             'Use \'all\' to act against all functions.'
         ).format(', '.join(functions)),
         nargs='+',
-        action=UniqueSetAction,
+        action=UniqueSortedListAction,
         required=True
     )
 

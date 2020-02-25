@@ -29,7 +29,7 @@ from streamalert_cli.utils import (
     add_clusters_arg,
     CLICommand,
     set_parser_epilog,
-    UniqueSetAction,
+    UniqueSortedListAction,
 )
 
 LOGGER = get_logger(__name__)
@@ -333,8 +333,8 @@ def _add_default_tf_args(tf_parser, add_cluster_args=True):
             'One or more Terraform module name to target. Use `list-targets` for a list '
             'of available targets'
         ),
-        action=UniqueSetAction,
-        default=set(),
+        action=UniqueSortedListAction,
+        default=[],
         nargs='+'
     )
 

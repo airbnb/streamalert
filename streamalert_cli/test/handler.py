@@ -34,11 +34,10 @@ from streamalert.shared.logger import get_logger
 from streamalert.shared.stats import RuleStatisticTracker
 from streamalert.shared.lookup_tables.table import LookupTable
 from streamalert_cli.helpers import check_credentials
-from streamalert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
 from streamalert_cli.test.format import format_green, format_red, format_underline, format_yellow
 from streamalert_cli.test.mocks import mock_lookup_table_results, mock_threat_intel_query_results
 from streamalert_cli.test.results import TestEventFile, TestResult
-from streamalert_cli.utils import CLICommand, generate_subparser, UniqueSetAction
+from streamalert_cli.utils import CLICommand, generate_subparser, UniqueSortedListAction
 
 LOGGER = get_logger(__name__)
 
@@ -138,8 +137,8 @@ class TestCommand(CLICommand):
             metavar='FILENAMES',
             nargs='+',
             help='One or more file to test, separated by spaces',
-            action=UniqueSetAction,
-            default=set()
+            action=UniqueSortedListAction,
+            default=[]
         )
 
         # add the optional ability to test against a rule/set of rules
@@ -149,8 +148,8 @@ class TestCommand(CLICommand):
             dest='rules',
             nargs='+',
             help='One or more rule to test, separated by spaces',
-            action=UniqueSetAction,
-            default=set()
+            action=UniqueSortedListAction,
+            default=[]
         )
 
         # add the optional ability to change the test files directory
