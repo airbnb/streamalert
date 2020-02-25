@@ -152,12 +152,14 @@ class TestCommand(CLICommand):
             default=[]
         )
 
-        # add the optional ability to change the test files directory
+        # add the ability to specify directories to test
         test_parser.add_argument(
             '-d',
-            '--files-dir',
+            '--rules-dir',
             help='Path to directory containing test files',
-            default=DEFAULT_TEST_FILES_DIRECTORY
+            nargs='+',
+            action=UniqueSortedListAction,
+            default=['rules']
         )
 
         # Add the optional ability to log verbosely or use quite logging for tests
