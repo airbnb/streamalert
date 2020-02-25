@@ -350,7 +350,7 @@ def _get_valid_tf_targets(config, targets):
 
     for target in targets:
         matches = {
-            '{}.{}'.format(value_type, value)
+            '{}.{}'.format(value_type, value) if value_type == 'module' else value
             for value_type, values in modules.items()
             for value in values
             if fnmatch(value, target)
