@@ -9,15 +9,21 @@ The ``manage.py`` CLI tool comes built-in with a ``test`` command which does exa
 *************
 Configuration
 *************
-To test a new rule, first create a new JSON file anywhere within the 'tests/integration/rules/' directory with the ``.json`` extension.
+To test a new rule, first create a new JSON file next to your rule file. The suggested convention is
+to use the same name as the rule you are testing, but you can choose any name you would like. This
+will help with organization, but you may also create test events to test your rules anywhere within
+the same top-level directory where your rules are stored.
 
-This file should contain the following structure:
+Each test event file should contain the following structure:
 
 .. code-block:: json
 
   [
     {
-      "data": "Either a string, or JSON object",
+      "data": {
+        "key_01": "value_01",
+        "key_02": "value_02"
+      },
       "description": "This test should trigger or not trigger an alert",
       "log": "The log name declared in a json file under the conf/schemas directory",
       "service": "The service sending the log - kinesis, s3, sns, or streamalert_app",
@@ -123,8 +129,8 @@ Key                        Type                    Required  Description
                                                              provided in the ``data_sources`` field defined within a cluster in ``conf/clusters/<cluster>.json``
 ``trigger_rules``          ``list``                No        A list of zero or more rule names that this test record should trigger.
                                                              An empty list implies this record should not trigger any alerts
-``validate_schema_only``   ``boolean``             No        Whether or not the test record should go through the rule processing engine.
-                                                             If set to ``true``, this record will only have validation performed
+``classify_only``          ``boolean``             No        Whether or not the test record should go through the rule processing engine.
+                                                             If set to ``true``, this record will only be tested for valid classification
 =========================  ======================  ========  ===========
 
 For more examples, see the provided default rule tests in ``tests/integration/rules``
