@@ -82,6 +82,9 @@ def firehose_data_bucket(config):
     if not firehose_config:
         return False
 
+    if not firehose_config.get('enabled'):
+        return False
+
     return firehose_config.get(
         'bucket_name',
         '{}-streamalert-data'.format(config['global']['account']['prefix'])
