@@ -27,8 +27,10 @@ class RuleStagingCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the rule staging subparser: manage.py rule-staging [subcommand] [options]"""
-        rule_staging_subparsers = subparser.add_subparsers(dest="rule-staging subcommand",
-                                                           required=True)
+        rule_staging_subparsers = subparser.add_subparsers(
+            dest='rule-staging subcommand',
+            required=True
+        )
 
         cls._setup_rule_staging_enable_subparser(rule_staging_subparsers)
         cls._setup_rule_staging_status_subparser(rule_staging_subparsers)

@@ -43,7 +43,7 @@ class AthenaCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add athena subparser: manage.py athena [subcommand]"""
-        athena_subparsers = subparser.add_subparsers(dest="athena subcommand", required=True)
+        athena_subparsers = subparser.add_subparsers(dest='athena subcommand', required=True)
 
         cls._setup_athena_create_table_subparser(athena_subparsers)
         cls._setup_athena_rebuild_subparser(athena_subparsers)

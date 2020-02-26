@@ -48,7 +48,7 @@ class TestCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the test subparser: manage.py test"""
-        test_subparsers = subparser.add_subparsers(dest="test subcommand", required=True)
+        test_subparsers = subparser.add_subparsers(dest='test subcommand', required=True)
 
         cls._setup_test_classifier_subparser(test_subparsers)
         cls._setup_test_rules_subparser(test_subparsers)
@@ -350,7 +350,6 @@ class TestRunner:
             return
 
         print('\nRunning tests for files found in: {}'.format(self._files_dir))
-
 
         for event_file in self._get_test_files():
             test_event = TestEventFile(event_file.replace(self._files_dir, ''))

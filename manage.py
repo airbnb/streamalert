@@ -73,7 +73,7 @@ For additional help with any command above, try:
 
     # Dynamically generate subparsers, and create a 'commands' block for the prog description
     command_block = []
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest='command', required=True)
     command_col_size = max([len(command) for command in commands]) + 10
     for command in sorted(commands):
         setup_subparser_func, description = commands[command]

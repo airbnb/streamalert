@@ -15,5 +15,4 @@ def ssh_login_activity(_):
                       host. Update the pack name in rules/matchers/matchers.py if different.
     reference:        https://osquery.io/schema/4.1.2#last
     """
-
     return True

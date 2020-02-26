@@ -36,7 +36,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add threat intel downloader subparser: manage.py threat-intel-downloader [subcommand]"""
-        ti_subparsers = subparser.add_subparsers(dest="threat-intel-downloader subcommand",
+        ti_subparsers = subparser.add_subparsers(dest='threat-intel-downloader subcommand',
                                                  required=True)
 
         cls._setup_threat_intel_configure_subparser(ti_subparsers)
