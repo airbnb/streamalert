@@ -37,7 +37,12 @@ from streamalert_cli.helpers import check_credentials
 from streamalert_cli.test.format import format_green, format_red, format_underline, format_yellow
 from streamalert_cli.test.mocks import mock_lookup_table_results, mock_threat_intel_query_results
 from streamalert_cli.test.results import TestEventFile, TestResult
-from streamalert_cli.utils import CLICommand, generate_subparser, UniqueSortedListAction
+from streamalert_cli.utils import (
+    CLICommand,
+    DirectoryType,
+    generate_subparser,
+    UniqueSortedListAction,
+)
 
 LOGGER = get_logger(__name__)
 
@@ -159,6 +164,7 @@ class TestCommand(CLICommand):
             help='Path to directory containing test files',
             nargs='+',
             action=UniqueSortedListAction,
+            type=DirectoryType(),
             default=['rules']
         )
 

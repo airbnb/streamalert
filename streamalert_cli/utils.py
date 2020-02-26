@@ -24,7 +24,7 @@ To run terraform by hand, change to the terraform directory and run:
 terraform <cmd>
 """
 from abc import abstractmethod
-from argparse import Action, RawDescriptionHelpFormatter
+from argparse import Action, ArgumentTypeError, RawDescriptionHelpFormatter
 import os
 import textwrap
 from streamalert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
@@ -82,6 +82,18 @@ class MutuallyExclusiveStagingAction(Action):
             if offending_rules:
                 raise parser.error(error.format(', '.join(list(offending_rules))))
         setattr(namespace, self.dest, unique_items)
+
+
+class DirectoryType:
+    """Factory for ensuring a directory exists"""
+
+    def __call__(self, value):
+        if os.path.isdir(value):
+            return value
+
+        raise ArgumentTypeError(
+            '\'%(filename)s\' is not a directory' % {'filename': value}
+        )
 
 
 def add_timeout_arg(parser):
