@@ -226,7 +226,7 @@ class TestRunner:
         self._type = options.subcommand
         self._files = options.files
         self._rules = options.rules
-        self._files_dir = os.path.join(options.files_dir, '')  # ensure theres a trailing slash
+        self._rules_dirs = options.rules_dir
         self._verbose = options.verbose
         self._quiet = options.quiet
         self._s3_mocker = patch('streamalert.classifier.payload.s3.boto3.resource').start()
@@ -259,24 +259,19 @@ class TestRunner:
             _classifier = classifier.Classifier()
             return _classifier.run(records=[record])
 
-    def _run_rules_engine(self, record):
+    @patch.object(rules_engine, 'AlertForwarder')
+    @patch('rules.helpers.base.random_bool', return_value=True)
+    @patch.object(rules_engine.RulesEngine, '_load_rule_table', return_value=None)
+    @patch.object(rules_engine.ThreatIntel, '_query')
+    def _run_rules_engine(self, record, ti_mock, *_):
         """Create a fresh rules engine and process the record, returning the result"""
-        with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
-             patch.object(rules_engine, 'AlertForwarder'), \
-             patch.object(rules_engine, 'RuleTable') as rule_table, \
-             patch('rules.helpers.base.random_bool', return_value=True):
+        ti_mock.side_effect = self._threat_intel_mock
 
-            # Emptying out the rule table will force all rules to be unstaged, which causes
-            # non-required outputs to get properly populated on the Alerts that are generated
-            # when running the Rules Engine.
-            rule_table.return_value = False
-            ti_mock.side_effect = self._threat_intel_mock
+        _rules_engine = rules_engine.RulesEngine()
 
-            _rules_engine = rules_engine.RulesEngine()
+        self._install_lookup_tables_mocks(_rules_engine)
 
-            self._install_lookup_tables_mocks(_rules_engine)
-
-            return _rules_engine.run(records=record)
+        return _rules_engine.run(records=record)
 
     def _install_lookup_tables_mocks(self, rules_engine_instance):
         """
@@ -352,15 +347,12 @@ class TestRunner:
         expected_rules = set(event.get('trigger_rules', [])) - rule.Rule.disabled_rules()
         return bool(expected_rules.intersection(self._rules))
 
-    def run(self):
-        """Run the tests"""
-        if not self._check_prereqs():
-            return
+    def _process_rule_directory(self, directory):
+        """Process rules in the the rule directory"""
+        print('\nRunning tests for files found in: {}'.format(directory))
 
-        print('\nRunning tests for files found in: {}'.format(self._files_dir))
-
-        for event_file in self._get_test_files():
-            test_event = TestEventFile(event_file.replace(self._files_dir, ''))
+        for event_file in self._get_test_files(directory):
+            test_event = TestEventFile(event_file.replace(directory, ''))
             # Iterate over the individual test events in the file
             for idx, original_event, event in self._load_test_file(event_file):
                 if not event:
@@ -420,6 +412,15 @@ class TestRunner:
             if test_event and not (self._quiet and test_event.all_passed):
                 print(test_event)
 
+    def run(self):
+        """Run the tests"""
+        if not self._check_prereqs():
+            return
+
+        for directory in self._rules_dirs:
+            # The CLI checks if these directories exist, so no need to check here
+            self._process_rule_directory(directory)
+
         self._finalize()
 
         return self._failed == 0
@@ -456,7 +457,7 @@ class TestRunner:
                 }
         return results
 
-    def _get_test_files(self):
+    def _get_test_files(self, directory):
         """Helper to get rule files to be tested
 
         Yields:
@@ -467,7 +468,7 @@ class TestRunner:
         } if self._files else set()
 
         filtered = bool(files_filter)
-        for root, _, test_event_files in os.walk(self._files_dir):
+        for root, _, test_event_files in os.walk(directory):
             for event_file in sorted(test_event_files):
                 basename = os.path.splitext(event_file)[0]
                 full_path = os.path.join(root, event_file)
