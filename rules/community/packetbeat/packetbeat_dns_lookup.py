@@ -3,7 +3,7 @@ from streamalert.shared.rule import rule
 
 
 @rule(logs=['packetbeat:dns'])
-def packetbeat_example_com_lookup(rec):
+def packetbeat_dns_lookup(rec):
     """
     author:       gavin (gavinelder)
     description:  Alert on DNS lookup for Blacklisted domain
