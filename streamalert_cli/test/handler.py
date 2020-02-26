@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import argparse
 import base64
 from collections import defaultdict
 import json
@@ -134,7 +135,7 @@ class TestCommand(CLICommand):
         """Add the default arguments to the test parsers"""
         test_filter_group = test_parser.add_mutually_exclusive_group(required=False)
 
-        # add the optional ability to test against a rule/set of rules
+        # add the optional ability to test specific files
         test_filter_group.add_argument(
             '-f',
             '--test-files',
@@ -143,10 +144,11 @@ class TestCommand(CLICommand):
             nargs='+',
             help='One or more file to test, separated by spaces',
             action=UniqueSortedListAction,
+            type=argparse.FileType('r'),
             default=[]
         )
 
-        # add the optional ability to test against a rule/set of rules
+        # add the optional ability to test specific rules
         test_filter_group.add_argument(
             '-r',
             '--test-rules',
@@ -157,11 +159,11 @@ class TestCommand(CLICommand):
             default=[]
         )
 
-        # add the ability to specify directories to test
+        # add the ability to specify rule directories to test
         test_parser.add_argument(
             '-d',
             '--rules-dir',
-            help='Path to directory containing test files',
+            help='Path to one or more directory containing rules, separated by spaces',
             nargs='+',
             action=UniqueSortedListAction,
             type=DirectoryType(),
