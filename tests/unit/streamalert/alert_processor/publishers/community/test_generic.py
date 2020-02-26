@@ -45,6 +45,7 @@ class TestPublishersForOutput:
         publication = compose_alert(alert, output, descriptor)
 
         expectation = {
+            'severity': 'low',
             'source_entity': 'corp-prefix.prod.cb.region',
             'rule_name': 'cb_binarystore_file_added',
             'created': '2019-01-01T00:00:00.000000Z',
@@ -104,7 +105,8 @@ class TestDefaultPublisher:
                 'size': '21504'
             },
             'context': {'context': 'value'},
-            'staged': False
+            'staged': False,
+            'severity': 'low'
         }
         assert_equal(publication, expectation)
 
@@ -169,7 +171,8 @@ class TestRemoveInternalFieldsPublisher:
                 'size': '21504'
             },
             'log_type': 'json',
-            'rule_description': 'Info about this rule and what actions to take'
+            'rule_description': 'Info about this rule and what actions to take',
+            'severity': 'low'
         }
         assert_equal(publication, expectation)
 
@@ -202,6 +205,7 @@ class TestRemoveStreamAlertNormalizationFields:
         publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
+            'severity': 'low',
             'staged': False,
             'publishers': [
                 'streamalert.shared.publisher.DefaultPublisher',
@@ -284,6 +288,7 @@ class TestEnumerateFields:
             'source_entity': 'corp-prefix.prod.cb.region',
             'source_service': 's3',
             'staged': False,
+            'severity': 'low'
         }
         assert_equal(publication, expectation)
 
@@ -317,6 +322,7 @@ class TestEnumerateFields:
             'record.type',
             'rule_description',
             'rule_name',
+            'severity',
             'source_entity',
             'source_service',
             'staged',
@@ -388,6 +394,7 @@ class TestRemoveFields:
         publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
+            'severity': 'low',
             'staged': False,
             'source_entity': 'corp-prefix.prod.cb.region',
             'rule_name': 'cb_binarystore_file_added',

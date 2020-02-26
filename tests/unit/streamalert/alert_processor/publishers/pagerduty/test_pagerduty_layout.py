@@ -85,7 +85,7 @@ def test_as_custom_details_default():
             'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
             'size': '21504'
         },
-        'context': {'context': 'value'}, 'staged': False
+        'context': {'context': 'value'}, 'staged': False, 'severity': 'low'
     }
     assert_equal(publication, expectation)
 

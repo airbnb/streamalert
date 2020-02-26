@@ -141,6 +141,7 @@ The following table provides an overview of each rule option, with more details 
 ``outputs``            ``List[str]``             List of alert outputs
 ``dynamic_outputs``    ``List[function]``        List of functions which return valid outputs
 ``req_subkeys``        ``Dict[str, List[str]]``  Subkeys which must be present in the record
+``severity``           ``str``                   The severity of this rule triggering an Alert (default: low)
 =====================  ========================  ===============
 
 
@@ -285,6 +286,20 @@ The following table provides an overview of each rule option, with more details 
         # throw a KeyError.  Using req_subkeys avoids this.
         return rec['columns']['address'] == '127.0.0.1'
 
+:severity:
+
+  The ``severity`` keyword argument defines the severity level for this rule. The default is ``low``, but this can be set on a per-rule basis.
+
+  Severities, can be user defined but a recommended approach is to use the following severity levels:
+
+==================  ===========
+**Severity level**  **meaning**
+------------------  -----------
+``low``             ``Alert should be looked at when the user has time to investigate``
+``medium``          ``Alert should be looked at within 6 hours``
+``high``            ``Alert should be looked at within 30 minutes of it being raised``
+``critical``        ``Alert should be looked as soon as it is raised``
+==================  ===========
 
 ***************
 Disabling Rules

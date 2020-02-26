@@ -72,6 +72,7 @@ EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'record.type', 'value': 'binarystore.file.added'},
     {'type': 'rule_description', 'value': 'Info about this rule and what actions to take'},
     {'type': 'rule_name', 'value': 'cb_binarystore_file_added'},
+    {'type': 'severity', 'value': 'low'},
     {'type': 'source_entity', 'value': 'corp-prefix.prod.cb.region'},
     {'type': 'source_service', 'value': 's3'},
     {'type': 'staged', 'value': 'False'},
