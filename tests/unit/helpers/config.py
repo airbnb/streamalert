@@ -266,6 +266,7 @@ def athena_cli_basic_config():
             },
             'infrastructure': {
                 'firehose': {
+                    'enabled': True,
                     'enabled_logs': {
                         'unit': {}
                     },

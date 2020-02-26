@@ -26,8 +26,8 @@ variable "athena_results_bucket_arn" {
   description = "S3 bucket arn to use for Athena search results"
 }
 
-variable "athena_data_buckets" {
-  description = "List of S3 buckets where Athena data is stored"
+variable "alerts_bucket" {
+  description = "Name of S3 bucket where alerts are stored and queryable by Athena"
   type        = list(string)
 }
 

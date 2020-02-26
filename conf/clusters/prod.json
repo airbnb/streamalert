@@ -40,7 +40,8 @@
       "prefix.cluster.sample.bucket": [
         "cloudtrail",
         "carbonblack",
-        "fleet"
+        "fleet",
+        "packetbeat"
       ]
     },
     "sns": {

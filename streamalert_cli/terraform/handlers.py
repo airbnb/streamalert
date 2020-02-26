@@ -64,7 +64,7 @@ class TerraformInitCommand(CLICommand):
 
         # Stop here if only initializing the backend
         if options.backend:
-            return cls._terraform_init_backend()
+            return cls._terraform_init_backend(config)
 
         LOGGER.info('Initializing StreamAlert')
 
@@ -124,7 +124,7 @@ class TerraformInitCommand(CLICommand):
         return tf_runner(refresh=False)
 
     @staticmethod
-    def _terraform_init_backend():
+    def _terraform_init_backend(config):
         """Initialize the infrastructure backend (S3) using Terraform
 
         Returns:
@@ -136,6 +136,10 @@ class TerraformInitCommand(CLICommand):
 
         # Verify terraform is installed
         if not terraform_check():
+            return False
+
+        # See generate_main() for how it uses the `init` kwarg for the local/remote backend
+        if not terraform_generate_handler(config=config, init=False):
             return False
 
         LOGGER.info('Initializing StreamAlert backend')
@@ -365,7 +369,7 @@ def _get_valid_tf_targets(config, targets):
 
     for target in targets:
         matches = {
-            '{}.{}'.format(value_type, value)
+            '{}.{}'.format(value_type, value) if value_type == 'module' else value
             for value_type, values in modules.items()
             for value in values
             if fnmatch(value, target)

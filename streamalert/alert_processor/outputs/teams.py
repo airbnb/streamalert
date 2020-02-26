@@ -123,6 +123,11 @@ class TeamsOutput(OutputDispatcher):
                 teams_card, publication["@teams.additional_card_sections"]
             )
 
+        if "@teams.buttons" in publication:
+            teams_card = cls._add_buttons(
+                teams_card, publication["@teams.buttons"]
+            )
+
         return teams_card
 
     @classmethod
@@ -204,6 +209,24 @@ class TeamsOutput(OutputDispatcher):
 
         return teams_card
 
+    @staticmethod
+    def _add_buttons(teams_card, buttons):
+        """Add buttons to the teams card
+
+        Args:
+            teams_card (pymsteams.connectorcard): Teams connector card
+            buttons (list[(text, url)]):
+                Buttons to place on the card, should be a list of tuples containing
+                the text and the url
+
+        Returns:
+            teams_card (pymsteams.connectorcard): teams_card with buttons added
+        """
+        for button_text, button_url in buttons:
+            teams_card.addLinkButton(button_text, button_url)
+
+        return teams_card
+
     def _dispatch(self, alert, descriptor):
         """Sends the Teams Card to Teams
 
@@ -234,6 +257,11 @@ class TeamsOutput(OutputDispatcher):
                 Pass in additional sections you want to send on the message.
 
                 @see cls._add_additional_sections() for more info
+
+            - @teams.buttons (list[(text, url)])
+                Pass a list of tuples containing the button text and url
+
+                These will be placed at the bottom of a teams card
 
         Args:
             alert (Alert): Alert instance which triggered a rule
