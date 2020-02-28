@@ -15,6 +15,7 @@
       "factor": "Duo Push",
       "integration": "Test Integration",
       "ip": "12.123.123.12",
+      "isotimestamp": "2017-09-13T15:28:19.000Z",
       "location": {
         "city": "Place",
         "country": "US",
@@ -50,6 +51,7 @@
       "factor": "Duo Push",
       "integration": "Test Integration",
       "ip": "12.123.123.12",
+      "isotimestamp": "2017-09-13T15:28:19.000Z",
       "location": {
         "city": "Place",
         "country": "US",
