@@ -17,7 +17,6 @@
       "type": "flow"
     },
     "description": "packetbeat:flow showing outbound connection to bad domain",
-    "validate_schema_only": false,
     "log": "packetbeat:flow",
     "source": "prefix.cluster.sample.bucket",
     "service": "s3",

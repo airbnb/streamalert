@@ -17,7 +17,6 @@
       "type": "dns"
     },
     "description": "packetbeat:dns showing lookup to bad domain",
-    "validate_schema_only": false,
     "log": "packetbeat:dns",
     "source": "prefix.cluster.sample.bucket",
     "service": "s3",

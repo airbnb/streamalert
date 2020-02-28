@@ -14,7 +14,6 @@
       "type": "dns"
     },
     "description": "basic schema validation check for packetbeat:flow",
-    "validate_schema_only": false,
     "log": "packetbeat:dns",
     "source": "prefix.cluster.sample.bucket",
     "service": "s3",

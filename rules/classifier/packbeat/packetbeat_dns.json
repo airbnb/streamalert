@@ -18,6 +18,6 @@
     "log": "packetbeat:dns",
     "source": "prefix.cluster.sample.bucket",
     "service": "s3",
-    "validate_schema_only": true
+    "classify_only": true
   }
 ]
