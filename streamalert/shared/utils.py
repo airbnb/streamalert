@@ -155,3 +155,14 @@ def get_database_name(config):
     athena_config = config['lambda'].get('athena_partition_refresh_config')
 
     return athena_config.get('database_name', '{}_streamalert'.format(prefix))
+
+def get_data_store_format(config):
+    """Get the data store format using the current config settings
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+    Returns:
+        str: The data store format either "parquet" or "json"
+    """
+    athena_config = config['lambda'].get('athena_partition_refresh_config', {})
+
+    return athena_config.get('store_format', 'parquet').lower()

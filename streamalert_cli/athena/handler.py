@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
-from streamalert.shared.utils import get_database_name
+from streamalert.shared.utils import get_database_name, get_data_store_format
 from streamalert.shared.alert import Alert
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
@@ -32,9 +32,12 @@ LOGGER = get_logger(__name__)
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'PARTITIONED BY (dt string) '
-                          'STORED AS PARQUET '
+                          '{store_format} '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
+STORE_FORMAT = ('ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
+                'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\')')
 
+STORE_FORMAT_PARQUET = 'STORED AS PARQUET'
 
 class AthenaCommand(CLICommand):
     description = 'Perform actions related to Athena'
@@ -303,7 +306,7 @@ def drop_all_tables(config):
     return True
 
 
-def _construct_create_table_statement(schema, table_name, bucket):
+def _construct_create_table_statement(schema, table_name, bucket, store_format='parquet'):
     """Convert a dictionary based Athena schema to a Hive DDL statement
 
     Args:
@@ -328,9 +331,12 @@ def _construct_create_table_statement(schema, table_name, bucket):
             )
             schema_statement.append('{0} struct<{1}>'.format(key_name, struct_schema))
 
+
+
     return CREATE_TABLE_STATEMENT.format(
         table_name=table_name,
         schema=', '.join(schema_statement),
+        store_format=STORE_FORMAT_PARQUET if store_format == 'parquet' else STORE_FORMAT,
         bucket=bucket)
 
 
@@ -385,7 +391,10 @@ def create_table(table, bucket, config, schema_override=None):
         bucket = bucket or firehose_alerts_bucket(config)
 
         query = _construct_create_table_statement(
-            schema=athena_schema, table_name=table, bucket=bucket
+            schema=athena_schema,
+            table_name=table,
+            bucket=bucket,
+            store_format=get_data_store_format(config)
         )
 
     else:  # all other tables are log types
@@ -427,7 +436,10 @@ def create_table(table, bucket, config, schema_override=None):
                     )
 
         query = _construct_create_table_statement(
-            schema=athena_schema, table_name=sanitized_table_name, bucket=bucket
+            schema=athena_schema,
+            table_name=sanitized_table_name,
+            bucket=bucket,
+            store_format=get_data_store_format(config)
         )
 
     success = athena_client.run_query(query=query)
@@ -462,8 +474,8 @@ def create_log_tables(config):
         return True
 
     firehose_config = config['global']['infrastructure']['firehose']
-    firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
-    firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
+    firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert-data')
+    firehose_s3_bucket_name = '{}-{}'.format(config['global']['account']['prefix'],
                                              firehose_s3_bucket_suffix)
 
     enabled_logs = FirehoseClient.load_enabled_log_sources(

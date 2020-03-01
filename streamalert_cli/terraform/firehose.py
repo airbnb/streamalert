@@ -15,7 +15,7 @@ limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
 from streamalert.shared.config import firehose_data_bucket
-from streamalert.shared.utils import get_database_name
+from streamalert.shared.utils import get_database_name, get_data_store_format
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -35,6 +35,8 @@ def generate_firehose(logging_bucket, main_dict, config):
     # This can return False but the check above ensures that that should never happen
     firehose_s3_bucket_name = firehose_data_bucket(config)
 
+    firehose_conf = config['global']['infrastructure']['firehose']
+
     # Firehose Setup module
     main_dict['module']['kinesis_firehose_setup'] = {
         'source': './modules/tf_kinesis_firehose_setup',
@@ -47,12 +49,12 @@ def generate_firehose(logging_bucket, main_dict, config):
     }
 
     enabled_logs = FirehoseClient.load_enabled_log_sources(
-        config['global']['infrastructure']['firehose'],
+        firehose_conf,
         config['logs'],
         force_load=True
     )
 
-    log_alarms_config = config['global']['infrastructure']['firehose'].get('enabled_logs', {})
+    log_alarms_config = firehose_conf.get('enabled_logs', {})
 
     db_name = get_database_name(config)
 
@@ -61,15 +63,13 @@ def generate_firehose(logging_bucket, main_dict, config):
         module_dict = {
             'source': './modules/tf_kinesis_firehose_delivery_stream',
             'buffer_size': (
-                config['global']['infrastructure']['firehose'].get('buffer_size', 64)
+                firehose_conf.get('buffer_size', 128)
             ),
             'buffer_interval': (
-                config['global']['infrastructure']['firehose'].get('buffer_interval', 300)
+                firehose_conf.get('buffer_interval', 300)
             ),
-            'compression_format': (
-                config['global']['infrastructure']['firehose'].get('compression_format', 'GZIP')
-            ),
-            'use_prefix': config['global']['infrastructure']['firehose'].get('use_prefix', True),
+            'store_format': get_data_store_format(config),
+            'use_prefix': firehose_conf.get('use_prefix', True),
             'prefix': prefix,
             'log_name': log_stream_name,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',

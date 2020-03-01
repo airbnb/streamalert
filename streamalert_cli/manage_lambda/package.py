@@ -274,6 +274,7 @@ class AthenaPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'athena_partition_refresh'
+    package_libs = {'netaddr'}
 
 
 class ThreatIntelDownloaderPackage(LambdaPackage):

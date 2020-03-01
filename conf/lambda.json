@@ -52,6 +52,7 @@
   },
   "athena_partition_refresh_config": {
     "concurrency_limit": 10,
+    "store_format": "parquet",
     "log_level": "info"
   },
   "classifier_config": {},

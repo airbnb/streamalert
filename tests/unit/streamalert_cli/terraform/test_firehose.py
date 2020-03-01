@@ -69,7 +69,7 @@ class TestFirehoseGenerate:
                     'source': './modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
-                    'compression_format': 'GZIP',
+                    'store_format': 'parquet',
                     'use_prefix': True,
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
@@ -103,7 +103,7 @@ class TestFirehoseGenerate:
                     'source': './modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
-                    'compression_format': 'GZIP',
+                    'store_format': 'parquet',
                     'use_prefix': True,
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
@@ -145,7 +145,7 @@ class TestFirehoseGenerate:
                     'source': './modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
-                    'compression_format': 'GZIP',
+                    'store_format': 'parquet',
                     'use_prefix': True,
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
@@ -188,7 +188,7 @@ class TestFirehoseGenerate:
                     'source': './modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
-                    'compression_format': 'GZIP',
+                    'store_format': 'parquet',
                     'use_prefix': True,
                     'prefix': 'unit-test',
                     'log_name': 'json_embedded',
@@ -203,4 +203,37 @@ class TestFirehoseGenerate:
             }
         }
 
+        assert_equal(cluster_dict, expected_result)
+
+    def test_firehose_enabled_log_json(self):
+        """CLI - Terraform Generate Kinesis Firehose, Enabled Log with output in JSON format"""
+        cluster_dict = common.infinitedict()
+
+        # Add an enabled log, with no alarm configuration (aka: alarms disabled)
+        self.config['global']['infrastructure']['firehose']['enabled_logs'] = {
+            'json:embedded': {}
+        }
+
+        self.config = CLIConfig(config_path='tests/unit/conf_athena')
+        firehose.generate_firehose(self._logging_bucket_name, cluster_dict, self.config)
+
+        expected_result = {
+            'module': {
+                'kinesis_firehose_setup': self._default_firehose_config(),
+                'kinesis_firehose_json_embedded': {
+                    'source': './modules/tf_kinesis_firehose_delivery_stream',
+                    'buffer_size': 128,
+                    'buffer_interval': 900,
+                    'store_format': 'json',
+                    'use_prefix': True,
+                    'prefix': 'unit-test',
+                    'log_name': 'json_embedded',
+                    'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
+                    's3_bucket_name': 'unit-test-streamalert-data',
+                    'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
+                    'glue_catalog_db_name': 'unit-test_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
+                }
+            }
+        }
         assert_equal(cluster_dict, expected_result)

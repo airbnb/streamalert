@@ -14,9 +14,9 @@ variable "buffer_interval" {
   default = 300
 }
 
-variable "compression_format" {
-  type    = string
-  default = "GZIP"
+variable "store_format" {
+  type        = string
+  description = "Either parquet or json"
 }
 
 variable "log_name" {

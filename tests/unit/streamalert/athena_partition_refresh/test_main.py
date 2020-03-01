@@ -30,7 +30,7 @@ from tests.unit.helpers.aws_mocks import MockAthenaClient
 # operations and drastically slows down testing
 @patch('time.sleep', Mock())
 class TestAthenaRefresher:
-    """Test class for AthenaRefresher"""
+    """Test class for AthenaRefresher when output data in Parquet format"""
 
     @patch('streamalert.athena_partition_refresh.main.load_config',
            Mock(return_value=load_config('tests/unit/conf/')))
@@ -74,8 +74,8 @@ class TestAthenaRefresher:
         log_mock.assert_called_with('No partitions to add')
         assert_equal(result, False)
 
-    def test_get_partitions_from_keys(self):
-        """AthenaRefresher - Get Partitions From Keys"""
+    def test_get_partitions_from_keys_parquet(self):
+        """AthenaRefresher - Get Partitions From Keys in parquet format"""
         expected_result = {
             'alerts': {
                 '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalerts/'
@@ -239,3 +239,69 @@ class TestAthenaRefresher:
         log_mock.assert_called_with('\'%s\' not found in \'buckets\' config. Please add this '
                                     'bucket to enable additions of Hive partitions.',
                                     bucket)
+
+@patch('time.sleep', Mock())
+class TestAthenaRefresherJson:
+    """Test class for AthenaRefresher when output data in JSON format"""
+
+    @patch('streamalert.athena_partition_refresh.main.load_config',
+           Mock(return_value=load_config('tests/unit/conf_athena/')))
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
+    @patch('streamalert.shared.athena.boto3')
+    def setup(self, boto_patch):
+        """Setup the AthenaRefresher tests"""
+        boto_patch.client.return_value = MockAthenaClient()
+        self._refresher = AthenaRefresher()
+
+    def test_get_partitions_from_keys_json(self):
+        """AthenaRefresher - Get Partitions From Keys in json format"""
+        expected_result = {
+            'alerts': {
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalerts/'
+                                             'alerts/dt=2017-08-26-14\''),
+                '(dt = \'2017-08-27-14\')': ('\'s3://unit-test-streamalerts/'
+                                             'alerts/dt=2017-08-27-14\''),
+                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalerts/'
+                                             'alerts/2017/08/26/15\'')
+            },
+            'log_type_1': {
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
+                                             'log_type_1/2017/08/26/14\'')
+            },
+            'log_type_2': {
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
+                                             'log_type_2/2017/08/26/14\''),
+                '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalert-data/'
+                                             'log_type_2/2017/08/26/15\''),
+                '(dt = \'2017-08-26-16\')': ('\'s3://unit-test-streamalert-data/'
+                                             'log_type_2/2017/08/26/16\''),
+            },
+            'log_type_3': {
+                '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
+                                             'log_type_3/2017/08/26/14\''),
+            }
+        }
+
+        self._refresher._s3_buckets_and_keys = {
+            'unit-test-streamalerts': {
+                b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
+                b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
+                b'alerts/2017/08/26/15/rule_name_alerts-1304134918401.json'
+            },
+            'unit-test-streamalert-data': {
+                b'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/14/test-data-11111-22222-33334.snappy',
+                b'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/16/test-data-11111-22222-33333.snappy',
+                b'log_type_3/2017/08/26/14/test-data-11111-22222-33333.snappy',
+            },
+            'test-bucket-with-data': {
+                b'2017/08/26/14/rule_name_alerts-1304134918401.json',
+                b'2017/07/30/14/rule_name_alerts-1304134918401.json'
+            }
+        }
+
+        result = self._refresher._get_partitions_from_keys()
+
+        assert_equal(result, expected_result)

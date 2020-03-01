@@ -9,6 +9,7 @@ module "alerts_firehose" {
   kms_key_arn              = var.kms_key_arn
   bucket_name              = var.alerts_firehose_bucket_name == "" ? "${var.prefix}-streamalerts" : var.alerts_firehose_bucket_name
   alerts_db_name           = var.alerts_db_name
+  store_format             = var.alerts_store_format
 }
 
 module "classifier_queue" {

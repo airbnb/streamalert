@@ -26,6 +26,11 @@ variable "cloudwatch_log_retention" {
   type = number
 }
 
+variable "store_format" {
+  type        = string
+  description = "Either parquet or json"
+}
+
 variable "kms_key_arn" {
   type = string
 }

@@ -1,0 +1,21 @@
+{
+  "account": {
+    "aws_account_id": "12345678910",
+    "kms_key_alias": "alternate-alias",
+    "prefix": "unit-test",
+    "region": "us-west-1"
+  },
+  "infrastructure": {
+    "alerts_table": {
+      "read_capacity": 5,
+      "write_capacity": 5
+    },
+    "firehose": {
+      "buffer_interval": 900,
+      "buffer_size": 128,
+      "enabled": true,
+      "enabled_logs": {},
+      "use_prefix": true
+    }
+  }
+}

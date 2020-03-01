@@ -19,7 +19,7 @@ import os
 
 from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
-from streamalert.shared.utils import get_database_name
+from streamalert.shared.utils import get_database_name, get_data_store_format
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
@@ -627,8 +627,6 @@ def _generate_global_module(config):
         'use_prefix', True
     )
 
-    alerts_db_name = get_database_name(config)
-
     global_module = {
         'source': './modules/tf_globals',
         'account_id': config['global']['account']['aws_account_id'],
@@ -637,7 +635,8 @@ def _generate_global_module(config):
         'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
         'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout'],
         'sqs_use_prefix': use_prefix,
-        'alerts_db_name': alerts_db_name,
+        'alerts_db_name': get_database_name(config),
+        'alerts_store_format': get_data_store_format(config)
     }
 
     # The below code applies settings for resources only if the settings are explicitly
@@ -654,8 +653,7 @@ def _generate_global_module(config):
         'bucket_name',
         'buffer_size',
         'buffer_interval',
-        'cloudwatch_log_retention',
-        'compression_format',
+        'cloudwatch_log_retention'
     }
 
     if 'alerts_firehose' in config['global']['infrastructure']:

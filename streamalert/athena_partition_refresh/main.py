@@ -21,7 +21,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-from streamalert.shared.utils import get_database_name
+from streamalert.shared.utils import get_database_name, get_data_store_format
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket, load_config
 from streamalert.shared.logger import get_logger
@@ -37,15 +37,25 @@ class AthenaRefreshError(Exception):
 class AthenaRefresher:
     """Handle polling an SQS queue and running Athena queries for updating tables"""
 
-    STREAMALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
+    ALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
+                              r'\-(?P<month>\d{2})'
+                              r'\-(?P<day>\d{2})'
+                              r'\-(?P<hour>\d{2})'
+                              r'\/.*.json')
+    DATA_REGEX = re.compile(r'(?P<year>\d{4})'
+                            r'\/(?P<month>\d{2})'
+                            r'\/(?P<day>\d{2})'
+                            r'\/(?P<hour>\d{2})\/.*')
+
+    ALERTS_REGEX_PARQUET = re.compile(r'alerts/dt=(?P<year>\d{4})'
+                                      r'\-(?P<month>\d{2})'
+                                      r'\-(?P<day>\d{2})'
+                                      r'\-(?P<hour>\d{2})'
+                                      r'\/.*.parquet')
+    DATA_REGEX_PARQUET = re.compile(r'dt=(?P<year>\d{4})'
                                     r'\-(?P<month>\d{2})'
                                     r'\-(?P<day>\d{2})'
-                                    r'\-(?P<hour>\d{2})'
-                                    r'\/.*.parquet')
-    FIREHOSE_REGEX = re.compile(r'dt=(?P<year>\d{4})'
-                                r'\-(?P<month>\d{2})'
-                                r'\-(?P<day>\d{2})'
-                                r'\-(?P<hour>\d{2})\/.*')
+                                    r'\-(?P<hour>\d{2})\/.*')
 
     ATHENA_S3_PREFIX = 'athena_partition_refresh'
 
@@ -55,6 +65,15 @@ class AthenaRefresher:
         config = load_config(include={'lambda.json', 'global.json'})
         prefix = config['global']['account']['prefix']
         athena_config = config['lambda']['athena_partition_refresh_config']
+        store_format = get_data_store_format(config)
+
+        if store_format == 'parquet':
+            self._alerts_regex = self.ALERTS_REGEX_PARQUET
+            self._data_regex = self.DATA_REGEX_PARQUET
+
+        else:
+            self._alerts_regex = self.ALERTS_REGEX
+            self._data_regex = self.DATA_REGEX
 
         self._athena_buckets = self.buckets_from_config(config)
 
@@ -128,7 +147,7 @@ class AthenaRefresher:
             for key in keys:
                 match = None
                 key = key.decode('utf-8')
-                for pattern in (self.FIREHOSE_REGEX, self.STREAMALERTS_REGEX):
+                for pattern in (self._data_regex, self._alerts_regex):
                     match = pattern.search(key)
                     if match:
                         break

@@ -46,6 +46,11 @@ variable "alerts_table_write_capacity" {
 
 variable "alerts_db_name" {}
 
+variable "alerts_store_format" {
+  type        = string
+  description = "Either parquet or json"
+}
+
 variable "enable_rule_staging" {
   default = false
 }
