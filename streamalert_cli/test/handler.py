@@ -457,6 +457,46 @@ class TestRunner:
                 }
         return results
 
+    def _handle_fixtures(self, path, setup=True):
+        print('{} fixtures in:'.format('setting up' if setup else 'tearing down'), path)
+        for item in os.listdir(path):
+            directory = os.path.join(path, item)
+            if not os.path.isdir(directory):
+                continue
+
+            if item == 'lookup_tables':
+                # paths = [os.path.join(root, fixture) for fixture in fixtures]
+                if setup:
+                    self._setup_lookup_table_fixtures(directory)
+                else:
+                    self._teardown_lookup_table_fixtures(directory)
+            elif item == 'threat_intel':
+                # paths = [os.path.join(root, fixture) for fixture in fixtures]
+                if setup:
+                    self._setup_threat_intel_fixtures(directory)
+                else:
+                    self._teardown_threat_intel_fixtures(directory)
+            else:
+                LOGGER.warning('Unsupported fixture directory: %s', directory)
+
+    def _setup_lookup_table_fixtures(self, directory):
+        print('setting up lookup table fixtures:', directory)
+
+    def _setup_threat_intel_fixtures(self, directory):
+        print('setting up threat intel fixtures:', directory)
+        ThreatIntelMocks.add_fixtures(directory)
+
+    def _teardown_lookup_table_fixtures(self, directory):
+        print('tearing down lookup table fixtures:', directory)
+
+    def _teardown_threat_intel_fixtures(self, directory):
+        print('tearing down threat intel fixtures:', directory)
+
+    def _teardown_all_fixtures(self, fixtures):
+        print('tearing down all fixtures:', fixtures)
+        for fixture_path in fixtures.values():
+            self._handle_fixtures(fixture_path, setup=False)
+
     def _get_test_files(self, directory):
         """Helper to get rule files to be tested
 
@@ -468,14 +508,38 @@ class TestRunner:
         } if self._files else set()
 
         filtered = bool(files_filter)
-        for root, _, test_event_files in os.walk(directory):
-            for event_file in sorted(test_event_files):
-                basename = os.path.splitext(event_file)[0]
-                full_path = os.path.join(root, event_file)
-                if not filtered or basename in files_filter:
-                    yield full_path
-                    if filtered:
-                        files_filter.remove(basename)  # Remove this from the filter
+        # Format: parent:fixture_prefix
+        cached_fixtures = dict()
+        # fixture_prefix = None
+        # parent = None
+        for root, cur_dirs, test_event_files in os.walk(directory):
+
+            print('  processing dir:', root, cur_dirs)
+
+            # Teardown any fixtures that are not needed for this directory
+            for parent in list(cached_fixtures):
+                fixture_path = cached_fixtures[parent]
+                if not root.startswith(parent):
+                    self._handle_fixtures(fixture_path, setup=False)
+                    print('deleting fixture path:', parent)
+                    del cached_fixtures[parent]
+                elif root.startswith(fixture_path):
+                    print('skipping fixtures dir that has been setup:', root)
+                    continue
+
+            if 'test_fixtures' in set(cur_dirs):
+                # print('contains fixtures dir:', root)
+                # parent = os.path.dirname(root)
+                fixture_path = os.path.join(root, 'test_fixtures')
+                self._handle_fixtures(fixture_path, setup=True)
+                print('caching fixture path:', fixture_path)
+                cached_fixtures[root] = fixture_path
+
+            # Setup any fixtures that are needed for this directory
+            # if os.path.split(root)[-1] == 'test_fixtures':
+            #     print('skippppp')
+
+        self._teardown_all_fixtures(cached_fixtures)
 
         # Log any errors for filtered items that do not exist
         for basename in files_filter:
