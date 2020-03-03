@@ -94,6 +94,7 @@ resource "aws_cloudtrail" "streamalert" {
   s3_bucket_name                = aws_s3_bucket.cloudtrail_bucket.id
   cloud_watch_logs_role_arn     = var.cloudwatch_logs_role_arn  // defaults to null
   cloud_watch_logs_group_arn    = var.cloudwatch_logs_group_arn // defaults to null
+  sns_topic_name                = var.send_to_sns ? aws_sns_topic.cloudtrail[0].name : null
   enable_log_file_validation    = true
   enable_logging                = var.enable_logging
   include_global_service_events = true
@@ -222,5 +223,44 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
       variable = "aws:SecureTransport"
       values   = ["false"]
     }
+  }
+}
+
+// Replace any noncompliant characters with hyphens for the topic name
+locals {
+  sanitized_topic_name = replace(var.s3_bucket_name, "/[^a-zA-Z0-9_-]/", "-")
+}
+
+resource "aws_sns_topic" "cloudtrail" {
+  count = var.send_to_sns ? 1 : 0
+
+  name = local.sanitized_topic_name
+}
+
+// SNS topic policy document for cloudtrail to sns
+resource "aws_sns_topic_policy" "cloudtrail" {
+  count = var.send_to_sns ? 1 : 0
+
+  arn    = aws_sns_topic.cloudtrail[0].arn
+  policy = data.aws_iam_policy_document.cloudtrail[0].json
+}
+
+data "aws_iam_policy_document" "cloudtrail" {
+  count = var.send_to_sns ? 1 : 0
+
+  statement {
+    sid    = "AWSCloudTrailSNSPublish"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions = ["SNS:Publish"]
+
+    resources = [
+      aws_sns_topic.cloudtrail[0].arn,
+    ]
   }
 }

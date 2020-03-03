@@ -49,6 +49,12 @@ variable "s3_event_selector_type" {
   description = "Type of S3 object level logging to enable via CloudTrail. Choices are: 'ReadOnly', 'WriteOnly', 'All', or '', where '' disables this feature"
 }
 
+variable "send_to_sns" {
+  type        = bool
+  default     = false
+  description = "Whether or not events should be sent to SNS when objects are created in S3. This creates an SNS topic when set to true"
+}
+
 variable "cloudwatch_logs_role_arn" {
   type        = string
   default     = null
