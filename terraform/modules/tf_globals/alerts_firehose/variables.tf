@@ -27,8 +27,7 @@ variable "cloudwatch_log_retention" {
 }
 
 variable "store_format" {
-  type        = string
-  description = "Either parquet or json"
+  type = string
 }
 
 variable "kms_key_arn" {
@@ -37,4 +36,8 @@ variable "kms_key_arn" {
 
 variable "alerts_db_name" {
   type = string
+}
+
+variable "alerts_schema" {
+  type = list(tuple([string, string]))
 }

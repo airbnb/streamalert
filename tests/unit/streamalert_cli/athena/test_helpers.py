@@ -48,7 +48,7 @@ def test_generate_athena_schema_special_key():
         '`key2`': 'string',
         '`key3`': 'bigint',
         '`key9`': 'boolean',
-        '`key10`': 'map<string, string>',
+        '`key10`': 'map<string,string>',
         '`key11`': 'decimal(10,3)'
     }
 

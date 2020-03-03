@@ -20,6 +20,7 @@ import os
 from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert.shared.utils import get_database_name, get_data_store_format
+from streamalert_cli.athena.helpers import generate_alerts_table_schema
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
@@ -654,7 +655,8 @@ def _generate_global_module(config):
         'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout'],
         'sqs_use_prefix': use_prefix,
         'alerts_db_name': get_database_name(config),
-        'alerts_store_format': get_data_store_format(config)
+        'alerts_store_format': get_data_store_format(config),
+        'alerts_schema': generate_alerts_table_schema()
     }
 
     # The below code applies settings for resources only if the settings are explicitly

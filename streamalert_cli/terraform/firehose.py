@@ -16,6 +16,7 @@ limitations under the License.
 from streamalert.classifier.clients import FirehoseClient
 from streamalert.shared.config import firehose_data_bucket
 from streamalert.shared.utils import get_database_name, get_data_store_format
+from streamalert_cli.athena.helpers import generate_data_table_schema
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -76,7 +77,8 @@ def generate_firehose(logging_bucket, main_dict, config):
             's3_bucket_name': firehose_s3_bucket_name,
             'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
             'glue_catalog_db_name': db_name,
-            'glue_catalog_table_name': log_stream_name
+            'glue_catalog_table_name': log_stream_name,
+            'schema': generate_data_table_schema(config, log_stream_name)
         }
 
         # Try to get alarm info for this specific log type

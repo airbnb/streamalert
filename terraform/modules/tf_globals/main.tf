@@ -10,6 +10,7 @@ module "alerts_firehose" {
   bucket_name              = var.alerts_firehose_bucket_name == "" ? "${var.prefix}-streamalerts" : var.alerts_firehose_bucket_name
   alerts_db_name           = var.alerts_db_name
   store_format             = var.alerts_store_format
+  alerts_schema            = var.alerts_schema
 }
 
 module "classifier_queue" {

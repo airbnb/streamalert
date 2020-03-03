@@ -15,6 +15,14 @@ limitations under the License.
 """
 import re
 
+from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.logger import get_logger
+from streamalert.shared.alert import Alert
+from streamalert_cli.helpers import record_to_schema
+
+
+LOGGER = get_logger(__name__)
+
 PARTITION_PARTS = re.compile(
     r'dt=(?P<year>\d{4})\-(?P<month>\d{2})\-(?P<day>\d{2})\-(?P<hour>\d{2})')
 
@@ -29,7 +37,7 @@ SCHEMA_TYPE_MAPPING = {
     'integer': 'bigint',
     'boolean': 'boolean',
     'float': 'decimal(10,3)',
-    dict: 'map<string, string>',
+    dict: 'map<string,string>',
     list: 'array<string>'
 }
 
@@ -89,11 +97,13 @@ def add_partition_statements(partitions, bucket, table_name):
     yield ' '.join(statement)
 
 
-def logs_schema_to_athena_schema(log_schema):
+def logs_schema_to_athena_schema(log_schema, ddl_statement=True):
     """Convert streamalert log schema to athena schema
 
     Args:
         log_schema (dict): StreamAlert log schema object.
+        ddl_statement (bool): Indicate if the Athena table created by Athena
+            DDL query or terraform aws_glue_catalog_table resource
 
     Returns:
         athena_schema (dict): Equivalent Athena schema used for generating create table statement
@@ -102,7 +112,10 @@ def logs_schema_to_athena_schema(log_schema):
     athena_schema = {}
 
     for key_name, key_type in log_schema.items():
-        key_name = '`{}`'.format(key_name)
+        if ddl_statement:
+            # Backticks are needed for backward compatibility when creating Athena
+            # table via Athena DDL query.
+            key_name = '`{}`'.format(key_name)
         if key_type == {}:
             # For empty dicts
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[dict]
@@ -111,7 +124,7 @@ def logs_schema_to_athena_schema(log_schema):
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[list]
         elif isinstance(key_type, dict):
             # For recursion
-            athena_schema[key_name] = logs_schema_to_athena_schema(key_type)
+            athena_schema[key_name] = logs_schema_to_athena_schema(key_type, ddl_statement)
         else:
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[key_type]
 
@@ -134,3 +147,98 @@ def unique_values_from_query(query_result):
         for row in query_result['ResultSet']['Rows'] for result in row['Data']
         for value in list(result.values())
     }
+
+def format_schema_tf(schema):
+    """Format schema for an Athena table for terraform.
+
+    Returns:
+        formatted_schema (list(tuple))
+    """
+    # Construct the main Athena Schema
+    formated_schema = []
+    for key_name in sorted(schema.keys()):
+        key_type = schema[key_name]
+        if isinstance(key_type, str):
+            formated_schema.append((key_name.lower(), key_type))
+        # Account for nested structs
+        elif isinstance(key_type, dict):
+            struct_schema = ','.join(
+                '{0}:{1}'.format(sub_key.lower(), key_type[sub_key])
+                for sub_key in sorted(key_type.keys())
+            )
+            formated_schema.append((key_name.lower(), 'struct<{}>'.format(struct_schema)))
+
+    return formated_schema
+
+def generate_alerts_table_schema():
+    """Generate the schema for alerts table in terraform by using a fake alert
+
+    Returns:
+        athena_schema (dict): Equivalent Athena schema used for generating create table statement
+    """
+    alert = Alert('temp_rule_name', {}, {})
+    output = alert.output_dict()
+    schema = record_to_schema(output)
+    athena_schema = logs_schema_to_athena_schema(schema, False)
+
+    return format_schema_tf(athena_schema)
+
+def generate_data_table_schema(config, table, schema_override=None):
+    """Generate the schema for data table in terraform
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+        table (string): The name of data table
+
+    Returns:
+        athena_schema (dict): Equivalent Athena schema used for generating create table statement
+    """
+    enabled_logs = FirehoseClient.load_enabled_log_sources(
+        config['global']['infrastructure']['firehose'],
+        config['logs']
+    )
+
+    # Convert special characters in schema name to underscores
+    sanitized_table_name = FirehoseClient.firehose_log_name(table)
+
+    # Check that the log type is enabled via Firehose
+    if sanitized_table_name not in enabled_logs:
+        LOGGER.error('Table name %s missing from configuration or '
+                     'is not enabled.', sanitized_table_name)
+        return None
+
+    log_info = config['logs'][table.replace('_', ':', 1)]
+
+    schema = dict(log_info['schema'])
+    sanitized_schema = FirehoseClient.sanitize_keys(schema)
+
+    athena_schema = logs_schema_to_athena_schema(sanitized_schema, False)
+
+    # Add envelope keys to Athena Schema
+    configuration_options = log_info.get('configuration')
+    if configuration_options:
+        envelope_keys = configuration_options.get('envelope_keys')
+        if envelope_keys:
+            sanitized_envelope_key_schema = FirehoseClient.sanitize_keys(envelope_keys)
+            # Note: this key is wrapped in backticks to be Hive compliant
+            athena_schema['streamalert:envelope_keys'] = logs_schema_to_athena_schema(
+                sanitized_envelope_key_schema, False
+            )
+
+    # Handle Schema overrides
+    #   This is useful when an Athena schema needs to differ from the normal log schema
+    if schema_override:
+        for override in schema_override:
+            column_name, column_type = override.split('=')
+            # Columns are escaped to avoid Hive issues with special characters
+            column_name = '{}'.format(column_name)
+            if column_name in athena_schema:
+                athena_schema[column_name] = column_type
+                LOGGER.info('Applied schema override: %s:%s', column_name, column_type)
+            else:
+                LOGGER.error(
+                    'Schema override column %s not found in Athena Schema, skipping',
+                    column_name
+                )
+
+    return format_schema_tf(athena_schema)

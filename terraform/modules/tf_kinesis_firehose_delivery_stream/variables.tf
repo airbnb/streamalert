@@ -68,3 +68,7 @@ variable "glue_catalog_db_name" {
 variable "glue_catalog_table_name" {
   type = string
 }
+
+variable "schema" {
+  type = list(tuple([string, string]))
+}

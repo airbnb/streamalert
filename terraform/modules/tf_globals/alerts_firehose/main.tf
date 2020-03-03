@@ -1,5 +1,9 @@
 locals {
-  stream_name = "${var.prefix}_streamalert_alert_delivery"
+  stream_name         = "${var.prefix}_streamalert_alert_delivery"
+  bucket_arn          = "arn:aws:s3:::${var.prefix}-streamalerts"
+  alerts_location     = "s3://${var.prefix}-streamalerts/alerts"
+  ser_de_params_key   = var.store_format == "parquet" ? "serialization.format" : "ignore.malformed.json"
+  ser_de_params_value = var.store_format == "parquet" ? "1" : "true"
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
@@ -11,7 +15,7 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
     for_each = var.store_format == "parquet" ? [] : [var.store_format]
     content {
       role_arn           = aws_iam_role.firehose.arn
-      bucket_arn         = "arn:aws:s3:::${var.prefix}-streamalerts"
+      bucket_arn         = local.bucket_arn
       prefix             = "alerts/"
       buffer_size        = var.buffer_size
       buffer_interval    = var.buffer_interval
@@ -31,7 +35,7 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
     for_each = var.store_format == "parquet" ? [var.store_format] : []
     content {
       role_arn            = aws_iam_role.firehose.arn
-      bucket_arn          = "arn:aws:s3:::${var.prefix}-streamalerts"
+      bucket_arn          = local.bucket_arn
       prefix              = "alerts/dt=!{timestamp:yyyy-MM-dd-HH}/"
       error_output_prefix = "alerts/!{firehose:error-output-type}/"
       buffer_size         = var.buffer_size
@@ -69,6 +73,8 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalerts" {
     }
   }
 
+  depends_on = [aws_glue_catalog_table.alerts]
+
   tags = {
     Name = "StreamAlert"
   }
@@ -81,5 +87,39 @@ resource "aws_cloudwatch_log_group" "firehose" {
 
   tags = {
     Name = "StreamAlert"
+  }
+}
+
+// Alert athena table
+resource "aws_glue_catalog_table" "alerts" {
+  count         = var.store_format == "parquet" ? 1 : 0
+  name          = "alerts"
+  database_name = var.alerts_db_name
+
+  table_type = "EXTERNAL_TABLE"
+
+  partition_keys {
+    name = "dt"
+    type = "string"
+  }
+
+  storage_descriptor {
+    location      = local.alerts_location
+    input_format  = var.store_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat" : "org.apache.hadoop.mapred.TextInputFormat"
+    output_format = var.store_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat" : "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+
+    ser_de_info {
+      name                  = "${var.store_format}_ser_de"
+      serialization_library = var.store_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe" : "org.openx.data.jsonserde.JsonSerDe"
+      parameters            = map(local.ser_de_params_key, local.ser_de_params_value)
+    }
+
+    dynamic "columns" {
+      for_each = var.alerts_schema
+      content {
+        name = columns.value[0]
+        type = columns.value[1]
+      }
+    }
   }
 }

@@ -51,6 +51,11 @@ variable "alerts_store_format" {
   description = "Either parquet or json"
 }
 
+variable "alerts_schema" {
+  type        = list(tuple([string, string]))
+  description = "Schema used to create Athena alerts table in terraform"
+}
+
 variable "enable_rule_staging" {
   default = false
 }

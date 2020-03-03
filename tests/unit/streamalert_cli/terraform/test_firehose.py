@@ -27,6 +27,14 @@ class TestFirehoseGenerate:
         self._logging_bucket_name = 'logging-bucket-name'
         self.config = CLIConfig(config_path='tests/unit/conf')
 
+    @staticmethod
+    def _get_expected_schema():
+        return [
+            ('nested_key_01', 'string'),
+            ('nested_key_02', 'string'),
+            ('streamalert:envelope_keys', 'struct<env_key_01:string,env_key_02:string>')
+        ]
+
     def _default_firehose_config(self):
         return {
             'source': './modules/tf_kinesis_firehose_setup',
@@ -77,7 +85,8 @@ class TestFirehoseGenerate:
                     's3_bucket_name': 'unit-test-streamalert-data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'glue_catalog_db_name': 'unit-test_streamalert',
-                    'glue_catalog_table_name': 'json_embedded'
+                    'glue_catalog_table_name': 'json_embedded',
+                    'schema': self._get_expected_schema()
                 }
             }
         }
@@ -115,7 +124,8 @@ class TestFirehoseGenerate:
                         'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                     ],
                     'glue_catalog_db_name': 'unit-test_streamalert',
-                    'glue_catalog_table_name': 'json_embedded'
+                    'glue_catalog_table_name': 'json_embedded',
+                    'schema': self._get_expected_schema()
                 }
             }
         }
@@ -160,7 +170,8 @@ class TestFirehoseGenerate:
                         'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
                     ],
                     'glue_catalog_db_name': 'unit-test_streamalert',
-                    'glue_catalog_table_name': 'json_embedded'
+                    'glue_catalog_table_name': 'json_embedded',
+                    'schema': self._get_expected_schema()
                 }
             }
         }
@@ -198,7 +209,8 @@ class TestFirehoseGenerate:
                     'enable_alarm': True,
                     'alarm_actions': ['do something crazy'],
                     'glue_catalog_db_name': 'unit-test_streamalert',
-                    'glue_catalog_table_name': 'json_embedded'
+                    'glue_catalog_table_name': 'json_embedded',
+                    'schema': self._get_expected_schema()
                 }
             }
         }
@@ -232,7 +244,8 @@ class TestFirehoseGenerate:
                     's3_bucket_name': 'unit-test-streamalert-data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'glue_catalog_db_name': 'unit-test_streamalert',
-                    'glue_catalog_table_name': 'json_embedded'
+                    'glue_catalog_table_name': 'json_embedded',
+                    'schema': self._get_expected_schema()
                 }
             }
         }
