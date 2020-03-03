@@ -97,6 +97,8 @@ was triggered, the source of the log, the date/time the alert was triggered, the
 which the log came, and a variety of other fields.
 
 
+.. _alerts_firehose_configuration:
+
 Configuration
 -------------
 The following ``alerts_firehose`` configuration settings can be defined within the ``infrastructure``
@@ -110,8 +112,7 @@ section of ``global.json``:
         "bucket_name": "<prefix>-streamalerts",
         "buffer_size": 64,
         "buffer_interval": 300,
-        "cloudwatch_log_retention": 14,
-        "compression_format": "GZIP"
+        "cloudwatch_log_retention": 14
       }
     }
   }
@@ -127,7 +128,6 @@ Options
                                                                          before delivering it to S3
 ``buffer_interval``            No            ``300`` (seconds)           Buffer incoming data for the specified period of time, in
                                                                          seconds, before delivering it to S3
-``compression_format``         No            ``GZIP``                    The compression algorithm to use on data stored in S3
 ``cloudwatch_log_retention``   No            ``14`` (days)               Days for which to retain error logs that are sent to CloudWatch
                                                                          in relation to this Kinesis Firehose Delivery Stream
 =============================  ============  ==========================  ===============
@@ -206,6 +206,8 @@ Options
 ===============  ============  ===========  ===============
 
 
+.. _firehose_configuration:
+
 Firehose (Historical Data Retention)
 ====================================
 StreamAlert also supports sending all logs to S3 for historical retention and searching based on
@@ -228,7 +230,6 @@ section of ``global.json``:
         "bucket_name": "<prefix>-streamalert-data",
         "buffer_size": 64,
         "buffer_interval": 300,
-        "compression_format": "GZIP",
         "enabled_logs": {
           "osquery": {
             "enable_alarm": true
@@ -258,7 +259,6 @@ Options
 ``bucket_name``          No            ``<prefix>-streamalert-data``   Bucket name to override the default name
 ``buffer_size``          No            ``64`` (MB)                     Buffer incoming data to the specified size, in megabytes, before delivering it to S3
 ``buffer_interval``      No            ``300`` (seconds)               Buffer incoming data for the specified period of time, in seconds, before delivering it to S3
-``compression_format``   No            ``GZIP``                        The compression algorithm to use on data stored in S3
 ``enabled_logs``         No            ``{}``                          Which classified log types to send to Kinesis Firehose from the Classifier
                                                                        function, along with specific settings per log type
 =======================  ============  ==============================  ===============
