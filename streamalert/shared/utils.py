@@ -165,4 +165,4 @@ def get_data_store_format(config):
     """
     athena_config = config['lambda'].get('athena_partition_refresh_config', {})
 
-    return athena_config.get('store_format', 'parquet').lower()
+    return athena_config.get('store_format', None)

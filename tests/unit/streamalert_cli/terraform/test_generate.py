@@ -15,9 +15,16 @@ limitations under the License.
 """
 from mock import ANY, patch
 
-from nose.tools import assert_equal, assert_dict_equal, assert_false, assert_true
+from nose.tools import (
+    assert_equal,
+    assert_dict_equal,
+    assert_false,
+    assert_raises,
+    assert_true
+)
 
 from streamalert_cli.config import CLIConfig
+from streamalert_cli.terraform.common import MisconfigurationError
 from streamalert_cli.terraform import (
     common,
     cloudtrail,
@@ -775,3 +782,31 @@ class TestTerraformGenerate:
 
         assert_equal(result['module']['globals']['source'], './modules/tf_globals')
         assert_false(result['module']['globals']['sqs_use_prefix'])
+
+    def test_generate_main_store_format_unspecified(self):
+        "CLI - Terraform Generate Main raises error when store_format unspecified"
+        self.config['lambda']['athena_partition_refresh_config']['store_format'] = None
+
+        assert_raises(
+            MisconfigurationError,
+            generate.generate_global_lambda_settings,
+            config=self.config,
+            config_name='athena_partition_refresh_config',
+            generate_func='test_func',
+            tf_tmp_file='test_tf_tmp_file_path',
+            message='test message'
+        )
+
+    def test_generate_main_store_format_misconfigured(self):
+        "CLI - Terraform Generate Main raises error when store_format misconfigured"
+        self.config['lambda']['athena_partition_refresh_config']['store_format'] = 'Parquet'
+
+        assert_raises(
+            MisconfigurationError,
+            generate.generate_global_lambda_settings,
+            config=self.config,
+            config_name='athena_partition_refresh_config',
+            generate_func='test_func',
+            tf_tmp_file='test_tf_tmp_file_path',
+            message='test message'
+        )

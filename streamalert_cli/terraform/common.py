@@ -25,6 +25,10 @@ class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
 
 
+class MisconfigurationError(ValueError):
+    """This error is thrown when StreamAlert is misconfigured."""
+
+
 def infinitedict(initial_value=None):
     """Create arbitrary levels of dictionary key/values"""
     initial_value = initial_value or {}
