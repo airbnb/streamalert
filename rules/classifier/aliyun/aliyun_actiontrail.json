@@ -44,6 +44,7 @@
     "description": "schema validation check for aliyun:actiontrail with ApiCall call event",
     "log": "aliyun:actiontrail",
     "service": "streamalert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
     "classify_only": true
   },
   {
@@ -116,6 +117,7 @@
     "description": "schema validation check for aliyun:actiontrail with example StopInstance console event data",
     "log": "aliyun:actiontrail",
     "service": "streamalert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
     "classify_only": true
   },
   {
@@ -152,6 +154,7 @@
     "description": "schema validation check for aliyun:actiontrail with example AssumeRole event data",
     "log": "aliyun:actiontrail",
     "service": "streamalert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
     "classify_only": true
   }
 ]
