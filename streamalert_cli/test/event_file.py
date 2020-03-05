@@ -25,10 +25,9 @@ LOGGER = get_logger(__name__)
 class TestEventFile:
     """TestEventFile handles caching results of test events within a test file"""
 
-    def __init__(self, full_path, config):
+    def __init__(self, full_path):
         self._full_path = full_path
-        self._config = config
-        self._results = []
+        self._results = []  # type: streamalert_cli.test.results.TestResult
         self.error = None
 
     def __bool__(self):
@@ -87,9 +86,9 @@ class TestEventFile:
             for event in data:
                 yield event
 
-    def process_file(self, verbose, with_rules):
+    def process_file(self, config, verbose, with_rules):
         for idx, event in enumerate(self.load_file()):
             test_result = TestResult(idx, event, verbose, with_rules)
             self._results.append(test_result)
-            if test_result.prepare(self._config):
+            if test_result.prepare(config):
                 yield test_result

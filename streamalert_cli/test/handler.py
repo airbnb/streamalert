@@ -341,8 +341,8 @@ class TestRunner:
     def _process_test_file(self, test_file_path):
         """Process an individual test file"""
         # Iterate over the individual test events in the file
-        event_file = TestEventFile(test_file_path, self._config)
-        for event in event_file.process_file(self._verbose, self._testing_rules):
+        event_file = TestEventFile(test_file_path)
+        for event in event_file.process_file(self._config, self._verbose, self._testing_rules):
             if not self._contains_filtered_rules(event):
                 continue
 
