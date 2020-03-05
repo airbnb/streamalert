@@ -215,7 +215,7 @@ class TestEvent:
             if self.compress:
                 data = zlib.compress(data)
 
-            kinesis_data = base64.b64encode(data.encode())
+            kinesis_data = base64.b64encode(data.encode() if isinstance(data, str) else data)
 
             return {
                 'eventID': '...',
