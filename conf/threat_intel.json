@@ -1,6 +1,6 @@
 {
   "dynamodb_table_name": "table_name",
-  "enabled": false,
+  "enabled": true,
   "excluded_iocs": {
     "ip": {
       "10.0.0.0/8": {

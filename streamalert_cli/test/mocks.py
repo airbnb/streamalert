@@ -16,35 +16,9 @@ limitations under the License.
 import json
 import os
 
+from streamalert.shared.logger import get_logger
 
-def mock_threat_intel_query_results():
-    """Load test fixtures for Threat Intel to use with rule testing
-
-    Fixture files should be in the following JSON format:
-        [
-          {
-            "ioc_value": "1.1.1.2",
-            "ioc_type": "ip",
-            "sub_type": "mal_ip"
-          }
-        ]
-    """
-    mock_ioc_values = dict()
-    for root, _, fixture_files in os.walk('tests/integration/fixtures/threat_intel/'):
-        for fixture_file in fixture_files:
-            with open(os.path.join(root, fixture_file), 'r') as json_file:
-                mock_ioc_values.update(
-                    {value['ioc_value']: value for value in json.load(json_file)}
-                )
-
-    # Return the function to mock out ThreatIntel._query
-    # This simply returns values from the log that are in the mock_ioc_values
-    def _query(values):
-        return [
-            mock_ioc_values[value] for value in values if value in mock_ioc_values
-        ]
-
-    return _query
+LOGGER = get_logger(__name__)
 
 
 def mock_lookup_table_results():
@@ -54,5 +28,73 @@ def mock_lookup_table_results():
         for fixture_file in fixture_files:
             with open(os.path.join(root, fixture_file), 'r') as json_file:
                 mock_lookup_tables[os.path.splitext(fixture_file)[0]] = json.load(json_file)
+class ThreatIntelMocks:
+    """Simple class to encapsulate the mocked threat intel results"""
 
     return mock_lookup_tables
+    _MOCKS = dict()
+
+    @classmethod
+    def add_fixtures(cls, rule_dir):
+        """Load test fixtures for Threat Intel to use with rule testing
+
+        Fixture files should be in the following JSON format:
+            [
+              {
+                "ioc_value": "1.1.1.2",
+                "ioc_type": "ip",
+                "sub_type": "mal_ip"
+              }
+            ]
+        """
+        fixtures_dir = os.path.join(rule_dir, 'test_fixtures', 'threat_intel')
+
+        LOGGER.debug('Setting up threat intel fixture files: %s', fixtures_dir)
+        for item in os.listdir(fixtures_dir):
+            full_path = os.path.join(fixtures_dir, item)
+
+            # The priority is used during data retrieval to allow for overriding
+            # fixtures defined at various levels of the folder structure
+            priority = len(rule_dir.split(os.path.sep))
+            try:
+                with open(full_path, 'r') as json_file:
+                    cls._MOCKS[full_path] = {
+                        'priority': priority,
+                        'values': {value['ioc_value']: value for value in json.load(json_file)}
+                    }
+            except ValueError:
+                LOGGER.error('Unsupported fixture file: %s', full_path)
+
+    @classmethod
+    def remove_fixtures(cls, rule_dir):
+        fixtures_dir = os.path.join(rule_dir, 'test_fixtures', 'threat_intel')
+        LOGGER.debug('Tearing down threat intel fixture files: %s', fixtures_dir)
+        for item in list(cls._MOCKS):
+            # Remove the fixture item
+            if item.startswith(fixtures_dir):
+                LOGGER.debug('Removing threat intel fixtures: %s', item)
+                del cls._MOCKS[item]
+
+    @classmethod
+    def get_mock_values(cls, rule_path):
+        def threat_intel_mock_query(ti_values):
+            """Return the function to mock out ThreatIntel._query
+
+            This simply returns values from the log that are in the mock_ioc_values
+            based on fixtures that match the provided rule_path
+            """
+            # Sort descending on the priority during retrieval to get the most relevant data
+            data = sorted(cls._MOCKS.items(), key=lambda v: v[1]['priority'], reverse=True)
+            for key, value in data:
+                if not key.startswith(rule_path):
+                    continue
+
+                results = [
+                    value['values'][item] for item in ti_values if item in value['values']
+                ]
+                if results:
+                    return results
+
+            return []
+
+        return threat_intel_mock_query
