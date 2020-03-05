@@ -15,14 +15,19 @@ limitations under the License.
 """
 from mock import Mock
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, nottest
 from pyfakefs import fake_filesystem_unittest
 
 from streamalert_cli.test.event_file import TestEventFile
+from streamalert_cli.test.results import TestResult
 from tests.unit.streamalert_cli.test.helpers import (
-    basic_test_file_data,
-    basic_test_file_json
+    basic_test_event_data,
+    basic_test_file_json,
 )
+
+# Keep nose from trying to treat these as tests
+TestEventFile = nottest(TestEventFile)
+TestResult = nottest(TestResult)
 
 
 class TestConfigLoading(fake_filesystem_unittest.TestCase):
@@ -46,10 +51,7 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
 
     def _fake_result(self, passed):
         # pylint: disable=protected-access
-
-        # Importing here because for some reason nose hates it otherwise
-        from streamalert_cli.test.results import TestResult
-        result = TestResult(0, basic_test_file_data()[0])
+        result = TestResult(0, basic_test_event_data())
         result._classified_result = self._mock_classified_result() if passed else False
         return result
 
