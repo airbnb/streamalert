@@ -26,3 +26,8 @@ variable "s3_logging_bucket" {
 variable "kms_key_id" {
   type = string
 }
+
+variable "firehose_extractor_alias" {
+  type = string
+  description = "The ARN + function alias of the Firehose Extractor Lambda"
+}

@@ -60,3 +60,13 @@ variable "alarm_actions" {
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
 }
+
+variable "extractor_enabled" {
+  default = false
+  description = "Specify whether or not to run the Firehose extractor on this"
+}
+
+variable "extractor_arn" {
+  type = string
+  description = "Lambda ARN + function alias of the Firehose Extractor"
+}

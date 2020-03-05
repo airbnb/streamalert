@@ -142,6 +142,15 @@ class AthenaRefresher:
 
                 # Get the path to the objects in S3
                 path = posixpath.dirname(key)
+
+                # With the introduction of Firehose data transformation, any failed Lambda call
+                # will create records in a /processing-failed subdirectory in S3. We never want
+                # entries in this subdirectory to create partitions.
+                #
+                # FIXME (ryxias) change this to REGEX to be more accurate
+                if 'processing-failed' in path:
+                    continue
+
                 # The config does not need to store all possible tables
                 # for enabled log types because this can be inferred from
                 # the incoming S3 bucket notification.  Only enabled

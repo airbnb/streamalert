@@ -42,7 +42,12 @@ def generate_firehose(logging_bucket, main_dict, config):
         'region': config['global']['account']['region'],
         's3_logging_bucket': logging_bucket,
         's3_bucket_name': firehose_s3_bucket_name,
-        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
+        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
+
+        # FIXME (ryxias) optional?
+        'firehose_extractor_alias': (
+            '${module.firehose_extractor_lambda.function_alias_arn}'
+        )
     }
 
     enabled_logs = FirehoseClient.load_enabled_log_sources(
@@ -71,7 +76,11 @@ def generate_firehose(logging_bucket, main_dict, config):
             'log_name': log_stream_name,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,
-            'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
+            'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
+
+            # FIXME (ryxias) FIX THIS
+            'extractor_enabled': True,
+            'extractor_arn': '${module.firehose_extractor_lambda.function_alias_arn}'
         }
 
         # Try to get alarm info for this specific log type

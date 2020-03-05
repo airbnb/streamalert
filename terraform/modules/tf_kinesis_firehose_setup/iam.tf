@@ -61,6 +61,20 @@ data "aws_iam_policy_document" "firehose_s3" {
 
     resources = ["arn:aws:kms:${var.region}:${var.account_id}:key/${var.kms_key_id}"]
   }
+
+  # Allow Firehose to invoke the Firehose Extractor lambda
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "lambda:InvokeFunction",
+      "lambda:GetFunctionConfiguration"
+    ]
+
+    resources = [
+      var.firehose_extractor_alias
+    ]
+  }
 }
 
 // IAM Policy: Write logs to CloudWatch

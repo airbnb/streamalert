@@ -37,6 +37,7 @@ from streamalert_cli.terraform.cloudwatch_destinations import (
 )
 from streamalert_cli.terraform.cloudwatch_events import generate_cloudwatch_events
 from streamalert_cli.terraform.firehose import generate_firehose
+from streamalert_cli.terraform.firehose_extractor import generate_firehose_extractor
 from streamalert_cli.terraform.flow_logs import generate_flow_logs
 from streamalert_cli.terraform.helpers import terraform_check
 from streamalert_cli.terraform.kinesis_events import generate_kinesis_events
@@ -493,6 +494,15 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         generate_func=generate_alert_merger,
         tf_tmp_file='terraform/alert_merger.tf.json',
         message='Removing old Alert Merger Terraform file'
+    )
+
+    # Setup Firehose Extractor if it is enabled
+    generate_global_lambda_settings(
+        config,
+        config_name='firehose_extractor_config',
+        generate_func=generate_firehose_extractor,
+        tf_tmp_file='terraform/firehose_extractor.tf.json',
+        message='Removing old Firehose Extractor Terraform file'
     )
 
     # Setup Lookup Tables if applicable

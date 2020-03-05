@@ -6,9 +6,9 @@
 // This is a less destructive approach to creating all of the Streams.
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
   name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_data_${var.log_name}"
-  destination = "s3"
+  destination = "extended_s3"
 
-  s3_configuration {
+  extended_s3_configuration {
     role_arn           = var.role_arn
     bucket_arn         = "arn:aws:s3:::${var.s3_bucket_name}"
     prefix             = "${var.log_name}/"
@@ -16,6 +16,19 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
     buffer_interval    = var.buffer_interval
     compression_format = var.compression_format
     kms_key_arn        = var.kms_key_arn
+
+    processing_configuration {
+      enabled = var.extractor_enabled
+
+      processors {
+        type = "Lambda"
+
+        parameters {
+          parameter_name  = "LambdaArn"
+          parameter_value = var.extractor_arn
+        }
+      }
+    }
   }
 
   tags = {

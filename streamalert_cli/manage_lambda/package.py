@@ -315,3 +315,16 @@ class ScheduledQueriesPackage(LambdaPackage):
         'scheduled_queries'
     }
     package_name = 'scheduled_queries'
+
+
+class FirehoseExtractorPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert Firehose Extractor function"""
+    config_key = 'firehose_extractor_config'
+    lambda_handler = 'streamalert.firehose_extractor.main.handler'
+    package_files = {
+        'conf',
+        'streamalert/__init__.py',
+        'streamalert/firehose_extractor',
+        'streamalert/shared',
+    }
+    package_name = 'firehose_extractor'

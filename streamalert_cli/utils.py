@@ -224,6 +224,7 @@ def add_default_lambda_args(lambda_parser):
 
     functions = sorted([
         'alert', 'alert_merger', 'apps', 'athena', 'classifier',
+        'firehose_extractor',
         'rule', 'rule_promo', 'scheduled_queries', 'threat_intel_downloader'
     ])
     # require the name of the function being deployed/rolled back

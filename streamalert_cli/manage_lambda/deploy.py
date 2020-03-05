@@ -102,6 +102,7 @@ class DeployCommand(CLICommand):
                 'apps',
                 'athena',
                 'classifier',
+                'firehose_extractor',
                 'rule',
                 'rule_promo',
                 'scheduled_queries',
@@ -221,6 +222,11 @@ def _create(function_name, config, clusters=None):
              for suffix in {'lambda', 'iam'}
              for cluster in clusters},
             True
+        ),
+        'firehose_extractor': PackageMap(
+            streamalert_packages.FirehoseExtractorPackage,
+            {'module.firehose_extractor_iam', 'module.firehose_extractor_lambda'},
+            config['lambda'].get('firehose_extractor_config', {}).get('enabled', False)
         ),
         'rule': PackageMap(
             streamalert_packages.RulesEnginePackage,
