@@ -58,22 +58,20 @@ class ThreatIntelMocks:
             priority = len(rule_dir.split(os.path.sep))
             try:
                 with open(full_path, 'r') as json_file:
-                    cls._MOCKS[full_path] = {
+                    # See if there are multiple files in the same directory and merge them
+                    values = cls._MOCKS.get(rule_dir, {})
+                    values.update({value['ioc_value']: value for value in json.load(json_file)})
+                    cls._MOCKS[rule_dir] = {
                         'priority': priority,
-                        'values': {value['ioc_value']: value for value in json.load(json_file)}
+                        'values': values
                     }
             except ValueError:
                 LOGGER.error('Unsupported fixture file: %s', full_path)
 
     @classmethod
     def remove_fixtures(cls, rule_dir):
-        fixtures_dir = os.path.join(rule_dir, 'test_fixtures', 'threat_intel')
-        LOGGER.debug('Tearing down threat intel fixture files: %s', fixtures_dir)
-        for item in list(cls._MOCKS):
-            # Remove the fixture item
-            if item.startswith(fixtures_dir):
-                LOGGER.debug('Removing threat intel fixtures: %s', item)
-                del cls._MOCKS[item]
+        LOGGER.debug('Tearing down threat intel fixture files: %s', rule_dir)
+        del cls._MOCKS[rule_dir]
 
     @classmethod
     def get_mock_values(cls, rule_path):
@@ -86,7 +84,7 @@ class ThreatIntelMocks:
             # Sort descending on the priority during retrieval to get the most relevant data
             data = sorted(cls._MOCKS.items(), key=lambda v: v[1]['priority'], reverse=True)
             for key, value in data:
-                if not key.startswith(rule_path):
+                if not rule_path.startswith(key):
                     continue
 
                 results = [
