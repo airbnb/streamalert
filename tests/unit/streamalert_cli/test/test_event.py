@@ -28,7 +28,7 @@ TestEvent = nottest(TestEvent)
 
 class TestConfigLoading:
     """Test config loading logic with a mocked filesystem."""
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use,protected-access
     def setup(self):
         # pylint: disable=attribute-defined-outside-init
         self._default_event = TestEvent(basic_test_event_data())
@@ -91,21 +91,110 @@ class TestConfigLoading:
         """StreamAlert CLI - TestEvent Skip Publishers Property"""
         assert_equal(self._default_event.skip_publishers, False)
 
-    def test_apply_defaults(self):
-        """StreamAlert CLI - TestEvent Apply Defaults"""
-        override_event = TestEvent(basic_test_event_data(
-            override_data={'override': 'test'}
-        ))
+    def test_is_valid(self):
+        """StreamAlert CLI - TestEvent Is Valid Property"""
+        assert_equal(self._default_event.is_valid, True)
 
-        # pylint: disable=protected-access
-        override_event._apply_defaults(self.basic_config())
+    def test_is_valid_invalid_type(self):
+        """StreamAlert CLI - TestEvent Is Valid Property, Invalid Type"""
+        self._default_event._event = []  # invalid data type
 
-        # Ensure the right key was "overridden"
-        assert_equal(override_event._event['data'], {'default': '', 'override': 'test'})
+        assert_equal(self._default_event.is_valid, False)
+        assert_equal(
+            self._default_event.error,
+            'Invalid type for event: <class \'list\'>; should be dict'
+        )
+
+    def test_is_valid_missing_key(self):
+        """StreamAlert CLI - TestEvent Is Valid Property, Missing Required Key"""
+        del self._default_event._event['log']  # remove required key
+
+        assert_equal(self._default_event.is_valid, False)
+        assert_equal(self._default_event.error, 'Missing required key(s) in test event: \'log\'')
+
+    def test_is_valid_missing_data(self):
+        """StreamAlert CLI - TestEvent Is Valid Property, Missing Data or Override"""
+        del self._default_event._event['data']  # remove both of the data keys
+
+        assert_equal(self._default_event.is_valid, False)
+        assert_equal(
+            self._default_event.error,
+            'Test event must contain either \'data\' or \'override_record\''
+        )
+
+    def test_is_valid_no_trigger_rules(self):
+        """StreamAlert CLI - TestEvent Is Valid Property, Missing Rules"""
+        # remove key that is required if NOT classify_only
+        del self._default_event._event['trigger_rules']
+
+        assert_equal(self._default_event.is_valid, False)
+        assert_equal(
+            self._default_event.error,
+            'Test events that are not \'classify_only\' should have \'trigger_rules\' defined'
+        )
+
+    @patch('streamalert_cli.test.event.LOGGER.warning')
+    def test_is_valid_extra_keys(self, log_mock):
+        """StreamAlert CLI - TestEvent Is Valid Property, Extra Keys"""
+        # add an extra random key
+        self._default_event._event['extra_thing'] = True
+
+        assert_equal(self._default_event.is_valid, True)
+        log_mock.assert_called_with(
+            'Additional unnecessary keys in test event: %s',
+            '\'extra_thing\''
+        )
+
+    def test_format_test_record_invalid_data(self):
+        """StreamAlert CLI - TestEvent Format Test Record, Invalid Data"""
+        self._default_event._event['data'] = 100  # invalid data type
+        result = self._default_event.format_test_record(None)
+
+        assert_equal(result, False)
+        assert_equal(self._default_event.error, 'Invalid data type: <class \'int\'>')
+
+    def test_format_test_record_invalid_service(self):
+        """StreamAlert CLI - TestEvent Format Test Record, Invalid Service"""
+        self._default_event._event['service'] = 'foobar'  # invalid service value
+        result = self._default_event.format_test_record(None)
+
+        assert_equal(result, False)
+        assert_equal(self._default_event.error, 'Unsupported service: foobar')
+
+    def test_apply_service_template_s3(self):
+        """StreamAlert CLI - TestEvent Apply Service Template, S3"""
+        s3_event = TestEvent(basic_test_event_data(service='s3'))
+        result = s3_event._apply_service_template('')
+        assert_equal('s3' in result, True)
+
+    def test_apply_service_template_kinesis(self):
+        """StreamAlert CLI - TestEvent Apply Service Template, Kinesis"""
+        kinesis_event = TestEvent(basic_test_event_data(service='kinesis'))
+        result = kinesis_event._apply_service_template('')
+        assert_equal('kinesis' in result, True)
+
+    def test_apply_service_template_kinesis_compressed(self):
+        """StreamAlert CLI - TestEvent Apply Service Template, Kinesis Compressed"""
+        event = basic_test_event_data(service='kinesis')
+        event['compress'] = True
+        kinesis_event = TestEvent(event)
+        result = kinesis_event._apply_service_template(b'test')
+        assert_equal(result['kinesis']['data'], b'eJwrSS0uAQAEXQHB')
+
+    def test_apply_service_template_sns(self):
+        """StreamAlert CLI - TestEvent Apply Service Template, SNS"""
+        sns_event = TestEvent(basic_test_event_data(service='sns'))
+        result = sns_event._apply_service_template('')
+        assert_equal('Sns' in result, True)
+
+    def test_apply_service_template_apps(self):
+        """StreamAlert CLI - TestEvent Apply Service Template, App"""
+        app_event = TestEvent(basic_test_event_data(service='streamalert_app'))
+        result = app_event._apply_service_template('')
+        assert_equal('streamalert_app' in result, True)
 
     def test_apply_helpers(self):
         """StreamAlert CLI - TestEvent Apply Helpers"""
-        # pylint: disable=protected-access
         # Swap out the key's data with a helper identifier
         self._default_event._event['data']['key'] = '<helper:last_hour>'
 
@@ -115,40 +204,13 @@ class TestConfigLoading:
 
         assert_equal(self._default_event._event['data']['key'], '240')
 
-    def test_apply_service_template_s3(self):
-        """StreamAlert CLI - TestEvent Apply Service Template, S3"""
-        # pylint: disable=protected-access
-        s3_event = TestEvent(basic_test_event_data(service='s3'))
-        result = s3_event._apply_service_template('')
-        assert_equal('s3' in result, True)
+    def test_apply_defaults(self):
+        """StreamAlert CLI - TestEvent Apply Defaults"""
+        override_event = TestEvent(basic_test_event_data(
+            override_data={'override': 'test'}
+        ))
 
-    def test_apply_service_template_kinesis(self):
-        """StreamAlert CLI - TestEvent Apply Service Template, Kinesis"""
-        # pylint: disable=protected-access
-        kinesis_event = TestEvent(basic_test_event_data(service='kinesis'))
-        result = kinesis_event._apply_service_template('')
-        assert_equal('kinesis' in result, True)
+        override_event._apply_defaults(self.basic_config())
 
-    def test_apply_service_template_kinesis_compressed(self):
-        """StreamAlert CLI - TestEvent Apply Service Template, Kinesis Compressed"""
-        # pylint: disable=protected-access
-        event = basic_test_event_data(service='kinesis')
-        event['compress'] = True
-        kinesis_event = TestEvent(event)
-        result = kinesis_event._apply_service_template(b'test')
-        assert_equal(result['kinesis']['data'], b'eJwrSS0uAQAEXQHB')
-
-    def test_apply_service_template_sns(self):
-        """StreamAlert CLI - TestEvent Apply Service Template, SNS"""
-        # pylint: disable=protected-access
-        sns_event = TestEvent(basic_test_event_data(service='sns'))
-        result = sns_event._apply_service_template('')
-        assert_equal('Sns' in result, True)
-
-    def test_apply_service_template_apps(self):
-        """StreamAlert CLI - TestEvent Apply Service Template, App"""
-        # pylint: disable=protected-access
-        app_event = TestEvent(basic_test_event_data(service='streamalert_app'))
-        result = app_event._apply_service_template('')
-        assert_equal('streamalert_app' in result, True)
-
+        # Ensure the right key was "overridden"
+        assert_equal(override_event._event['data'], {'default': '', 'override': 'test'})
