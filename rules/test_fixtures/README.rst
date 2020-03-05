@@ -1,6 +1,6 @@
-##############
-Local Fixtures
-##############
+###############
+Global Fixtures
+###############
 
 Each directory of rules can have its own **fixtures** used for testing either ThreatIntel or
 LookupTables.
@@ -13,6 +13,6 @@ These fixture files are only applied to rules within the scope of the **current*
 Fixtures will be applied to any subdirectory below which they are defined, unless overridden by
 another fixture file somewhere further down the directory tree.
 
-If you would like fixtures to be applied across **all** rules, they should be placed in
-a ``test_fixtures`` directory at the root of the rule directory being tested.
-For example: the ``rules/test_fixtures`` directory within this repository.
+If you would like fixtures to be applied only **specific** rules, they should be placed in
+a ``test_fixtures`` directory beside the rule to which they should be applied.
+For example: the ``rules/community/onelogin/test_fixtures`` directory within this repository.
