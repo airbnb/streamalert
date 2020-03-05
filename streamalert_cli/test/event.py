@@ -23,7 +23,6 @@ from mock import patch
 
 from streamalert.classifier.parsers import ParserBase
 from streamalert.shared.logger import get_logger
-from streamalert_cli.test.format import format_green, format_red, format_underline
 
 LOGGER = get_logger(__name__)
 
@@ -34,14 +33,10 @@ class TestEvent:
     REQUIRED_KEYS = {'description', 'log', 'service', 'source'}
     OPTIONAL_KEYS = {'compress', 'trigger_rules', 'classify_only', 'skip_publishers'}
 
-    def __init__(self, index, test_data):
-        self._idx = index
+    def __init__(self, test_data):
         self._event = test_data
-        self._error = None
+        self.error = None
         self.record = None
-        self.result = None
-
-        self._s3_mocker = patch('streamalert.classifier.payload.s3.boto3.resource').start()  # TODO: change this
 
     # One of either 'data' or 'override_record' is required
     @property
@@ -93,30 +88,34 @@ class TestEvent:
         Returns:
             bool: True if the proper keys are present
         """
+        if not isinstance(self._event, dict):
+            self.error = 'Invalid type for event: {}; should be dict'.format(type(self._event))
+            return False
+
         test_event_keys = set(self._event)
         if not self.REQUIRED_KEYS.issubset(test_event_keys):
             req_key_diff = self.REQUIRED_KEYS.difference(test_event_keys)
             missing_keys = ', '.join('\'{}\''.format(key) for key in req_key_diff)
-            self._error = 'Missing required key(s) in test event: {}'.format(missing_keys)
+            self.error = 'Missing required key(s) in test event: {}'.format(missing_keys)
             return False
 
         if not (self.data or self.override_record):
-            self._error = 'Test event must contain either \'data\' or \'override_record\''
+            self.error = 'Test event must contain either \'data\' or \'override_record\''
             return False
 
         if not self._event.get('classify_only'):
             if 'trigger_rules' not in test_event_keys:
-                self._error = (
+                self.error = (
                     'Test events that are not \'classify_only\' should have \'trigger_rules\' '
                     'defined'
                 )
                 return False
 
+        # Log a warning if there are extra keys declared in the test log, but this is not an error
         key_diff = test_event_keys.difference(
             self.REQUIRED_KEYS | self.OPTIONAL_KEYS | self.ACCEPTABLE_DATA_KEYS
         )
 
-        # Log a warning if there are extra keys declared in the test log, but this is not an error
         if key_diff:
             extra_keys = ', '.join('\'{}\''.format(key) for key in key_diff)
             LOGGER.warning('Additional unnecessary keys in test event: %s', extra_keys)
@@ -151,11 +150,11 @@ class TestEvent:
         if isinstance(rec_data, dict):
             rec_data = json.dumps(rec_data)
         elif not isinstance(self.data, str):
-            self._error = 'Invalid data type: {}'.format(type(rec_data))
+            self.error = 'Invalid data type: {}'.format(type(rec_data))
             return False
 
         if self._event['service'] not in {'s3', 'kinesis', 'sns', 'streamalert_app'}:
-            self._error = 'Unsupported service: {}'.format(self.sevice)
+            self.error = 'Unsupported service: {}'.format(self.service)
             return False
 
         # Set a formatted record for this particular service
@@ -295,8 +294,10 @@ class TestEvent:
 
         _find_and_apply_helpers(self._event)
 
-    def _setup_s3_mock(self, data):
-        self._s3_mocker.return_value.Bucket.return_value.download_fileobj = (
+    @staticmethod
+    def _setup_s3_mock(data):
+        s3_mocker = patch('streamalert.classifier.payload.s3.boto3.resource').start()
+        s3_mocker.return_value.Bucket.return_value.download_fileobj = (
             lambda k, d: d.write(json.dumps(data).encode())
         )
 

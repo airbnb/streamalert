@@ -17,44 +17,14 @@ from collections import defaultdict
 import textwrap
 
 from streamalert.shared import rule
+from streamalert.shared.logger import get_logger
+from streamalert_cli.test.event import TestEvent
 from streamalert_cli.test.format import format_green, format_red, format_underline
 
-
-class TestEventFile:
-    """TestEventFile handles caching results of test events within a test file"""
-
-    def __init__(self, rel_path):
-        self._rel_path = rel_path
-        self._results = []
-
-    def __bool__(self):
-        return bool(self._results)
-
-    @property
-    def all_passed(self):
-        return self.passed == len(self._results)
-
-    @property
-    def passed(self):
-        return sum(1 for result in self._results if result.passed)
-
-    @property
-    def failed(self):
-        return sum(1 for result in self._results if not result.passed)
-
-    def add_result(self, result):
-        self._results.append(result)
-
-    def __str__(self):
-        output = [format_underline('\nFile: {file_name}\n'.format(file_name=self._rel_path))]
-
-        for result in self._results:
-            output.append(result)
-
-        return '\n'.join(str(item) for item in output)
+LOGGER = get_logger(__name__)
 
 
-class TestResult:
+class TestResult(TestEvent):
     """TestResult contains information useful for tracking test results"""
 
     _NONE_STRING = '<None>'
@@ -62,6 +32,7 @@ class TestResult:
     _FAIL_STRING = format_red('Fail')
     _SIMPLE_TEMPLATE = '{header}:'
     _PASS_TEMPLATE = '{header}: {pass}'  # nosec
+    _ERROR_TEMPLATE = '{header}: {error}'  # nosec
     _DESCRIPTION_LINE = (
         '''
     Description: {description}'''
@@ -100,12 +71,12 @@ class TestResult:
     )
     _DEFAULT_INDENT = 4
 
-    def __init__(self, index, test_event, classified_result, with_rules=False, verbose=False):
-        self._idx = index
-        self._test_event = test_event
-        self._classified_result = classified_result
+    def __init__(self, idx, test_event, verbose=False, with_rules=False):
+        super().__init__(test_event)
+        self._index = idx
         self._with_rules = with_rules
         self._verbose = verbose
+        self._classified_result = None
         self._live_test_results = {}
         self._publication_results = {}
         self.alerts = []
@@ -115,24 +86,28 @@ class TestResult:
 
     def __str__(self):
         fmt = {
-            'header': 'Test #{idx:02d}'.format(idx=self._idx + 1),
+            'header': 'Test #{idx:02d}'.format(idx=self._index + 1),
         }
+
+        if self.error:
+            fmt['error'] = format_red('Error - {}'.format(self.error))
+            return self._ERROR_TEMPLATE.format(**fmt)
+
         if self.passed and not self._verbose:
             # Simply render "Test #XYZ: Pass" if the whole test case passed
-            template = self._PASS_TEMPLATE
             fmt['pass'] = self._PASS_STRING
-            return template.format(**fmt)
+            return self._PASS_TEMPLATE.format(**fmt)
 
         # Otherwise, expand the entire test with verbose details
         template = self._SIMPLE_TEMPLATE + '\n' + self._DESCRIPTION_LINE
-        fmt['description'] = self._test_event['description']
+        fmt['description'] = self.description
 
         # First, render classification
         template += '\n' + self._CLASSIFICATION_STATUS_TEMPLATE
         fmt['classification_status'] = (
             self._PASS_STRING if self.classification_tests_passed else self._FAIL_STRING
         )
-        fmt['expected_type'] = self._test_event['log']
+        fmt['expected_type'] = self.log
         fmt['classified_type'] = (
             self._classified_result.log_schema_type
             if self._classified else format_red(
@@ -200,7 +175,7 @@ class TestResult:
 
     @property
     def _disabled_rules(self):
-        return sorted(set(self._test_event.get('trigger_rules', [])).intersection(
+        return sorted(set(self.trigger_rules).intersection(
             rule.Rule.disabled_rules()
         ))
 
@@ -214,7 +189,11 @@ class TestResult:
 
     @property
     def expected_rules(self):
-        return set(self._test_event.get('trigger_rules', [])) - rule.Rule.disabled_rules()
+        return set(self.trigger_rules) - rule.Rule.disabled_rules()
+
+    @property
+    def classified_log(self):
+        return self._classified_result
 
     @property
     def _unexpected_rules(self):
@@ -222,10 +201,7 @@ class TestResult:
 
     @property
     def _classified(self):
-        if not self:
-            return False
-
-        return self._classified_result.log_schema_type == self._test_event['log']
+        return self and self._classified_result.log_schema_type == self.log
 
     def _format_rules(self, items, compare_set):
         if not items:
@@ -276,16 +252,6 @@ class TestResult:
             )
 
         return self._NONE_STRING if not result_block else '\n{}'.format('\n'.join(result_block))
-
-    @property
-    def classify_only(self):
-        """Returns True if the testcase only requires classification and skips rules"""
-        return self._test_event.get('classify_only')
-
-    @property
-    def skip_publishers(self):
-        """Returns True if the testcase skips running publisher tests"""
-        return self._test_event.get('skip_publishers')
 
     @property
     def rule_tests_were_run(self):
@@ -399,6 +365,9 @@ class TestResult:
                 return False
 
         return True
+
+    def set_classified_result(self, classified_result):
+        self._classified_result = classified_result[0] if classified_result else None
 
     def set_publication_results(self, publication_results):
         self._publication_results = publication_results
