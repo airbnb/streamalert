@@ -17,21 +17,15 @@ import json
 import os
 
 from streamalert.shared.logger import get_logger
+from streamalert.shared.lookup_tables.drivers import EphemeralDriver
+from streamalert.shared.lookup_tables.table import LookupTable
 
 LOGGER = get_logger(__name__)
 
 
-def mock_lookup_table_results():
-    """Load test fixtures for Lookup Tables to use with rule testing"""
-    mock_lookup_tables = dict()
-    for root, _, fixture_files in os.walk('tests/integration/fixtures/lookup_tables/'):
-        for fixture_file in fixture_files:
-            with open(os.path.join(root, fixture_file), 'r') as json_file:
-                mock_lookup_tables[os.path.splitext(fixture_file)[0]] = json.load(json_file)
 class ThreatIntelMocks:
     """Simple class to encapsulate the mocked threat intel results"""
 
-    return mock_lookup_tables
     _MOCKS = dict()
 
     @classmethod
@@ -84,6 +78,7 @@ class ThreatIntelMocks:
             # Sort descending on the priority during retrieval to get the most relevant data
             data = sorted(cls._MOCKS.items(), key=lambda v: v[1]['priority'], reverse=True)
             for key, value in data:
+                print('ti rule path', rule_path, key)
                 if not rule_path.startswith(key):
                     continue
 
@@ -96,3 +91,51 @@ class ThreatIntelMocks:
             return []
 
         return threat_intel_mock_query
+
+
+class LookupTableMocks:
+    """Simple class to encapsulate the mocked lookup table results"""
+
+    _MOCKS = dict()
+
+    @classmethod
+    def add_fixtures(cls, rule_dir):
+        """Load test fixtures for Lookup Tables to use with rule testing"""
+        fixtures_dir = os.path.join(rule_dir, 'test_fixtures', 'lookup_tables')
+        # rule_dir += os.path.sep
+        LOGGER.debug('Setting up lookup tables fixture files: %s', fixtures_dir)
+        for item in os.listdir(fixtures_dir):
+            full_path = os.path.join(fixtures_dir, item)
+            table_name = os.path.splitext(item)[0]
+
+            # The priority is used during data retrieval to allow for overriding
+            # fixtures defined at various levels of the folder structure
+            priority = len(rule_dir.split(os.path.sep))
+            try:
+                with open(full_path, 'r') as json_file:
+                    # See if there are multiple files in the same directory and merge them
+                    values = cls._MOCKS.get(rule_dir, {})
+                    cls._MOCKS[rule_dir] = values
+                    cls._MOCKS[rule_dir] = {
+                        'priority': priority,
+                        'table_name': table_name,
+                        'values': json.load(json_file)
+                    }
+            except ValueError:
+                LOGGER.error('Unsupported fixture file: %s', full_path)
+
+    @classmethod
+    def remove_fixtures(cls, rule_dir):
+        LOGGER.debug('Tearing down lookup tables fixture files: %s', rule_dir)
+        del cls._MOCKS[rule_dir]
+
+    @classmethod
+    def get_mock_values(cls, rule_path):
+        data = sorted(cls._MOCKS.items(), key=lambda v: v[1]['priority'], reverse=True)
+        for key, item in data:
+            if not rule_path.startswith(key):
+                continue
+
+            driver = EphemeralDriver(None)
+            driver._cache = item['values']  # pylint: disable=protected-access
+            yield LookupTable(item['table_name'], driver, None)
