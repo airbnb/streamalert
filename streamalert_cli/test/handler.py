@@ -14,13 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import argparse
-import base64
 from collections import defaultdict
-import json
 import os
-import re
-import time
-import zlib
 
 from mock import patch, MagicMock
 
@@ -28,16 +23,14 @@ from streamalert.alert_processor import main as alert_processor
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import OutputDispatcher
 from streamalert.classifier import classifier
-from streamalert.classifier.parsers import ParserBase
 from streamalert.rules_engine import rules_engine
 from streamalert.shared import rule
 from streamalert.shared.logger import get_logger
 from streamalert.shared.stats import RuleStatisticTracker
-from streamalert.shared.lookup_tables.table import LookupTable
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.test.format import format_green, format_red, format_underline, format_yellow
-from streamalert_cli.test.mocks import mock_lookup_table_results, mock_threat_intel_query_results
-from streamalert_cli.test.results import TestEventFile, TestResult
+from streamalert_cli.test.mocks import LookupTableMocks, ThreatIntelMocks
+from streamalert_cli.test.event_file import TestEventFile
 from streamalert_cli.utils import (
     CLICommand,
     DirectoryType,
@@ -224,16 +217,15 @@ class TestRunner:
         self._config = config
         self._options = options
         self._type = options.subcommand
-        self._files = options.files
+        self._files_filter = {file.name for file in options.files} or set()
         self._rules = options.rules
         self._rules_dirs = options.rules_dir
+        self._rules_engine = self._setup_rules_engine(options.rules_dir)
         self._verbose = options.verbose
         self._quiet = options.quiet
         self._s3_mocker = patch('streamalert.classifier.payload.s3.boto3.resource').start()
         self._errors = defaultdict(list)  # cache errors to be logged at the endpoint
         self._tested_rules = set()
-        self._threat_intel_mock = mock_threat_intel_query_results()
-        self._lookup_tables_mock = mock_lookup_table_results()
         self._passed = 0
         self._failed = 0
         prefix = self._config['global']['account']['prefix']
@@ -259,39 +251,27 @@ class TestRunner:
             _classifier = classifier.Classifier()
             return _classifier.run(records=[record])
 
+    @staticmethod
     @patch.object(rules_engine, 'AlertForwarder')
     @patch('rules.helpers.base.random_bool', return_value=True)
     @patch.object(rules_engine.RulesEngine, '_load_rule_table', return_value=None)
-    @patch.object(rules_engine.ThreatIntel, '_query')
-    def _run_rules_engine(self, record, ti_mock, *_):
+    def _setup_rules_engine(dirs, *_):
         """Create a fresh rules engine and process the record, returning the result"""
-        ti_mock.side_effect = self._threat_intel_mock
+        return rules_engine.RulesEngine(*dirs)
 
-        _rules_engine = rules_engine.RulesEngine()
+    def _run_rules_engine(self, test_file_dir, record):
+        """Create a fresh rules engine and process the record, returning the result"""
+        with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock:
+            ti_mock.side_effect = ThreatIntelMocks.get_mock_values(test_file_dir)
 
-        self._install_lookup_tables_mocks(_rules_engine)
+            # pylint: disable=protected-access
+            self._rules_engine._lookup_tables._tables.clear()
+            for table in LookupTableMocks.get_mock_values(test_file_dir):
+                if table.table_name in self._rules_engine._lookup_tables._tables:
+                    continue
+                self._rules_engine._lookup_tables._tables[table.table_name] = table
 
-        return _rules_engine.run(records=record)
-
-    def _install_lookup_tables_mocks(self, rules_engine_instance):
-        """
-        Extremely gnarly, extremely questionable manner to install mocking data into our tables.
-        The reason this exists at all is to support the secret features of table scanning S3-backed
-        tables, which isn't a "normally" available feature but is required for some pre-existing
-        StreamAlert users.
-        """
-        from streamalert.shared.lookup_tables.drivers import EphemeralDriver
-
-        dummy_configuration = {}
-        mock_data = self._lookup_tables_mock
-
-        # pylint: disable=protected-access
-        for table_name in rules_engine_instance._lookup_tables._tables.keys():
-            driver = EphemeralDriver(dummy_configuration)
-            driver._cache = mock_data.get(table_name, {})
-            ephemeral_table = LookupTable(table_name, driver, dummy_configuration)
-
-            rules_engine_instance._lookup_tables._tables[table_name] = ephemeral_table
+            return self._rules_engine.run(records=record)
 
     @staticmethod
     def _run_alerting(record):
@@ -334,7 +314,7 @@ class TestRunner:
 
     @property
     def _is_filtered(self):
-        return bool(self._files or self._rules)
+        return bool(self._files_filter or self._rules)
 
     @property
     def _testing_rules(self):
@@ -344,73 +324,72 @@ class TestRunner:
         if not self._rules:
             return True
 
-        expected_rules = set(event.get('trigger_rules', [])) - rule.Rule.disabled_rules()
+        expected_rules = set(event.trigger_rules) - rule.Rule.disabled_rules()
         return bool(expected_rules.intersection(self._rules))
 
-    def _process_rule_directory(self, directory):
-        """Process rules in the the rule directory"""
+    def _process_directory(self, directory):
+        """Process rules and test files in the the rule directory"""
         print('\nRunning tests for files found in: {}'.format(directory))
 
-        for event_file in self._get_test_files(directory):
-            test_event = TestEventFile(event_file.replace(directory, ''))
-            # Iterate over the individual test events in the file
-            for idx, original_event, event in self._load_test_file(event_file):
-                if not event:
+        for root, event_files in self._get_test_files(directory):
+            for event_file in event_files:
+                full_path = os.path.join(root, event_file)
+                if self._files_filter and full_path not in self._files_filter:
                     continue
+                self._process_test_file(full_path)
 
-                if not self._contains_filtered_rules(original_event):
-                    continue
+    def _process_test_file(self, test_file_path):
+        """Process an individual test file"""
+        # Iterate over the individual test events in the file
+        event_file = TestEventFile(test_file_path, self._config)
+        for event in event_file.process_file(self._verbose, self._testing_rules):
+            if not self._contains_filtered_rules(event):
+                continue
 
-                resource = original_event['source']
+            # Set the cluster in the env since this is used from within the
+            # classifier to load the proper cluster config
+            for cluster_name, cluster_value in self._config['clusters'].items():
+                for service in cluster_value['data_sources'].values():
+                    if event.source in service:
+                        os.environ['CLUSTER'] = cluster_name
+                        break
 
-                for cluster_name, cluster_value in self._config['clusters'].items():
-                    for service in cluster_value['data_sources'].values():
-                        if resource in service:
-                            os.environ['CLUSTER'] = cluster_name
-                            break
+            classifier_result = self._run_classification(event.record)
 
-                classifier_result = self._run_classification(event)
+            event.set_classified_result(classifier_result)
+            if not event:
+                continue
 
-                test_result = TestResult(
-                    idx,
-                    original_event,
-                    classifier_result[0] if classifier_result else False,
-                    with_rules=self._testing_rules,
-                    verbose=self._verbose
+            if event.classify_only:
+                continue  # Do not run rules on events that are only for validation
+
+            self._tested_rules.update(event.expected_rules)
+
+            test_file_dir = os.path.dirname(test_file_path) + os.path.sep
+            if self._type in {self.Types.RULES, self.Types.LIVE}:
+                event.alerts = self._run_rules_engine(
+                    test_file_dir,
+                    event.classified_log.sqs_messages
                 )
 
-                test_event.add_result(test_result)
+                if not event.skip_publishers:
+                    for alert in event.alerts:
+                        publication_results = self._run_publishers(alert)
+                        event.set_publication_results(publication_results)
 
-                self._tested_rules.update(test_result.expected_rules)
+                if self._type == self.Types.LIVE:
+                    for alert in event.alerts:
+                        alert_result = self._run_alerting(alert)
+                        event.add_live_test_result(alert.rule_name, alert_result)
 
-                if not test_result:
-                    continue
+        self._passed += event_file.passed
+        self._failed += event_file.failed
 
-                if original_event.get('classify_only'):
-                    continue  # Do not run rules on events that are only for validation
-
-                if self._type in {self.Types.RULES, self.Types.LIVE}:
-                    alerts = self._run_rules_engine(classifier_result[0].sqs_messages)
-                    test_result.alerts = alerts
-
-                    if not original_event.get('skip_publishers'):
-                        for alert in alerts:
-                            publication_results = self._run_publishers(alert)
-                            test_result.set_publication_results(publication_results)
-
-                    if self._type == self.Types.LIVE:
-                        for alert in alerts:
-                            alert_result = self._run_alerting(alert)
-                            test_result.add_live_test_result(alert.rule_name, alert_result)
-
-            self._passed += test_event.passed
-            self._failed += test_event.failed
-
-            # It is possible for a test_event to have no results,
-            # so only print it if it does and if quiet mode is no being used
-            # Quite mode is overridden if not all of the events passed
-            if test_event and not (self._quiet and test_event.all_passed):
-                print(test_event)
+        # It is possible for a test_event to have no results, but contain errors
+        # so only print it if it does and if quiet mode is not being used
+        # Quite mode is overridden if not all of the events passed
+        if event_file.error or not (self._quiet and event_file.all_passed):
+            print(event_file)
 
     def run(self):
         """Run the tests"""
@@ -419,7 +398,7 @@ class TestRunner:
 
         for directory in self._rules_dirs:
             # The CLI checks if these directories exist, so no need to check here
-            self._process_rule_directory(directory)
+            self._process_directory(directory)
 
         self._finalize()
 
@@ -434,7 +413,7 @@ class TestRunner:
 
         Returns:
             dict: A dict keyed by output:descriptor strings, mapped to nested dicts.
-                  The nested dicts have 2 keys:
+                self._rules_engine._lookup_tables  The nested dicts have 2 keys:
                   - publication (dict): The dict publication
                   - success (bool): True if the publishing finished, False if it errored.
         """
@@ -457,382 +436,88 @@ class TestRunner:
                 }
         return results
 
-    def _handle_fixtures(self, path, setup=True):
-        print('{} fixtures in:'.format('setting up' if setup else 'tearing down'), path)
+    def _handle_fixtures(self, rule_dir, setup=True):
+        path = os.path.join(rule_dir, 'test_fixtures')
+        message = '{} fixtures in: %s'.format('Setting up' if setup else 'Tearing down')
+        LOGGER.debug(message, path)
         for item in os.listdir(path):
             directory = os.path.join(path, item)
             if not os.path.isdir(directory):
                 continue
 
             if item == 'lookup_tables':
-                # paths = [os.path.join(root, fixture) for fixture in fixtures]
                 if setup:
-                    self._setup_lookup_table_fixtures(directory)
+                    self._setup_lookup_table_fixtures(rule_dir)
                 else:
-                    self._teardown_lookup_table_fixtures(directory)
+                    self._teardown_lookup_table_fixtures(rule_dir)
             elif item == 'threat_intel':
-                # paths = [os.path.join(root, fixture) for fixture in fixtures]
                 if setup:
-                    self._setup_threat_intel_fixtures(directory)
+                    self._setup_threat_intel_fixtures(rule_dir)
                 else:
-                    self._teardown_threat_intel_fixtures(directory)
+                    self._teardown_threat_intel_fixtures(rule_dir)
             else:
                 LOGGER.warning('Unsupported fixture directory: %s', directory)
 
-    def _setup_lookup_table_fixtures(self, directory):
-        print('setting up lookup table fixtures:', directory)
+    @staticmethod
+    def _setup_lookup_table_fixtures(rule_dir):
+        LookupTableMocks.add_fixtures(rule_dir)
 
-    def _setup_threat_intel_fixtures(self, directory):
-        print('setting up threat intel fixtures:', directory)
-        ThreatIntelMocks.add_fixtures(directory)
+    @staticmethod
+    def _setup_threat_intel_fixtures(rule_dir):
+        ThreatIntelMocks.add_fixtures(rule_dir)
 
-    def _teardown_lookup_table_fixtures(self, directory):
-        print('tearing down lookup table fixtures:', directory)
+    @staticmethod
+    def _teardown_lookup_table_fixtures(rule_dir):
+        LookupTableMocks.remove_fixtures(rule_dir)
 
-    def _teardown_threat_intel_fixtures(self, directory):
-        print('tearing down threat intel fixtures:', directory)
+    @staticmethod
+    def _teardown_threat_intel_fixtures(rule_dir):
+        ThreatIntelMocks.remove_fixtures(rule_dir)
 
     def _teardown_all_fixtures(self, fixtures):
-        print('tearing down all fixtures:', fixtures)
-        for fixture_path in fixtures.values():
+        LOGGER.debug('Tearing down all fixtures')
+        for fixture_path in fixtures:
             self._handle_fixtures(fixture_path, setup=False)
 
+    def skip_fixtures(self, cached_fixtures, root):
+        for parent in list(cached_fixtures):
+            fixture_path = cached_fixtures[parent]
+            # What to do with fixture_path
+            if not root.startswith(parent):
+                self._handle_fixtures(parent, setup=False)
+                LOGGER.debug('Deleting fixture path from cache: %s', parent)
+                del cached_fixtures[parent]
+            elif root.startswith(fixture_path):
+                return True
+
     def _get_test_files(self, directory):
-        """Helper to get rule files to be tested
+        """Helper to get rule test files
 
         Yields:
             str: Path to test event file
         """
-        files_filter = {
-            os.path.splitext(name)[0] for name in self._files
-        } if self._files else set()
-
-        filtered = bool(files_filter)
-        # Format: parent:fixture_prefix
         cached_fixtures = dict()
-        # fixture_prefix = None
-        # parent = None
         for root, cur_dirs, test_event_files in os.walk(directory):
-
-            print('  processing dir:', root, cur_dirs)
-
+            root += os.path.sep
             # Teardown any fixtures that are not needed for this directory
-            for parent in list(cached_fixtures):
-                fixture_path = cached_fixtures[parent]
-                if not root.startswith(parent):
-                    self._handle_fixtures(fixture_path, setup=False)
-                    print('deleting fixture path:', parent)
-                    del cached_fixtures[parent]
-                elif root.startswith(fixture_path):
-                    print('skipping fixtures dir that has been setup:', root)
-                    continue
+            if self.skip_fixtures(cached_fixtures, root):
+                LOGGER.debug('Skipping fixtures dir that has been setup: %s', root)
+                continue
 
             if 'test_fixtures' in set(cur_dirs):
-                # print('contains fixtures dir:', root)
-                # parent = os.path.dirname(root)
                 fixture_path = os.path.join(root, 'test_fixtures')
-                self._handle_fixtures(fixture_path, setup=True)
-                print('caching fixture path:', fixture_path)
+                self._handle_fixtures(root, setup=True)
+                LOGGER.debug('Caching fixture path: %s', fixture_path)
                 cached_fixtures[root] = fixture_path
 
-            # Setup any fixtures that are needed for this directory
-            # if os.path.split(root)[-1] == 'test_fixtures':
-            #     print('skippppp')
+            # Simple filter to remove any non-json files first
+            files = [
+                file for file in sorted(test_event_files)
+                if os.path.splitext(file)[1] == '.json'
+            ]
+            if not files:
+                continue
+
+            yield root, files
 
         self._teardown_all_fixtures(cached_fixtures)
-
-        # Log any errors for filtered items that do not exist
-        for basename in files_filter:
-            self._append_error('No test event file found with base name \'{}\''.format(basename))
-
-    def _setup_s3_mock(self, data):
-        self._s3_mocker.return_value.Bucket.return_value.download_fileobj = (
-            lambda k, d: d.write(json.dumps(data).encode())
-        )
-
-    def _append_error(self, error, path=None, idx=None):
-        key = 'error'
-        if path:
-            key = os.path.split(path)[1]
-        key = key if not idx else '{}:{}'.format(key, idx)
-        self._errors[key].append(error)
-
-    def _load_test_file(self, path):
-        """Helper to json load the contents of a file with some error handling
-
-        Test files should be formatted as:
-
-        [
-            {
-                "data": {},
-                "description": "...",
-                "...": "..."
-            }
-        ]
-
-        Args:
-            path (str): Relative path to file on disk
-
-        Returns:
-            dict: Loaded JSON from test event file
-        """
-        with open(path, 'r') as test_event_file:
-            try:
-                data = json.load(test_event_file)
-            except (ValueError, TypeError):
-                self._append_error('Test event file is not valid JSON', path=path)
-                return
-
-            if not isinstance(data, list):
-                self._append_error('Test event file is improperly formatted', path=path)
-                return
-
-            for idx, event in enumerate(data):
-                valid, record = self._format_test_record(event)
-                if not valid:
-                    self._append_error(record, path=path, idx=idx)
-                    continue
-                yield idx, event, record
-
-    def _format_test_record(self, test_event):
-        """Create a properly formatted Kinesis, S3, or SNS record.
-
-        Supports a dictionary or string based data record.  Reads in
-        event templates from the tests/integration/templates folder.
-
-        Args:
-            test_event (dict): Test event metadata dict with the following structure:
-                data|override_record - string or dict of the raw data
-                description - a string describing the test that is being performed
-                trigger - bool of if the record should produce an alert
-                source - which stream/s3 bucket originated the data
-                service - which aws service originated the data
-                compress (optional) - if the payload needs to be gzip compressed or not
-
-        Returns:
-            dict: in the format of the specific service
-        """
-        valid, error = self._validate_test_event(test_event)
-        if not valid:
-            return False, error
-
-        self._apply_helpers(test_event)
-        self._apply_defaults(test_event)
-
-        data = test_event['data']
-        if isinstance(data, dict):
-            data = json.dumps(data)
-        elif not isinstance(data, str):
-            return False, 'Invalid data type: {}'.format(type(data))
-
-        if test_event['service'] not in {'s3', 'kinesis', 'sns', 'streamalert_app'}:
-            return False, 'Unsupported service: {}'.format(test_event['service'])
-
-        # Get a formatted record for this particular service
-        return True, self._apply_service_template(
-            test_event['service'],
-            test_event['source'],
-            data,
-            test_event.get('compress', False)
-        )
-
-    def _apply_service_template(self, service, source, data, compress=False):
-        """Provides a pre-configured template that reflects incoming payload from a service
-
-        Args:
-            service (str): The service for the payload template
-
-        Returns:
-            dict: Template of the payload for the given service
-        """
-        if service == 's3':
-            # Assign the s3 mock for this data
-            self._setup_s3_mock(data)
-            return {
-                'eventVersion': '2.0',
-                'eventTime': '1970-01-01T00:00:00.000Z',
-                'requestParameters': {
-                    'sourceIPAddress': '127.0.0.1'
-                },
-                's3': {
-                    'configurationId': ',,,',
-                    'object': {
-                        'eTag': '...',
-                        'sequencer': '...',
-                        'key': 'test_object_key',
-                        'size': len(data)
-                    },
-                    'bucket': {
-                        'arn': 'arn:aws:s3:::{}'.format(source),
-                        'name': source,
-                        'ownerIdentity': {
-                            'principalId': 'EXAMPLE'
-                        }
-                    },
-                    's3SchemaVersion': '1.0'
-                },
-                'responseElements': {
-                    'x-amz-id-2': (
-                        'EXAMPLE123/foo/bar'
-                    ),
-                    'x-amz-request-id': '...'
-                },
-                'awsRegion': 'us-east-1',
-                'eventName': 'ObjectCreated:Put',
-                'userIdentity': {
-                    'principalId': 'EXAMPLE'
-                },
-                'eventSource': 'aws:s3'
-            }
-
-        if service == 'kinesis':
-            if compress:
-                data = zlib.compress(data)
-
-            kinesis_data = base64.b64encode(data.encode())
-
-            return {
-                'eventID': '...',
-                'eventVersion': '1.0',
-                'kinesis': {
-                    'approximateArrivalTimestamp': 1428537600,
-                    'partitionKey': 'partitionKey-3',
-                    'data': kinesis_data,
-                    'kinesisSchemaVersion': '1.0',
-                    'sequenceNumber': ',,,'
-                },
-                'invokeIdentityArn': 'arn:aws:iam::EXAMPLE',
-                'eventName': 'aws:kinesis:record',
-                'eventSourceARN': 'arn:aws:kinesis:us-east-1:123456789012:stream/{}'.format(
-                    source
-                ),
-                'eventSource': 'aws:kinesis',
-                'awsRegion': 'us-east-1'
-            }
-
-        if service == 'sns':
-            return {
-                'EventVersion': '1.0',
-                'EventSubscriptionArn': 'arn:aws:sns:us-east-1:123456789012:{}'.format(source),
-                'EventSource': 'aws:sns',
-                'Sns': {
-                    'SignatureVersion': '1',
-                    'Timestamp': '1970-01-01T00:00:00.000Z',
-                    'Signature': 'EXAMPLE',
-                    'SigningCertUrl': 'EXAMPLE',
-                    'MessageId': '95df01b4-ee98-5cb9-9903-4c221d41eb5e',
-                    'Message': data,
-                    'MessageAttributes': {
-                        'Test': {
-                            'Type': 'String',
-                            'Value': 'TestString'
-                        }
-                    },
-                    'Type': 'Notification',
-                    'UnsubscribeUrl': '...',
-                    'TopicArn': 'arn:aws:sns:us-east-1:123456789012:{}'.format(source),
-                    'Subject': '...'
-                }
-            }
-
-        if service == 'streamalert_app':
-            return {'streamalert_app': source, 'logs': [data]}
-
-    @staticmethod
-    def _validate_test_event(test_event):
-        """Check if the test event contains the required keys
-
-        Args:
-            test_event (dict): The loaded test event from json
-
-        Returns:
-            bool: True if the proper keys are present
-        """
-        required_keys = {'description', 'log', 'service', 'source'}
-
-        test_event_keys = set(test_event)
-        if not required_keys.issubset(test_event_keys):
-            req_key_diff = required_keys.difference(test_event_keys)
-            missing_keys = ', '.join('\'{}\''.format(key) for key in req_key_diff)
-            return False, 'Missing required key(s) in test event: {}'.format(missing_keys)
-
-        acceptable_data_keys = {'data', 'override_record'}
-        if not test_event_keys & acceptable_data_keys:
-            return False, 'Test event must contain either \'data\' or \'override_record\''
-
-        if not test_event.get('classify_only'):
-            if 'trigger_rules' not in test_event_keys:
-                error = (
-                    'Test events that are not \'classify_only\' should have \'trigger_rules\' '
-                    'defined'
-                )
-                return False, error
-
-        optional_keys = {'compress', 'trigger_rules', 'classify_only'}
-        key_diff = test_event_keys.difference(required_keys | optional_keys | acceptable_data_keys)
-
-        # Log a warning if there are extra keys declared in the test log
-        if key_diff:
-            extra_keys = ', '.join('\'{}\''.format(key) for key in key_diff)
-            LOGGER.warning('Additional unnecessary keys in test event: %s', extra_keys)
-
-        return True, None
-
-    def _apply_defaults(self, test_event):
-        """Apply default values to the given test event
-
-        Args:
-            test_event (dict): The loaded test event
-        """
-        if 'override_record' not in test_event:
-            return
-
-        event_log = self._config['logs'].get(test_event['log'])
-
-        configuration = event_log.get('configuration', {})
-        schema = configuration.get('envelope_keys', event_log['schema'])
-
-        # Add apply default values based on the declared schema
-        default_test_event = {
-            key: ParserBase.default_optional_values(value)
-            for key, value in schema.items()
-        }
-
-        # Overwrite the fields included in the 'override_record' field,
-        # and update the test event with a full 'data' key
-        default_test_event.update(test_event['override_record'])
-        test_event['data'] = default_test_event
-
-    @staticmethod
-    def _apply_helpers(test_record):
-        """Detect and apply helper functions to test event data
-
-        Helpers are declared in test fixtures via the following keyword:
-        "<helpers:helper_name>"
-
-        Supported helper functions:
-            last_hour: return the current epoch time minus 60 seconds to pass the
-                       last_hour rule helper.
-
-        Args:
-            test_record (dict): loaded fixture file JSON as a dict.
-        """
-        # declare all helper functions here, they should always return a string
-        record_helpers = {
-            'last_hour': lambda: str(int(time.time()) - 60)
-        }
-        helper_regex = re.compile(r'<helper:(?P<helper>\w+)>')
-
-        def _find_and_apply_helpers(test_record):
-            """Apply any helpers to the passed in test_record"""
-            for key, value in test_record.items():
-                if isinstance(value, str):
-                    test_record[key] = re.sub(
-                        helper_regex,
-                        lambda match: record_helpers[match.group('helper')](),
-                        value
-                    )
-                elif isinstance(value, dict):
-                    _find_and_apply_helpers(test_record[key])
-
-        _find_and_apply_helpers(test_record)
