@@ -8,20 +8,20 @@
       "epoch": 0,
       "counter": 19,
       "decorations": {
-          "host_uuid": "ABCDEFG-XXXX-YYYY-ZZZZZZZZ",
-          "hostname": "pc-name"
-          },
+        "host_uuid": "ABCDEFG-XXXX-YYYY-ZZZZZZZZ",
+        "hostname": "pc-name"
+      },
       "columns": {
-          "mtime": "1557323732",
-          "bad_action": "0"
-          },
+        "mtime": "1557323732",
+        "bad_action": "0"
+      },
       "action": "added"
-  },
-  "log": "fleet:results",
-  "description": "no bad actions have occoured",
-  "trigger_rules": [],
-  "source": "prefix.cluster.sample.bucket",
-  "service": "s3"
+    },
+    "log": "fleet:results",
+    "description": "no bad actions have occoured",
+    "trigger_rules": [],
+    "source": "prefix.cluster.sample.bucket",
+    "service": "s3"
   },
   {
     "data": {
@@ -32,19 +32,21 @@
       "epoch": 0,
       "counter": 19,
       "decorations": {
-          "host_uuid": "ABCDEFG-XXXX-YYYY-ZZZZZZZZ",
-          "hostname": "pc-name"
-          },
+        "host_uuid": "ABCDEFG-XXXX-YYYY-ZZZZZZZZ",
+        "hostname": "pc-name"
+      },
       "columns": {
-          "mtime": "1557323732",
-          "bad_action": "1"
-          },
+        "mtime": "1557323732",
+        "bad_action": "1"
+      },
       "action": "added"
-  },
-  "log": "fleet:results",
-  "description": "bad action",
-  "trigger_rules": ["fleet_bad_action"],
-  "source": "prefix.cluster.sample.bucket",
-  "service": "s3"
+    },
+    "log": "fleet:results",
+    "description": "bad action",
+    "trigger_rules": [
+      "fleet_bad_action"
+    ],
+    "source": "prefix.cluster.sample.bucket",
+    "service": "s3"
   }
 ]
