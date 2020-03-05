@@ -4,6 +4,7 @@
       "calendarTime": "string",
       "counter": "integer",
       "decorations": {},
+      "log_type": "string",
       "diffResults": {
         "added": [],
         "removed": []
