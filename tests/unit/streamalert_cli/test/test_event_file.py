@@ -30,8 +30,8 @@ TestEventFile = nottest(TestEventFile)
 TestResult = nottest(TestResult)
 
 
-class TestConfigLoading(fake_filesystem_unittest.TestCase):
-    """Test config loading logic with a mocked filesystem."""
+class TestTestEventFile(fake_filesystem_unittest.TestCase):
+    """Test the TestEventFile class"""
 
     _DEFAULT_EVENT_PATH = 'rules/community/unit_test/file.json'
 

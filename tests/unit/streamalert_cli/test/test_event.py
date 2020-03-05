@@ -26,8 +26,8 @@ from tests.unit.streamalert_cli.test.helpers import (
 TestEvent = nottest(TestEvent)
 
 
-class TestConfigLoading:
-    """Test config loading logic with a mocked filesystem."""
+class TestTestEvent:
+    """Test the TestEvent class"""
     # pylint: disable=no-self-use,protected-access
     def setup(self):
         # pylint: disable=attribute-defined-outside-init
