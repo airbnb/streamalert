@@ -66,20 +66,20 @@ class AthenaRefresher:
         config = load_config(include={'lambda.json', 'global.json'})
         prefix = config['global']['account']['prefix']
         athena_config = config['lambda']['athena_partition_refresh_config']
-        file_format = get_data_file_format(config)
+        self._file_format = get_data_file_format(config)
 
-        if file_format == 'parquet':
+        if self._file_format == 'parquet':
             self._alerts_regex = self.ALERTS_REGEX_PARQUET
             self._data_regex = self.DATA_REGEX_PARQUET
 
-        elif file_format == 'json':
+        elif self._file_format == 'json':
             self._alerts_regex = self.ALERTS_REGEX
             self._data_regex = self.DATA_REGEX
         else:
             message = (
                 'file format "{}" is not supported. Supported file format are '
                 '"parquet", "json". Please update the setting in athena_partition_refresh_config '
-                'in "conf/lambda.json"'.format(file_format)
+                'in "conf/lambda.json"'.format(self._file_format)
             )
             raise ConfigError(message)
 
@@ -174,7 +174,14 @@ class AthenaRefresher:
                 # first element in the S3 path, as that's how log types
                 # are configured to send to Firehose.
                 if athena_table != 'alerts':
-                    athena_table = path.split('/')[0]
+                    athena_table = (
+                        # when file_format is json, s3 file path is
+                        #   s3://bucketname/[data-type]/YYYY/MM/DD/hh/*.gz
+                        # when file_format is parquet, s3 file path is
+                        #   s3://bucketname/parquet/[data-type]/dt=YYYY-MM-DD-hh/*.parquet
+                        path.split('/')[1] if self._file_format == 'parquet'
+                        else path.split('/')[0]
+                    )
 
                 # Example:
                 # PARTITION (dt = '2017-01-01-01') LOCATION 's3://bucket/path/'

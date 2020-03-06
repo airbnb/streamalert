@@ -45,8 +45,8 @@ class TestAthenaRefresher:
         """AthenaRefresher - Add Partitions"""
         self._refresher._s3_buckets_and_keys = {
             'unit-test-streamalerts': {
-                b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
-                b'alerts/dt=2020-02-13-08/prefix_streamalert_alert_delivery-0123-abcd.parquet'
+                b'parquet/alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
+                b'parquet/alerts/dt=2020-02-13-08/prefix_streamalert_alert_delivery-01-abcd.parquet'
             },
             'unit-test-streamalert-data': {
                 b'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
@@ -79,43 +79,43 @@ class TestAthenaRefresher:
         expected_result = {
             'alerts': {
                 '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalerts/'
-                                             'alerts/dt=2017-08-26-14\''),
+                                             'parquet/alerts/dt=2017-08-26-14\''),
                 '(dt = \'2017-08-27-14\')': ('\'s3://unit-test-streamalerts/'
-                                             'alerts/dt=2017-08-27-14\''),
+                                             'parquet/alerts/dt=2017-08-27-14\''),
                 '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalerts/'
-                                             'alerts/dt=2017-08-26-15\'')
+                                             'parquet/alerts/dt=2017-08-26-15\'')
             },
             'log_type_1': {
                 '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
-                                             'log_type_1/dt=2017-08-26-14\'')
+                                             'parquet/log_type_1/dt=2017-08-26-14\'')
             },
             'log_type_2': {
                 '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
-                                             'log_type_2/dt=2017-08-26-14\''),
+                                             'parquet/log_type_2/dt=2017-08-26-14\''),
                 '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalert-data/'
-                                             'log_type_2/dt=2017-08-26-15\''),
+                                             'parquet/log_type_2/dt=2017-08-26-15\''),
                 '(dt = \'2017-08-26-16\')': ('\'s3://unit-test-streamalert-data/'
-                                             'log_type_2/dt=2017-08-26-16\''),
+                                             'parquet/log_type_2/dt=2017-08-26-16\''),
             },
             'log_type_3': {
                 '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalert-data/'
-                                             'log_type_3/dt=2017-08-26-14\''),
+                                             'parquet/log_type_3/dt=2017-08-26-14\''),
             }
         }
 
         self._refresher._s3_buckets_and_keys = {
             'unit-test-streamalerts': {
-                b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.parquet',
-                b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
-                b'alerts/dt=2017-08-26-15/rule_name_alerts-1304134918401.parquet'
+                b'parquet/alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.parquet',
+                b'parquet/alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
+                b'parquet/alerts/dt=2017-08-26-15/rule_name_alerts-1304134918401.parquet'
             },
             'unit-test-streamalert-data': {
-                b'log_type_1/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
-                b'log_type_2/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
-                b'log_type_2/dt=2017-08-26-14/test-data-11111-22222-33334.snappy',
-                b'log_type_2/dt=2017-08-26-15/test-data-11111-22222-33333.snappy',
-                b'log_type_2/dt=2017-08-26-16/test-data-11111-22222-33333.snappy',
-                b'log_type_3/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
+                b'parquet/log_type_1/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
+                b'parquet/log_type_2/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
+                b'parquet/log_type_2/dt=2017-08-26-14/test-data-11111-22222-33334.snappy',
+                b'parquet/log_type_2/dt=2017-08-26-15/test-data-11111-22222-33333.snappy',
+                b'parquet/log_type_2/dt=2017-08-26-16/test-data-11111-22222-33333.snappy',
+                b'parquet/log_type_3/dt=2017-08-26-14/test-data-11111-22222-33333.snappy',
             },
             'test-bucket-with-data': {
                 b'dt=2017-08-26-14/rule_name_alerts-1304134918401.parquet',
@@ -153,7 +153,7 @@ class TestAthenaRefresher:
                             'name': 'unit-test-streamalerts'
                         },
                         'object': {
-                            'key': ('alerts/dt=2017-08-{:02d}-'
+                            'key': ('parquet/alerts/dt=2017-08-{:02d}-'
                                     '14/02/test.json'.format(val+1))
                         }
                     }
@@ -171,7 +171,7 @@ class TestAthenaRefresher:
                             'name': 'unit-test-streamalerts'
                         },
                         'object': {
-                            'key': 'alerts/dt=2017-08-01-14/02/test.json_$folder$'
+                            'key': 'parquet/alerts/dt=2017-08-01-14/02/test.json_$folder$'
                         }
                     }
                 }
@@ -206,7 +206,7 @@ class TestAthenaRefresher:
         self._refresher.run(self._create_test_message(1))
         log_mock.assert_called_with(
             'Received notification for object \'%s\' in bucket \'%s\'',
-            'alerts/dt=2017-08-01-14/02/test.json'.encode(),
+            'parquet/alerts/dt=2017-08-01-14/02/test.json'.encode(),
             'unit-test-streamalerts'
         )
 
@@ -217,7 +217,7 @@ class TestAthenaRefresher:
         log_mock.assert_has_calls([
             call(
                 'Skipping placeholder file notification with key: %s',
-                b'alerts/dt=2017-08-01-14/02/test.json_$folder$'
+                b'parquet/alerts/dt=2017-08-01-14/02/test.json_$folder$'
             )
         ])
 
@@ -258,9 +258,9 @@ class TestAthenaRefresherJson:
         expected_result = {
             'alerts': {
                 '(dt = \'2017-08-26-14\')': ('\'s3://unit-test-streamalerts/'
-                                             'alerts/dt=2017-08-26-14\''),
+                                             'parquet/alerts/dt=2017-08-26-14\''),
                 '(dt = \'2017-08-27-14\')': ('\'s3://unit-test-streamalerts/'
-                                             'alerts/dt=2017-08-27-14\''),
+                                             'parquet/alerts/dt=2017-08-27-14\''),
                 '(dt = \'2017-08-26-15\')': ('\'s3://unit-test-streamalerts/'
                                              'alerts/2017/08/26/15\'')
             },
@@ -284,8 +284,8 @@ class TestAthenaRefresherJson:
 
         self._refresher._s3_buckets_and_keys = {
             'unit-test-streamalerts': {
-                b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
-                b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
+                b'parquet/alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
+                b'parquet/alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
                 b'alerts/2017/08/26/15/rule_name_alerts-1304134918401.json'
             },
             'unit-test-streamalert-data': {

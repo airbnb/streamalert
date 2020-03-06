@@ -5,7 +5,22 @@
 //
 
 locals {
-  data_location       = "s3://${var.prefix}-streamalert-data/${var.log_name}"
+  # Athena reads all data stored under the 's3://bucketname/prefix/'. When the file
+  # format is Parquet, Athena would throw "HIVE_CANNOT_OPEN_SPLIT" when there are
+  # *.gz files.
+  # https://docs.aws.amazon.com/athena/latest/ug/tables-location-format.html
+  # So all data in parquet format will be saved s3 bucket with prefix
+  # "s3://bucketname/parquet/[data-type]".
+  s3_path_prefix = "parquet/${var.log_name}"
+}
+
+locals {
+  # Athena reads all data stored under the 's3://bucketname/prefix/'. When the file
+  # format is Parquet, Athena would throw "HIVE_CANNOT_OPEN_SPLIT" when there are
+  # *.gz files.
+  # https://docs.aws.amazon.com/athena/latest/ug/tables-location-format.html
+  # So all data in parquet format will be saved s3 bucket with prefix "alerts/parquet".
+  data_location       = "s3://${var.prefix}-streamalert-data/${local.s3_path_prefix}"
   ser_de_params_key   = var.file_format == "parquet" ? "serialization.format" : "ignore.malformed.json"
   ser_de_params_value = var.file_format == "parquet" ? "1" : "true"
 }
@@ -34,8 +49,8 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
     content {
       role_arn            = var.role_arn
       bucket_arn          = "arn:aws:s3:::${var.s3_bucket_name}"
-      prefix              = "${var.log_name}/dt=!{timestamp:yyyy-MM-dd-HH}/"
-      error_output_prefix = "${var.log_name}/!{firehose:error-output-type}/"
+      prefix              = "${local.s3_path_prefix}/dt=!{timestamp:yyyy-MM-dd-HH}/"
+      error_output_prefix = "${local.s3_path_prefix}/!{firehose:error-output-type}/"
       buffer_size         = var.buffer_size
       buffer_interval     = var.buffer_interval
 
