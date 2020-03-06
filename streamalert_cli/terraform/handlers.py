@@ -20,7 +20,7 @@ import shutil
 
 from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
-from streamalert.shared.utils import get_data_store_format
+from streamalert.shared.utils import get_data_file_format
 from streamalert_cli.athena.handler import create_table, create_log_tables
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
@@ -114,12 +114,12 @@ class TerraformInitCommand(CLICommand):
 
         # we need to manually create the streamalerts table since terraform does not support this
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        if get_data_store_format(config) == 'json':
+        if get_data_file_format(config) == 'json':
             # Terraform v0.12 now supports creating Athena tables. We will support
             # to use terraform aws_glue_catalog_table resource to create table only
-            # when data store_format is set to "parquet" in "athena_partition_refresh_config"
+            # when data file_format is set to "parquet" in "athena_partition_refresh_config"
             #
-            # For "json" store_format, we will continue using Athena DDL query to
+            # For "json" file_format, we will continue using Athena DDL query to
             # create tables. However, this capabity will be faded out in the future
             # release because we want users to take advantage of parquet performance.
             alerts_bucket = firehose_alerts_bucket(config)
@@ -188,10 +188,10 @@ class TerraformBuildCommand(CLICommand):
         if not terraform_generate_handler(config=config):
             return False
 
-        # Will create log tables only when store_format set to "json" and return erlier if
+        # Will create log tables only when file_format set to "json" and return erlier if
         # log tables creation failed.
         # This capabity will be faded out in the future release.
-        if get_data_store_format(config) == 'json' and not create_log_tables(config=config):
+        if get_data_file_format(config) == 'json' and not create_log_tables(config=config):
             return
 
         target_modules, valid = _get_valid_tf_targets(config, options.target)

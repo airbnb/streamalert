@@ -26,7 +26,7 @@ variable "cloudwatch_log_retention" {
   type = number
 }
 
-variable "store_format" {
+variable "file_format" {
   type = string
 }
 

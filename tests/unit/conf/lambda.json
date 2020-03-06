@@ -31,7 +31,7 @@
   "athena_partition_refresh_config": {
     "memory": "128",
     "timeout": "60",
-    "store_format": "parquet"
+    "file_format": "parquet"
   },
   "classifier_config": {},
   "rule_promotion_config": {

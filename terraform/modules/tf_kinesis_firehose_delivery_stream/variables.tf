@@ -14,7 +14,7 @@ variable "buffer_interval" {
   default = 300
 }
 
-variable "store_format" {
+variable "file_format" {
   type        = string
   description = "Either parquet or json"
 }

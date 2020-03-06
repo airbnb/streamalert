@@ -21,9 +21,10 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-from streamalert.shared.utils import get_database_name, get_data_store_format
+from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket, load_config
+from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
 
@@ -65,15 +66,22 @@ class AthenaRefresher:
         config = load_config(include={'lambda.json', 'global.json'})
         prefix = config['global']['account']['prefix']
         athena_config = config['lambda']['athena_partition_refresh_config']
-        store_format = get_data_store_format(config)
+        file_format = get_data_file_format(config)
 
-        if store_format == 'parquet':
+        if file_format == 'parquet':
             self._alerts_regex = self.ALERTS_REGEX_PARQUET
             self._data_regex = self.DATA_REGEX_PARQUET
 
-        else:
+        elif file_format == 'json':
             self._alerts_regex = self.ALERTS_REGEX
             self._data_regex = self.DATA_REGEX
+        else:
+            message = (
+                'file format "{}" is not supported. Supported file format are '
+                '"parquet", "json". Please update the setting in athena_partition_refresh_config '
+                'in "conf/lambda.json"'.format(file_format)
+            )
+            raise ConfigError(message)
 
         self._athena_buckets = self.buckets_from_config(config)
 

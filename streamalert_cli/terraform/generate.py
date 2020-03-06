@@ -17,15 +17,14 @@ from fnmatch import fnmatch
 import json
 import os
 
-from streamalert.shared.config import firehose_alerts_bucket
+from streamalert.shared.config import ConfigError, firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
-from streamalert.shared.utils import get_database_name, get_data_store_format
+from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_alerts_table_schema
 from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
     infinitedict,
-    MisconfigurationError,
     monitoring_topic_name,
     s3_access_logging_bucket,
     terraform_state_bucket,
@@ -595,21 +594,21 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
         message (str): Message will be logged by LOGGER.
     """
     if config_name == 'athena_partition_refresh_config':
-        # Raise MisconfigurationError when user doesn't explicitly set `store_format`
+        # Raise ConfigError when user doesn't explicitly set `file_format`
         # in `athena_partition_refresh_config` in conf/lambda.json when upgrade to v3.1.0.
-        store_format = get_data_store_format(config)
+        file_format = get_data_file_format(config)
 
-        if not store_format or store_format not in ('parquet', 'json'):
+        if not file_format or file_format not in ('parquet', 'json'):
             message = (
                 '[WARNING] '
-                'It is required to explicitly set "store_format" for '
+                'It is required to explicitly set "file_format" for '
                 'athena_partition_refresh_config in "conf/lambda.json" when upgrading to v3.1.0. '
-                'Availble value is "parquet" and "json". For more information, refer to '
+                'Available values are "parquet" and "json". For more information, refer to '
                 'https://github.com/airbnb/streamalert/issues/1143'
-                'In the future release, the default value of "store_format" will '
+                'In the future release, the default value of "file_format" will '
                 'be changed to "parquet".'
             )
-            raise MisconfigurationError(message)
+            raise ConfigError(message)
 
     if not config['lambda'].get(config_name):
         LOGGER.warning('Config for \'%s\' not in lambda.json', config_name)
@@ -655,7 +654,7 @@ def _generate_global_module(config):
         'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout'],
         'sqs_use_prefix': use_prefix,
         'alerts_db_name': get_database_name(config),
-        'alerts_store_format': get_data_store_format(config),
+        'alerts_file_format': get_data_file_format(config),
         'alerts_schema': generate_alerts_table_schema()
     }
 

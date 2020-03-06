@@ -52,7 +52,7 @@
   },
   "athena_partition_refresh_config": {
     "concurrency_limit": 10,
-    "store_format": null,
+    "file_format": null,
     "log_level": "info"
   },
   "classifier_config": {},

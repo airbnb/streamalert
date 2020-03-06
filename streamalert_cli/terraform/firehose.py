@@ -15,7 +15,7 @@ limitations under the License.
 """
 from streamalert.classifier.clients import FirehoseClient
 from streamalert.shared.config import firehose_data_bucket
-from streamalert.shared.utils import get_database_name, get_data_store_format
+from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_data_table_schema
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
@@ -64,12 +64,12 @@ def generate_firehose(logging_bucket, main_dict, config):
         module_dict = {
             'source': './modules/tf_kinesis_firehose_delivery_stream',
             'buffer_size': (
-                firehose_conf.get('buffer_size', 128)
+                firehose_conf.get('buffer_size')
             ),
             'buffer_interval': (
                 firehose_conf.get('buffer_interval', 300)
             ),
-            'store_format': get_data_store_format(config),
+            'file_format': get_data_file_format(config),
             'use_prefix': firehose_conf.get('use_prefix', True),
             'prefix': prefix,
             'log_name': log_stream_name,

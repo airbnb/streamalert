@@ -1,6 +1,6 @@
 {
   "athena_partition_refresh_config": {
-    "store_format": "json",
+    "file_format": "json",
     "memory": "128",
     "timeout": "60"
   }

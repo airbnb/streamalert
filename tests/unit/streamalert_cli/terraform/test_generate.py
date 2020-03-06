@@ -23,8 +23,8 @@ from nose.tools import (
     assert_true
 )
 
+from streamalert.shared.exceptions import ConfigError
 from streamalert_cli.config import CLIConfig
-from streamalert_cli.terraform.common import MisconfigurationError
 from streamalert_cli.terraform import (
     common,
     cloudtrail,
@@ -783,12 +783,12 @@ class TestTerraformGenerate:
         assert_equal(result['module']['globals']['source'], './modules/tf_globals')
         assert_false(result['module']['globals']['sqs_use_prefix'])
 
-    def test_generate_main_store_format_unspecified(self):
-        "CLI - Terraform Generate Main raises error when store_format unspecified"
-        self.config['lambda']['athena_partition_refresh_config']['store_format'] = None
+    def test_generate_main_file_format_unspecified(self):
+        "CLI - Terraform Generate Main raises error when file_format unspecified"
+        self.config['lambda']['athena_partition_refresh_config']['file_format'] = None
 
         assert_raises(
-            MisconfigurationError,
+            ConfigError,
             generate.generate_global_lambda_settings,
             config=self.config,
             config_name='athena_partition_refresh_config',
@@ -797,12 +797,12 @@ class TestTerraformGenerate:
             message='test message'
         )
 
-    def test_generate_main_store_format_misconfigured(self):
-        "CLI - Terraform Generate Main raises error when store_format misconfigured"
-        self.config['lambda']['athena_partition_refresh_config']['store_format'] = 'Parquet'
+    def test_generate_main_file_format_misconfigured(self):
+        "CLI - Terraform Generate Main raises error when file_format misconfigured"
+        self.config['lambda']['athena_partition_refresh_config']['file_format'] = 'Parquet'
 
         assert_raises(
-            MisconfigurationError,
+            ConfigError,
             generate.generate_global_lambda_settings,
             config=self.config,
             config_name='athena_partition_refresh_config',

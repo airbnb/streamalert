@@ -151,6 +151,9 @@ def unique_values_from_query(query_result):
 def format_schema_tf(schema):
     """Format schema for an Athena table for terraform.
 
+    Args:
+        schema (dict): Equivalent Athena schema used for generating create table statement
+
     Returns:
         formatted_schema (list(tuple))
     """

@@ -46,7 +46,7 @@ variable "alerts_table_write_capacity" {
 
 variable "alerts_db_name" {}
 
-variable "alerts_store_format" {
+variable "alerts_file_format" {
   type        = string
   description = "Either parquet or json"
 }

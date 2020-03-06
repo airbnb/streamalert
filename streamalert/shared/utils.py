@@ -156,7 +156,7 @@ def get_database_name(config):
 
     return athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
-def get_data_store_format(config):
+def get_data_file_format(config):
     """Get the data store format using the current config settings
     Args:
         config (CLIConfig): Loaded StreamAlert config
@@ -165,4 +165,4 @@ def get_data_store_format(config):
     """
     athena_config = config['lambda'].get('athena_partition_refresh_config', {})
 
-    return athena_config.get('store_format', None)
+    return athena_config.get('file_format', None)

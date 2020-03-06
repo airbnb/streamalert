@@ -6,17 +6,17 @@
 
 locals {
   data_location       = "s3://${var.prefix}-streamalert-data/${var.log_name}"
-  ser_de_params_key   = var.store_format == "parquet" ? "serialization.format" : "ignore.malformed.json"
-  ser_de_params_value = var.store_format == "parquet" ? "1" : "true"
+  ser_de_params_key   = var.file_format == "parquet" ? "serialization.format" : "ignore.malformed.json"
+  ser_de_params_value = var.file_format == "parquet" ? "1" : "true"
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
   name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_data_${var.log_name}"
-  destination = var.store_format == "parquet" ? "extended_s3" : "s3"
+  destination = var.file_format == "parquet" ? "extended_s3" : "s3"
 
   // AWS Firehose Stream for data to S3 and saved in JSON format
   dynamic "s3_configuration" {
-    for_each = var.store_format == "parquet" ? [] : [var.store_format]
+    for_each = var.file_format == "parquet" ? [] : [var.file_format]
     content {
       role_arn           = var.role_arn
       bucket_arn         = "arn:aws:s3:::${var.s3_bucket_name}"
@@ -30,7 +30,7 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
 
   // AWS Firehose Stream for data to S3 and saved in Parquet format
   dynamic "extended_s3_configuration" {
-    for_each = var.store_format == "parquet" ? [var.store_format] : []
+    for_each = var.file_format == "parquet" ? [var.file_format] : []
     content {
       role_arn            = var.role_arn
       bucket_arn          = "arn:aws:s3:::${var.s3_bucket_name}"
@@ -97,7 +97,7 @@ resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
 
 // data athena table
 resource "aws_glue_catalog_table" "data" {
-  count         = var.store_format == "parquet" ? 1 : 0
+  count         = var.file_format == "parquet" ? 1 : 0
   name          = var.log_name
   database_name = var.glue_catalog_db_name
 
@@ -115,12 +115,12 @@ resource "aws_glue_catalog_table" "data" {
 
   storage_descriptor {
     location      = local.data_location
-    input_format  = var.store_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat" : "org.apache.hadoop.mapred.TextInputFormat"
-    output_format = var.store_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat" : "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+    input_format  = var.file_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat" : "org.apache.hadoop.mapred.TextInputFormat"
+    output_format = var.file_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat" : "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
 
     ser_de_info {
-      name                  = "${var.store_format}_ser_de"
-      serialization_library = var.store_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe" : "org.openx.data.jsonserde.JsonSerDe"
+      name                  = "${var.file_format}_ser_de"
+      serialization_library = var.file_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe" : "org.openx.data.jsonserde.JsonSerDe"
       parameters            = map(local.ser_de_params_key, local.ser_de_params_value)
     }
 
