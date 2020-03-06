@@ -21,8 +21,10 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
+from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket, load_config
+from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
 
@@ -36,17 +38,26 @@ class AthenaRefreshError(Exception):
 class AthenaRefresher:
     """Handle polling an SQS queue and running Athena queries for updating tables"""
 
-    STREAMALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
+    ALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
+                              r'\-(?P<month>\d{2})'
+                              r'\-(?P<day>\d{2})'
+                              r'\-(?P<hour>\d{2})'
+                              r'\/.*.json')
+    DATA_REGEX = re.compile(r'(?P<year>\d{4})'
+                            r'\/(?P<month>\d{2})'
+                            r'\/(?P<day>\d{2})'
+                            r'\/(?P<hour>\d{2})\/.*')
+
+    ALERTS_REGEX_PARQUET = re.compile(r'alerts/dt=(?P<year>\d{4})'
+                                      r'\-(?P<month>\d{2})'
+                                      r'\-(?P<day>\d{2})'
+                                      r'\-(?P<hour>\d{2})'
+                                      r'\/.*.parquet')
+    DATA_REGEX_PARQUET = re.compile(r'dt=(?P<year>\d{4})'
                                     r'\-(?P<month>\d{2})'
                                     r'\-(?P<day>\d{2})'
-                                    r'\-(?P<hour>\d{2})'
-                                    r'\/.*.json')
-    FIREHOSE_REGEX = re.compile(r'(?P<year>\d{4})'
-                                r'\/(?P<month>\d{2})'
-                                r'\/(?P<day>\d{2})'
-                                r'\/(?P<hour>\d{2})\/.*')
+                                    r'\-(?P<hour>\d{2})\/.*')
 
-    STREAMALERT_DATABASE = '{}_streamalert'
     ATHENA_S3_PREFIX = 'athena_partition_refresh'
 
     _ATHENA_CLIENT = None
@@ -55,13 +66,26 @@ class AthenaRefresher:
         config = load_config(include={'lambda.json', 'global.json'})
         prefix = config['global']['account']['prefix']
         athena_config = config['lambda']['athena_partition_refresh_config']
+        self._file_format = get_data_file_format(config)
+
+        if self._file_format == 'parquet':
+            self._alerts_regex = self.ALERTS_REGEX_PARQUET
+            self._data_regex = self.DATA_REGEX_PARQUET
+
+        elif self._file_format == 'json':
+            self._alerts_regex = self.ALERTS_REGEX
+            self._data_regex = self.DATA_REGEX
+        else:
+            message = (
+                'file format "{}" is not supported. Supported file format are '
+                '"parquet", "json". Please update the setting in athena_partition_refresh_config '
+                'in "conf/lambda.json"'.format(self._file_format)
+            )
+            raise ConfigError(message)
 
         self._athena_buckets = self.buckets_from_config(config)
 
-        db_name = athena_config.get(
-            'database_name',
-            self.STREAMALERT_DATABASE.format(prefix)
-        )
+        db_name = get_database_name(config)
 
         # Get the S3 bucket to store Athena query results
         results_bucket = athena_config.get(
@@ -131,7 +155,7 @@ class AthenaRefresher:
             for key in keys:
                 match = None
                 key = key.decode('utf-8')
-                for pattern in (self.FIREHOSE_REGEX, self.STREAMALERTS_REGEX):
+                for pattern in (self._data_regex, self._alerts_regex):
                     match = pattern.search(key)
                     if match:
                         break
@@ -150,7 +174,14 @@ class AthenaRefresher:
                 # first element in the S3 path, as that's how log types
                 # are configured to send to Firehose.
                 if athena_table != 'alerts':
-                    athena_table = path.split('/')[0]
+                    athena_table = (
+                        # when file_format is json, s3 file path is
+                        #   s3://bucketname/[data-type]/YYYY/MM/DD/hh/*.gz
+                        # when file_format is parquet, s3 file path is
+                        #   s3://bucketname/parquet/[data-type]/dt=YYYY-MM-DD-hh/*.parquet
+                        path.split('/')[1] if self._file_format == 'parquet'
+                        else path.split('/')[0]
+                    )
 
                 # Example:
                 # PARTITION (dt = '2017-01-01-01') LOCATION 's3://bucket/path/'

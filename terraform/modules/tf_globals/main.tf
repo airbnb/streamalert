@@ -6,9 +6,11 @@ module "alerts_firehose" {
   buffer_size              = var.alerts_firehose_buffer_size
   buffer_interval          = var.alerts_firehose_buffer_interval
   cloudwatch_log_retention = var.alerts_firehose_cloudwatch_log_retention
-  compression_format       = var.alerts_firehose_compression_format
   kms_key_arn              = var.kms_key_arn
   bucket_name              = var.alerts_firehose_bucket_name == "" ? "${var.prefix}-streamalerts" : var.alerts_firehose_bucket_name
+  alerts_db_name           = var.alerts_db_name
+  file_format              = var.alerts_file_format
+  alerts_schema            = var.alerts_schema
 }
 
 module "classifier_queue" {

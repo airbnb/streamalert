@@ -264,10 +264,10 @@ If not, look for any errors in the CloudWatch Logs for the StreamAlert Lambda fu
 `Amazon Athena <https://console.aws.amazon.com/athena>`_. Select your StreamAlert database in the
 dropdown on the left and preview the ``alerts`` table:
 
-.. figure:: ../images/alerts-query.png
+.. figure:: ../images/athena-alerts-search.png
   :alt: Query Alerts Table in Athena
   :align: center
-  :target: _images/alerts-query.png
+  :target: _images/athena-alerts-search.png
 
 (Here, my name prefix is ``testv2``.) If no records are returned, look for errors
 in the ``athena_partition_refresh`` function or try invoking it directly.

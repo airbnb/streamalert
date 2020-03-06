@@ -264,7 +264,7 @@ The following table provides an overview of each rule option, with more details 
 :outputs:
 
   The ``outputs`` keyword argument defines the alert destination if the return value of a rule is ``True``.
-  Alerts are always sent to an :ref:`Athena table <athena_user_guide>` which is easy to query.
+  Alerts are always sent to an :ref:`Athena alerts table <alerts_search>` which is easy to query.
   Any number of additional `outputs <outputs.html>`_ can be specified.
 
 :req_subkeys:

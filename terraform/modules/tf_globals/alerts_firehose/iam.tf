@@ -51,6 +51,27 @@ data "aws_iam_policy_document" "firehose_s3" {
   }
 }
 
+// IAM Policy: Interact with the Glue Catalog
+resource "aws_iam_role_policy" "stream_alert_firehose_glue" {
+  name = "streamalert_firehose_read_glue_catalog"
+  role = "${aws_iam_role.firehose.id}"
+
+  policy = "${data.aws_iam_policy_document.firehose_glue_catalog.json}"
+}
+
+// IAM Policy Document: Interact with the Glue Catalog
+data "aws_iam_policy_document" "firehose_glue_catalog" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "glue:GetTableVersions"
+    ]
+
+    resources = ["*"]
+  }
+}
+
 // CloudWatch Log Stream: S3Delivery
 resource "aws_cloudwatch_log_stream" "s3_delivery" {
   name           = "S3Delivery"

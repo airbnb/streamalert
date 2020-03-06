@@ -17,6 +17,7 @@ from datetime import datetime
 
 from streamalert.rule_promotion.publisher import StatsPublisher
 from streamalert.rule_promotion.statistic import StagingStatistic
+from streamalert.shared.utils import get_database_name
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import load_config
 from streamalert.shared.logger import get_logger
@@ -30,7 +31,6 @@ class RulePromoter:
     """Run queries to generate statistics on alerts."""
 
     ATHENA_S3_PREFIX = 'rule_promoter'
-    STREAMALERT_DATABASE = '{}_streamalert'
 
     def __init__(self):
         self._config = load_config()
@@ -42,7 +42,7 @@ class RulePromoter:
         athena_config = self._config['lambda']['athena_partition_refresh_config']
 
         # Get the name of the athena database to access
-        db_name = athena_config.get('database_name', self.STREAMALERT_DATABASE.format(prefix))
+        db_name = athena_config.get('database_name', get_database_name(self._config))
 
         # Get the S3 bucket to store Athena query results
         results_bucket = athena_config.get(

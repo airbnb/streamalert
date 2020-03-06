@@ -34,11 +34,6 @@ variable "alerts_firehose_cloudwatch_log_retention" {
   default = 14
 }
 
-variable "alerts_firehose_compression_format" {
-  type    = string
-  default = "GZIP"
-}
-
 variable "alerts_table_read_capacity" {
   type    = number
   default = 5
@@ -47,6 +42,18 @@ variable "alerts_table_read_capacity" {
 variable "alerts_table_write_capacity" {
   type    = number
   default = 5
+}
+
+variable "alerts_db_name" {}
+
+variable "alerts_file_format" {
+  type        = string
+  description = "Either parquet or json"
+}
+
+variable "alerts_schema" {
+  type        = list(tuple([string, string]))
+  description = "Schema used to create Athena alerts table in terraform"
 }
 
 variable "enable_rule_staging" {

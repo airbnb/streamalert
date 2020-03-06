@@ -26,10 +26,18 @@ variable "cloudwatch_log_retention" {
   type = number
 }
 
-variable "compression_format" {
+variable "file_format" {
   type = string
 }
 
 variable "kms_key_arn" {
   type = string
+}
+
+variable "alerts_db_name" {
+  type = string
+}
+
+variable "alerts_schema" {
+  type = list(tuple([string, string]))
 }

@@ -14,9 +14,9 @@ variable "buffer_interval" {
   default = 300
 }
 
-variable "compression_format" {
-  type    = string
-  default = "GZIP"
+variable "file_format" {
+  type        = string
+  description = "Either parquet or json"
 }
 
 variable "log_name" {
@@ -59,4 +59,16 @@ variable "alarm_actions" {
   type        = list(string)
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
+}
+
+variable "glue_catalog_db_name" {
+  type = string
+}
+
+variable "glue_catalog_table_name" {
+  type = string
+}
+
+variable "schema" {
+  type = list(tuple([string, string]))
 }

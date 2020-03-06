@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.athena_partition_refresh.main import AthenaRefresher
 from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert.shared.alert import Alert
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
@@ -32,10 +32,12 @@ LOGGER = get_logger(__name__)
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'PARTITIONED BY (dt string) '
-                          'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
-                          'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\') '
+                          '{file_format} '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
+STORE_FORMAT_JSON = ('ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
+                     'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\')')
 
+STORE_FORMAT_PARQUET = 'STORED AS PARQUET'
 
 class AthenaCommand(CLICommand):
     description = 'Perform actions related to Athena'
@@ -198,10 +200,7 @@ def get_athena_client(config):
     prefix = config['global']['account']['prefix']
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    db_name = athena_config.get(
-        'database_name',
-        AthenaRefresher.STREAMALERT_DATABASE.format(prefix)
-    )
+    db_name = get_database_name(config)
 
     # Get the S3 bucket to store Athena query results
     results_bucket = athena_config.get(
@@ -307,7 +306,7 @@ def drop_all_tables(config):
     return True
 
 
-def _construct_create_table_statement(schema, table_name, bucket):
+def _construct_create_table_statement(schema, table_name, bucket, file_format='parquet'):
     """Convert a dictionary based Athena schema to a Hive DDL statement
 
     Args:
@@ -332,9 +331,12 @@ def _construct_create_table_statement(schema, table_name, bucket):
             )
             schema_statement.append('{0} struct<{1}>'.format(key_name, struct_schema))
 
+
+
     return CREATE_TABLE_STATEMENT.format(
         table_name=table_name,
         schema=', '.join(schema_statement),
+        file_format=STORE_FORMAT_PARQUET if file_format == 'parquet' else STORE_FORMAT_JSON,
         bucket=bucket)
 
 
@@ -376,7 +378,7 @@ def create_table(table, bucket, config, schema_override=None):
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
         LOGGER.info('The \'%s\' table already exists.', sanitized_table_name)
-        return False
+        return True
 
     if table == 'alerts':
         # get a fake alert so we can get the keys needed and their types
@@ -389,7 +391,10 @@ def create_table(table, bucket, config, schema_override=None):
         bucket = bucket or firehose_alerts_bucket(config)
 
         query = _construct_create_table_statement(
-            schema=athena_schema, table_name=table, bucket=bucket
+            schema=athena_schema,
+            table_name=table,
+            bucket=bucket,
+            file_format=get_data_file_format(config)
         )
 
     else:  # all other tables are log types
@@ -431,7 +436,10 @@ def create_table(table, bucket, config, schema_override=None):
                     )
 
         query = _construct_create_table_statement(
-            schema=athena_schema, table_name=sanitized_table_name, bucket=bucket
+            schema=athena_schema,
+            table_name=sanitized_table_name,
+            bucket=bucket,
+            file_format=get_data_file_format(config)
         )
 
     success = athena_client.run_query(query=query)
@@ -451,5 +459,32 @@ def create_table(table, bucket, config, schema_override=None):
             config.write()
 
     LOGGER.info('The %s table was successfully created!', sanitized_table_name)
+
+    return True
+
+
+def create_log_tables(config):
+    """Create all tables needed for historical search
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+    Returns:
+        bool: False if errors occurred, True otherwise
+    """
+    if not config['global']['infrastructure'].get('firehose', {}).get('enabled'):
+        return True
+
+    firehose_config = config['global']['infrastructure']['firehose']
+    firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert-data')
+    firehose_s3_bucket_name = '{}-{}'.format(config['global']['account']['prefix'],
+                                             firehose_s3_bucket_suffix)
+
+    enabled_logs = FirehoseClient.load_enabled_log_sources(
+        config['global']['infrastructure']['firehose'],
+        config['logs']
+    )
+
+    for log_stream_name in enabled_logs:
+        if not create_table(log_stream_name, firehose_s3_bucket_name, config):
+            return False
 
     return True
