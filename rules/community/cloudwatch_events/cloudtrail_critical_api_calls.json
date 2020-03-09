@@ -846,6 +846,24 @@
     "source": "prefix.cluster.sample.bucket",
     "trigger_rules": [
       "cloudtrail_critical_api_calls"
-    ]
+    ],
+    "publisher_tests": {
+      "slack:sample-channel": [
+        {
+          "jmespath_expression": "keys(@)",
+          "condition": "is",
+          "value": [
+            "@slack.text",
+            "@slack.attachments",
+            "@slack._previous_publication"
+          ]
+        },
+        [
+          "\"@slack.text\"",
+          "is",
+          "Rule triggered"
+        ]
+      ]
+    }
   }
 ]
