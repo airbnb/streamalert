@@ -14,6 +14,10 @@ to use the same name as the rule you are testing, but you can choose any name yo
 will help with organization, but you may also create test events to test your rules anywhere within
 the same top-level directory where your rules are stored.
 
+
+Basic Configuration
+===================
+
 Each test event file should contain the following structure:
 
 .. code-block:: json
@@ -36,6 +40,10 @@ Each test event file should contain the following structure:
   ]
 
 .. note:: Multiple tests can be included in one file by adding them to the array above.
+
+
+Specifying Test Data
+====================
 
 When specifying the test data, it can be either of two fields:
 
@@ -106,6 +114,105 @@ Both test events would have the same result, but with much less effort.
   Either ``override_record`` or ``data`` is required in the test event
 
 
+Testing Classification
+======================
+
+Classification tests are always run on each test. Consider these two fields in the test configuration:
+
+.. code-block:: json
+
+  [
+    {
+      "log": "cloudwatch:events",
+      "classify_only": true
+    }
+  ]
+
+
+The ``log`` field in each test specifies the expected classified type of the test record.  The test will fail
+if the classified log type differs.
+
+By default, the test runner will continue on to test rules.  If you only wish to test classification,
+specify ``classify_only`` as ``true``.
+
+
+Testing Rules
+=============
+
+Assuming a test is not ``classify_only``, rules are run after classification. Consider this field in the test file:
+
+.. code-block:: json
+
+  [
+    {
+      "trigger_rules": [
+        "my_first_fake_rule",
+        "my_second_fake_rule"
+      ]
+    }
+  ]
+
+All rules are run on each set of test data.  The ``trigger_rules`` field specifies an array of rule names that should
+be triggered as a result.  An empty array implies that the test data should not trigger any rules.
+
+
+Publisher Tests
+===============
+
+Consider the following rule:
+
+.. code-block:: python
+
+  @rule(
+    logs=['cloudwatch:events'],
+    outputs=['slack:sample-channel'],
+    publishers={'slack': my_publisher}
+  )
+  def my_rule(record):
+    # .. something logic
+    return True
+
+To test the output of the Alert Publisher framework, you can specify ``publisher_tests``. Consider this field:
+
+.. code-block:: json
+
+  [
+    {
+      "trigger_rules": ["my_rule"],
+      "publisher_tests": {
+        "slack:sample-channel": [
+          {
+            "jmespath_expression": "path.to.record",
+            "condition": "is",
+            "value": 4
+          },
+          [ "path.to.other.record", "is", 5 ]
+        ]
+      }
+    }
+  ]
+
+This field is a dictionary, where keys specify outputs to test. Each key's value is an array of publisher tests.
+These tests compare the Alert Publisher's output to a configured expectation.
+
+Each publisher test can be a dict with 3 keys:
+
+- ``jmespath_expression``: A jmespath search expression. This is run on the Alert Publisher output for the given OutputDispatcher.
+- ``condition``: Either "is" or "in", for equality or substring/subset matching, respectively.
+- ``value``: The expected value of the field.
+
+The field that is extract via the ``jmespath_expression`` is tested against the expected value, using the conditional.
+
+
+.. note::
+
+    An alternate shorthand syntax to the above is to specify a triple of strings:
+
+    .. code-block:: json
+
+      ["path.to.field", "is", "value"]
+
+
 Rule Test Reference
 ===================
 =========================  ======================  ========  ===========
@@ -131,6 +238,11 @@ Key                        Type                    Required  Description
                                                              An empty list implies this record should not trigger any alerts
 ``classify_only``          ``boolean``             No        Whether or not the test record should go through the rule processing engine.
                                                              If set to ``true``, this record will only be tested for valid classification
+``publisher_tests``        ``dict``                No        This is a dict of tests to run against the Alert's published representation.
+                                                             The keys of the dict are output descriptors. The values of the dict should be
+                                                             arrays of individual tests. Publisher tests use jmespath to extract values from
+                                                             the final publication dictionary for testing. At least one rule should be triggered,
+                                                             or publisher tests will do nothing.
 =========================  ======================  ========  ===========
 
 For more examples, see the provided default rule tests in ``tests/integration/rules``

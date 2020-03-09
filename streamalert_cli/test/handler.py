@@ -404,7 +404,6 @@ class TestRunner:
 
         return self._failed == 0
 
-
     def _handle_fixtures(self, rule_dir, setup=True):
         path = os.path.join(rule_dir, 'test_fixtures')
         message = '{} fixtures in: %s'.format('Setting up' if setup else 'Tearing down')
@@ -517,19 +516,51 @@ class PublisherTestRunner:
             publisher_test_results = []
             for output, individual_tests in event.publisher_tests.items():
                 for publisher_test in individual_tests:
-                    if not isinstance(publisher_test, list) or len(publisher_test) != 3:
+                    if isinstance(publisher_test, list):
+                        if len(publisher_test) != 3:
+                            publisher_test_results.append({
+                                'success': False,
+                                'error': (
+                                    'Invalid publisher test specified: {}'
+                                    'Publisher test must be a triple with elements: '
+                                    '(jsonpath, condition, condition_value)'
+                                ).format(publisher_test),
+                                'output_descriptor': output,
+                            })
+                            continue
+
+                        jsonpath, condition, condition_value = publisher_test
+                    elif isinstance(publisher_test, dict):
+                        valid_test_syntax = (
+                            'jmespath_expression' in publisher_test and
+                            'condition' in publisher_test and
+                            'value' in publisher_test
+                        )
+                        if not valid_test_syntax:
+                            publisher_test_results.append({
+                                'success': False,
+                                'error': (
+                                    'Invalid publisher test specified: {}'
+                                    'Publisher test must be a dict with keys: '
+                                    '(jmespath_expression, condition, value)'
+                                ).format(publisher_test),
+                                'output_descriptor': output,
+                            })
+                            continue
+
+                        jsonpath = publisher_test['jmespath_expression']
+                        condition = publisher_test['condition']
+                        condition_value = publisher_test['value']
+                    else:
                         publisher_test_results.append({
                             'success': False,
                             'error': (
                                 'Invalid publisher test specified: {}'
-                                'Publisher test must be a triple with elements: '
-                                '(jsonpath, condition, condition_value)'
-                            ).format(publisher_test),
+                                'Publisher test must be list or dict'
+                            ),
                             'output_descriptor': output,
                         })
                         continue
-
-                    jsonpath, condition, condition_value = publisher_test
 
                     if output not in publication_results:
                         publisher_test_results.append({
