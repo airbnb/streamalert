@@ -374,76 +374,8 @@ class TestRunner:
                 )
 
                 if event.publisher_tests:
-                    for alert in event.alerts:
-                        publication_results = self._run_publishers(alert)
-
-                        publisher_test_results = []
-                        for output, individual_tests in event.publisher_tests.items():
-                            for publisher_test in individual_tests:
-                                if not isinstance(publisher_test, list) or len(publisher_test) != 3:
-                                    publisher_test_results.append({
-                                        'success': False,
-                                        'error': (
-                                            'Invalid publisher test specified: {}'
-                                            'Publisher test must be a triple with elements: '
-                                            '(jsonpath, condition, condition_value)'
-                                        ).format(publisher_test),
-                                        'output_descriptor': output,
-                                    })
-                                    continue
-
-                                jsonpath, condition, condition_value = publisher_test
-
-                                if output not in publication_results:
-                                    publisher_test_results.append({
-                                        'success': False,
-                                        'error': (
-                                            'No such output {} was configured for this alert'
-                                        ).format(output),
-                                        'output_descriptor': output,
-                                    })
-                                    continue
-
-                                publication = publication_results[output]['publication']
-
-                                subject_value = jmespath.search(jsonpath, publication)
-
-                                if condition == 'is':
-                                    res = subject_value == condition_value
-                                elif condition == 'in':
-                                    if isinstance(condition_value, list):
-                                        res = subject_value in condition_value
-                                    else:
-                                        res = condition_value.contains(subject_value)
-                                else:
-                                    publisher_test_results.append({
-                                        'success': False,
-                                        'error': (
-                                            'Invalid condition specified: {}\n'
-                                            'Valid conditions are: {}'
-                                        ).format(condition, ['is', 'in']),
-                                        'output_descriptor': output,
-                                    })
-                                    continue
-
-                                publisher_test_results.append({
-                                    'success': res,
-                                    'failure': None if res else (
-                                        'Item at path "{}" {} "{}",\nActual value: "{}"'.format(
-                                            jsonpath,
-                                            (
-                                                "should have been" if condition == 'is'
-                                                else "should have contained"
-                                            ),
-                                            condition_value,
-                                            subject_value
-                                        )
-                                    ),
-                                    'output_descriptor': output
-                                })
-
-                        event.set_publication_results(publisher_test_results)
-
+                    runner = PublisherTestRunner()
+                    runner.run_publisher_tests(event)
 
                 if self._type == self.Types.LIVE:
                     for alert in event.alerts:
@@ -472,37 +404,6 @@ class TestRunner:
 
         return self._failed == 0
 
-    @staticmethod
-    def _run_publishers(alert):
-        """Runs publishers for all currently configured outputs on the given alert
-
-        Args:
-            - alert (Alert): The alert
-
-        Returns:
-            dict: A dict keyed by output:descriptor strings, mapped to nested dicts.
-                self._rules_engine._lookup_tables  The nested dicts have 2 keys:
-                  - publication (dict): The dict publication
-                  - success (bool): True if the publishing finished, False if it errored.
-        """
-        configured_outputs = alert.outputs
-
-        results = {}
-        for configured_output in configured_outputs:
-            [output_name, descriptor] = configured_output.split(':')
-
-            try:
-                output = MagicMock(spec=OutputDispatcher, __service__=output_name)
-                results[configured_output] = {
-                    'publication': compose_alert(alert, output, descriptor),
-                    'success': True,
-                }
-            except (RuntimeError, TypeError, NameError) as err:
-                results[configured_output] = {
-                    'success': False,
-                    'error': err,
-                }
-        return results
 
     def _handle_fixtures(self, rule_dir, setup=True):
         path = os.path.join(rule_dir, 'test_fixtures')
@@ -589,3 +490,119 @@ class TestRunner:
             yield root, files
 
         self._teardown_all_fixtures(cached_fixtures)
+
+
+class PublisherTestRunner:
+    PUBLISHER_CONDITIONALS = {
+        'is': {
+            'comparator': lambda subject, predicate: subject == predicate,
+            'clause': 'should have been',
+        },
+        'in': {
+            'comparator': lambda s, p: s in p if isinstance(p, list) else p.contains(s),
+            'clause': 'should have contained'
+        }
+    }
+
+    def run_publisher_tests(self, event):
+        """
+        Runs all publishers and compares their results to the suite of configured publisher tests.
+
+        Args:
+            - event (TestEvent): The integration test
+        """
+        for alert in event.alerts:
+            publication_results = self._run_publishers(alert)
+
+            publisher_test_results = []
+            for output, individual_tests in event.publisher_tests.items():
+                for publisher_test in individual_tests:
+                    if not isinstance(publisher_test, list) or len(publisher_test) != 3:
+                        publisher_test_results.append({
+                            'success': False,
+                            'error': (
+                                'Invalid publisher test specified: {}'
+                                'Publisher test must be a triple with elements: '
+                                '(jsonpath, condition, condition_value)'
+                            ).format(publisher_test),
+                            'output_descriptor': output,
+                        })
+                        continue
+
+                    jsonpath, condition, condition_value = publisher_test
+
+                    if output not in publication_results:
+                        publisher_test_results.append({
+                            'success': False,
+                            'error': (
+                                'No such output {} was configured for this alert'
+                            ).format(output),
+                            'output_descriptor': output,
+                        })
+                        continue
+
+                    publication = publication_results[output]['publication']
+
+                    subject_value = jmespath.search(jsonpath, publication)
+
+                    conditional = self.PUBLISHER_CONDITIONALS.get(condition, None)
+
+                    if not conditional:
+                        publisher_test_results.append({
+                            'success': False,
+                            'error': (
+                                'Invalid condition specified: {}\n'
+                                'Valid conditions are: {}'
+                            ).format(condition, list(self.PUBLISHER_CONDITIONALS.keys())),
+                            'output_descriptor': output,
+                        })
+                        continue
+
+                    res = conditional['comparator'](subject_value, condition_value)
+
+                    publisher_test_results.append({
+                        'success': res,
+                        'failure': None if res else (
+                            'Item at path "{}" {} "{}",\nActual value: "{}"'.format(
+                                jsonpath,
+                                conditional['clause'],
+                                condition_value,
+                                subject_value
+                            )
+                        ),
+                        'output_descriptor': output
+                    })
+
+            event.set_publication_results(publisher_test_results)
+
+    @staticmethod
+    def _run_publishers(alert):
+        """Runs publishers for all currently configured outputs on the given alert
+
+        Args:
+            - alert (Alert): The alert
+
+        Returns:
+            dict: A dict keyed by output:descriptor strings, mapped to nested dicts.
+                self._rules_engine._lookup_tables  The nested dicts have 2 keys:
+                  - publication (dict): The dict publication
+                  - success (bool): True if the publishing finished, False if it errored.
+        """
+        configured_outputs = alert.outputs
+
+        results = {}
+        for configured_output in configured_outputs:
+            [output_name, descriptor] = configured_output.split(':')
+
+            try:
+                output = MagicMock(spec=OutputDispatcher, __service__=output_name)
+                results[configured_output] = {
+                    'publication': compose_alert(alert, output, descriptor),
+                    'success': True,
+                }
+            except (RuntimeError, TypeError, NameError) as err:
+                results[configured_output] = {
+                    'success': False,
+                    'error': err,
+                }
+        return results
