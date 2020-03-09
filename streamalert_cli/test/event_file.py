@@ -27,7 +27,7 @@ class TestEventFile:
 
     def __init__(self, full_path):
         self._full_path = full_path
-        self._results = []  # type: streamalert_cli.test.results.TestResult
+        self._results = []  # type: list[streamalert_cli.test.results.TestResult]
         self.error = None
 
     def __bool__(self):

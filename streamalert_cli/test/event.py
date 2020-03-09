@@ -31,7 +31,9 @@ class TestEvent:
 
     ACCEPTABLE_DATA_KEYS = {'data', 'override_record'}
     REQUIRED_KEYS = {'description', 'log', 'service', 'source'}
-    OPTIONAL_KEYS = {'compress', 'trigger_rules', 'classify_only', 'skip_publishers'}
+    OPTIONAL_KEYS = {
+        'compress', 'trigger_rules', 'classify_only', 'skip_publishers', 'publisher_tests'
+    }
 
     def __init__(self, test_data):
         self._event = test_data
@@ -80,6 +82,10 @@ class TestEvent:
     @property
     def skip_publishers(self):
         return self._event.get('skip_publishers', False)
+
+    @property
+    def publisher_tests(self):
+        return [] if self.skip_publishers else self._event.get('publisher_tests', [])
 
     @property
     def is_valid(self):

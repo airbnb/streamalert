@@ -152,7 +152,7 @@ class TestResult(TestEvent):
 
             num_pass = 0
             num_total = 0
-            for num_total, result in enumerate(self._publication_results.values(), start=1):
+            for num_total, result in enumerate(self._publication_results, start=1):
                 num_pass += 1 if result['success'] else 0
 
             fmt['publishers_status'] = (
@@ -307,7 +307,7 @@ class TestResult(TestEvent):
         if not self.publisher_tests_were_run:
             return False
 
-        for _, result in self._publication_results.items():
+        for result in self._publication_results:
             if not result['success']:
                 return False
 
@@ -325,9 +325,17 @@ class TestResult(TestEvent):
             return []
 
         return [
-            "{}: ({}) {}".format(output_descriptor, type(item['error']).__name__, item['error'])
-            for output_descriptor, item
-            in self._publication_results.items()
+            "{}: {}".format(
+                item['output_descriptor'],
+                "({}) {}".format(
+                    type(item['error']).__name__,
+                    item['error']
+                )
+                if 'error' in item
+                else item['failure']
+            )
+            for item
+            in self._publication_results
             if not item['success']
         ]
 
@@ -370,6 +378,19 @@ class TestResult(TestEvent):
         self._classified_result = classified_result[0] if classified_result else None
 
     def set_publication_results(self, publication_results):
+        """
+
+        Params
+            publication_results (list[dict]):
+                A list of dictionaries that describe the result of running publications tests.
+                Each dictionary should contain the following:
+
+                - output_descriptor: The output the test is run on
+                - expectation: String describing the test: (e.g. "[$.slack] should be value")
+                - error: If an ERROR was encountered, this is the error
+                - failure: If the test did not pass, describe why
+                - success: True if test passed. False otherwise.
+        """
         self._publication_results = publication_results
 
     def add_live_test_result(self, rule_name, result):

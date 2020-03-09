@@ -1,4 +1,5 @@
 """Alert on destructive AWS API calls."""
+from publishers.community.slack.slack_layout import Summary, AttachRuleInfo, AttachFullRecord
 from streamalert.shared.rule import rule
 
 _CRITICAL_EVENTS = {
@@ -53,7 +54,13 @@ AWS_ORG_EVENTS = {
 }
 
 
-@rule(logs=['cloudtrail:events'])
+@rule(
+    logs=['cloudtrail:events'],
+    outputs=['slack:sample-channel'],
+    publishers={
+        'slack': [Summary, AttachRuleInfo, AttachFullRecord]
+    }
+)
 def cloudtrail_critical_api_calls(rec):
     """
     author:           airbnb_csirt

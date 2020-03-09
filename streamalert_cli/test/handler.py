@@ -17,6 +17,7 @@ import argparse
 from collections import defaultdict
 import os
 
+import jmespath
 from mock import patch, MagicMock
 
 from streamalert.alert_processor import main as alert_processor
@@ -372,10 +373,77 @@ class TestRunner:
                     event.classified_log.sqs_messages
                 )
 
-                if not event.skip_publishers:
+                if event.publisher_tests:
                     for alert in event.alerts:
                         publication_results = self._run_publishers(alert)
-                        event.set_publication_results(publication_results)
+
+                        publisher_test_results = []
+                        for output, individual_tests in event.publisher_tests.items():
+                            for publisher_test in individual_tests:
+                                if not isinstance(publisher_test, list) or len(publisher_test) != 3:
+                                    publisher_test_results.append({
+                                        'success': False,
+                                        'error': (
+                                            'Invalid publisher test specified: {}'
+                                            'Publisher test must be a triple with elements: '
+                                            '(jsonpath, condition, condition_value)'
+                                        ).format(publisher_test),
+                                        'output_descriptor': output,
+                                    })
+                                    continue
+
+                                jsonpath, condition, condition_value = publisher_test
+
+                                if output not in publication_results:
+                                    publisher_test_results.append({
+                                        'success': False,
+                                        'error': (
+                                            'No such output {} was configured for this alert'
+                                        ).format(output),
+                                        'output_descriptor': output,
+                                    })
+                                    continue
+
+                                publication = publication_results[output]['publication']
+
+                                subject_value = jmespath.search(jsonpath, publication)
+
+                                if condition == 'is':
+                                    res = subject_value == condition_value
+                                elif condition == 'in':
+                                    if isinstance(condition_value, list):
+                                        res = subject_value in condition_value
+                                    else:
+                                        res = condition_value.contains(subject_value)
+                                else:
+                                    publisher_test_results.append({
+                                        'success': False,
+                                        'error': (
+                                            'Invalid condition specified: {}\n'
+                                            'Valid conditions are: {}'
+                                        ).format(condition, ['is', 'in']),
+                                        'output_descriptor': output,
+                                    })
+                                    continue
+
+                                publisher_test_results.append({
+                                    'success': res,
+                                    'failure': None if res else (
+                                        'Item at path "{}" {} "{}",\nActual value: "{}"'.format(
+                                            jsonpath,
+                                            (
+                                                "should have been" if condition == 'is'
+                                                else "should have contained"
+                                            ),
+                                            condition_value,
+                                            subject_value
+                                        )
+                                    ),
+                                    'output_descriptor': output
+                                })
+
+                        event.set_publication_results(publisher_test_results)
+
 
                 if self._type == self.Types.LIVE:
                     for alert in event.alerts:
