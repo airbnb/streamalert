@@ -550,7 +550,7 @@ class SESOutput(OutputDispatcher):
         default_subject = "{} triggered alert {}".format(
             alert.rule_name, alert.alert_id
         )
-        default_body = "Please review the attached record.json"
+        default_body = "Please review the attached json record"
 
         # Presentation values
         subject = publication.get("@aws-ses.subject", default_subject)
@@ -566,7 +566,8 @@ class SESOutput(OutputDispatcher):
         # Attach the record to the email
         if publication.get("@aws-ses.attach_record", True):
             record = json.dumps(alert.record, sort_keys=True, indent=2)
-            msg = cls._add_attachment(msg, "record.json", record)
+            record_name = publication.get("@aws-ses.record_name", "record")
+            msg = cls._add_attachment(msg, f"{record_name}.json", record)
 
         # Attach additional attachments to the email
         if "@aws-ses.attachments" in publication:
@@ -621,6 +622,8 @@ class SESOutput(OutputDispatcher):
             - @aws-ses.attach_record (bool):
                 True (default): Attach the alert.record to the email
                 False: Don't attach the alert.record to the email
+            - @aws-ses.record_name (str):
+                Replaces the default record name
             - @aws-ses.attachments (dict):
                 A dict of attachments to include in the message.
             - @aws-ses.body (str):

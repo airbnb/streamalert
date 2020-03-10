@@ -356,6 +356,26 @@ class TestSESOutput:
             # Raise an error if no payload of type MIMEApplication is found
             raise AssertionError
 
+    def test_different_attachment_name(self):
+        """SESOutput - Test renamed attachment"""
+        rule_name = 'test_different_attachment_name'
+
+        alert = get_random_alert(10, rule_name, omit_rule_desc=True)
+        output = MagicMock(spec=SESOutput)
+        alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
+        alert_publication['@aws-ses.record_name'] = "test-record"
+        msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
+
+        # Verify attachment name
+        payloads = msg.get_payload()
+        for payload in payloads:
+            if isinstance(payload, MIMEApplication):
+                assert_equal(payload.get_filename(), "test-record.json")
+                break
+        else:
+            # Raise an error if no payload of type MIMEApplication is found
+            raise AssertionError
+
     def test_no_attachment(self):
         """SESOutput - No attachment"""
         rule_name = 'test_no_attachment'
@@ -372,7 +392,7 @@ class TestSESOutput:
 
         # Verify no attachment
         assert_equal(len(payloads), 1)
-        assert_equal(payloads[0].get_payload(), "Please review the attached record.json")
+        assert_equal(payloads[0].get_payload(), "Please review the attached json record")
 
     def test_add_multiple_attachments(self):
         """SESOutput - Multiple attachments"""
