@@ -903,6 +903,23 @@
           "is",
           "Alert Id"
         ]
+      ],
+      "pagerduty:sample-integration": [
+        [
+          "\"@pagerduty.description\"",
+          "is",
+          "cloudtrail_critical_api_calls"
+        ],
+        [
+          "\"@pagerduty.details\".eventName",
+          "contains",
+          "DisableEbsEncryptionByDefault"
+        ],
+        [
+          "\"@pagerduty.details\".eventSource",
+          "contains",
+          "ec2.amazonaws.com"
+        ]
       ]
     }
   }
