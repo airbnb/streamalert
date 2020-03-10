@@ -862,6 +862,46 @@
           "\"@slack.text\"",
           "is",
           "Rule triggered"
+        ],
+        [
+          "\"@slack.attachments\"[0].title",
+          "is",
+          "cloudtrail_critical_api_calls"
+        ],
+        [
+          "\"@slack.attachments\"[0].title_link",
+          "is",
+          "https://github.com/airbnb/streamalert/search?q=cloudtrail_critical_api_calls+path%3A%2Frules"
+        ],
+        [
+          "\"@slack.attachments\"[1].fields[0].title",
+          "is",
+          "Reference"
+        ],
+        [
+          "\"@slack.attachments\"[1].fields[0].value",
+          "is",
+          "https://medium.com/@robwitoff/proactive-cloud-security-w-aws-organizations-d58695bcae16#.tx2e6iju0"
+        ],
+        [
+          "\"@slack.attachments\"[2].title",
+          "is",
+          "Record"
+        ],
+        [
+          "\"@slack.attachments\"[2].text",
+          "contains",
+          "\"requestId\": \"19a19cd8-5f1b-4d5e-8af4-3e826fa03d0f\""
+        ],
+        [
+          "\"@slack.attachments\"[2].author",
+          "is",
+          "prefix.cluster.sample.bucket"
+        ],
+        [
+          "\"@slack.attachments\"[2].fields[0].title",
+          "is",
+          "Alert Id"
         ]
       ]
     }

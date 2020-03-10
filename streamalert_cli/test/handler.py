@@ -499,6 +499,10 @@ class PublisherTestRunner:
         },
         'in': {
             'comparator': lambda s, p: s in p if isinstance(p, list) else p.contains(s),
+            'clause': 'should have been one of'
+        },
+        'contains': {
+            'comparator': lambda s, p: p in s,
             'clause': 'should have contained'
         }
     }
