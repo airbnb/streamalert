@@ -22,7 +22,9 @@ import zlib
 from mock import patch
 
 from streamalert.classifier.parsers import ParserBase
+from streamalert.shared import rule
 from streamalert.shared.logger import get_logger
+from streamalert_cli.test.mocks import LookupTableMocks, ThreatIntelMocks
 
 LOGGER = get_logger(__name__)
 
@@ -32,7 +34,12 @@ class TestEvent:
     ACCEPTABLE_DATA_KEYS = {'data', 'override_record'}
     REQUIRED_KEYS = {'description', 'log', 'service', 'source'}
     OPTIONAL_KEYS = {
-        'compress', 'trigger_rules', 'classify_only', 'skip_publishers', 'publisher_tests'
+        'compress',
+        'trigger_rules',
+        'classify_only',
+        'skip_publishers',
+        'publisher_tests',
+        'test_fixtures',
     }
 
     def __init__(self, test_data):
@@ -67,7 +74,8 @@ class TestEvent:
     def source(self):
         return self._event['source']
 
-    # The 'compress', 'trigger_rules', 'classify_only', and 'skip_publishers' keys are optional
+    # The 'compress', 'trigger_rules', 'classify_only', 'skip_publishers',
+    # and 'test_fixtures' keys are optional
     @property
     def compress(self):
         return self._event.get('compress', False)
@@ -88,6 +96,17 @@ class TestEvent:
     def publisher_tests(self):
         return [] if self.skip_publishers else self._event.get('publisher_tests', [])
 
+    @property
+    def test_fixtures(self):
+        return self._event.get('test_fixtures', {})
+
+    @property
+    def lookup_table_fixtures(self):
+        return self.test_fixtures.get('lookup_tables', {})
+
+    @property
+    def threat_intel_fixtures(self):
+        return self.test_fixtures.get('threat_intel', {})
 
     @property
     def suppressed(self):
@@ -148,12 +167,20 @@ class TestEvent:
         self.suppressed = not bool(expected_rules.intersection(rules))
         return not self.suppressed
 
+    def setup_fixtures(self):
+        LOGGER.debug('Setting up fixtures')
+        LookupTableMocks.add_fixtures(self.lookup_table_fixtures)
+        ThreatIntelMocks.add_fixtures(self.threat_intel_fixtures)
+
     def prepare(self, config):
         if not self.is_valid:
             return False
 
         if not self.format_test_record(config):
             return False
+
+        # Apply any fixtures needed for this test event
+        self.setup_fixtures()
 
         return True
 

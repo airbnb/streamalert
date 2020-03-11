@@ -258,16 +258,14 @@ class TestRunner:
         """Create a fresh rules engine and process the record, returning the result"""
         return rules_engine.RulesEngine(*dirs)
 
-    def _run_rules_engine(self, test_file_dir, record):
+    def _run_rules_engine(self, record):
         """Create a fresh rules engine and process the record, returning the result"""
         with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock:
-            ti_mock.side_effect = ThreatIntelMocks.get_mock_values(test_file_dir)
+            ti_mock.side_effect = ThreatIntelMocks.get_mock_values
 
             # pylint: disable=protected-access
             self._rules_engine._lookup_tables._tables.clear()
-            for table in LookupTableMocks.get_mock_values(test_file_dir):
-                if table.table_name in self._rules_engine._lookup_tables._tables:
-                    continue
+            for table in LookupTableMocks.get_mock_values():
                 self._rules_engine._lookup_tables._tables[table.table_name] = table
 
             return self._rules_engine.run(records=record)
@@ -353,12 +351,8 @@ class TestRunner:
 
             self._tested_rules.update(event.expected_rules)
 
-            test_file_dir = os.path.dirname(test_file_path) + os.path.sep
             if self._type in {self.Types.RULES, self.Types.LIVE}:
-                event.alerts = self._run_rules_engine(
-                    test_file_dir,
-                    event.classified_log.sqs_messages
-                )
+                event.alerts = self._run_rules_engine(event.classified_log.sqs_messages)
 
                 if event.publisher_tests:
                     runner = PublisherTestRunner()
@@ -392,80 +386,13 @@ class TestRunner:
 
         return self._failed == 0
 
-    def _handle_fixtures(self, rule_dir, setup=True):
-        path = os.path.join(rule_dir, 'test_fixtures')
-        message = '{} fixtures in: %s'.format('Setting up' if setup else 'Tearing down')
-        LOGGER.debug(message, path)
-        for item in os.listdir(path):
-            directory = os.path.join(path, item)
-            if not os.path.isdir(directory):
-                continue
-
-            if item == 'lookup_tables':
-                if setup:
-                    self._setup_lookup_table_fixtures(rule_dir)
-                else:
-                    self._teardown_lookup_table_fixtures(rule_dir)
-            elif item == 'threat_intel':
-                if setup:
-                    self._setup_threat_intel_fixtures(rule_dir)
-                else:
-                    self._teardown_threat_intel_fixtures(rule_dir)
-            else:
-                LOGGER.warning('Unsupported fixture directory: %s', directory)
-
-    @staticmethod
-    def _setup_lookup_table_fixtures(rule_dir):
-        LookupTableMocks.add_fixtures(rule_dir)
-
-    @staticmethod
-    def _setup_threat_intel_fixtures(rule_dir):
-        ThreatIntelMocks.add_fixtures(rule_dir)
-
-    @staticmethod
-    def _teardown_lookup_table_fixtures(rule_dir):
-        LookupTableMocks.remove_fixtures(rule_dir)
-
-    @staticmethod
-    def _teardown_threat_intel_fixtures(rule_dir):
-        ThreatIntelMocks.remove_fixtures(rule_dir)
-
-    def _teardown_all_fixtures(self, fixtures):
-        LOGGER.debug('Tearing down all fixtures')
-        for fixture_path in fixtures:
-            self._handle_fixtures(fixture_path, setup=False)
-
-    def skip_fixtures(self, cached_fixtures, root):
-        for parent in list(cached_fixtures):
-            fixture_path = cached_fixtures[parent]
-            # What to do with fixture_path
-            if not root.startswith(parent):
-                self._handle_fixtures(parent, setup=False)
-                LOGGER.debug('Deleting fixture path from cache: %s', parent)
-                del cached_fixtures[parent]
-            elif root.startswith(fixture_path):
-                return True
-
     def _get_test_files(self, directory):
         """Helper to get rule test files
 
         Yields:
             str: Path to test event file
         """
-        cached_fixtures = dict()
-        for root, cur_dirs, test_event_files in os.walk(directory):
-            root += os.path.sep
-            # Teardown any fixtures that are not needed for this directory
-            if self.skip_fixtures(cached_fixtures, root):
-                LOGGER.debug('Skipping fixtures dir that has been setup: %s', root)
-                continue
-
-            if 'test_fixtures' in set(cur_dirs):
-                fixture_path = os.path.join(root, 'test_fixtures')
-                self._handle_fixtures(root, setup=True)
-                LOGGER.debug('Caching fixture path: %s', fixture_path)
-                cached_fixtures[root] = fixture_path
-
+        for root, _, test_event_files in os.walk(directory):
             # Simple filter to remove any non-json files first
             files = [
                 file for file in sorted(test_event_files)
@@ -475,8 +402,6 @@ class TestRunner:
                 continue
 
             yield root, files
-
-        self._teardown_all_fixtures(cached_fixtures)
 
 
 class PublisherTestRunner:

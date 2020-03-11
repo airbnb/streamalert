@@ -29,10 +29,10 @@ class ThreatIntelMocks:
     _MOCKS = dict()
 
     @classmethod
-    def add_fixtures(cls, rule_dir):
-        """Load test fixtures for Threat Intel to use with rule testing
+    def add_fixtures(cls, fixtures):
+        """Add test fixtures for Threat Intel to use with rule testing
 
-        Fixture files should be in the following JSON format:
+        Threat Intel fixture configs should be in the following JSON format:
             [
               {
                 "ioc_value": "1.1.1.2",
@@ -41,56 +41,23 @@ class ThreatIntelMocks:
               }
             ]
         """
-        fixtures_dir = os.path.join(rule_dir, 'test_fixtures', 'threat_intel')
+        # Clear out any old fixtures
+        cls._MOCKS.clear()
 
-        LOGGER.debug('Setting up threat intel fixture files: %s', fixtures_dir)
-        for item in os.listdir(fixtures_dir):
-            full_path = os.path.join(fixtures_dir, item)
-
-            # The priority is used during data retrieval to allow for overriding
-            # fixtures defined at various levels of the folder structure
-            priority = len(rule_dir.split(os.path.sep))
-            try:
-                with open(full_path, 'r') as json_file:
-                    # See if there are multiple files in the same directory and merge them
-                    values = cls._MOCKS.get(rule_dir, {})
-                    values.update({value['ioc_value']: value for value in json.load(json_file)})
-                    cls._MOCKS[rule_dir] = {
-                        'priority': priority,
-                        'values': values
-                    }
-            except ValueError:
-                LOGGER.error('Unsupported fixture file: %s', full_path)
+        LOGGER.debug('Setting up threat intel fixture: %s', fixtures)
+        cls._MOCKS = {value['ioc_value']: value for value in fixtures}
 
     @classmethod
-    def remove_fixtures(cls, rule_dir):
-        LOGGER.debug('Tearing down threat intel fixture files: %s', rule_dir)
-        del cls._MOCKS[rule_dir]
+    def get_mock_values(cls, values):
 
-    @classmethod
-    def get_mock_values(cls, rule_path):
-        def threat_intel_mock_query(ti_values):
-            """Return the function to mock out ThreatIntel._query
+        """Return the function to mock out ThreatIntel._query
 
-            This simply returns values from the log that are in the mock_ioc_values
-            based on fixtures that match the provided rule_path
-            """
-            # Sort descending on the priority during retrieval to get the most relevant data
-            data = sorted(cls._MOCKS.items(), key=lambda v: v[1]['priority'], reverse=True)
-            for key, value in data:
-                print('ti rule path', rule_path, key)
-                if not rule_path.startswith(key):
-                    continue
-
-                results = [
-                    value['values'][item] for item in ti_values if item in value['values']
-                ]
-                if results:
-                    return results
-
-            return []
-
-        return threat_intel_mock_query
+        This simply returns values from the log that are in the mock_ioc_values
+        based on fixtures that match the provided rule_path
+        """
+        return [
+            cls._MOCKS[item] for item in cls._MOCKS if item in values
+        ]
 
 
 class LookupTableMocks:
@@ -99,43 +66,24 @@ class LookupTableMocks:
     _MOCKS = dict()
 
     @classmethod
-    def add_fixtures(cls, rule_dir):
-        """Load test fixtures for Lookup Tables to use with rule testing"""
-        fixtures_dir = os.path.join(rule_dir, 'test_fixtures', 'lookup_tables')
-        # rule_dir += os.path.sep
-        LOGGER.debug('Setting up lookup tables fixture files: %s', fixtures_dir)
-        for item in os.listdir(fixtures_dir):
-            full_path = os.path.join(fixtures_dir, item)
-            table_name = os.path.splitext(item)[0]
+    def add_fixtures(cls, fixtures):
+        """Add test fixtures for Lookup Tables to use with rule testing
 
-            # The priority is used during data retrieval to allow for overriding
-            # fixtures defined at various levels of the folder structure
-            priority = len(rule_dir.split(os.path.sep))
-            try:
-                with open(full_path, 'r') as json_file:
-                    # See if there are multiple files in the same directory and merge them
-                    values = cls._MOCKS.get(rule_dir, {})
-                    cls._MOCKS[rule_dir] = values
-                    cls._MOCKS[rule_dir] = {
-                        'priority': priority,
-                        'table_name': table_name,
-                        'values': json.load(json_file)
-                    }
-            except ValueError:
-                LOGGER.error('Unsupported fixture file: %s', full_path)
+        LookupTable fixture configs should be in the following JSON format:
+            {
+              "table-name": {
+                "lookup-key": [
+                  "value"
+                ]
+              }
+            }
+        """
+        LOGGER.debug('Setting up lookup table fixtures')
+        cls._MOCKS = fixtures
 
     @classmethod
-    def remove_fixtures(cls, rule_dir):
-        LOGGER.debug('Tearing down lookup tables fixture files: %s', rule_dir)
-        del cls._MOCKS[rule_dir]
-
-    @classmethod
-    def get_mock_values(cls, rule_path):
-        data = sorted(cls._MOCKS.items(), key=lambda v: v[1]['priority'], reverse=True)
-        for key, item in data:
-            if not rule_path.startswith(key):
-                continue
-
+    def get_mock_values(cls):
+        for key, value in cls._MOCKS.items():
             driver = EphemeralDriver(None)
-            driver._cache = item['values']  # pylint: disable=protected-access
-            yield LookupTable(item['table_name'], driver, None)
+            driver._cache = value  # pylint: disable=protected-access
+            yield LookupTable(key, driver, None)
