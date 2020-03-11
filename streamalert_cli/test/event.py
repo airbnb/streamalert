@@ -39,6 +39,7 @@ class TestEvent:
         self._event = test_data
         self.error = None
         self.record = None
+        self._suppressed = False
 
     # One of either 'data' or 'override_record' is required
     @property
@@ -87,6 +88,17 @@ class TestEvent:
     def publisher_tests(self):
         return [] if self.skip_publishers else self._event.get('publisher_tests', [])
 
+
+    @property
+    def suppressed(self):
+        return self._suppressed
+
+    @suppressed.setter
+    def suppressed(self, value):
+        # If something else is suppressing this already, keep the suppression
+        self._suppressed = self._suppressed or value
+        return self._suppressed
+
     @property
     def is_valid(self):
         """Check if the test event contains the required keys
@@ -127,6 +139,14 @@ class TestEvent:
             LOGGER.warning('Additional unnecessary keys in test event: %s', extra_keys)
 
         return True
+
+    def check_for_rules(self, rules):
+        if not rules:  # no filtering on rules is being performed
+            return True
+
+        expected_rules = set(self.trigger_rules) - rule.Rule.disabled_rules()
+        self.suppressed = not bool(expected_rules.intersection(rules))
+        return not self.suppressed
 
     def prepare(self, config):
         if not self.is_valid:

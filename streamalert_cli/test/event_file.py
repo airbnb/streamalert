@@ -45,16 +45,20 @@ class TestEventFile:
         return '\n'.join(str(item) for item in output)
 
     @property
+    def should_print(self):
+        return any(not result.suppressed for result in self._results)
+
+    @property
     def all_passed(self):
         return self.passed == len(self._results)
 
     @property
     def passed(self):
-        return sum(1 for result in self._results if result.passed)
+        return sum(1 for result in self._results if not result.suppressed and result.passed)
 
     @property
     def failed(self):
-        return sum(1 for result in self._results if not result.passed)
+        return sum(1 for result in self._results if not (result.suppressed or result.passed))
 
     def load_file(self):
         """Helper to json load the contents of a file with some error handling

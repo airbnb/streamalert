@@ -321,13 +321,6 @@ class TestRunner:
     def _testing_rules(self):
         return self._type in {self.Types.RULES, self.Types.LIVE}
 
-    def _contains_filtered_rules(self, event):
-        if not self._rules:
-            return True
-
-        expected_rules = set(event.trigger_rules) - rule.Rule.disabled_rules()
-        return bool(expected_rules.intersection(self._rules))
-
     def _process_directory(self, directory):
         """Process rules and test files in the the rule directory"""
         print('\nRunning tests for files found in: {}'.format(directory))
@@ -344,9 +337,6 @@ class TestRunner:
         # Iterate over the individual test events in the file
         event_file = TestEventFile(test_file_path)
         for event in event_file.process_file(self._config, self._verbose, self._testing_rules):
-            if not self._contains_filtered_rules(event):
-                continue
-
             # Set the cluster in the env since this is used from within the
             # classifier to load the proper cluster config
             for cluster_name, cluster_value in self._config['clusters'].items():
@@ -359,6 +349,10 @@ class TestRunner:
 
             event.set_classified_result(classifier_result)
             if not event:
+                continue
+
+            # Ensure this event actually contains any specific rules, if filtering is being used
+            if not event.check_for_rules(self._rules):
                 continue
 
             if event.classify_only:
@@ -389,7 +383,8 @@ class TestRunner:
         # so only print it if it does and if quiet mode is not being used
         # Quite mode is overridden if not all of the events passed
         if event_file.error or not (self._quiet and event_file.all_passed):
-            print(event_file)
+            if event_file.should_print:
+                print(event_file)
 
     def run(self):
         """Run the tests"""
