@@ -1,10 +1,4 @@
 """Alert on destructive AWS API calls."""
-from publishers.community.generic import add_record, populate_fields
-from publishers.community.pagerduty.pagerduty_layout import (
-    ShortenTitle, as_custom_details,
-    PrettyPrintArrays,
-)
-from publishers.community.slack.slack_layout import Summary, AttachRuleInfo, AttachFullRecord
 from streamalert.shared.rule import rule
 
 _CRITICAL_EVENTS = {
@@ -59,24 +53,8 @@ AWS_ORG_EVENTS = {
 }
 
 
-@rule(
-    logs=['cloudtrail:events'],
-    outputs=['slack:sample-channel', 'pagerduty:sample-integration'],
-    publishers={
-        'slack': [Summary, AttachRuleInfo, AttachFullRecord],
-        'pagerduty': [
-            add_record,
-            populate_fields,
-            PrettyPrintArrays,
-            ShortenTitle,
-            as_custom_details
-        ],
-    },
-    context={
-        'populate_fields': ['eventName', 'eventSource']
-    }
-)
-def cloudtrail_critical_api_calls(rec, _):
+@rule(logs=['cloudtrail:events'])
+def cloudtrail_critical_api_calls(rec):
     """
     author:           airbnb_csirt
     description:      Alert on AWS API calls that stop or delete security/infrastructure logs.
