@@ -33,6 +33,15 @@
     "source": "prefix_cluster_duo_auth_sm-app-name_app",
     "trigger_rules": [
       "duo_lookup_tables_example"
-    ]
+    ],
+    "test_fixtures": {
+      "lookup_tables": {
+        "dynamo-backed-table": {
+          "duo_blacklisted_browsers": [
+            "Netscape"
+          ]
+        }
+      }
+    }
   }
 ]

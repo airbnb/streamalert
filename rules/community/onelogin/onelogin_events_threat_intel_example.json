@@ -39,6 +39,30 @@
     "source": "prefix_cluster_onelogin-events-app-name_app",
     "trigger_rules": [
       "onelogin_events_threat_intel_example"
-    ]
+    ],
+    "test_fixtures": {
+      "threat_intel": [
+        {
+          "ioc_value": "1.1.1.2",
+          "ioc_type": "ip",
+          "sub_type": "mal_ip"
+        },
+        {
+          "ioc_value": "0123456789abcdef0123456789abcdef",
+          "ioc_type": "md5",
+          "sub_type": "mal_md5"
+        },
+        {
+          "ioc_value": "evil.com",
+          "ioc_type": "domain",
+          "sub_type": "c2_domain"
+        },
+        {
+          "ioc_value": "false.positive",
+          "ioc_type": "domain",
+          "sub_type": "c2_domain"
+        }
+      ]
+    }
   }
 ]
