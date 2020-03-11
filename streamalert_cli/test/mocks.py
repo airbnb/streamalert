@@ -13,9 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-import os
-
 from streamalert.shared.logger import get_logger
 from streamalert.shared.lookup_tables.drivers import EphemeralDriver
 from streamalert.shared.lookup_tables.table import LookupTable

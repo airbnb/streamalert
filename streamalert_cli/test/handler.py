@@ -386,8 +386,12 @@ class TestRunner:
 
         return self._failed == 0
 
-    def _get_test_files(self, directory):
+    @staticmethod
+    def _get_test_files(directory):
         """Helper to get rule test files
+
+        Args:
+            directory (str): Path to directory containing test files
 
         Yields:
             str: Path to test event file
@@ -425,7 +429,7 @@ class PublisherTestRunner:
         Runs all publishers and compares their results to the suite of configured publisher tests.
 
         Args:
-            - event (TestEvent): The integration test
+            event (TestEvent): The integration test
         """
         for alert in event.alerts:
             publication_results = self._run_publishers(alert)
@@ -528,7 +532,7 @@ class PublisherTestRunner:
         """Runs publishers for all currently configured outputs on the given alert
 
         Args:
-            - alert (Alert): The alert
+            alert (Alert): The alert
 
         Returns:
             dict: A dict keyed by output:descriptor strings, mapped to nested dicts.
