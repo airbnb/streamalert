@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import argparse
-from collections import defaultdict
 import os
 
 import jmespath
@@ -225,7 +224,6 @@ class TestRunner:
         self._verbose = options.verbose
         self._quiet = options.quiet
         self._s3_mocker = patch('streamalert.classifier.payload.s3.boto3.resource').start()
-        self._errors = defaultdict(list)  # cache errors to be logged at the endpoint
         self._tested_rules = set()
         self._passed = 0
         self._failed = 0
@@ -297,11 +295,6 @@ class TestRunner:
         ]
 
         print('\n'.join(summary))
-
-        for path in sorted(self._errors):
-            for error in self._errors[path]:
-                message = '({}) {}'.format(path, error) if path != 'error' else error
-                LOGGER.error(message)
 
         # If rule are being tested and no filtering is being performed, log any untested rules
         if self._testing_rules and not self._is_filtered:
