@@ -267,9 +267,9 @@ class TestSESOutput:
 
         # Setup SES client and verify email addresses for tests
         ses = boto3.client('ses', region_name=REGION)
-        ses.verify_email_identity(EmailAddress="to@example.com")
-        ses.verify_email_identity(EmailAddress="to_2@example.com")
-        ses.verify_email_identity(EmailAddress="from@example.com")
+        ses.verify_email_identity(EmailAddress='to@example.com')
+        ses.verify_email_identity(EmailAddress='to_2@example.com')
+        ses.verify_email_identity(EmailAddress='from@example.com')
 
         self._dispatcher = SESOutput(CONFIG)
         self._provider = provider
@@ -293,7 +293,7 @@ class TestSESOutput:
         msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
 
         # check subject override worked
-        assert_equal(msg["Subject"], 'this is a test')
+        assert_equal(msg['Subject'], 'this is a test')
 
     def test_build_email_to_emails_single(self):
         """SESOutput - Single recipient"""
@@ -307,7 +307,7 @@ class TestSESOutput:
         msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
 
         # verify to_emails is set
-        assert_equal(msg["To"], "to@example.com")
+        assert_equal(msg['To'], 'to@example.com')
 
     def test_build_email_to_emails_multiple(self):
         """SESOutput - Multiple recipients"""
@@ -334,7 +334,7 @@ class TestSESOutput:
         msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
 
         # verify to_emails is set
-        assert_equal(msg["From"], self.CREDS["from_email"])
+        assert_equal(msg['From'], self.CREDS['from_email'])
 
     def test_add_single_attachment(self):
         """SESOutput - Test single attachment"""
@@ -350,7 +350,7 @@ class TestSESOutput:
         payloads = msg.get_payload()
         for payload in payloads:
             if isinstance(payload, MIMEApplication):
-                assert_equal(payload.get_filename(), "record.json")
+                assert_equal(payload.get_filename(), 'record.json')
                 break
         else:
             # Raise an error if no payload of type MIMEApplication is found
@@ -372,7 +372,7 @@ class TestSESOutput:
 
         # Verify no attachment
         assert_equal(len(payloads), 1)
-        assert_equal(payloads[0].get_payload(), "Please review the attached record.json")
+        assert_equal(payloads[0].get_payload(), 'Please review the attached record.json')
 
     def test_add_multiple_attachments(self):
         """SESOutput - Multiple attachments"""
@@ -406,7 +406,7 @@ class TestSESOutput:
         output = MagicMock(spec=SESOutput)
         alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
 
-        alert_publication["@aws-ses.body"] = "i am a test"
+        alert_publication['@aws-ses.body'] = 'i am a test'
 
         msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
 
@@ -414,7 +414,7 @@ class TestSESOutput:
         payloads = msg.get_payload()
         for payload in payloads:
             if isinstance(payload, MIMEText):
-                assert_equal(payload.get_payload(), "i am a test")
+                assert_equal(payload.get_payload(), 'i am a test')
                 break
         else:
             # Raise an error if no payload of type MIMEText is found
@@ -428,8 +428,8 @@ class TestSESOutput:
         output = MagicMock(spec=SESOutput)
         alert_publication = compose_alert(alert, output, self.DESCRIPTOR)
 
-        alert_publication["@aws-ses.body"] = {
-            "html": "<head><body><p>i am a test</p></body></head>"
+        alert_publication['@aws-ses.body'] = {
+            'html': '<head><body><p>i am a test</p></body></head>'
         }
         msg = SESOutput._build_email(alert, alert_publication, self.CREDS)
 
@@ -439,7 +439,7 @@ class TestSESOutput:
             if payload.is_multipart():
                 # should only be one payload on this multipart
                 html = payload.get_payload()[0].get_payload()
-                assert_equal(html, "<head><body><p>i am a test</p></body></head>")
+                assert_equal(html, '<head><body><p>i am a test</p></body></head>')
                 break
         else:
             # Raise an error if no payload of type MIMEText is found

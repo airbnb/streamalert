@@ -643,17 +643,17 @@ class SESOutput(OutputDispatcher):
 
         msg = self._build_email(alert, publication, creds)
 
-        ses = boto3.client("ses", region_name=self.region)
+        ses = boto3.client('ses', region_name=self.region)
 
         try:
             response = ses.send_raw_email(
-                Source=msg["From"],
-                Destinations=msg["To"].split(","),
-                RawMessage={"Data": msg.as_string()},
+                Source=msg['From'],
+                Destinations=msg['To'].split(','),
+                RawMessage={'Data': msg.as_string()},
             )
         except ClientError as e:
-            LOGGER.error(e.response["Error"]["Message"])
+            LOGGER.error(e.response['Error']['Message'])
             return False
         else:
-            LOGGER.info("Email sent! Message ID: %s", response["MessageId"])
+            LOGGER.info('Email sent! Message ID: %s', response['MessageId'])
             return True

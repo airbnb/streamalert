@@ -30,24 +30,24 @@ class TestLookupTablesConfiguration:
     @staticmethod
     def _basic_configuration():
         return {
-            "lookup_tables": {
-                "enabled": True,
-                "tables": {
-                    "resource_map_prototype": {
-                        "driver": "s3",
-                        "bucket": "airbnb.sample.lookuptable",
-                        "key": "resource_map.gz",
-                        "cache_refresh_minutes": 10,
-                        "compression": "gzip"
+            'lookup_tables': {
+                'enabled': True,
+                'tables': {
+                    'resource_map_prototype': {
+                        'driver': 's3',
+                        'bucket': 'airbnb.sample.lookuptable',
+                        'key': 'resource_map.gz',
+                        'cache_refresh_minutes': 10,
+                        'compression': 'gzip'
                     },
-                    "resource_map_dynamodb": {
-                        "driver": "dynamodb",
-                        "table": "some_table_name",
-                        "partition_key": "MyPartitionKey",
-                        "value_key": "MyValueKey",
-                        "cache": {
-                            "refresh_minutes": 2,
-                            "maximum_keys": 10
+                    'resource_map_dynamodb': {
+                        'driver': 'dynamodb',
+                        'table': 'some_table_name',
+                        'partition_key': 'MyPartitionKey',
+                        'value_key': 'MyValueKey',
+                        'cache': {
+                            'refresh_minutes': 2,
+                            'maximum_keys': 10
                         }
                     }
                 }
@@ -80,15 +80,15 @@ class TestLookupTablesConfiguration:
     def test_configuration_disabled_configuration(self):
         """LookupTablesConfiguration - Disabled Configuration - Disabled"""
         config = LookupTablesConfiguration({
-            "lookup_tables": {
-                "enabled": False,
-                "tables": {
-                    "resource_map_prototype": {
-                        "driver": "s3",
-                        "bucket": "airbnb.sample.lookuptable",
-                        "key": "resource_map.gz",
-                        "cache_refresh_minutes": 10,
-                        "compression": "gzip"
+            'lookup_tables': {
+                'enabled': False,
+                'tables': {
+                    'resource_map_prototype': {
+                        'driver': 's3',
+                        'bucket': 'airbnb.sample.lookuptable',
+                        'key': 'resource_map.gz',
+                        'cache_refresh_minutes': 10,
+                        'compression': 'gzip'
                     },
                 }
             }
