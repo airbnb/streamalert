@@ -35,6 +35,7 @@ from streamalert_cli.utils import (
     CLICommand,
     DirectoryType,
     generate_subparser,
+    UniqueSortedFileListAction,
     UniqueSortedListAction,
 )
 
@@ -136,7 +137,7 @@ class TestCommand(CLICommand):
             metavar='FILENAMES',
             nargs='+',
             help='One or more file to test, separated by spaces',
-            action=UniqueSortedListAction,
+            action=UniqueSortedFileListAction,
             type=argparse.FileType('r'),
             default=[]
         )
@@ -217,7 +218,7 @@ class TestRunner:
         self._config = config
         self._options = options
         self._type = options.subcommand
-        self._files_filter = {file.name for file in options.files} or set()
+        self._files_filter = options.files
         self._rules = options.rules
         self._rules_dirs = options.rules_dir
         self._rules_engine = self._setup_rules_engine(options.rules_dir)

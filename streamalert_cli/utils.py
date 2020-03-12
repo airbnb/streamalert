@@ -64,6 +64,14 @@ class UniqueSortedListAction(Action):
         setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
 
 
+class UniqueSortedFileListAction(Action):
+    """Subclass of argparse.Action to avoid multiple of the same choice from a list of files"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        unique_items = {value.name for value in values}
+        setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
+
+
 class MutuallyExclusiveStagingAction(Action):
     """Subclass of argparse.Action to avoid staging and unstaging the same rules"""
 
