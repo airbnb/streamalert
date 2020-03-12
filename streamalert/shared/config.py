@@ -218,8 +218,36 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     if validate:
         _validate_config(config)
 
+    if config.get('logs'):
+        config['logs'] = _sanitize_logs_name(config['logs'])
+
+    if (config.get('global')
+            and config['global'].get('infrastructure')
+            and config['global']['infrastructure'].get('firehose')
+            and config['global']['infrastructure']['firehose'].get('enabled_logs')):
+        config['global']['infrastructure']['firehose']['enabled_logs'] = _sanitize_logs_name(
+            config['global']['infrastructure']['firehose']['enabled_logs']
+        )
+
     return config
 
+
+def _sanitize_logs_name(config):
+    """Sanitize the name of logs and replace the dots with underscores. For some reason,
+    we have log name with dots in it in the conf/schemas/carbonblack.json or conf/logs.json.
+
+    Args:
+        config (dict): loaded config from conf/ directory
+
+    Returns:
+        new_config (dict): new config with sanitized keys
+    """
+    new_config = dict()
+    for key, _ in config.items():
+        sanitized_key = key.replace('.', '_')
+        new_config[sanitized_key] = config[key]
+
+    return new_config
 
 def _load_schemas(schemas_dir, schema_files):
     """Helper to load all schemas from the schemas directory into one ordered dictionary.

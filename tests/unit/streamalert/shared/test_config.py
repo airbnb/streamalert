@@ -87,6 +87,10 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'conf_schemas/schemas/json.json',
             contents='{"json_log": {"schema": {"name": "string"},"parser": "json"}}'
         )
+        self.fs.create_file(
+            'conf_schemas/schemas/json_log_with_dots.json',
+            contents='{"json:log.with.dots": {"schema": {"name": "string"},"parser": "json"}}'
+        )
 
     def test_load_invalid_file(self):
         """Shared - Config Loading - Bad JSON"""
