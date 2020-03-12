@@ -243,9 +243,68 @@ Key                        Type                    Required  Description
                                                              arrays of individual tests. Publisher tests use jmespath to extract values from
                                                              the final publication dictionary for testing. At least one rule should be triggered,
                                                              or publisher tests will do nothing.
+``test_fixtures``          ``dict``                No        Values to be mocked out for use within rules for the ``threat_intel`` and
+                                                             ``lookup_tables`` features. See below for examples of this.
 =========================  ======================  ========  ===========
 
-For more examples, see the provided default rule tests in ``tests/integration/rules``
+
+Test Fixtures Configuration
+===========================
+
+Fixtures for tests events should be configured as part of the event itself. These should be
+added within the ``threat_intel`` or ``lookup_tables`` keys under a ``test_fixtures`` section
+of the test event. Usage of these two sections is outlined below.
+
+
+Threat Intel Fixtures
+---------------------
+
+The below format should be used to "mock" out threat intel data to test rules that leverage this feature.
+
+.. code-block:: json
+
+  [
+    {
+      "test_fixtures": {
+        "threat_intel": [
+          {
+            "ioc_value": "1.2.3.4",
+            "ioc_type": "ip",
+            "sub_type": "mal_ip"
+          },
+          {
+            "ioc_value": "0123456789abcdef0123456789abcdef",
+            "ioc_type": "md5",
+            "sub_type": "mal_md5"
+          }
+        ]
+      }
+    }
+  ]
+
+Lookup Tables Fixtures
+----------------------
+
+The below format should be used to "mock" out lookup table data to test rules that leverage this feature.
+
+.. code-block:: json
+
+  [
+    {
+      "test_fixtures": {
+        "lookup_tables": {
+          "dynamodb-table-name": {
+            "lookup_key": [
+              "value_for_rule"
+            ]
+          }
+        }
+      }
+    }
+  ]
+
+
+For more examples of how to configure tests for rules, see the provided default rules and tests in the ``rules/`` directory
 
 
 *************
