@@ -1,8 +1,16 @@
 """Alert on the OneLogin event that a user has assumed the role of someone else."""
-from streamalert.shared.rule import rule
+from streamalert.shared.rule import disable, rule
 from streamalert.rules_engine.threat_intel import ThreatIntel
 
 
+# This example is disabled because it requires the threat_intel feature to be
+# enabled in the following locations:
+#   https://github.com/airbnb/streamalert/blob/
+#      791abf892983eedbaf30ff5aeb1f55e46e20d82a/conf/threat_intel.json#L3
+#  and
+#   https://github.com/airbnb/streamalert/blob/
+#      791abf892983eedbaf30ff5aeb1f55e46e20d82a/conf/clusters/prod.json#L80
+@disable
 @rule(logs=['onelogin:events'])
 def onelogin_events_threat_intel_example(rec):
     """
