@@ -328,18 +328,18 @@ Here is a sample command showing how to run tests against two test event files i
 
 .. code-block:: bash
 
-  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
 This will produce output similar to the following::
 
-  Running tests for files found in: tests/integration/rules/
+  Running tests for files found in: rules
 
-  File: cloudtrail/cloudtrail_put_bucket_acl.json
+  File: rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json
 
   Test #01: Pass
   Test #02: Pass
 
-  File: cloudtrail/cloudtrail_root_account_usage.json
+  File: rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
   Test #01: Pass
   Test #02: Pass
@@ -353,47 +353,68 @@ This will produce output similar to the following::
 To see more verbose output for any of the test commands, add the ``--verbose`` flag. The previous
 command, with the addition of the ``--verbose`` flag, produces the following output::
 
-    Running tests for files found in: tests/integration/rules/
+  Running tests for files found in: rules
 
-    File: cloudtrail/cloudtrail_put_bucket_acl.json
+  File: rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json
 
-    Test #01: Pass
-        Description: Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: cloudtrail_put_bucket_acl
-        Expected Rules: cloudtrail_put_bucket_acl
+  Test #01:
 
-    Test #02: Pass
-        Description: Modifying an S3 bucket ACL without use of AllUsers or AuthenticatedUsers should not create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: <None>
-        Expected Rules: <None>
+      Description: Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.
 
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
 
-    File: cloudtrail/cloudtrail_root_account_usage.json
+      Rules: Pass
+          Triggered Rules: cloudtrail_put_bucket_acl
+          Expected Rules: cloudtrail_put_bucket_acl
 
-    Test #01: Pass
-        Description: Use of the AWS 'Root' account will create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: cloudtrail_root_account_usage
-        Expected Rules: cloudtrail_root_account_usage
+  Test #02:
 
-    Test #02: Pass
-        Description: AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: <None>
-        Expected Rules: <None>
+      Description: Modifying an S3 bucket ACL without use of AllUsers or AuthenticatedUsers should not create an alert.
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Pass
+          Triggered Rules: <None>
+          Expected Rules: <None>
 
 
-    Summary:
+  File: rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
-    Total Tests: 4
-    Pass: 4
-    Fail: 0
+  Test #01:
+
+      Description: Use of the AWS 'Root' account will create an alert.
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Pass
+          Triggered Rules: cloudtrail_root_account_usage
+          Expected Rules: cloudtrail_root_account_usage
+
+  Test #02:
+
+      Description: AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Pass
+          Triggered Rules: <None>
+          Expected Rules: <None>
+
+
+  Summary:
+
+  Total Tests: 4
+  Pass: 4
+  Fail: 0
+
 
 Additionally, any given test that results in a status of **Fail** will, by default, print verbosely.
 In the below example, the ``cloudtrail_put_bucket_acl.json`` file has been altered to include a triggering
@@ -401,24 +422,29 @@ rule that does not actually exist.
 
 .. code-block:: bash
 
-  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
 ::
 
-  Running tests for files found in: tests/integration/rules/
+  Running tests for files found in: rules
 
-  File: cloudtrail/cloudtrail_put_bucket_acl.json
+  File: rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json
 
-  Test #01: Fail
+  Test #01:
+
       Description: Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.
-      Classified Type: cloudwatch:events
-      Expected Type: cloudwatch:events
-      Triggered Rules: cloudtrail_put_bucket_acl
-      Expected Rules: cloudtrail_put_bucket_acl, nonexistent_rule (does not exist)
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Fail
+          Triggered Rules: cloudtrail_put_bucket_acl
+          Expected Rules: cloudtrail_put_bucket_acl, nonexistent_rule (does not exist)
 
   Test #02: Pass
 
-  File: cloudtrail/cloudtrail_root_account_usage.json
+  File: rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
   Test #01: Pass
   Test #02: Pass
