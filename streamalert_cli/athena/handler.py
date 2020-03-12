@@ -25,7 +25,7 @@ from streamalert_cli.utils import (
     CLICommand,
     generate_subparser,
     set_parser_epilog,
-    UniqueSetAction
+    UniqueSortedListAction
 )
 
 LOGGER = get_logger(__name__)
@@ -45,7 +45,7 @@ class AthenaCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add athena subparser: manage.py athena [subcommand]"""
-        athena_subparsers = subparser.add_subparsers(dest="athena subcommand", required=True)
+        athena_subparsers = subparser.add_subparsers(dest='athena subcommand', required=True)
 
         cls._setup_athena_create_table_subparser(athena_subparsers)
         cls._setup_athena_rebuild_subparser(athena_subparsers)
@@ -95,8 +95,8 @@ class AthenaCommand(CLICommand):
                 'The provided input should be space-separated '
                 'directives like "column_name=value_type"'
             ),
-            action=UniqueSetAction,
-            default=set(),
+            action=UniqueSortedListAction,
+            default=[],
             type=_validate_override
         )
 

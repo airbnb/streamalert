@@ -13,46 +13,74 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-import os
+from streamalert.shared.logger import get_logger
+from streamalert.shared.lookup_tables.drivers import EphemeralDriver
+from streamalert.shared.lookup_tables.table import LookupTable
+
+LOGGER = get_logger(__name__)
 
 
-def mock_threat_intel_query_results():
-    """Load test fixtures for Threat Intel to use with rule testing
+class ThreatIntelMocks:
+    """Simple class to encapsulate the mocked threat intel results"""
 
-    Fixture files should be in the following JSON format:
-        [
-          {
-            "ioc_value": "1.1.1.2",
-            "ioc_type": "ip",
-            "sub_type": "mal_ip"
-          }
-        ]
-    """
-    mock_ioc_values = dict()
-    for root, _, fixture_files in os.walk('tests/integration/fixtures/threat_intel/'):
-        for fixture_file in fixture_files:
-            with open(os.path.join(root, fixture_file), 'r') as json_file:
-                mock_ioc_values.update(
-                    {value['ioc_value']: value for value in json.load(json_file)}
-                )
+    _MOCKS = dict()
 
-    # Return the function to mock out ThreatIntel._query
-    # This simply returns values from the log that are in the mock_ioc_values
-    def _query(values):
+    @classmethod
+    def add_fixtures(cls, fixtures):
+        """Add test fixtures for Threat Intel to use with rule testing
+
+        Threat Intel fixture configs should be in the following JSON format:
+            [
+              {
+                "ioc_value": "1.1.1.2",
+                "ioc_type": "ip",
+                "sub_type": "mal_ip"
+              }
+            ]
+        """
+        # Clear out any old fixtures
+        cls._MOCKS.clear()
+
+        LOGGER.debug('Setting up threat intel fixture: %s', fixtures)
+        cls._MOCKS = {value['ioc_value']: value for value in fixtures}
+
+    @classmethod
+    def get_mock_values(cls, values):
+
+        """Return the function to mock out ThreatIntel._query
+
+        This simply returns values from the log that are in the mock_ioc_values
+        based on fixtures that match the provided rule_path
+        """
         return [
-            mock_ioc_values[value] for value in values if value in mock_ioc_values
+            cls._MOCKS[item] for item in cls._MOCKS if item in values
         ]
 
-    return _query
 
+class LookupTableMocks:
+    """Simple class to encapsulate the mocked lookup table results"""
 
-def mock_lookup_table_results():
-    """Load test fixtures for Lookup Tables to use with rule testing"""
-    mock_lookup_tables = dict()
-    for root, _, fixture_files in os.walk('tests/integration/fixtures/lookup_tables/'):
-        for fixture_file in fixture_files:
-            with open(os.path.join(root, fixture_file), 'r') as json_file:
-                mock_lookup_tables[os.path.splitext(fixture_file)[0]] = json.load(json_file)
+    _MOCKS = dict()
 
-    return mock_lookup_tables
+    @classmethod
+    def add_fixtures(cls, fixtures):
+        """Add test fixtures for Lookup Tables to use with rule testing
+
+        LookupTable fixture configs should be in the following JSON format:
+            {
+              "table-name": {
+                "lookup-key": [
+                  "value"
+                ]
+              }
+            }
+        """
+        LOGGER.debug('Setting up lookup table fixtures')
+        cls._MOCKS = fixtures
+
+    @classmethod
+    def get_mock_values(cls):
+        for key, value in cls._MOCKS.items():
+            driver = EphemeralDriver(None)
+            driver._cache = value  # pylint: disable=protected-access
+            yield LookupTable(key, driver, None)

@@ -1,0 +1,30 @@
+[
+  {
+    "data": {
+      "additional_details": null,
+      "created_at": "2017-10-27T12:31:22-07:00",
+      "created_by": {
+        "id": "2810219233",
+        "login": "testemail@email.com",
+        "name": "User Name",
+        "type": "user"
+      },
+      "event_id": "0e0b8122-17ed-42ee-8a9d-d9a57bf8dd83",
+      "event_type": "ADD_LOGIN_ACTIVITY_DEVICE",
+      "ip_address": "1.1.1.1",
+      "session_id": null,
+      "source": {
+        "id": "2810219233",
+        "login": "testemail@email.com",
+        "name": "User Name",
+        "type": "user"
+      },
+      "type": "event"
+    },
+    "description": "Box admin event log example (validation only)",
+    "log": "box:admin_events",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_box_admin_events_sm-app-name_app",
+    "classify_only": true
+  }
+]

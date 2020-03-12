@@ -1,0 +1,24 @@
+[
+  {
+    "data": {
+      "@timestamp": "2018-02-06T07:23:54.827Z",
+      "bytes_in": 32,
+      "bytes_out": 64,
+      "client_ip": "172.16.3.33",
+      "dns": {
+        "answers_count": 2,
+        "question": { "name": "evil.com.", "type": "A" },
+        "response_code": "NOERROR"
+      },
+      "transport": "udp",
+      "type": "dns"
+    },
+    "description": "basic schema validation check for packetbeat:flow",
+    "log": "packetbeat:dns",
+    "source": "prefix.cluster.sample.bucket",
+    "service": "s3",
+    "trigger_rules": [
+      "packetbeat_blacklisted_domain"
+    ]
+  }
+]

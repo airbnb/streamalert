@@ -1,0 +1,71 @@
+[
+  {
+    "data": {
+      "messageType": "DATA_MESSAGE",
+      "owner": "123456789012",
+      "logGroup": "CloudTrail/DefaultLogGroup",
+      "logStream": "123456789012_CloudTrail_us-east-1",
+      "subscriptionFilters": [
+        "FooBarSubscription"
+      ],
+      "logEvents": [
+        {
+          "id": "44056647182143267075860006634052172261824828947338793472",
+          "timestamp": 1526951139360,
+          "message": "1526951139360429,server-name,username,localhost,70558,0,CONNECT,,,0"
+        }
+      ]
+    },
+    "description": "RDS Aurora logs via CloudWatch logs DATA_MESSAGE (validation only)",
+    "log": "cloudwatch:rds_aurora",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
+  },
+  {
+    "data": {
+      "messageType": "DATA_MESSAGE",
+      "owner": "123456789012",
+      "logGroup": "CloudTrail/DefaultLogGroup",
+      "logStream": "123456789012_CloudTrail_us-east-1",
+      "subscriptionFilters": [
+        "FooBarSubscription"
+      ],
+      "logEvents": [
+        {
+          "id": "44056647182143267075860006634052172261824828947338793472",
+          "timestamp": 1526951139360,
+          "message": "1527307908805999,server-name,username,127.0.0.0,19444984,155461944,QUERY,testing,'CREATE TABLE IF NOT EXISTS test ( id INTEGER NOT NULL AUTO_INCREMENT, type VARCHAR(64) NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id) )',0"
+        }
+      ]
+    },
+    "description": "RDS Aurora logs via CloudWatch logs DATA_MESSAGE, with quoted field (validation only)",
+    "log": "cloudwatch:rds_aurora",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
+  },
+  {
+    "data": {
+      "messageType": "DATA_MESSAGE",
+      "owner": "123456789012",
+      "logGroup": "CloudTrail/DefaultLogGroup",
+      "logStream": "aurora123456789012_CloudTrail_us-east-1",
+      "subscriptionFilters": [
+        "FooBarSubscription"
+      ],
+      "logEvents": [
+        {
+          "id": "34134505650075435935042893922629458047797885315145138176",
+          "timestamp": 1530644171134,
+          "message": "1530644171134057,server-name,username,127.0.0.0,86544374,231296082,QUERY,testing,'CREATE TABLE blah AS SELECT foo , bar , baz FROM blah_orig WHERE this = \\'that\\' AND ds >= \\'2018-07-02\\' GROUP BY foo, bar',0"
+        }
+      ]
+    },
+    "description": "RDS Aurora logs via CloudWatch logs DATA_MESSAGE, with escaped string in query (validation only)",
+    "log": "cloudwatch:rds_aurora",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
+  }
+]

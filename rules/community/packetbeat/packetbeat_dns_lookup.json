@@ -1,0 +1,27 @@
+[
+  {
+    "data": {
+      "@timestamp": "2018-02-06T07:24:03.251Z",
+      "bytes_in": 54,
+      "bytes_out": 148,
+      "client_ip": "172.16.2.97",
+      "dns": {
+        "answers_count": 0,
+        "question": {
+          "name": "foo.evil.com.",
+          "type": "A"
+        },
+        "response_code": "NXDOMAIN"
+      },
+      "transport": "udp",
+      "type": "dns"
+    },
+    "description": "packetbeat:dns showing lookup to bad domain",
+    "log": "packetbeat:dns",
+    "source": "prefix.cluster.sample.bucket",
+    "service": "s3",
+    "trigger_rules": [
+      "packetbeat_dns_lookup"
+    ]
+  }
+]

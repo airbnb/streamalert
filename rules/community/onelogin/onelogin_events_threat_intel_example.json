@@ -1,0 +1,68 @@
+[
+  {
+    "data": {
+      "account_id": 1234,
+      "actor_system": "System",
+      "actor_user_id": 987,
+      "actor_user_name": "",
+      "app_id": 123456,
+      "app_name": "App Name",
+      "assuming_acting_user_id": 654,
+      "client_id": 11223344,
+      "created_at": "2017-10-05T18:11:32Z",
+      "custom_message": "Message",
+      "directory_id": 6666,
+      "directory_sync_run_id": 7777,
+      "error_description": "ERROR ERROR",
+      "event_type_id": 1,
+      "group_id": 98765,
+      "group_name": "Group Name",
+      "id": 123,
+      "ipaddr": "1.1.1.2",
+      "notes": "Notes",
+      "operation_name": "Operation Name",
+      "otp_device_id": 11111,
+      "otp_device_name": "OTP Device Name",
+      "policy_id": 22222,
+      "policy_name": "Policy Name",
+      "proxy_ip": "0.0.0.0",
+      "resolution": "Resolved",
+      "resource_type_id": 44332211,
+      "role_id": 456,
+      "role_name": "Role",
+      "user_id": 123456789,
+      "user_name": "username"
+    },
+    "description": "OneLogin generated event from a malicious IP address as defined by threat intel",
+    "log": "onelogin:events",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_onelogin-events-app-name_app",
+    "trigger_rules": [
+      "onelogin_events_threat_intel_example"
+    ],
+    "test_fixtures": {
+      "threat_intel": [
+        {
+          "ioc_value": "1.1.1.2",
+          "ioc_type": "ip",
+          "sub_type": "mal_ip"
+        },
+        {
+          "ioc_value": "0123456789abcdef0123456789abcdef",
+          "ioc_type": "md5",
+          "sub_type": "mal_md5"
+        },
+        {
+          "ioc_value": "evil.com",
+          "ioc_type": "domain",
+          "sub_type": "c2_domain"
+        },
+        {
+          "ioc_value": "false.positive",
+          "ioc_type": "domain",
+          "sub_type": "c2_domain"
+        }
+      ]
+    }
+  }
+]

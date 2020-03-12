@@ -266,7 +266,7 @@ integration, leaving the Slack integration the same. Registering the publisher c
 
   @rule(
     logs=['ssh'],
-    output=['slack:engineering', 'pagerduty:engineering'],
+    outputs=['slack:engineering', 'pagerduty:engineering'],
     publishers={
       'pagerduty:engineering': simplify_pagerduty_output,
     }
