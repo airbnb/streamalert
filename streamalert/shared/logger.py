@@ -18,6 +18,8 @@ import os
 
 LOCAL_LOGGER_FMT = '[%(levelname)s %(asctime)s (%(name)s:%(lineno)d)]: %(message)s'
 
+logging.basicConfig(level=logging.INFO, format=LOCAL_LOGGER_FMT)
+
 
 class LogFormatter(logging.Formatter):
 
@@ -41,20 +43,15 @@ def set_formatter(logger):
     Args:
         logger (logging.Logger): An instance of a logger for which to update the formatter
     """
-    # Update the LambdaLoggerHandler formatter
-    if logger.hasHandlers():
-        for handler in logger.handlers + logger.parent.handlers:
-            # pylint: disable=protected-access
-            # Retain the handlers format spec if it has one
-            fmt = handler.formatter._fmt if handler.formatter else None
-            handler.setFormatter(LogFormatter(fmt=fmt))
+    # Update the LambdaLoggerHandler formatter if there is one
+    if not logger.hasHandlers():
         return
 
-    # Otherwise, create a handler with the desired formatter
-    formatter = LogFormatter(fmt=LOCAL_LOGGER_FMT)
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    for handler in logger.handlers + logger.parent.handlers:
+        # pylint: disable=protected-access
+        # Retain the handlers format spec if it has one
+        fmt = handler.formatter._fmt if handler.formatter else None
+        handler.setFormatter(LogFormatter(fmt=fmt))
 
 
 def get_logger(name, level=None):
