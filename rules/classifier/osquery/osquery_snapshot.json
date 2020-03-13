@@ -18,8 +18,7 @@
     },
     "log": "osquery:snapshot",
     "description": "OSQuery event.",
-    "validate_schema_only": true,
-    "trigger_rules": [],
+    "classify_only": true,
     "source": "prefix_cluster1_streamalert",
     "service": "kinesis"
   }
