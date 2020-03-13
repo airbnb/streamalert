@@ -16,6 +16,7 @@ limitations under the License.
 from collections import defaultdict, OrderedDict
 import json
 import os
+import re
 
 from streamalert.shared import CLUSTERED_FUNCTIONS
 from streamalert.shared.exceptions import ConfigError
@@ -24,6 +25,12 @@ from streamalert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 SUPPORTED_SOURCES = {'kinesis', 's3', 'sns', 'streamalert_app'}
+
+# Used to detect special characters in log names. Log names can not contain special
+# characters except "_" (underscore) because the log names will be referenced when
+# create Athena tables and Firehose.
+SPECIAL_CHAR_REGEX = re.compile(r'\W')
+SPECIAL_CHAR_SUB = '_'
 
 
 class TopLevelConfigKeys:
@@ -218,8 +225,87 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     if validate:
         _validate_config(config)
 
+    if config.get('logs'):
+        config['logs'] = _sanitize_log_names(config['logs'])
+
+    if _requires_sanitized_log_names(config):
+        config['global']['infrastructure']['firehose']['enabled_logs'] = _sanitize_log_names(
+            config['global']['infrastructure']['firehose']['enabled_logs']
+        )
+
     return config
 
+
+def _requires_sanitized_log_names(config):
+    """Check if firehose has enabled_logs settings whose log names need to be sanitized
+
+    Args:
+        config (dict): loaded config from conf/ directory
+
+    Returns:
+        boolean: True if there are settings under "enabled_logs" in the "firehose" conf,
+            otherwise False.
+    """
+    infra_config = config.get('global', {}).get('infrastructure')
+    if not infra_config:
+        return False
+
+    firehose_config = infra_config.get('firehose', {})
+    if not firehose_config:
+        return False
+
+    if not infra_config['firehose'].get('enabled_logs'):
+        return False
+
+    return True
+
+def sanitize_key(key):
+    """Sanitize a key by replacing non-characters with '_' (underscore), except ':' (colon).
+
+    Args:
+        key (str): a string needs to be sanitized
+
+    Returns:
+        str: sanitized string
+    """
+    key_parts = key.split(':')
+    if len(key_parts) == 1:
+        # if no ':' in the key name, replace all special characters with '_'
+        # e.g.
+        # 'osquery_differential' -> 'osquery_differential'
+        # 'osquery_differntial.with.dots' -> 'osquery_differntial_with_dots'
+        sanitized_key = re.sub(SPECIAL_CHAR_REGEX, SPECIAL_CHAR_SUB, key)
+    elif len(key_parts) == 2:
+        # if there is a ':', replace the special chars in 2nd part and reconstruct
+        # sanitized key name
+        # e.g.
+        # 'carbonblack:alert.status.updated' -> 'carbonblack:alert_status_updated'
+        key_parts[1] = re.sub(SPECIAL_CHAR_REGEX, SPECIAL_CHAR_SUB, key_parts[1])
+        sanitized_key = ':'.join(key_parts)
+    else:
+        message = (
+            'Found offended log name "{}". Log name can only contain up to one colon. '
+            'Please check naming convention in conf/schemas/ or conf/logs.json'.format(key)
+        )
+        raise ConfigError(message)
+    return sanitized_key
+
+def _sanitize_log_names(config):
+    """Sanitize the name of logs and replace the dots with underscores. For some reason,
+    we have log name with dots in it in the conf/schemas/carbonblack.json or conf/logs.json.
+
+    Args:
+        config (dict): loaded config from conf/ directory
+
+    Returns:
+        new_config (dict): new config with sanitized keys
+    """
+    new_config = dict()
+    for key, _ in config.items():
+        sanitized_key = sanitize_key(key)
+        new_config[sanitized_key] = config[key]
+
+    return new_config
 
 def _load_schemas(schemas_dir, schema_files):
     """Helper to load all schemas from the schemas directory into one ordered dictionary.

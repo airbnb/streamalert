@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access
-from mock import patch
+from mock import Mock, patch
 from nose.tools import assert_equal, assert_true
 
 from streamalert.classifier.clients import FirehoseClient
 from streamalert_cli.athena import handler
+from streamalert_cli.config import CLIConfig
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
 from tests.unit.helpers.config import athena_cli_basic_config, MockCLIConfig
@@ -78,3 +79,21 @@ class TestAthenaCli:
             table = 'unit_my_test'
             bucket = 'bucket'
             assert_true(handler.rebuild_partitions(table, bucket, config))
+
+    @staticmethod
+    @patch('streamalert.shared.athena.AthenaClient.check_table_exists', Mock(return_value=False))
+    @patch('streamalert.shared.athena.AthenaClient.run_query', Mock(return_value=True))
+    def test_create_table():
+        """CLI - Athena create table helper"""
+        config = CLIConfig(config_path='tests/unit/conf')
+        config['global']['infrastructure']['firehose']['enabled_logs'] = {
+            'test:log_name_with_dots': {}
+        }
+
+        assert_true(
+            handler.create_table(
+                'test_log_name_with_dots',
+                'bucket',
+                config
+            )
+        )

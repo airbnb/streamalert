@@ -87,6 +87,12 @@ def basic_streamalert_config():
                 },
                 'parser': 'json'
             },
+            'json:log_with_dots': {
+                'schema': {
+                    'name': 'string'
+                },
+                'parser': 'json'
+            },
             'csv_log': {
                 'schema': {
                     'data': 'string',
