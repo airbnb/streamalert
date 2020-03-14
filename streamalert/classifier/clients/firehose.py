@@ -15,6 +15,7 @@ limitations under the License.
 """
 from collections import defaultdict
 import json
+import hashlib
 import re
 
 import backoff
@@ -52,7 +53,7 @@ class FirehoseClient:
     MAX_RECORD_SIZE = 1000 * 1000 - 2
 
     # Default firehose name format, should be formatted with deployment prefix
-    DEFAULT_FIREHOSE_FMT = '{}streamalert_data_{}'
+    DEFAULT_FIREHOSE_FMT = '{}data_{}'
 
     # Exception for which backoff operations should be performed
     EXCEPTIONS_TO_BACKOFF = (ClientError, BotocoreConnectionError, HTTPClientError)
@@ -60,11 +61,24 @@ class FirehoseClient:
     # Set of enabled log types for firehose, loaded from configs
     _ENABLED_LOGS = dict()
 
+    # The max length of the firehose stream name is 64. For streamalert data firehose,
+    # we reserve 5 chars to have `data_` as part of prefix. Please refer to
+    # terraform/modules/tf_kinesis_firehose_delivery_stream/main.tf
+    FIREHOSE_NAME_MAX_LEN = 59
+
+    FIREHOSE_NAME_HASH_LEN = 8
+
     def __init__(self, prefix, firehose_config=None, log_sources=None):
+        self._original_prefix = prefix
+        if firehose_config and firehose_config.get('use_prefix', True):
+            self._use_prefix = True
+        else:
+            self._use_prefix = False
+
         self._prefix = (
             '{}_'.format(prefix)
             # This default value must be consistent with the classifier Terraform config
-            if firehose_config and firehose_config.get('use_prefix', True)
+            if self._use_prefix
             else ''
         )
         self._client = boto3.client('firehose', config=boto_helpers.default_config())
@@ -299,6 +313,45 @@ class FirehoseClient:
         return re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, log_name)
 
     @classmethod
+    def generate_firehose_stream_name(cls, use_prefix, prefix, log_stream_name):
+        """Generate stream name complaint to firehose naming restriction, no
+        longer than 64 characters
+
+        Args:
+            prefix (str): TODO
+            log_stream_name (str): TODO
+
+        Returns:
+            str: compliant stream name
+        """
+
+        reserved_len = cls.FIREHOSE_NAME_MAX_LEN
+
+        if use_prefix:
+            # the prefix will have a trailing '_' (underscore) that's why deduct 1
+            # in the end. Please refer to terraform module for more detail
+            # terraform/modules/tf_kinesis_firehose_delivery_stream/main.tf
+            reserved_len = reserved_len - len(prefix) - 1
+
+        # Don't change the stream name if its length is complaint
+        if len(log_stream_name) <= reserved_len:
+            return log_stream_name
+
+        # Otherwise keep the first 51 chars if no prefix and hash the rest string into 8 chars.
+        # With prefix enabled, keep the first (51 - len(prefix) and hash the rest string into 8
+        # chars.
+        pos = reserved_len - cls.FIREHOSE_NAME_HASH_LEN
+        hash_part = log_stream_name[pos:]
+        hash_result = hashlib.md5(hash_part.encode()).hexdigest()
+
+        # combine the first part and first 8 chars of hash result together as new
+        # stream name.
+        # e.g. if use prefix
+        # 'very_very_very_long_log_stream_name_abcd_59_characters_long' may hash to
+        # 'very_very_very_long_log_stream_name_abcd_59_06ceefaa'
+        return ''.join([log_stream_name[:pos], hash_result[:cls.FIREHOSE_NAME_HASH_LEN]])
+
+    @classmethod
     def enabled_log_source(cls, log_source_name):
         """Check that the incoming record is an enabled log source for Firehose
 
@@ -392,8 +445,12 @@ class FirehoseClient:
         for log_type, records in records.items():
             # This same substitution method is used when naming the Delivery Streams
             formatted_log_type = self.firehose_log_name(log_type)
-            stream_name = self.DEFAULT_FIREHOSE_FMT.format(self._prefix, formatted_log_type)
 
+            # firehose stream name has the length limit, no longer than 64 characters
+            formatted_stream_name = self.generate_firehose_stream_name(
+                self._use_prefix, self._original_prefix, formatted_log_type
+            )
+            stream_name = self.DEFAULT_FIREHOSE_FMT.format(self._prefix, formatted_stream_name)
             # Process each record batch in the categorized payload set
             for record_batch in self._record_batches(records):
                 batch_size = len(record_batch)

@@ -72,7 +72,9 @@ def generate_firehose(logging_bucket, main_dict, config):
             'file_format': get_data_file_format(config),
             'use_prefix': firehose_conf.get('use_prefix', True),
             'prefix': prefix,
-            'log_name': log_stream_name,
+            'log_name': FirehoseClient.generate_firehose_stream_name(
+                firehose_conf.get('use_prefix', True), prefix, log_stream_name
+            ),
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,
             'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
