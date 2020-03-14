@@ -342,7 +342,7 @@ class FirehoseClient:
         # chars.
         pos = reserved_len - cls.FIREHOSE_NAME_HASH_LEN
         hash_part = log_stream_name[pos:]
-        hash_result = hashlib.md5(hash_part.encode()).hexdigest()
+        hash_result = hashlib.md5(hash_part.encode()).hexdigest() # nosec
 
         # combine the first part and first 8 chars of hash result together as new
         # stream name.
