@@ -480,7 +480,7 @@ class TestFirehoseClient:
             'streamalert_very_very_very_long_log_stream_name_abcdefg_e80fecd8', expected_batch
         )
 
-    def test_generate_firehose_stream_name(self):
+    def test_generate_firehose_suffix(self):
         """FirehoseClient - Test helper to generate firehose stream name when prefix disabled"""
         stream_names = [
             'logstreamname',
@@ -490,7 +490,7 @@ class TestFirehoseClient:
         ]
 
         # the hex value can be calculated via python intepreter based on the
-        # generate_firehose_stream_name function. Copy and paste the tips here
+        # generate_firehose_suffix function. Copy and paste the tips here
         # and make it easier if we change the test cases in the future.
         #
         # >>> import hashlib
@@ -507,13 +507,13 @@ class TestFirehoseClient:
             'very_very_very_long_log_stream_name_abcdefg_e80fecd8'
         ]
         results = [
-            self._client.generate_firehose_stream_name(False, 'prefix', stream_name)
+            self._client.generate_firehose_suffix(False, 'prefix', stream_name)
             for stream_name in stream_names
         ]
 
         assert_equal(expected_results, results)
 
-    def test_generate_firehose_stream_name_prefix(self):
+    def test_generate_firehose_suffix_prefix(self):
         """FirehoseClient - Test helper to generate firehose stream name with prefix"""
         stream_names = [
             'logstreamname',
@@ -540,7 +540,7 @@ class TestFirehoseClient:
             'very_very_very_long_log_stream_name_a759cd21f'
         ]
         results = [
-            self._client.generate_firehose_stream_name(True, 'prefix', stream_name)
+            self._client.generate_firehose_suffix(True, 'prefix', stream_name)
             for stream_name in stream_names
         ]
 

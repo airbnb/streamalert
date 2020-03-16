@@ -313,8 +313,8 @@ class FirehoseClient:
         return re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, log_name)
 
     @classmethod
-    def generate_firehose_stream_name(cls, use_prefix, prefix, log_stream_name):
-        """Generate stream name complaint to firehose naming restriction, no
+    def generate_firehose_suffix(cls, use_prefix, prefix, log_stream_name):
+        """Generate suffix of stream name complaint to firehose naming restriction, no
         longer than 64 characters
 
         Args:
@@ -323,7 +323,7 @@ class FirehoseClient:
             log_stream_name (str): The name of the log from conf/logs.json or conf/schemas/*.json
 
         Returns:
-            str: compliant stream name
+            str: suffix of stream name
         """
 
         reserved_len = cls.FIREHOSE_NAME_MAX_LEN
@@ -448,7 +448,7 @@ class FirehoseClient:
             formatted_log_type = self.firehose_log_name(log_type)
 
             # firehose stream name has the length limit, no longer than 64 characters
-            formatted_stream_name = self.generate_firehose_stream_name(
+            formatted_stream_name = self.generate_firehose_suffix(
                 self._use_prefix, self._original_prefix, formatted_log_type
             )
             stream_name = self.DEFAULT_FIREHOSE_FMT.format(self._prefix, formatted_stream_name)
