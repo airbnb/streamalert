@@ -53,7 +53,7 @@ class FirehoseClient:
     MAX_RECORD_SIZE = 1000 * 1000 - 2
 
     # Default firehose name format, should be formatted with deployment prefix
-    DEFAULT_FIREHOSE_FMT = '{}data_{}'
+    DEFAULT_FIREHOSE_FMT = '{}streamalert_{}'
 
     # Exception for which backoff operations should be performed
     EXCEPTIONS_TO_BACKOFF = (ClientError, BotocoreConnectionError, HTTPClientError)
@@ -62,9 +62,9 @@ class FirehoseClient:
     _ENABLED_LOGS = dict()
 
     # The max length of the firehose stream name is 64. For streamalert data firehose,
-    # we reserve 5 chars to have `data_` as part of prefix. Please refer to
+    # we reserve 12 chars to have `streamalert_` as part of prefix. Please refer to
     # terraform/modules/tf_kinesis_firehose_delivery_stream/main.tf
-    FIREHOSE_NAME_MAX_LEN = 59
+    FIREHOSE_NAME_MAX_LEN = 52
 
     FIREHOSE_NAME_HASH_LEN = 8
 
@@ -318,8 +318,9 @@ class FirehoseClient:
         longer than 64 characters
 
         Args:
-            prefix (str): TODO
-            log_stream_name (str): TODO
+            use_prefix (bool): Does apply prefix defined in conf/global.json to firehose stream name
+            prefix (str): The prefix defined in conf/global.json to firehose stream name
+            log_stream_name (str): The name of the log from conf/logs.json or conf/schemas/*.json
 
         Returns:
             str: compliant stream name

@@ -27,7 +27,7 @@ locals {
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
-  name        = "${var.use_prefix ? "${var.prefix}_" : ""}data_${var.log_name}"
+  name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_${var.log_name}"
   destination = var.file_format == "parquet" ? "extended_s3" : "s3"
 
   // AWS Firehose Stream for data to S3 and saved in JSON format
