@@ -356,9 +356,9 @@ class TestSESOutput:
             # Raise an error if no payload of type MIMEApplication is found
             raise AssertionError
 
-    def test_different_attachment_name(self):
-        """SESOutput - Test renamed attachment"""
-        rule_name = 'test_different_attachment_name'
+    def test_record_name_override(self):
+        """SESOutput - Test renamed record"""
+        rule_name = 'test_record_name_override'
 
         alert = get_random_alert(10, rule_name, omit_rule_desc=True)
         output = MagicMock(spec=SESOutput)
