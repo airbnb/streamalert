@@ -353,9 +353,9 @@ For instance, suppose the following schemas are defined across one or more files
 Supposing also that the above ``enabled_logs`` :ref:`example <firehose_example_02>` is used, the
 following Firehose resources will be created:
 
-* ``<prefix>_streamalert_data_cloudwatch_cloudtrail``
-* ``<prefix>_streamalert_data_osquery_differential``
-* ``<prefix>_streamalert_data_osquery_status``
+* ``<prefix>_streamalert_cloudwatch_cloudtrail``
+* ``<prefix>_streamalert_osquery_differential``
+* ``<prefix>_streamalert_osquery_status``
 
 .. note::
 

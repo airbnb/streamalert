@@ -6,7 +6,7 @@ resource "aws_iam_role_policy" "classifier_firehose" {
 }
 
 locals {
-  stream_prefix = "${var.firehose_use_prefix ? "${var.prefix}_" : ""}streamalert_data_"
+  stream_prefix = "${var.firehose_use_prefix ? "${var.prefix}_" : ""}streamalert_"
 }
 
 // IAM Policy Doc: Allow the Classifier to PutRecord* on any StreamAlert Data Firehose

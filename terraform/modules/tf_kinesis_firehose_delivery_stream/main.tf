@@ -11,7 +11,8 @@ locals {
   # https://docs.aws.amazon.com/athena/latest/ug/tables-location-format.html
   # So all data in parquet format will be saved s3 bucket with prefix
   # "s3://bucketname/parquet/[data-type]".
-  s3_path_prefix = "parquet/${var.log_name}"
+  # glue_catalog_table_name maps to data-type if the length of data-type is not to long.
+  s3_path_prefix = "parquet/${var.glue_catalog_table_name}"
 }
 
 locals {
@@ -26,7 +27,7 @@ locals {
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
-  name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_data_${var.log_name}"
+  name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_${var.log_name}"
   destination = var.file_format == "parquet" ? "extended_s3" : "s3"
 
   // AWS Firehose Stream for data to S3 and saved in JSON format
@@ -35,7 +36,7 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
     content {
       role_arn           = var.role_arn
       bucket_arn         = "arn:aws:s3:::${var.s3_bucket_name}"
-      prefix             = "${var.log_name}/"
+      prefix             = "${var.glue_catalog_table_name}/"
       buffer_size        = var.buffer_size
       buffer_interval    = var.buffer_interval
       compression_format = "GZIP"
@@ -113,7 +114,7 @@ resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
 // data athena table
 resource "aws_glue_catalog_table" "data" {
   count         = var.file_format == "parquet" ? 1 : 0
-  name          = var.log_name
+  name          = var.glue_catalog_table_name
   database_name = var.glue_catalog_db_name
 
   table_type = "EXTERNAL_TABLE"

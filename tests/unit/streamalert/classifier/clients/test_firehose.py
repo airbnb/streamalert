@@ -412,7 +412,7 @@ class TestFirehoseClient:
         ]
         self._client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
-            'unit-test_streamalert_data_log_type_01_sub_type_01', expected_batch
+            'unit-test_streamalert_log_type_01_sub_type_01', expected_batch
         )
 
     @patch.object(FirehoseClient, '_send_batch')
@@ -434,5 +434,114 @@ class TestFirehoseClient:
 
         client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
-            'streamalert_data_log_type_01_sub_type_01', expected_batch
+            'streamalert_log_type_01_sub_type_01', expected_batch
         )
+
+    @property
+    def _sample_payloads_long_log_name(self):
+        return [
+            Mock(
+                log_schema_type=(
+                    'very_very_very_long_log_stream_name_abcdefg_'
+                    'abcdefg_70_characters_long'
+                ),
+                parsed_records=[
+                    {
+                        'unit_key_01': 1,
+                        'unit_key_02': 'test'
+                    },
+                    {
+                        'unit_key_01': 2,
+                        'unit_key_02': 'test'
+                    }
+                ]
+            )
+        ]
+
+    @patch.object(FirehoseClient, '_send_batch')
+    def test_send_long_log_name(self, send_batch_mock):
+        """FirehoseClient - Send data when the log name is very long"""
+        FirehoseClient._ENABLED_LOGS = {
+            'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long': {}
+        }
+        expected_batch = [
+            '{"unit_key_01":1,"unit_key_02":"test"}\n',
+            '{"unit_key_01":2,"unit_key_02":"test"}\n'
+        ]
+
+        client = FirehoseClient.load_from_config(
+            prefix='unit-test',
+            firehose_config={'enabled': True, 'use_prefix': False},
+            log_sources=None
+        )
+
+        client.send(self._sample_payloads_long_log_name)
+        send_batch_mock.assert_called_with(
+            'streamalert_very_very_very_long_log_stream_name_abcdefg_e80fecd8', expected_batch
+        )
+
+    def test_generate_firehose_suffix(self):
+        """FirehoseClient - Test helper to generate firehose stream name when prefix disabled"""
+        stream_names = [
+            'logstreamname',
+            'log_stream_name',
+            'very_very_long_log_stream_name_ab_52_characters_long',
+            'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
+        ]
+
+        # the hex value can be calculated via python intepreter based on the
+        # generate_firehose_suffix function. Copy and paste the tips here
+        # and make it easier if we change the test cases in the future.
+        #
+        # >>> import hashlib
+        # >>> s = 'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
+        # >>> hashlib.md5(s[44:].encode()).hexdigest()[:8]
+        # 'e80fecd8'
+        # >>> ''.join([s[:44], h[:8]])
+        # 'very_very_very_long_log_stream_name_abcdefg_e80fecd8'
+        #
+        expected_results = [
+            'logstreamname',
+            'log_stream_name',
+            'very_very_long_log_stream_name_ab_52_characters_long',
+            'very_very_very_long_log_stream_name_abcdefg_e80fecd8'
+        ]
+        results = [
+            self._client.generate_firehose_suffix(False, 'prefix', stream_name)
+            for stream_name in stream_names
+        ]
+
+        assert_equal(expected_results, results)
+
+    def test_generate_firehose_suffix_prefix(self):
+        """FirehoseClient - Test helper to generate firehose stream name with prefix"""
+        stream_names = [
+            'logstreamname',
+            'log_stream_name',
+            'very_very_long_log_stream_name_ab_52_characters_long',
+            'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
+        ]
+
+        # >>> import hashlib
+        # >>> s3 = 'very_very_long_log_stream_name_ab_52_characters_long'
+        # >>> s4 = 'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
+        # >>> h3 = hashlib.md5(s3[37:].encode()).hexdigest()
+        # >>> h4 = hashlib.md5(s4[37:].encode()).hexdigest()
+        # >>> ''.join([s3[:37], h3[:8]])
+        # >>> ''.join([s3[:37], h3[:8]])
+        # 'very_very_long_log_stream_name_ab_52_06ceefaa'
+        # >>> ''.join([s4[:37], h4[:8]])
+        # 'very_very_very_long_log_stream_name_a759cd21f'
+        #
+        expected_results = [
+            'logstreamname',
+            'log_stream_name',
+            'very_very_long_log_stream_name_ab_52_06ceefaa',
+            'very_very_very_long_log_stream_name_a759cd21f'
+        ]
+        results = [
+            self._client.generate_firehose_suffix(True, 'prefix', stream_name)
+            for stream_name in stream_names
+        ]
+
+        assert_equal(expected_results, results)
