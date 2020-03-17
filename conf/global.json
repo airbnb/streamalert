@@ -33,9 +33,6 @@
         "write_capacity": 5
       }
     },
-    "s3_access_logging": {
-      "bucket_name": "specify bucket name here"
-    },
     "classifier_sqs": {
       "use_prefix": true
     }
