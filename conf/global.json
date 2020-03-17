@@ -34,7 +34,6 @@
         "write_capacity": 5
       }
     },
-    "s3_access_logging": {},
     "classifier_sqs": {
       "use_prefix": true
     }
