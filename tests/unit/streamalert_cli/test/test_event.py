@@ -90,13 +90,13 @@ class TestTestEvent:
 
     def test_is_valid(self):
         """StreamAlert CLI - TestEvent Is Valid Property"""
-        assert_equal(self._default_event.is_valid, True)
+        assert_equal(self._default_event.is_valid(self.basic_config()), True)
 
     def test_is_valid_invalid_type(self):
         """StreamAlert CLI - TestEvent Is Valid Property, Invalid Type"""
         self._default_event._event = []  # invalid data type
 
-        assert_equal(self._default_event.is_valid, False)
+        assert_equal(self._default_event.is_valid(self.basic_config()), False)
         assert_equal(
             self._default_event.error,
             'Invalid type for event: <class \'list\'>; should be dict'
@@ -106,14 +106,14 @@ class TestTestEvent:
         """StreamAlert CLI - TestEvent Is Valid Property, Missing Required Key"""
         del self._default_event._event['log']  # remove required key
 
-        assert_equal(self._default_event.is_valid, False)
+        assert_equal(self._default_event.is_valid(self.basic_config()), False)
         assert_equal(self._default_event.error, 'Missing required key(s) in test event: \'log\'')
 
     def test_is_valid_missing_data(self):
         """StreamAlert CLI - TestEvent Is Valid Property, Missing Data or Override"""
         del self._default_event._event['data']  # remove both of the data keys
 
-        assert_equal(self._default_event.is_valid, False)
+        assert_equal(self._default_event.is_valid(self.basic_config()), False)
         assert_equal(
             self._default_event.error,
             'Test event must contain either \'data\' or \'override_record\''
@@ -124,10 +124,21 @@ class TestTestEvent:
         # remove key that is required if NOT classify_only
         del self._default_event._event['trigger_rules']
 
-        assert_equal(self._default_event.is_valid, False)
+        assert_equal(self._default_event.is_valid(self.basic_config()), False)
         assert_equal(
             self._default_event.error,
             'Test events that are not \'classify_only\' should have \'trigger_rules\' defined'
+        )
+
+    def test_is_valid_no_log(self):
+        """StreamAlert CLI - TestEvent Is Valid Property, No Log Schema in Config"""
+        # update the log key to one that is not defined in the config's logs
+        self._default_event._event['log'] = 'not_a_log'
+
+        assert_equal(self._default_event.is_valid(self.basic_config()), False)
+        assert_equal(
+            self._default_event.error,
+            'No defined schema in config for log type: not_a_log'
         )
 
     @patch('streamalert_cli.test.event.LOGGER.warning')
@@ -136,7 +147,7 @@ class TestTestEvent:
         # add an extra random key
         self._default_event._event['extra_thing'] = True
 
-        assert_equal(self._default_event.is_valid, True)
+        assert_equal(self._default_event.is_valid(self.basic_config()), True)
         log_mock.assert_called_with(
             'Additional unnecessary keys in test event: %s',
             '\'extra_thing\''
