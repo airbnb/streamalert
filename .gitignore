@@ -6,11 +6,11 @@ docs/build
 __pycache__
 
 # Terraform files
-*.terraform/
-terraform.tfvars
-terraform/terraform.tfstate*
-terraform/*.zip
-terraform/*.tf.json
+streamalert_cli/_infrastructure/.terraform/
+streamalert_cli/_infrastructure/terraform.tfvars
+streamalert_cli/_infrastructure/terraform.tfstate*
+streamalert_cli/_infrastructure/*.zip
+streamalert_cli/_infrastructure/*.tf.json
 
 # Coveralls repo token
 .coveralls.yml

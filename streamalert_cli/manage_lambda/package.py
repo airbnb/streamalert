@@ -21,6 +21,7 @@ import zipfile
 
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 
 # Build .zip files in the top-level of the terraform directory
 THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
@@ -85,7 +86,7 @@ class LambdaPackage:
 
         # Zip up files
         result = shutil.make_archive(
-            os.path.join(BUILD_DIRECTORY, self.package_name), 'zip', temp_package_path)
+            os.path.join(TERRAFORM_FILES_PATH, self.package_name), 'zip', temp_package_path)
         LOGGER.info('Successfully created %s', os.path.basename(result))
 
         # Remove temp files

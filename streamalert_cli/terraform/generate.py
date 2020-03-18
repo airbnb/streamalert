@@ -22,6 +22,7 @@ from streamalert.shared.logger import get_logger
 from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_alerts_table_schema
 from streamalert_cli.helpers import check_credentials
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
     infinitedict,
@@ -375,9 +376,9 @@ def cleanup_old_tf_files():
     """
     Cleanup old *.tf.json files
     """
-    for terraform_file in os.listdir('terraform'):
+    for terraform_file in os.listdir(TERRAFORM_FILES_PATH):
         if fnmatch(terraform_file, '*.tf.json'):
-            os.remove(os.path.join('terraform', terraform_file))
+            os.remove(os.path.join(TERRAFORM_FILES_PATH, terraform_file))
 
 
 class TerraformGenerateCommand(CLICommand):
@@ -414,7 +415,10 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
 
     # Setup the main.tf.json file
     LOGGER.debug('Generating cluster file: main.tf.json')
-    _create_terraform_module_file(generate_main(config, init=init), 'terraform/main.tf.json')
+    _create_terraform_module_file(
+        generate_main(config, init=init),
+        os.path.join(TERRAFORM_FILES_PATH, 'main.tf.json')
+    )
 
     # Return early during the init process, clusters are not needed yet
     if init:
@@ -433,22 +437,32 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
                 'An error was generated while creating the %s cluster', cluster)
             return False
 
-        _create_terraform_module_file(cluster_dict, 'terraform/{}.tf.json'.format(cluster))
+        file_name = '{}.tf.json'.format(cluster)
+        _create_terraform_module_file(
+            cluster_dict,
+            os.path.join(TERRAFORM_FILES_PATH, file_name),
+        )
 
     metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
     if metric_filters:
-        _create_terraform_module_file(metric_filters, 'terraform/metric_filters.tf.json')
+        _create_terraform_module_file(
+            metric_filters,
+            os.path.join(TERRAFORM_FILES_PATH, 'metric_filters.tf.json')
+        )
 
     metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
     if metric_alarms:
-        _create_terraform_module_file(metric_alarms, 'terraform/metric_alarms.tf.json')
+        _create_terraform_module_file(
+            metric_alarms,
+            os.path.join(TERRAFORM_FILES_PATH, 'metric_alarms.tf.json')
+        )
 
     # Setup Athena
     generate_global_lambda_settings(
         config,
         config_name='athena_partition_refresh_config',
         generate_func=generate_athena,
-        tf_tmp_file='terraform/athena.tf.json',
+        tf_tmp_file=os.path.join(TERRAFORM_FILES_PATH, 'athena.tf.json'),
         message='Removing old Athena Terraform file'
     )
 
@@ -457,7 +471,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         config,
         config_name='threat_intel_downloader_config',
         generate_func=generate_threat_intel_downloader,
-        tf_tmp_file='terraform/ti_downloader.tf.json',
+        tf_tmp_file=os.path.join(TERRAFORM_FILES_PATH, 'ti_downloader.tf.json'),
         message='Removing old Threat Intel Downloader Terraform file'
     )
 
@@ -466,7 +480,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         config,
         config_name='rule_promotion_config',
         generate_func=generate_rule_promotion,
-        tf_tmp_file='terraform/rule_promotion.tf.json',
+        tf_tmp_file=os.path.join(TERRAFORM_FILES_PATH, 'rule_promotion.tf.json'),
         message='Removing old Rule Promotion Terraform file'
     )
 
@@ -475,7 +489,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         config,
         config_name='rules_engine_config',
         generate_func=generate_rules_engine,
-        tf_tmp_file='terraform/rules_engine.tf.json',
+        tf_tmp_file=os.path.join(TERRAFORM_FILES_PATH, 'rules_engine.tf.json'),
         message='Removing old Rules Engine Terraform file'
     )
 
@@ -484,7 +498,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         config,
         config_name='alert_processor_config',
         generate_func=generate_alert_processor,
-        tf_tmp_file='terraform/alert_processor.tf.json',
+        tf_tmp_file=os.path.join(TERRAFORM_FILES_PATH, 'alert_processor.tf.json'),
         message='Removing old Alert Processor Terraform file'
     )
 
@@ -493,7 +507,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         config,
         config_name='alert_merger_config',
         generate_func=generate_alert_merger,
-        tf_tmp_file='terraform/alert_merger.tf.json',
+        tf_tmp_file=os.path.join(TERRAFORM_FILES_PATH, 'alert_merger.tf.json'),
         message='Removing old Alert Merger Terraform file'
     )
 
@@ -510,7 +524,7 @@ def _generate_lookup_tables_settings(config):
     """
     Generates .tf.json file for LookupTables
     """
-    tf_file_name = 'terraform/lookup_tables.tf.json'
+    tf_file_name = os.path.join(TERRAFORM_FILES_PATH, 'lookup_tables.tf.json')
 
     if not config['lookup_tables'].get('enabled', False):
         remove_temp_terraform_file(tf_file_name, 'Removing old LookupTables Terraform file')
@@ -572,7 +586,7 @@ def _generate_streamquery_module(config):
     """
     Generates .tf.json file for scheduled queries
     """
-    tf_file_name = 'terraform/scheduled_queries.tf.json'
+    tf_file_name = os.path.join(TERRAFORM_FILES_PATH, 'scheduled_queries.tf.json')
     if not config.get('scheduled_queries', {}).get('enabled', False):
         remove_temp_terraform_file(tf_file_name, 'Removing old scheduled queries Terraform file')
         return
