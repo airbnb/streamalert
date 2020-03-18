@@ -64,23 +64,12 @@ class FirehoseClient:
     # The max length of the firehose stream name is 64. For streamalert data firehose,
     # we reserve 12 chars to have `streamalert_` as part of prefix. Please refer to
     # terraform/modules/tf_kinesis_firehose_delivery_stream/main.tf
-    FIREHOSE_NAME_MAX_LEN = 52
+    AWS_FIREHOSE_NAME_MAX_LEN = 64
 
-    FIREHOSE_NAME_HASH_LEN = 8
+    FIREHOSE_NAME_MIN_HASH_LEN = 8
 
     def __init__(self, prefix, firehose_config=None, log_sources=None):
-        self._original_prefix = prefix
-        if firehose_config and firehose_config.get('use_prefix', True):
-            self._use_prefix = True
-        else:
-            self._use_prefix = False
-
-        self._prefix = (
-            '{}_'.format(prefix)
-            # This default value must be consistent with the classifier Terraform config
-            if self._use_prefix
-            else ''
-        )
+        self._prefix = prefix if firehose_config.get('use_prefix', True) else ''
         self._client = boto3.client('firehose', config=boto_helpers.default_config())
         self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
@@ -139,6 +128,18 @@ class FirehoseClient:
             yield current_batch
 
     @classmethod
+    def sanitized_value(cls, key):
+        """Sanitize a key by replacing non-word characters with '_'
+
+        Args:
+            key (str): a string needs to be sanitized
+
+        Returns:
+            str: sanitized string
+        """
+        return re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, key)
+
+    @classmethod
     def sanitize_keys(cls, record):
         """Remove special characters from parsed record keys
 
@@ -153,7 +154,7 @@ class FirehoseClient:
         """
         new_record = {}
         for key, value in record.items():
-            sanitized_key = re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, key)
+            sanitized_key = cls.sanitized_value(key)
 
             # Handle nested objects
             if isinstance(value, dict):
@@ -301,19 +302,7 @@ class FirehoseClient:
             self._log_failed(len(records_data))
 
     @classmethod
-    def firehose_log_name(cls, log_name):
-        """Convert conventional log names into Firehose delivery stream names
-
-        Args:
-            log_name: The name of the log from logs.json
-
-        Returns
-            str: Converted name which corresponds to a Firehose delivery Stream
-        """
-        return re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, log_name)
-
-    @classmethod
-    def generate_firehose_suffix(cls, use_prefix, prefix, log_stream_name):
+    def generate_firehose_name(cls, prefix, log_stream_name):
         """Generate suffix of stream name complaint to firehose naming restriction, no
         longer than 64 characters
 
@@ -325,32 +314,30 @@ class FirehoseClient:
         Returns:
             str: suffix of stream name
         """
+        # This same substitution method is used when naming the Delivery Streams
+        sanitized_name = cls.sanitized_value(log_stream_name)
+        if prefix:
+            prefix += '_'
 
-        reserved_len = cls.FIREHOSE_NAME_MAX_LEN
+        stream_name = cls.DEFAULT_FIREHOSE_FMT.format(prefix, sanitized_name)
+        if len(stream_name) <= cls.AWS_FIREHOSE_NAME_MAX_LEN:
+            return stream_name
 
-        if use_prefix:
-            # the prefix will have a trailing '_' (underscore) that's why deduct 1
-            # in the end. Please refer to terraform module for more detail
-            # terraform/modules/tf_kinesis_firehose_delivery_stream/main.tf
-            reserved_len = reserved_len - len(prefix) - 1
-
-        # Don't change the stream name if its length is complaint
-        if len(log_stream_name) <= reserved_len:
-            return log_stream_name
-
-        # Otherwise keep the first 51 chars if no prefix and hash the rest string into 8 chars.
-        # With prefix enabled, keep the first (51 - len(prefix) and hash the rest string into 8
-        # chars.
-        pos = reserved_len - cls.FIREHOSE_NAME_HASH_LEN
-        hash_part = log_stream_name[pos:]
-        hash_result = hashlib.md5(hash_part.encode()).hexdigest() # nosec
+        base_name = stream_name[:cls.AWS_FIREHOSE_NAME_MAX_LEN - cls.FIREHOSE_NAME_MIN_HASH_LEN]
+        if not base_name.endswith('_'):
+            # make sure this ends in an underscore, but not 2
+            base_name = '{}_'.format(
+                base_name[:-1]
+            ) if base_name[-2] != '_' else '{}_'.format(base_name[:-2])
 
         # combine the first part and first 8 chars of hash result together as new
         # stream name.
         # e.g. if use prefix
         # 'very_very_very_long_log_stream_name_abcd_59_characters_long' may hash to
         # 'very_very_very_long_log_stream_name_abcd_59_06ceefaa'
-        return ''.join([log_stream_name[:pos], hash_result[:cls.FIREHOSE_NAME_HASH_LEN]])
+        return '{}{}'.format(
+            base_name, hashlib.md5(base_name.encode()).hexdigest()
+        )[:cls.AWS_FIREHOSE_NAME_MAX_LEN]  # nosec
 
     @classmethod
     def enabled_log_source(cls, log_source_name):
@@ -366,7 +353,7 @@ class FirehoseClient:
             LOGGER.error('Enabled logs not loaded')
             return False
 
-        return cls.firehose_log_name(log_source_name) in cls._ENABLED_LOGS
+        return cls.sanitized_value(log_source_name) in cls._ENABLED_LOGS
 
     @classmethod
     def load_enabled_log_sources(cls, firehose_config, log_sources, force_load=False):
@@ -396,7 +383,7 @@ class FirehoseClient:
             # Expand to all subtypes
             if len(enabled_log_parts) == 1:
                 expanded_logs = {
-                    cls.firehose_log_name(log_name): log_name
+                    cls.sanitized_value(log_name): log_name
                     for log_name in log_sources
                     if log_name.split(':')[0] == enabled_log_parts[0]
                 }
@@ -412,7 +399,7 @@ class FirehoseClient:
                     LOGGER.error('Enabled Firehose log %s not declared in logs.json', enabled_log)
                     continue
 
-                cls._ENABLED_LOGS[cls.firehose_log_name('_'.join(enabled_log_parts))] = enabled_log
+                cls._ENABLED_LOGS[cls.sanitized_value(enabled_log)] = enabled_log
 
         return cls._ENABLED_LOGS
 
@@ -444,16 +431,11 @@ class FirehoseClient:
         # Each batch will be processed to their specific Firehose, which lands the data
         # in a specific prefix in S3.
         for log_type, records in records.items():
-            # This same substitution method is used when naming the Delivery Streams
-            formatted_log_type = self.firehose_log_name(log_type)
-
             # firehose stream name has the length limit, no longer than 64 characters
-            formatted_stream_name = self.generate_firehose_suffix(
-                self._use_prefix, self._original_prefix, formatted_log_type
-            )
-            stream_name = self.DEFAULT_FIREHOSE_FMT.format(self._prefix, formatted_stream_name)
+            formatted_stream_name = self.generate_firehose_name(self._prefix, log_type)
+
             # Process each record batch in the categorized payload set
             for record_batch in self._record_batches(records):
                 batch_size = len(record_batch)
-                response = self._send_batch(stream_name, record_batch)
-                self._finalize(response, stream_name, batch_size)
+                response = self._send_batch(formatted_stream_name, record_batch)
+                self._finalize(response, formatted_stream_name, batch_size)

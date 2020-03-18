@@ -44,6 +44,7 @@ SCHEMA_TYPE_MAPPING = {
 # Athena query statement length limit
 MAX_QUERY_LENGTH = 262144
 
+
 def add_partition_statements(partitions, bucket, table_name):
     """Generate ALTER TABLE commands from existing partitions. It wil yield Athena
     statement string(s), the length of each string should be less than Athena query
@@ -186,6 +187,7 @@ def generate_alerts_table_schema():
 
     return format_schema_tf(athena_schema)
 
+
 def generate_data_table_schema(config, table, schema_override=None):
     """Generate the schema for data table in terraform
 
@@ -202,7 +204,7 @@ def generate_data_table_schema(config, table, schema_override=None):
     )
 
     # Convert special characters in schema name to underscores
-    sanitized_table_name = FirehoseClient.firehose_log_name(table)
+    sanitized_table_name = FirehoseClient.sanitized_value(table)
 
     # Check that the log type is enabled via Firehose
     if sanitized_table_name not in enabled_logs:

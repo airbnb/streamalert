@@ -235,7 +235,7 @@ def rebuild_partitions(table, bucket, config):
     Returns:
         bool: False if errors occurred, True otherwise
     """
-    sanitized_table_name = FirehoseClient.firehose_log_name(table)
+    sanitized_table_name = FirehoseClient.sanitized_value(table)
 
     athena_client = get_athena_client(config)
 
@@ -272,6 +272,7 @@ def rebuild_partitions(table, bucket, config):
     LOGGER.info('Successfully rebuilt all partitions for %s', sanitized_table_name)
     return True
 
+
 def write_partitions_statements(statements, sanitized_table_name):
     """Write partitions statements to a file if re-creating new partitions failed"""
     file_name = 'partitions_{}.txt'.format(sanitized_table_name)
@@ -281,6 +282,7 @@ def write_partitions_statements(statements, sanitized_table_name):
     )
     with open(file_name, 'w') as partition_file:
         partition_file.write(statements)
+
 
 def drop_all_tables(config):
     """Drop all 'streamalert' Athena tables
@@ -331,8 +333,6 @@ def _construct_create_table_statement(schema, table_name, bucket, file_format='p
             )
             schema_statement.append('{0} struct<{1}>'.format(key_name, struct_schema))
 
-
-
     return CREATE_TABLE_STATEMENT.format(
         table_name=table_name,
         schema=', '.join(schema_statement),
@@ -360,7 +360,7 @@ def create_table(table, bucket, config, schema_override=None):
     )
 
     # Convert special characters in schema name to underscores
-    sanitized_table_name = FirehoseClient.firehose_log_name(table)
+    sanitized_table_name = FirehoseClient.sanitized_value(table)
 
     # Check that the log type is enabled via Firehose
     if sanitized_table_name != 'alerts' and sanitized_table_name not in enabled_logs:
