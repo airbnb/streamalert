@@ -300,10 +300,10 @@ class TestFirehoseClient:
 
             log_mock.assert_called_with('Firehose request failed')
 
-    def test_firehose_log_name(self):
-        """FirehoseClient - Firehose Log Name"""
+    def test_sanitized_value(self):
+        """FirehoseClient - Sanitized Value"""
         expected_result = 'test_log_type_name'
-        result = FirehoseClient.firehose_log_name('test*log.type-name')
+        result = FirehoseClient.sanitized_value('test*log.type-name')
         assert_equal(result, expected_result)
 
     def test_enabled_log_source(self):
@@ -412,7 +412,7 @@ class TestFirehoseClient:
         ]
         self._client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
-            'unit-test_streamalert_log_type_01_sub_type_01', expected_batch
+            'unit_test_streamalert_log_type_01_sub_type_01', expected_batch
         )
 
     @patch.object(FirehoseClient, '_send_batch')
@@ -442,8 +442,7 @@ class TestFirehoseClient:
         return [
             Mock(
                 log_schema_type=(
-                    'very_very_very_long_log_stream_name_abcdefg_'
-                    'abcdefg_70_characters_long'
+                    'very_very_very_long_log_stream_name_abcdefg_hijklmn_70_characters_long'
                 ),
                 parsed_records=[
                     {
@@ -462,7 +461,7 @@ class TestFirehoseClient:
     def test_send_long_log_name(self, send_batch_mock):
         """FirehoseClient - Send data when the log name is very long"""
         FirehoseClient._ENABLED_LOGS = {
-            'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long': {}
+            'very_very_very_long_log_stream_name_abcdefg_hijklmn_70_characters_long': {}
         }
         expected_batch = [
             '{"unit_key_01":1,"unit_key_02":"test"}\n',
@@ -477,12 +476,12 @@ class TestFirehoseClient:
 
         client.send(self._sample_payloads_long_log_name)
         send_batch_mock.assert_called_with(
-            'streamalert_very_very_very_long_log_stream_name_abcdefg_e80fecd8', expected_batch
+            'streamalert_very_very_very_long_log_stream_name_abcdefg_bbe68ccf', expected_batch
         )
 
-    def test_generate_firehose_suffix(self):
+    def test_generate_firehose_name(self):
         """FirehoseClient - Test helper to generate firehose stream name when prefix disabled"""
-        stream_names = [
+        log_names = [
             'logstreamname',
             'log_stream_name',
             'very_very_long_log_stream_name_ab_52_characters_long',
@@ -501,21 +500,21 @@ class TestFirehoseClient:
         # 'very_very_very_long_log_stream_name_abcdefg_e80fecd8'
         #
         expected_results = [
-            'logstreamname',
-            'log_stream_name',
-            'very_very_long_log_stream_name_ab_52_characters_long',
-            'very_very_very_long_log_stream_name_abcdefg_e80fecd8'
+            'streamalert_logstreamname',
+            'streamalert_log_stream_name',
+            'streamalert_very_very_long_log_stream_name_ab_52_characters_long',
+            'streamalert_very_very_very_long_log_stream_name_abcdefg_bbe68ccf'
         ]
         results = [
-            self._client.generate_firehose_suffix(False, 'prefix', stream_name)
-            for stream_name in stream_names
+            self._client.generate_firehose_name('', log_name)
+            for log_name in log_names
         ]
 
         assert_equal(expected_results, results)
 
-    def test_generate_firehose_suffix_prefix(self):
+    def test_generate_firehose_name_prefix(self):
         """FirehoseClient - Test helper to generate firehose stream name with prefix"""
-        stream_names = [
+        log_names = [
             'logstreamname',
             'log_stream_name',
             'very_very_long_log_stream_name_ab_52_characters_long',
@@ -534,14 +533,14 @@ class TestFirehoseClient:
         # 'very_very_very_long_log_stream_name_a759cd21f'
         #
         expected_results = [
-            'logstreamname',
-            'log_stream_name',
-            'very_very_long_log_stream_name_ab_52_06ceefaa',
-            'very_very_very_long_log_stream_name_a759cd21f'
+            'prefix_streamalert_logstreamname',
+            'prefix_streamalert_log_stream_name',
+            'prefix_streamalert_very_very_long_log_stream_name_ab_52_4ccde648',
+            'prefix_streamalert_very_very_very_long_log_stream_name_6fafde49a'
         ]
         results = [
-            self._client.generate_firehose_suffix(True, 'prefix', stream_name)
-            for stream_name in stream_names
+            self._client.generate_firehose_name('prefix', log_name)
+            for log_name in log_names
         ]
 
         assert_equal(expected_results, results)

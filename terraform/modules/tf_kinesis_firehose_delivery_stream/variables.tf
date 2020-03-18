@@ -1,9 +1,7 @@
-variable "prefix" {
-  type = string
-}
 
-variable "use_prefix" {
-  description = "When true, prepends the StreamAlert prefix to the AWS Firehose resource name"
+variable "stream_name" {
+  type        = string
+  description = "Fully qualified name to use for delivery stream"
 }
 
 variable "buffer_size" {
@@ -17,10 +15,6 @@ variable "buffer_interval" {
 variable "file_format" {
   type        = string
   description = "Either parquet or json"
-}
-
-variable "log_name" {
-  type = string
 }
 
 variable "role_arn" {

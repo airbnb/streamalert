@@ -17,7 +17,6 @@ from collections import defaultdict
 import textwrap
 
 from streamalert.shared import rule
-from streamalert.shared.config import sanitize_key
 from streamalert.shared.logger import get_logger
 from streamalert_cli.test.event import TestEvent
 from streamalert_cli.test.format import format_green, format_red, format_underline
@@ -108,7 +107,7 @@ class TestResult(TestEvent):
         fmt['classification_status'] = (
             self._PASS_STRING if self.classification_tests_passed else self._FAIL_STRING
         )
-        fmt['expected_type'] = sanitize_key(self.log)
+        fmt['expected_type'] = self.log
         fmt['classified_type'] = (
             self._classified_result.log_schema_type
             if self._classified else format_red(
@@ -202,7 +201,7 @@ class TestResult(TestEvent):
 
     @property
     def _classified(self):
-        return self and self._classified_result.log_schema_type == sanitize_key(self.log)
+        return self and self._classified_result.log_schema_type == self.log
 
     def _format_rules(self, items, compare_set):
         if not items:

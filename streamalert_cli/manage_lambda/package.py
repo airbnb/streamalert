@@ -100,7 +100,7 @@ class LambdaPackage:
                 # Copy the directory, skipping any files with a 'dependencies.zip' suffix
                 shutil.copytree(
                     path, os.path.join(temp_package_path, path),
-                    ignore=shutil.ignore_patterns(*{'*dependencies.zip'})
+                    ignore=shutil.ignore_patterns('*dependencies.zip', '*.json')
                 )
             else:
                 # Ensure the parent directory of the file being copied already exists

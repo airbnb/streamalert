@@ -59,6 +59,8 @@ def generate_firehose(logging_bucket, main_dict, config):
 
     db_name = get_database_name(config)
 
+    firehose_prefix = prefix if firehose_conf.get('use_prefix', True) else ''
+
     # Add the Delivery Streams individually
     for log_stream_name, log_type_name in enabled_logs.items():
         module_dict = {
@@ -70,11 +72,7 @@ def generate_firehose(logging_bucket, main_dict, config):
                 firehose_conf.get('buffer_interval', 300)
             ),
             'file_format': get_data_file_format(config),
-            'use_prefix': firehose_conf.get('use_prefix', True),
-            'prefix': prefix,
-            'log_name': FirehoseClient.generate_firehose_suffix(
-                firehose_conf.get('use_prefix', True), prefix, log_stream_name
-            ),
+            'stream_name': FirehoseClient.generate_firehose_name(firehose_prefix, log_stream_name),
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,
             'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',

@@ -87,7 +87,7 @@ def basic_streamalert_config():
                 },
                 'parser': 'json'
             },
-            'json:log_with_dots': {
+            'json:log.with.dots': {
                 'schema': {
                     'name': 'string'
                 },

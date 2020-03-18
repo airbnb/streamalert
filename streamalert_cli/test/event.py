@@ -118,8 +118,7 @@ class TestEvent:
         self._suppressed = self._suppressed or value
         return self._suppressed
 
-    @property
-    def is_valid(self):
+    def is_valid(self, config):
         """Check if the test event contains the required keys
 
         Returns:
@@ -148,6 +147,10 @@ class TestEvent:
                 )
                 return False
 
+        if self.log not in config['logs']:
+            self.error = 'No defined schema in config for log type: {}'.format(self.log)
+            return False
+
         # Log a warning if there are extra keys declared in the test log, but this is not an error
         key_diff = test_event_keys.difference(
             self.REQUIRED_KEYS | self.OPTIONAL_KEYS | self.ACCEPTABLE_DATA_KEYS
@@ -173,7 +176,7 @@ class TestEvent:
         ThreatIntelMocks.add_fixtures(self.threat_intel_fixtures)
 
     def prepare(self, config):
-        if not self.is_valid:
+        if not self.is_valid(config):
             return False
 
         if not self.format_test_record(config):
@@ -359,6 +362,7 @@ class TestEvent:
         if not self.override_record:
             return
 
+        # The existence of this is checked in the is_valid function
         event_log = config['logs'].get(self.log)
 
         configuration = event_log.get('configuration', {})

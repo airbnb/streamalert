@@ -19,9 +19,7 @@ from mock import Mock
 from nose.tools import (
     assert_equal,
     assert_count_equal,
-    assert_false,
     assert_raises,
-    assert_true
 )
 from pyfakefs import fake_filesystem_unittest
 
@@ -30,8 +28,6 @@ from streamalert.shared.config import (
     load_config,
     parse_lambda_arn,
     ConfigError,
-    _requires_sanitized_log_names,
-    _sanitize_log_names,
 )
 
 from tests.unit.helpers.config import basic_streamalert_config
@@ -296,76 +292,3 @@ class TestConfigValidation:
         config = basic_streamalert_config()
         config['clusters']['dev'] = config['clusters']['prod']
         assert_raises(ConfigError, _validate_config, config)
-
-
-class TestConfigLogName:
-    """Test sanitizing log name in the Config"""
-    # pylint: disable=no-self-use
-
-    def test_sanitize_log_names_in_logs(self):
-        """Shared - Sanitize log names in logs(schemas) config"""
-        config = {
-            'test:unit_test_1': {'key1': 'val1', 'key2': 'val2'},
-            'test_unit_test_2': {'key1': 'val1', 'key2': 'val2'},
-            'testunittest3': {'key1': 'val1', 'key2': 'val2'},
-            'test:unit.test.4': {'key1': 'val1', 'key2': 'val2'},
-            'test:unit.test-5': {'key1': 'val1', 'key2': 'val2'},
-            'test_unit:test_6': {'key1': 'val1', 'key2': 'val2'},
-            'test_unit:test.7': {'key1': 'val1', 'key2': 'val2'}
-        }
-
-        expected_config = {
-            'test:unit_test_1': {'key1': 'val1', 'key2': 'val2'},
-            'test_unit_test_2': {'key1': 'val1', 'key2': 'val2'},
-            'testunittest3': {'key1': 'val1', 'key2': 'val2'},
-            'test:unit_test_4': {'key1': 'val1', 'key2': 'val2'},
-            'test:unit_test_5': {'key1': 'val1', 'key2': 'val2'},
-            'test_unit:test_6': {'key1': 'val1', 'key2': 'val2'},
-            'test_unit:test_7': {'key1': 'val1', 'key2': 'val2'}
-        }
-
-        result = _sanitize_log_names(config)
-        assert_equal(result, expected_config)
-
-    def test_sanitize_log_names_in_firehose_config(self):
-        """Shared - Sanitize log names in firehose config"""
-        config = {
-            'osquery': {},
-            'osquery:differential': {},
-            'carbonblack:alert.status.updated': {},
-            'test:unit-test.crazy.dots': {},
-            'test:unit_test_underscores': {}
-        }
-
-        expected_config = {
-            'osquery': {},
-            'osquery:differential': {},
-            'carbonblack:alert_status_updated': {},
-            'test:unit_test_crazy_dots': {},
-            'test:unit_test_underscores': {}
-        }
-
-        result = _sanitize_log_names(config)
-        assert_equal(result, expected_config)
-
-    def test_sanitize_log_names_config_error(self):
-        """Shared - Raise ConfigError when sanitize log names"""
-        config = {
-            'test:unit:more_colons': {'key1': 'val1', 'key2': 'val2'}
-        }
-
-        assert_raises(ConfigError, _sanitize_log_names, config)
-
-    def test_requires_sanitized_log_names(self):
-        """Shared - Validate if a config requires to sanitize the log names"""
-        config = {}
-        assert_false(_requires_sanitized_log_names(config))
-        config = {'global': {}}
-        assert_false(_requires_sanitized_log_names(config))
-        config = {'global': {'infrastructure': {}}}
-        assert_false(_requires_sanitized_log_names(config))
-        config = {'global': {'infrastructure': {'firehose': {'enabled_logs': {}}}}}
-        assert_false(_requires_sanitized_log_names(config))
-
-        config = {'global': {'infrastructure': {'firehose': {'enabled_logs': {'bala': {}}}}}}
-        assert_true(_requires_sanitized_log_names(config))

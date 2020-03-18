@@ -21,13 +21,13 @@ locals {
   # *.gz files.
   # https://docs.aws.amazon.com/athena/latest/ug/tables-location-format.html
   # So all data in parquet format will be saved s3 bucket with prefix "alerts/parquet".
-  data_location       = "s3://${var.prefix}-streamalert-data/${local.s3_path_prefix}"
+  data_location       = "s3://${var.s3_bucket_name}/${local.s3_path_prefix}"
   ser_de_params_key   = var.file_format == "parquet" ? "serialization.format" : "ignore.malformed.json"
   ser_de_params_value = var.file_format == "parquet" ? "1" : "true"
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
-  name        = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_${var.log_name}"
+  name        = var.stream_name
   destination = var.file_format == "parquet" ? "extended_s3" : "s3"
 
   // AWS Firehose Stream for data to S3 and saved in JSON format
@@ -99,7 +99,7 @@ resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
   threshold           = var.alarm_threshold
   evaluation_periods  = var.evaluation_periods
   period              = var.period_seconds
-  alarm_description   = "StreamAlert Firehose record count less than expected threshold: ${var.log_name}"
+  alarm_description   = "StreamAlert Firehose record count less than expected threshold: ${var.stream_name}"
   alarm_actions       = var.alarm_actions
 
   dimensions = {
