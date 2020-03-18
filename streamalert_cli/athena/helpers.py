@@ -212,7 +212,7 @@ def generate_data_table_schema(config, table, schema_override=None):
                      'is not enabled.', sanitized_table_name)
         return None
 
-    log_info = config['logs'][table.replace('_', ':', 1)]
+    log_info = config['logs'][enabled_logs.get(sanitized_table_name)]
 
     schema = dict(log_info['schema'])
     sanitized_schema = FirehoseClient.sanitize_keys(schema)

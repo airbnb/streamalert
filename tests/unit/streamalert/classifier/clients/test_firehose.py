@@ -488,17 +488,6 @@ class TestFirehoseClient:
             'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
         ]
 
-        # the hex value can be calculated via python intepreter based on the
-        # generate_firehose_suffix function. Copy and paste the tips here
-        # and make it easier if we change the test cases in the future.
-        #
-        # >>> import hashlib
-        # >>> s = 'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
-        # >>> hashlib.md5(s[44:].encode()).hexdigest()[:8]
-        # 'e80fecd8'
-        # >>> ''.join([s[:44], h[:8]])
-        # 'very_very_very_long_log_stream_name_abcdefg_e80fecd8'
-        #
         expected_results = [
             'streamalert_logstreamname',
             'streamalert_log_stream_name',
@@ -521,17 +510,6 @@ class TestFirehoseClient:
             'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
         ]
 
-        # >>> import hashlib
-        # >>> s3 = 'very_very_long_log_stream_name_ab_52_characters_long'
-        # >>> s4 = 'very_very_very_long_log_stream_name_abcdefg_abcdefg_70_characters_long'
-        # >>> h3 = hashlib.md5(s3[37:].encode()).hexdigest()
-        # >>> h4 = hashlib.md5(s4[37:].encode()).hexdigest()
-        # >>> ''.join([s3[:37], h3[:8]])
-        # >>> ''.join([s3[:37], h3[:8]])
-        # 'very_very_long_log_stream_name_ab_52_06ceefaa'
-        # >>> ''.join([s4[:37], h4[:8]])
-        # 'very_very_very_long_log_stream_name_a759cd21f'
-        #
         expected_results = [
             'prefix_streamalert_logstreamname',
             'prefix_streamalert_log_stream_name',
