@@ -78,7 +78,7 @@ def generate_firehose(logging_bucket, main_dict, config):
             'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
             'glue_catalog_db_name': db_name,
             'glue_catalog_table_name': log_stream_name,
-            'schema': generate_data_table_schema(config, log_stream_name)
+            'schema': generate_data_table_schema(config, log_type_name)
         }
 
         # Try to get alarm info for this specific log type

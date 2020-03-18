@@ -83,8 +83,8 @@ class TestAthenaCli:
     @staticmethod
     @patch('streamalert.shared.athena.AthenaClient.check_table_exists', Mock(return_value=False))
     @patch('streamalert.shared.athena.AthenaClient.run_query', Mock(return_value=True))
-    def test_create_table():
-        """CLI - Athena create table helper"""
+    def test_create_table_with_dots():
+        """CLI - Athena create table helper when log name contains dots"""
         config = CLIConfig(config_path='tests/unit/conf')
         config['global']['infrastructure']['firehose']['enabled_logs'] = {
             'test:log.name.with.dots': {}
@@ -93,6 +93,24 @@ class TestAthenaCli:
         assert_true(
             handler.create_table(
                 'test:log.name.with.dots',
+                'bucket',
+                config
+            )
+        )
+
+    @staticmethod
+    @patch('streamalert.shared.athena.AthenaClient.check_table_exists', Mock(return_value=False))
+    @patch('streamalert.shared.athena.AthenaClient.run_query', Mock(return_value=True))
+    def test_create_table_with_underscores():
+        """CLI - Athena create table helper when log name contains underscores"""
+        config = CLIConfig(config_path='tests/unit/conf')
+        config['global']['infrastructure']['firehose']['enabled_logs'] = {
+            'cloudwatch:test_match_types': {}
+        }
+
+        assert_true(
+            handler.create_table(
+                'cloudwatch:test_match_types',
                 'bucket',
                 config
             )

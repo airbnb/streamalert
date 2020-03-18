@@ -402,7 +402,7 @@ def create_table(table, bucket, config, schema_override=None):
         # Use the bucket if supplied, otherwise use the default data bucket
         bucket = bucket or config_data_bucket
 
-        log_info = config['logs'][table.replace('_', ':', 1)]
+        log_info = config['logs'][enabled_logs.get(sanitized_table_name)]
 
         schema = dict(log_info['schema'])
         sanitized_schema = FirehoseClient.sanitize_keys(schema)
