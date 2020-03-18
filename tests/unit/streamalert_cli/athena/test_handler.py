@@ -87,12 +87,12 @@ class TestAthenaCli:
         """CLI - Athena create table helper"""
         config = CLIConfig(config_path='tests/unit/conf')
         config['global']['infrastructure']['firehose']['enabled_logs'] = {
-            'test:log_name_with_dots': {}
+            'test:log.name.with.dots': {}
         }
 
         assert_true(
             handler.create_table(
-                'test_log_name_with_dots',
+                'test:log.name.with.dots',
                 'bucket',
                 config
             )

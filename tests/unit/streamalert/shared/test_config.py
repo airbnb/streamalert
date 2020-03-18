@@ -19,9 +19,7 @@ from mock import Mock
 from nose.tools import (
     assert_equal,
     assert_count_equal,
-    assert_false,
     assert_raises,
-    assert_true
 )
 from pyfakefs import fake_filesystem_unittest
 
@@ -177,10 +175,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         # Load from separate dir where logs.json doesn't exist
         config = load_config(conf_dir='conf_schemas')
         basic_config = basic_streamalert_config()
-        import json
-        print(json.dumps(config['logs'], indent=2, sort_keys=True))
-        print(json.dumps(basic_config['logs'], indent=2, sort_keys=True))
-        # print(basic_config)
         assert_equal(config['logs'], basic_config['logs'])
 
     @staticmethod
