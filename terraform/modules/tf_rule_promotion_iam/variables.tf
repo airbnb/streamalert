@@ -28,7 +28,7 @@ variable "athena_results_bucket_arn" {
 
 variable "alerts_bucket" {
   description = "Name of S3 bucket where alerts are stored and queryable by Athena"
-  type        = list(string)
+  type        = string
 }
 
 variable "s3_kms_key_arn" {
