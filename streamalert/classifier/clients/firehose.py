@@ -328,11 +328,8 @@ class FirehoseClient:
                 base_name[:-1]
             ) if base_name[-2] != '_' else '{}_'.format(base_name[:-2])
 
-        # combine the first part and first 8 chars of hash result together as new
+        # combine the base_name and first 8 chars of hash result together as new
         # stream name.
-        # e.g. if use prefix
-        # 'very_very_very_long_log_stream_name_abcd_59_characters_long' may hash to
-        # 'very_very_very_long_log_stream_name_abcd_59_06ceefaa'
         return '{}{}'.format(
             base_name, hashlib.md5(base_name.encode()).hexdigest()  # nosec
         )[:cls.AWS_FIREHOSE_NAME_MAX_LEN]
