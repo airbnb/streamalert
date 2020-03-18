@@ -15,7 +15,6 @@ limitations under the License.
 """
 from collections import defaultdict
 
-
 DEFAULT_SNS_MONITORING_TOPIC_SUFFIX = '{}_streamalert_monitoring'
 DEFAULT_S3_LOGGING_BUCKET_SUFFIX = '{}-streamalert-s3-logging'
 DEFAULT_TERRAFORM_STATE_BUCKET_SUFFIX = '{}-streamalert-terraform-state'
