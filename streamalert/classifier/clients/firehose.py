@@ -314,12 +314,11 @@ class FirehoseClient:
         Returns:
             str: suffix of stream name
         """
-        # This same substitution method is used when naming the Delivery Streams
-        sanitized_name = cls.sanitized_value(log_stream_name)
         if prefix:
             prefix += '_'
 
-        stream_name = cls.DEFAULT_FIREHOSE_FMT.format(prefix, sanitized_name)
+        # This same substitution method is used when naming the Delivery Streams
+        stream_name = cls.sanitized_value(cls.DEFAULT_FIREHOSE_FMT.format(prefix, log_stream_name))
         if len(stream_name) <= cls.AWS_FIREHOSE_NAME_MAX_LEN:
             return stream_name
 
