@@ -307,7 +307,6 @@ class FirehoseClient:
         longer than 64 characters
 
         Args:
-            use_prefix (bool): Does apply prefix defined in conf/global.json to firehose stream name
             prefix (str): The prefix defined in conf/global.json to firehose stream name
             log_stream_name (str): The name of the log from conf/logs.json or conf/schemas/*.json
 
@@ -335,8 +334,8 @@ class FirehoseClient:
         # 'very_very_very_long_log_stream_name_abcd_59_characters_long' may hash to
         # 'very_very_very_long_log_stream_name_abcd_59_06ceefaa'
         return '{}{}'.format(
-            base_name, hashlib.md5(base_name.encode()).hexdigest()
-        )[:cls.AWS_FIREHOSE_NAME_MAX_LEN]  # nosec
+            base_name, hashlib.md5(base_name.encode()).hexdigest()  # nosec
+        )[:cls.AWS_FIREHOSE_NAME_MAX_LEN]
 
     @classmethod
     def enabled_log_source(cls, log_source_name):
