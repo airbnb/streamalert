@@ -24,6 +24,7 @@ from streamalert.shared.utils import get_data_file_format
 from streamalert_cli.athena.handler import create_table, create_log_tables
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.terraform.helpers import terraform_check
 from streamalert_cli.utils import (
@@ -304,12 +305,13 @@ class TerraformCleanCommand(CLICommand):
                     _rm_file(path)
 
         for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
-            path = 'terraform/{}'.format(tf_file)
+            path = os.path.join(TERRAFORM_FILES_PATH, tf_file)
             _rm_file(path)
 
         # Finally, delete the Terraform directory
-        if os.path.isdir('terraform/.terraform/'):
-            shutil.rmtree('terraform/.terraform/')
+        tf_path = os.path.join(TERRAFORM_FILES_PATH, '.terraform')
+        if os.path.isdir(tf_path):
+            shutil.rmtree(tf_path)
 
         return True
 
