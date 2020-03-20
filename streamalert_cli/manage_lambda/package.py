@@ -97,11 +97,17 @@ class LambdaPackage:
     def _copy_files(self, temp_package_path):
         """Copy all files and folders into temporary package path."""
         for path in self.package_files:
+            # Default to ignoring zipped dependencies
+            ignored_items = {'*dependencies.zip'}
+            if path == 'rules':
+                # Also ignore json test event files if this is the rules directory
+                ignored_items.add('*.json')
+
             if os.path.isdir(path):
                 # Copy the directory, skipping any files with a 'dependencies.zip' suffix
                 shutil.copytree(
                     path, os.path.join(temp_package_path, path),
-                    ignore=shutil.ignore_patterns('*dependencies.zip', '*.json')
+                    ignore=shutil.ignore_patterns(*ignored_items)
                 )
             else:
                 # Ensure the parent directory of the file being copied already exists
