@@ -159,20 +159,20 @@ def format_schema_tf(schema):
         formatted_schema (list(tuple))
     """
     # Construct the main Athena Schema
-    formated_schema = []
+    formatted_schema = []
     for key_name in sorted(schema.keys()):
         key_type = schema[key_name]
         if isinstance(key_type, str):
-            formated_schema.append((key_name.lower(), key_type))
+            formatted_schema.append((key_name.lower(), key_type))
         # Account for nested structs
         elif isinstance(key_type, dict):
             struct_schema = ','.join(
                 '{0}:{1}'.format(sub_key.lower(), key_type[sub_key])
                 for sub_key in sorted(key_type.keys())
             )
-            formated_schema.append((key_name.lower(), 'struct<{}>'.format(struct_schema)))
+            formatted_schema.append((key_name.lower(), 'struct<{}>'.format(struct_schema)))
 
-    return formated_schema
+    return formatted_schema
 
 def generate_alerts_table_schema():
     """Generate the schema for alerts table in terraform by using a fake alert
