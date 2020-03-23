@@ -331,7 +331,7 @@ class FirehoseClient:
         # combine the base_name and first 8 chars of hash result together as new
         # stream name.
         return '{}{}'.format(
-            base_name, hashlib.md5(base_name.encode()).hexdigest()  # nosec
+            base_name, hashlib.md5(stream_name.encode()).hexdigest()  # nosec
         )[:cls.AWS_FIREHOSE_NAME_MAX_LEN]
 
     @classmethod

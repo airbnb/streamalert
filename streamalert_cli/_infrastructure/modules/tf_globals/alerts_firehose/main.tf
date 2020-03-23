@@ -10,8 +10,8 @@ locals {
 
 locals {
   stream_name         = "${var.prefix}_streamalert_alert_delivery"
-  bucket_arn          = "arn:aws:s3:::${var.prefix}-streamalerts"
-  alerts_location     = "s3://${var.prefix}-streamalerts/${local.s3_path_prefix}"
+  bucket_arn          = "arn:aws:s3:::${var.bucket_name}"
+  alerts_location     = "s3://${var.bucket_name}/${local.s3_path_prefix}"
   ser_de_params_key   = var.file_format == "parquet" ? "serialization.format" : "ignore.malformed.json"
   ser_de_params_value = var.file_format == "parquet" ? "1" : "true"
 }

@@ -32,7 +32,7 @@ The pipeline is
 Alerts Search
 *************
 
-* Review alert Firehose configuration, see :ref:`alerts_Firehose_configuration` in ``CONFIGURATION`` session. Athena database and Athena alerts table are created automatically when you first deploy StreamAlert.
+* Review alert Firehose configuration, see :ref:`alerts_firehose_configuration` in ``CONFIGURATION`` session. Athena database and Athena alerts table are created automatically when you first deploy StreamAlert.
 * If the ``file_format`` is set to ``parquet``, you can run ``MSCK REPAIR TABLE alerts`` command in the Athena to load all available partitions and then alerts can be searchable. However, using ``MSCK REPAIR`` command can not load new partitions automatically.
 * StreamAlert provides a lambda function ``athena_partition_refresh`` to load new partitions to Athena tables once the data arrives in the S3 buckets automatically. Update ``athena_partition_refresh_config`` if necessary. Open ``conf/lambda.json``. See more settings :ref:`configure_athena_partition_refresh_lambda`
 
@@ -54,7 +54,7 @@ Alerts Search
 
 * Search alerts in `Athena Console <https://console.aws.amazon.com/athena>`_
 
-  * Choose your ``Database`` from the dropdown on the left. Database name is ``PREFIX_streamalert``
+  * Choose your ``Database`` from the dropdown on the left. Database name is ``<prefix>_streamalert``
   * Write SQL query statement in the ``Query Editor`` on the right
 
   .. image:: ../images/athena-alerts-search.png
@@ -65,7 +65,7 @@ Data Search
 
 It is optional to store data in S3 bucket and available for search in Athena tables.
 
-* Enable Firehose in ``conf/global.json`` see :ref:`Firehose_configuration`
+* Enable Firehose in ``conf/global.json`` see :ref:`firehose_configuration`
 * Build the Firehose and Athena tables
 
   .. code-block:: bash
@@ -80,7 +80,7 @@ It is optional to store data in S3 bucket and available for search in Athena tab
 
 * Search data `Athena Console <https://console.aws.amazon.com/athena>`_
 
-  * Choose your ``Database`` from the dropdown on the left. Database name is ``PREFIX_streamalert``
+  * Choose your ``Database`` from the dropdown on the left. Database name is ``<prefix>_streamalert``
   * Write SQL query statement in the ``Query Editor`` on the right
 
   .. image:: ../images/athena-data-search.png
@@ -138,5 +138,5 @@ Athena References
 
     .. code-block:: sql
 
-      SELECT * FROM "PREFIX_streamalert"."alerts"
+      SELECT * FROM "<prefix>_streamalert"."alerts"
       WHERE dt BETWEEN 2020-02-28-00 AND 2020-02-29-00

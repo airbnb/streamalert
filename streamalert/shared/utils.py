@@ -165,4 +165,4 @@ def get_data_file_format(config):
     """
     athena_config = config['lambda'].get('athena_partition_refresh_config', {})
 
-    return athena_config.get('file_format', None)
+    return athena_config.get('file_format')

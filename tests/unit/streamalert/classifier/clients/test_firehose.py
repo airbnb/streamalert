@@ -476,7 +476,7 @@ class TestFirehoseClient:
 
         client.send(self._sample_payloads_long_log_name)
         send_batch_mock.assert_called_with(
-            'streamalert_very_very_very_long_log_stream_name_abcdefg_bbe68ccf', expected_batch
+            'streamalert_very_very_very_long_log_stream_name_abcdefg_7c88167b', expected_batch
         )
 
     def test_generate_firehose_name(self):
@@ -492,7 +492,7 @@ class TestFirehoseClient:
             'streamalert_logstreamname',
             'streamalert_log_stream_name',
             'streamalert_very_very_long_log_stream_name_ab_52_characters_long',
-            'streamalert_very_very_very_long_log_stream_name_abcdefg_bbe68ccf'
+            'streamalert_very_very_very_long_log_stream_name_abcdefg_272fa762'
         ]
         results = [
             self._client.generate_firehose_name('', log_name)
@@ -513,8 +513,8 @@ class TestFirehoseClient:
         expected_results = [
             'prefix_streamalert_logstreamname',
             'prefix_streamalert_log_stream_name',
-            'prefix_streamalert_very_very_long_log_stream_name_ab_52_4ccde648',
-            'prefix_streamalert_very_very_very_long_log_stream_name_6fafde49a'
+            'prefix_streamalert_very_very_long_log_stream_name_ab_52_63bd84dc',
+            'prefix_streamalert_very_very_very_long_log_stream_name_a0c91e099'
         ]
         results = [
             self._client.generate_firehose_name('prefix', log_name)
