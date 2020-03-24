@@ -3,6 +3,7 @@ docs/build
 
 # Compiled Python files
 *.pyc
+__pycache__
 
 # Terraform files
 *.terraform/
@@ -20,5 +21,9 @@ terraform/*.tf.json
 # virtualenv files in root of repo
 /venv
 
-/vagrant
+# Vagrant VM artifacts
+ubuntu*.log
+/.vagrant
+
+# Coverage artifacts
 /htmlcov

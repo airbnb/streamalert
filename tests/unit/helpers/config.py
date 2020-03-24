@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 import json
 
 
-class MockCLIConfig(object):
+class MockCLIConfig:
     """Fake CLI Config Class"""
 
     def __init__(self, config):
@@ -32,7 +32,7 @@ class MockCLIConfig(object):
         self.config.__setitem__(key, new_value)
 
     def clusters(self):
-        return self.config['clusters'].keys()
+        return list(self.config['clusters'].keys())
 
     def get(self, key):
         return self.config.get(key)
@@ -47,24 +47,15 @@ def basic_streamalert_config():
         'global': {
             'account': {
                 'aws_account_id': '123456789123',
-                'kms_key_alias': 'stream_alert_secrets',
-                'prefix': 'unit-testing',
+                'prefix': 'unit-test',
                 'region': 'us-west-2'
             },
             'infrastructure': {
-                'monitoring': {
-                    'create_sns_topic': True,
+                'monitoring': {},
+                's3_access_logging': {
+                    'bucket_name': 'unit-test-streamalert-s3-logging'
                 }
-            },
-            's3_access_logging': {
-                'create_bucket': True,
-                'logging_bucket': 'unit-testing.streamalert.s3-logging'
-            },
-            'terraform': {
-                'create_bucket': True,
-                'tfstate_bucket': 'unit-testing.streamalert.terraform.state',
-                'tfstate_s3_key': 'stream_alert_state/terraform.tfstate'
-            },
+            }
         },
         'threat_intel': {
             'dynamodb_table_name': 'table_name',
@@ -104,16 +95,6 @@ def basic_streamalert_config():
                 'parser': 'csv'
             }
         },
-        'sources': {
-            'kinesis': {
-                'stream_1': {
-                    'logs': [
-                        'json_log',
-                        'csv_log'
-                    ]
-                }
-            }
-        },
         'lambda': {
             'alert_merger_config': {
                 'memory': 128,
@@ -126,12 +107,6 @@ def basic_streamalert_config():
             'athena_partition_refresh_config': {
                 'enable_custom_metrics': False,
                 'memory': 128,
-                'partitioning': {
-                    'firehose': {},
-                    'normal': {
-                        'unit-testing.streamalerts': 'alerts'
-                    }
-                },
                 'timeout': 60
             },
             'rules_engine_config': {
@@ -171,15 +146,36 @@ def basic_streamalert_config():
         'clusters': {
             'prod': {
                 'id': 'prod',
+                'classifier_config': {
+                    'enable_custom_metrics': True,
+                    'log_level': 'info',
+                    'memory': 128,
+                    'custom_metric_alarms': {
+                        'Prod Unit Testing Failed Parses Alarm': {
+                            'alarm_description': '',
+                            'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                            'evaluation_periods': 1,
+                            'metric_name': 'Classifier-FailedParses-PROD',
+                            'period': 300,
+                            'statistic': 'Sum',
+                            'threshold': 1.0
+                        }
+                    },
+                    'timeout': 10
+                },
+                'data_sources': {
+                    'kinesis': {
+                        'stream_1': [
+                            'json_log',
+                            'csv_log'
+                        ]
+                    }
+                },
                 'modules': {
                     'cloudwatch_monitoring': {
                         'enabled': True
                     },
                     'kinesis': {
-                        'firehose': {
-                            'enabled': True,
-                            's3_bucket_suffix': 'streamalert.results'
-                        },
                         'streams': {
                             'retention': 24,
                             'shards': 1
@@ -187,25 +183,6 @@ def basic_streamalert_config():
                     },
                     'kinesis_events': {
                         'enabled': True
-                    },
-                    'stream_alert': {
-                        'classifier_config': {
-                            'enable_custom_metrics': True,
-                            'log_level': 'info',
-                            'memory': 128,
-                            'custom_metric_alarms': {
-                                'Prod Unit Testing Failed Parses Alarm': {
-                                    'alarm_description': '',
-                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
-                                    'evaluation_periods': 1,
-                                    'metric_name': 'Classifier-FailedParses-PROD',
-                                    'period': 300,
-                                    'statistic': 'Sum',
-                                    'threshold': 1.0
-                                }
-                            },
-                            'timeout': 10
-                        }
                     }
                 },
                 'outputs': {
@@ -219,28 +196,26 @@ def basic_streamalert_config():
             },
             'corp': {
                 'id': 'corp',
-                'modules': {
-                    'stream_alert': {
-                        'classifier_config': {
-                            'enable_custom_metrics': True,
-                            'log_level': 'info',
-                            'memory': 128,
-                            'custom_metric_alarms': {
-                                'Prod Unit Testing Failed Parses Alarm': {
-                                    'alarm_description': '',
-                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
-                                    'evaluation_periods': 1,
-                                    'metric_name': 'Classifier-FailedParses-PROD',
-                                    'period': 300,
-                                    'statistic': 'Sum',
-                                    'threshold': 1.0
-                                }
-                            },
-                            'timeout': 10
+                'classifier_config': {
+                    'enable_custom_metrics': True,
+                    'log_level': 'info',
+                    'memory': 128,
+                    'custom_metric_alarms': {
+                        'Prod Unit Testing Failed Parses Alarm': {
+                            'alarm_description': '',
+                            'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                            'evaluation_periods': 1,
+                            'metric_name': 'Classifier-FailedParses-PROD',
+                            'period': 300,
+                            'statistic': 'Sum',
+                            'threshold': 1.0
                         }
                     },
-                    'stream_alert_apps': {
-                        'unit-testing_corp_box_admin_events_box_collector_app': {
+                    'timeout': 10
+                },
+                'modules': {
+                    'streamalert_apps': {
+                        'unit-test_corp_box_admin_events_box_collector_app': {
                             'app_name': 'box_collector',
                             'concurrency_limit': 2,
                             'log_level': 'info',
@@ -257,7 +232,7 @@ def basic_streamalert_config():
                             'timeout': 60,
                             'type': 'box_admin_events'
                         },
-                        'unit-testing_corp_duo_admin_duo_admin_collector_app': {
+                        'unit-test_corp_duo_admin_duo_admin_collector_app': {
                             'app_name': 'duo_admin_collector',
                             'concurrency_limit': 2,
                             'log_level': 'info',
@@ -278,5 +253,35 @@ def basic_streamalert_config():
                 },
                 'region': 'us-east-1'
             }
+        }
+    }
+
+def athena_cli_basic_config():
+    return {
+        'global': {
+            'account': {
+                'aws_account_id': '123456789123',
+                'prefix': 'unit-test',
+                'region': 'us-west-2'
+            },
+            'infrastructure': {
+                'firehose': {
+                    'enabled': True,
+                    'enabled_logs': {
+                        'unit': {}
+                    },
+                }
+            }
+        },
+        'logs': {
+            'unit:my_test': {
+                'schema': {
+                    'name': 'string'
+                },
+                'parser': 'json'
+            }
+        },
+        'lambda': {
+            'athena_partition_refresh_config': {}
         }
     }

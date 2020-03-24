@@ -55,16 +55,19 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'streamalert'
-copyright = u''
+project = u'StreamAlert'
+copyright = u'Airbnb, Inc.'
 author = u''
+
+# Use a custom favicon
+html_favicon = '../images/sa-square-logo-standalone.png'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
 # We want both the |version| and the |release| to be the full X.Y.Z version string.
-with open('../../stream_alert/__init__.py', 'r') as version_file:
+with open('../../streamalert/__init__.py', 'r') as version_file:
     release = re.search(
         r"^__version__ = ['\"]([^'\"]+)['\"]", version_file.read(), re.MULTILINE).group(1)
 

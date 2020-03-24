@@ -51,9 +51,6 @@
     }
   },
   "athena_partition_refresh_config": {
-    "buckets": {
-      "PREFIX_GOES_HERE.streamalerts": "alerts"
-    },
     "concurrency_limit": 10,
     "log_level": "info"
   },
@@ -86,6 +83,7 @@
     "enable_custom_metrics": true,
     "log_level": "info",
     "log_retention_days": 14,
+    "log_rule_statistics": true,
     "memory": 128,
     "metric_alarms": {
       "errors": {

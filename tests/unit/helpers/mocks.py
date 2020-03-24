@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ from collections import namedtuple
 from cbapi.response import BannedHash, Binary
 
 
-class MockCBAPI(object):
+class MockCBAPI:
     """Mock for CbResponseAPI"""
 
-    class MockBannedHash(object):
+    class MockBannedHash:
         """Mock for cbapi.response.BannedHash"""
 
         def __init__(self):
@@ -33,7 +33,7 @@ class MockCBAPI(object):
         def save():
             return True
 
-    class MockBinary(object):
+    class MockBinary:
         """Mock for cbapi.response.Binary"""
 
         def __init__(self, banned, enabled, md5):
@@ -62,8 +62,8 @@ class MockCBAPI(object):
         if model == Binary:
             if file_hash == 'BANNED_ENABLED_HASH':
                 return MockCBAPI.MockBinary(banned=True, enabled=True, md5=file_hash)
-            elif file_hash == 'BANNED_DISABLED_HASH':
+            if file_hash == 'BANNED_DISABLED_HASH':
                 return MockCBAPI.MockBinary(banned=True, enabled=False, md5=file_hash)
             return MockCBAPI.MockBinary(banned=False, enabled=False, md5=file_hash)
-        elif model == BannedHash:
+        if model == BannedHash:
             return MockCBAPI.MockBannedHash()

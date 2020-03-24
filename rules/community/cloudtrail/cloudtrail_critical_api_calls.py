@@ -1,5 +1,5 @@
 """Alert on destructive AWS API calls."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 _CRITICAL_EVENTS = {
     # VPC Flow Logs (~netflow)
@@ -27,6 +27,31 @@ _CRITICAL_EVENTS = {
     'DisableEbsEncryptionByDefault',
 }
 
+PUBLIC_ACCESS_BLOCK_CONFIG_ACTIONS = {
+    'RestrictPublicBuckets',
+    'BlockPublicPolicy',
+    'BlockPublicAcls',
+    'IgnorePublicAcls',
+}
+
+AWS_ORG_EVENTS = {
+    'AttachPolicy',
+    'CreateOrganizationUnit',
+    'CreatePolicy',
+    'DeletePolicy',
+    'DeleteOrganizationUnit',
+    'DetachPolicy',
+    'DisableAWSServiceAccess',
+    'DisablePolicyType',
+    'EnableAllFeatures',
+    'EnableAWSServiceAccess',
+    'EnablePolicyType',
+    'LeaveOrganization',
+    'MoveAccount',
+    'RemoveAccountFromOrganization',
+    'UpdatePolicy',
+}
+
 
 @rule(logs=['cloudtrail:events'])
 def cloudtrail_critical_api_calls(rec):
@@ -49,24 +74,17 @@ def cloudtrail_critical_api_calls(rec):
         if not rec.get('requestParameters', {}).get('enable', True):
             return True
 
-    if rec['eventName'] == 'PutBucketPublicAccessBlock':
-        # The call to PutBucketPublicAccessBlock sets the policy for what to
-        # block for a bucket. We need to get the configuration and see if any
+    if rec['eventName'] in {'PutBucketPublicAccessBlock', 'PutAccountPublicAccessBlock'}:
+        # These calls set the policy for what to block for a bucket.
+        # We need to get the configuration and see if any
         # of the items are set to False.
-        config = rec.get('requestParameters', {}).get(
-            'PublicAccessBlockConfiguration', {}
-        )
-        if (config.get('RestrictPublicBuckets', False) is False
-                or config.get('BlockPublicPolicy', False) is False
-                or config.get('BlockPublicAcls', False) is False
-                or config.get('IgnorePublicAcls', False) is False
-           ):
-            return True
+        config = rec.get('requestParameters', {}).get('PublicAccessBlockConfiguration', {})
+        for action in PUBLIC_ACCESS_BLOCK_CONFIG_ACTIONS:
+            if config.get(action, True) is False:
+                return True
 
-    # PutAccountPublicAccessBlock does not indicate if the account is
-    # enabling or disabling this feature so to reduce FPs,
-    # for now this is not being detected.
-    # This issue was reported to aws-security@amazon.com by spiper
-    # on 2019.07.09
+    # Detect important Organizations calls
+    if rec['eventSource'] == 'organizations.amazonaws.com' and rec['eventName'] in AWS_ORG_EVENTS:
+        return True
 
     return False

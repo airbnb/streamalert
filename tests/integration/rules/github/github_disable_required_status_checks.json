@@ -18,7 +18,7 @@
     "description": "Disabling 'required status checks' on Github should create an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "github_disable_required_status_checks"
     ]
@@ -42,7 +42,7 @@
     "description": "Enabling 'required status checks' on Github should not create an alert.",
     "log": "ghe:general",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

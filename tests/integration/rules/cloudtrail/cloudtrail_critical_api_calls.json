@@ -753,6 +753,70 @@
             },
             "type": "..."
           },
+          "eventTime": "2019-07-08T19:50:33Z",
+          "eventSource": "s3.amazonaws.com",
+          "eventName": "PutAccountPublicAccessBlock",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "publicAccessBlock": [
+              ""
+            ],
+            "PublicAccessBlockConfiguration": {
+              "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+              "RestrictPublicBuckets": false,
+              "BlockPublicPolicy": false,
+              "BlockPublicAcls": false,
+              "IgnorePublicAcls": false
+            },
+            "bucketName": "...",
+            "host": [
+              "s3.amazonaws.com"
+            ]
+          },
+          "responseElements": null,
+          "additionalEventData": {
+            "SignatureVersion": "SigV4",
+            "CipherSuite": "ECDHE-RSA-AES128-SHA",
+            "AuthenticationMethod": "AuthHeader",
+            "vpcEndpointId": "..."
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123",
+          "vpcEndpointId": "..."
+        }
+      ]
+    },
+    "description": "Turning off S3 PublicAccessBlock for an account",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
           "eventTime": "2019-07-09T16:59:01Z",
           "eventSource": "ec2.amazonaws.com",
           "eventName": "DisableEbsEncryptionByDefault",

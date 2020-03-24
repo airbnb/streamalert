@@ -1,7 +1,7 @@
 """Alert when resources are made public."""
 import json
 from policyuniverse.policy import Policy
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 @rule(logs=['cloudtrail:events'])
 def cloudtrail_public_resources(rec):
@@ -51,7 +51,7 @@ def cloudtrail_public_resources(rec):
             policy_string = rec['requestParameters'].get('attributeValue', '')
     elif rec['eventName'] == 'CreateTopic':
         policy_string = (
-            rec.get('requestParameters', {}).get('attributes', '').get('Policy', '')
+            rec.get('requestParameters', {}).get('attributes', {}).get('Policy', '')
         )
 
     # Check ECR

@@ -10,6 +10,7 @@
         "os_version": "10.12.6",
         "trusted_endpoint_status": "not trusted"
       },
+      "alias": "",
       "device": "555-123-4567",
       "factor": "Duo Push",
       "integration": "Test Integration",
@@ -27,7 +28,7 @@
     },
     "description": "Duo authentication log marked as fraud that will create an alert",
     "log": "duo:authentication",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_auth_sm-app-name_app",
     "trigger_rules": [
       "duo_fraud"
@@ -44,6 +45,7 @@
         "os_version": "10.12.6",
         "trusted_endpoint_status": "not trusted"
       },
+      "alias": "",
       "device": "555-123-5678",
       "factor": "Duo Push",
       "integration": "Test Integration",
@@ -61,7 +63,7 @@
     },
     "description": "Duo authentication log marked as success that will not create an alert",
     "log": "duo:authentication",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_auth_sm-app-name_app",
     "trigger_rules": []
   }

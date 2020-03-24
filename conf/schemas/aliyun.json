@@ -1,0 +1,38 @@
+{
+  "aliyun:actiontrail": {
+    "schema": {
+      "eventId": "string",
+      "eventVersion": "string",
+      "acsRegion": "string",
+      "requestParameters": {},
+      "referencedResources": {},
+      "recipientAccountId": "string",
+      "eventType": "string",
+      "eventTime": "string",
+      "apiVersion": "string",
+      "eventName": "string",
+      "userIdentity": {},
+      "userAgent": "string",
+      "eventSource": "string",
+      "requestId": "string",
+      "serviceName": "string",
+      "sourceIpAddress": "string",
+      "errorCode": "string",
+      "errorMessage": "string",
+      "additionalEventData": {}
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "apiVersion",
+        "errorCode",
+        "errorMessage",
+        "acsRegion",
+        "referencedResources",
+        "recipientAccountId",
+        "userAgent",
+        "additionalEventData"
+      ]
+    }
+  }
+}

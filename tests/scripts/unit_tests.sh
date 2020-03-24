@@ -7,8 +7,8 @@ export AWS_SECRET_ACCESS_KEY=foobar_secret
 nosetests tests/unit \
 --with-coverage \
 --cover-erase \
---cover-package=stream_alert \
---cover-package=stream_alert_cli \
+--cover-package=streamalert \
+--cover-package=streamalert_cli \
 --cover-min-percentage=80 \
 --cover-html \
 --cover-html-dir=htmlcov \

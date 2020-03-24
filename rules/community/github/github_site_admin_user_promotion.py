@@ -1,5 +1,5 @@
 """A Github Enterprise user account was promoted to a site admin."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(logs=['ghe:general'])

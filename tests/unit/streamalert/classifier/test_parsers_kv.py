@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ from collections import OrderedDict
 
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import KVParser
+from streamalert.classifier.parsers import KVParser
 
 
-class TestKVParser(object):
+class TestKVParser:
     """Test class for KVParser"""
     # pylint: disable=no-self-use,protected-access
 

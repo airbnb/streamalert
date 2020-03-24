@@ -1,0 +1,74 @@
+{
+  "pan": {
+    "schema": {
+      "messageId": "string",
+      "sourceName": "string",
+      "sourceHost": "string",
+      "sourceCategory": "string",
+      "messageTime": "string",
+      "receiptTime": "string",
+      "sourceId": "string",
+      "collectorId": "string",
+      "count": "string",
+      "format": "string",
+      "view": "string",
+      "encoding": "string",
+      "message": {
+        "prefix": "string",
+        "receive_time": "string",
+        "serial": "string",
+        "type": "string",
+        "subtype": "string",
+        "unknown1": "string",
+        "time_generated": "string",
+        "src": "string",
+        "dst": "string",
+        "natsrc": "string",
+        "natdst": "string",
+        "rule": "string",
+        "srcuser": "string",
+        "dstuser": "string",
+        "app": "string",
+        "vsys": "string",
+        "from": "string",
+        "to": "string",
+        "inbound_if": "string",
+        "outbound_if": "string",
+        "logset": "string",
+        "unknown2": "string",
+        "sessionid": "string",
+        "repeatcnt": "string",
+        "natsport": "string",
+        "sport": "string",
+        "natdport": "string",
+        "dport": "string",
+        "flags": "string",
+        "proto": "string",
+        "action": "string",
+        "bytes": "string",
+        "bytes_sent": "string",
+        "bytes_received": "string",
+        "packets": "string",
+        "start": "string",
+        "elapsed": "string",
+        "category": "string",
+        "seqno": "string",
+        "unknown3": "string",
+        "unknown4": "string",
+        "actionflags": "string",
+        "srcloc": "string",
+        "dstloc": "string",
+        "pkts_sent": "string",
+        "pkts_received": "string"
+      }
+    },
+    "parser": "csv",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "TRAFFIC"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "box:admin_events": {
+    "schema": {
+      "accessible_by": {},
+      "additional_details": "string",
+      "created_at": "string",
+      "created_by": {},
+      "event_id": "string",
+      "event_type": "string",
+      "ip_address": "string",
+      "session_id": "string",
+      "source": {},
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "accessible_by"
+      ]
+    }
+  }
+}

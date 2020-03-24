@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ import json
 
 from nose.tools import assert_equal
 
-from stream_alert.classifier.payload.kinesis import KinesisPayload
+from streamalert.classifier.payload.kinesis import KinesisPayload
 
 
-class TestKinesisPayload(object):
+class TestKinesisPayload:
     """KinesisPayload tests"""
     # pylint: disable=no-self-use,protected-access
 
@@ -44,7 +44,7 @@ class TestKinesisPayload(object):
         expected_result = [
             json.dumps({
                 'key': 'value'
-            })
+            }).encode()
         ]
 
         payload = KinesisPayload(None, record)
@@ -58,7 +58,7 @@ class TestKinesisPayload(object):
         expected_result = [
             json.dumps({
                 'key': 'value'
-            })
+            }).encode()
         ]
 
         payload = KinesisPayload(None, record)

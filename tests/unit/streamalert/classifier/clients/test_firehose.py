@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,17 +17,20 @@ from botocore.exceptions import ClientError
 from mock import Mock, patch
 from nose.tools import assert_equal
 
-from stream_alert.classifier.clients.firehose import FirehoseClient
+from streamalert.classifier.clients.firehose import FirehoseClient
 
 
-class TestFirehoseClient(object):
+class TestFirehoseClient:
     """Test class for FirehoseClient"""
     # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 
     def setup(self):
         """Setup before each method"""
         with patch('boto3.client'):  # patch to speed up unit tests slightly
-            self._client = FirehoseClient()
+            self._client = FirehoseClient(
+                prefix='unit-test',
+                firehose_config={'use_prefix': True}
+            )
 
     def teardown(self):
         """Teardown after each method"""
@@ -381,12 +384,21 @@ class TestFirehoseClient(object):
     def test_load_from_config(self):
         """FirehoseClient - Load From Config"""
         with patch('boto3.client'):  # patch to speed up unit tests slightly
-            client = FirehoseClient.load_from_config({'enabled': True}, None)
+            client = FirehoseClient.load_from_config(
+                prefix='unit-test',
+                firehose_config={'enabled': True},
+                log_sources=None
+            )
             assert_equal(isinstance(client, FirehoseClient), True)
 
     def test_load_from_config_disabled(self):
         """FirehoseClient - Load From Config, Disabled"""
-        assert_equal(FirehoseClient.load_from_config({}, None), None)
+        client = FirehoseClient.load_from_config(
+            prefix='unit-test',
+            firehose_config={},
+            log_sources=None
+        )
+        assert_equal(client, None)
 
     @patch.object(FirehoseClient, '_send_batch')
     def test_send(self, send_batch_mock):
@@ -395,10 +407,32 @@ class TestFirehoseClient(object):
             'log_type_01_sub_type_01': 'log_type_01:sub_type_01'
         }
         expected_batch = [
-            '{"unit_key_02":"test","unit_key_01":1}\n',
-            '{"unit_key_02":"test","unit_key_01":2}\n'
+            '{"unit_key_01":1,"unit_key_02":"test"}\n',
+            '{"unit_key_01":2,"unit_key_02":"test"}\n'
         ]
         self._client.send(self._sample_payloads)
+        send_batch_mock.assert_called_with(
+            'unit-test_streamalert_data_log_type_01_sub_type_01', expected_batch
+        )
+
+    @patch.object(FirehoseClient, '_send_batch')
+    def test_send_no_prefixing(self, send_batch_mock):
+        """FirehoseClient - Send, No Prefixing"""
+        FirehoseClient._ENABLED_LOGS = {
+            'log_type_01_sub_type_01': 'log_type_01:sub_type_01'
+        }
+        expected_batch = [
+            '{"unit_key_01":1,"unit_key_02":"test"}\n',
+            '{"unit_key_01":2,"unit_key_02":"test"}\n'
+        ]
+
+        client = FirehoseClient.load_from_config(
+            prefix='unit-test',
+            firehose_config={'enabled': True, 'use_prefix': False},
+            log_sources=None
+        )
+
+        client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
             'streamalert_data_log_type_01_sub_type_01', expected_batch
         )

@@ -1,5 +1,5 @@
 """Alert on insecure Amazon Machine Images (AMIs)."""
-from stream_alert.shared.rule import rule
+from streamalert.shared.rule import rule
 
 
 @rule(
@@ -18,7 +18,7 @@ def unencrypted_ami_volume(rec):
         # check the event type early to avoid unnecessary performance impact
         return False
 
-    elif rec['detail']['requestParameters'] is None:
+    if rec['detail']['requestParameters'] is None:
         # requestParameters can be defined with a value of null
         return False
 
@@ -49,7 +49,7 @@ def public_ami(rec):
         # check the event type early to avoid unnecessary performance impact
         return False
 
-    elif rec['detail']['requestParameters'] is None:
+    if rec['detail']['requestParameters'] is None:
         # requestParameters can be defined with a value of null
         return False
 

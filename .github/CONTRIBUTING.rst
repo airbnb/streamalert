@@ -4,10 +4,10 @@ Contributing
 Installing Dependencies
 -----------------------
 
-Make sure you are running Python 2.7::
+Make sure you are running Python 3.7::
 
   $ python -V
-  Python 2.7.x
+  Python 3.7.x
 
 Install:
 
@@ -51,12 +51,12 @@ Make changes, add features, or fix bugs.
 When writing commit messages, make sure to prefix with one of the following tags::
 
   [docs]              # changes to StreamAlert documentation
-  [cli]               # stream_alert_cli changes
+  [cli]               # streamalert_cli changes
   [terraform]         # terraform changes
-  [core]              # changes with core stream_alert classes used across lambda functions
+  [core]              # changes with core streamalert classes used across lambda functions
   [testing]           # changes with testing infrastructure or processes
   [setup]             # StreamAlert development setup changes
-  [config]            # stream_alert config changes
+  [config]            # streamalert config changes
 
 The first line of your commit message should be short.  Use newlines to explain further::
 
@@ -127,7 +127,7 @@ If you are adding features to existing classes with tests, you must add test cas
 Integration Testing
 ~~~~~~~~~~~~~~~~~~~
 
-To verify StreamAlert works from end-to-end, locally, follow the testing instructions `here <https://streamalert.io/rules.html>`_.
+To verify StreamAlert works from end-to-end, locally, follow the testing instructions `here <https://streamalert.io/en/stable/testing.html#running-tests>`_.
 
 Pull Request
 ------------
@@ -147,5 +147,3 @@ In your pull request body, use the following template::
   * summary of changes 2
 
 All pull requests must pass continuous integration tests (nosetests) and receive a code review from one of the maintainers.
-
-After your branch has been accepted, you are free to merge into ``master``!

@@ -1,0 +1,69 @@
+{
+  "cloudtrail:digest": {
+    "schema": {
+      "awsAccountId": "string",
+      "digestEndTime": "string",
+      "digestPublicKeyFingerprint": "string",
+      "digestS3Bucket": "string",
+      "digestS3Object": "string",
+      "digestSignatureAlgorithm": "string",
+      "digestStartTime": "string",
+      "logFiles": [],
+      "newestEventTime": "string",
+      "oldestEventTime": "string",
+      "previousDigestHashAlgorithm": "string",
+      "previousDigestHashValue": "string",
+      "previousDigestS3Bucket": "string",
+      "previousDigestS3Object": "string",
+      "previousDigestSignature": "string"
+    },
+    "parser": "json"
+  },
+  "cloudtrail:events": {
+    "schema": {
+      "additionalEventData": {},
+      "apiVersion": "string",
+      "awsRegion": "string",
+      "errorCode": "string",
+      "errorMessage": "string",
+      "eventID": "string",
+      "eventName": "string",
+      "eventSource": "string",
+      "eventTime": "string",
+      "eventType": "string",
+      "eventVersion": "string",
+      "managementEvent": "boolean",
+      "readOnly": "boolean",
+      "recipientAccountId": "string",
+      "requestID": "string",
+      "requestParameters": {},
+      "resources": [],
+      "responseElements": {},
+      "serviceEventDetails": {},
+      "sharedEventID": "string",
+      "sourceIPAddress": "string",
+      "userAgent": "string",
+      "userIdentity": {},
+      "vpcEndpointId": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "json_path": "Records[*]",
+      "optional_top_level_keys": [
+        "additionalEventData",
+        "apiVersion",
+        "errorCode",
+        "errorMessage",
+        "managementEvent",
+        "requestID",
+        "readOnly",
+        "resources",
+        "serviceEventDetails",
+        "sharedEventID",
+        "sourceIPAddress",
+        "userAgent",
+        "vpcEndpointId"
+      ]
+    }
+  }
+}

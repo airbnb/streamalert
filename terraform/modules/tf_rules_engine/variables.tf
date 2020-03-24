@@ -1,13 +1,13 @@
 variable "account_id" {
-  type = "string"
-}
-
-variable "prefix" {
-  type = "string"
+  type = string
 }
 
 variable "region" {
-  type = "string"
+  type = string
+}
+
+variable "prefix" {
+  type = string
 }
 
 variable "function_role_id" {
@@ -28,6 +28,11 @@ variable "threat_intel_enabled" {
 
 variable "dynamodb_table_name" {
   default = "streamalert_threat_intel_ioc_table"
+}
+
+variable "enable_rule_staging" {
+  description = "Deploy rule staging resources if enabled"
+  default     = false
 }
 
 variable "rules_table_arn" {

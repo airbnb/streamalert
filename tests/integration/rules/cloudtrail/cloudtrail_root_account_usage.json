@@ -40,7 +40,7 @@
     "description": "Use of the AWS 'Root' account will create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": [
       "cloudtrail_root_account_usage"
     ]
@@ -88,7 +88,7 @@
     "description": "AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.",
     "log": "cloudwatch:events",
     "service": "kinesis",
-    "source": "prefix_cluster1_stream_alert_kinesis",
+    "source": "prefix_cluster1_streamalert",
     "trigger_rules": []
   }
 ]

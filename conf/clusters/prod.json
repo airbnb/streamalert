@@ -1,42 +1,87 @@
 {
   "id": "prod",
+  "classifier_config": {
+    "enable_custom_metrics": true,
+    "inputs": {
+      "aws-sns": []
+    },
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "metric_alarms": {
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      }
+    },
+    "timeout": 60,
+    "vpc_config": {
+      "security_group_ids": [],
+      "subnet_ids": []
+    }
+  },
+  "data_sources": {
+    "kinesis": {
+      "prefix_cluster1_streamalert": [
+        "cloudwatch",
+        "ghe",
+        "osquery"
+      ]
+    },
+    "s3": {
+      "prefix.cluster.sample.bucket": [
+        "cloudtrail",
+        "carbonblack",
+        "fleet"
+      ]
+    },
+    "sns": {
+      "prefix_cluster_sample_topic": [
+        "binaryalert",
+        "trendmicro"
+      ]
+    },
+    "streamalert_app": {
+      "prefix_cluster_box_admin_events_sm-app-name_app": [
+        "box"
+      ],
+      "prefix_cluster_duo_admin_sm-app-name_app": [
+        "duo"
+      ],
+      "prefix_cluster_duo_auth_sm-app-name_app": [
+        "duo"
+      ],
+      "prefix_cluster_gsuite_admin_sm-app-name_app": [
+        "gsuite"
+      ],
+      "prefix_cluster_onelogin-events-app-name_app": [
+        "onelogin"
+      ],
+      "prefix_cluster_slack_access_sm-app-name_app": [
+        "slack"
+      ],
+      "prefix_cluster_slack_integration_sm-app-name_app": [
+        "slack"
+      ],
+      "prefix_cluster_aliyun_actiontrail_sm-app-name_app": [
+        "aliyun"
+      ]
+    }
+  },
+  "enable_threat_intel": false,
   "modules": {
     "cloudwatch_monitoring": {
       "enabled": true,
       "kinesis_alarms_enabled": false,
       "lambda_alarms_enabled": true
-    },
-    "stream_alert": {
-      "classifier_config": {
-        "enable_custom_metrics": true,
-        "inputs": {
-          "aws-sns": []
-        },
-        "log_level": "info",
-        "log_retention_days": 14,
-        "memory": 128,
-        "metric_alarms": {
-          "errors": {
-            "enabled": true,
-            "evaluation_periods": 1,
-            "period_secs": 120,
-            "threshold": 0
-          },
-          "throttles": {
-            "enabled": true,
-            "evaluation_periods": 1,
-            "period_secs": 120,
-            "threshold": 0
-          }
-        },
-        "timeout": 60,
-        "vpc_config": {
-          "security_group_ids": [],
-          "subnet_ids": []
-        }
-      },
-      "enable_threat_intel": false
     }
-  },
-  "region": "us-east-1"
+  }
 }

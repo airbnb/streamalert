@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from publishers.community.generic import StringifyArrays
-from stream_alert.shared.publisher import AlertPublisher, Register
+from streamalert.shared.publisher import AlertPublisher, Register
 
 
 @Register
@@ -48,7 +48,7 @@ def as_custom_details(_, publication):
         return key.startswith('@pagerduty')
 
     custom_details = {
-        key: value for key, value in publication.iteritems() if not _is_custom_field(key)
+        key: value for key, value in publication.items() if not _is_custom_field(key)
     }
 
     publication['@pagerduty.details'] = custom_details

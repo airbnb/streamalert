@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@ limitations under the License.
 from mock import Mock
 from nose.tools import assert_equal
 
-from stream_alert.classifier.payload.payload_base import PayloadRecord
+from streamalert.classifier.payload.payload_base import PayloadRecord
 
 
-class TestPayloadRecord(object):
+class TestPayloadRecord:
     """PayloadRecord tests"""
     # pylint: disable=no-self-use,protected-access
 

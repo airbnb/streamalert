@@ -15,7 +15,7 @@ variable "description" {
 }
 
 variable "runtime" {
-  default     = "python2.7"
+  default     = "python3.7"
   description = "Function runtime environment"
 }
 
@@ -37,34 +37,30 @@ variable "filename" {
   description = "Path to .zip deployment package"
 }
 
-// NOTE: Due to https://github.com/terraform-providers/terraform-provider-aws/issues/3803,
-// 0 is interpreted as "disable reserve concurrency," and is the default value in Terraform.
-// (You can set reserve concurrency to 0 in the AWS console to stop all invocations.)
-// This could change in a future release of the AWS provider.
 variable "concurrency_limit" {
-  default     = 0
+  default     = -1
   description = "Optional reserved concurrency. By default, there is no function-specific concurrency limit."
 }
 
 variable "environment_variables" {
-  type        = "map"
+  type        = map(string)
   description = "Map of environment variables available to the running Lambda function"
 }
 
 variable "vpc_subnet_ids" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of VPC subnet IDs"
 }
 
 variable "vpc_security_group_ids" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of security group IDs (for VPC)"
 }
 
 variable "default_tags" {
-  type = "map"
+  type = map(string)
 
   default = {
     Name = "StreamAlert"
@@ -74,9 +70,9 @@ variable "default_tags" {
 }
 
 variable "tags" {
-  type        = "map"
+  type        = map(string)
   default     = {}
-  description = "Any dditional tags to be associated with all applicable components"
+  description = "Any additional tags to be associated with all applicable components"
 }
 
 variable "auto_publish_versions" {
@@ -100,7 +96,7 @@ variable "schedule_expression" {
 }
 
 variable "lambda_input_event" {
-  type        = "map"
+  type        = map(string)
   default     = {}
   description = "Optional dictionary representing input to be encoded to json and passed to the Lambda function"
 }
@@ -113,7 +109,7 @@ variable "log_retention_days" {
 // ***** CloudWatch metric alarms *****
 
 variable "alarm_actions" {
-  type        = "list"
+  type        = list(string)
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
 }
@@ -180,6 +176,6 @@ variable "iterator_age_alarm_period_secs" {
 
 variable "input_sns_topics" {
   description = "SNS topics that are allowed to invoke this Lambda function"
-  type        = "list"
+  type        = list(string)
   default     = []
 }

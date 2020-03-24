@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ import json
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import JSONParser
+from streamalert.classifier.parsers import JSONParser
 
 
-class TestJSONParser(object):
+class TestJSONParser:
     """Test class for JSONParser"""
     # pylint: disable=attribute-defined-outside-init,no-self-use,protected-access
 
@@ -716,18 +716,18 @@ class TestJSONParser(object):
                     'eventID': '0000000',
                     'eventTime': '2016-12-31T12:00:00Z',
                     'requestParameters': {
-                        'streamName': 'stream_alert'
+                        'streamName': 'streamalert'
                     },
                     'eventType': 'AwsApiCall',
                     'responseElements': None,
                     'awsRegion': 'us-west-1',
                     'eventName': 'DescribeStream',
                     'userIdentity': {
-                        'userName': 'stream_alert_user',
+                        'userName': 'streamalert_user',
                         'principalId': 'AAAAAAAAAAAAAAAA',
                         'accessKeyId': 'FFFFFFFFFFFFFFFFFF',
                         'type': 'IAMUser',
-                        'arn': 'arn:aws:iam::111111111111:user/stream_alert_user',
+                        'arn': 'arn:aws:iam::111111111111:user/streamalert_user',
                         'accountId': '111111111111'
                     },
                     'eventSource': 'kinesis.amazonaws.com',
@@ -741,18 +741,18 @@ class TestJSONParser(object):
                     'eventID': '1111111',
                     'eventTime': '2017-01-31T12:00:00Z',
                     'requestParameters': {
-                        'streamName': 'stream_alert_prod'
+                        'streamName': 'streamalert_prod'
                     },
                     'eventType': 'AwsApiCall',
                     'responseElements': None,
                     'awsRegion': 'us-east-1',
                     'eventName': 'DescribeStream',
                     'userIdentity': {
-                        'userName': 'stream_alert_prod_user',
+                        'userName': 'streamalert_prod_user',
                         'principalId': 'BBBBBBBBBBBBBBBB',
                         'accessKeyId': 'GGGGGGGGGGGGGGGG',
                         'type': 'IAMUser',
-                        'arn': 'arn:aws:iam::222222222222:user/stream_alert_prod_user',
+                        'arn': 'arn:aws:iam::222222222222:user/streamalert_prod_user',
                         'accountId': '222222222222'
                     },
                     'eventSource': 'kinesis.amazonaws.com',
@@ -770,9 +770,8 @@ class TestJSONParser(object):
         parser = JSONParser(options)
         assert_equal(parser.parse(record_data), True)
 
-        expected_result = [
-            rec for rec in data['Records']
-        ]
+        expected_result = data['Records']
+
         assert_equal(parser.parsed_records, expected_result)
 
     def test_cloudwatch(self):
@@ -851,12 +850,12 @@ class TestJSONParser(object):
                     'timestamp': 1488216331000
                 }
             ],
-            'logGroup': 'airdev_prod_stream_alert_flow_logs',
+            'logGroup': 'airdev_prod_streamalert_flow_logs',
             'logStream': 'eni-77ccbe24-all',
             'messageType': 'DATA_MESSAGE',
             'owner': '123456789012',
             'subscriptionFilters': [
-                'airdev_prod_stream_alert_flow_logs_to_lambda'
+                'airdev_prod_streamalert_flow_logs_to_lambda'
             ]
         })
 
@@ -881,7 +880,7 @@ class TestJSONParser(object):
                 'windowend': 1488216389,
                 'windowstart': 1488216331,
                 'streamalert:envelope_keys': {
-                    'logGroup': 'airdev_prod_stream_alert_flow_logs',
+                    'logGroup': 'airdev_prod_streamalert_flow_logs',
                     'logStream': 'eni-77ccbe24-all',
                     'owner': 123456789012
                 }
@@ -902,7 +901,7 @@ class TestJSONParser(object):
                 'windowend': 1488216389,
                 'windowstart': 1488216331,
                 'streamalert:envelope_keys': {
-                    'logGroup': 'airdev_prod_stream_alert_flow_logs',
+                    'logGroup': 'airdev_prod_streamalert_flow_logs',
                     'logStream': 'eni-77ccbe24-all',
                     'owner': 123456789012
                 }
@@ -1047,7 +1046,8 @@ class TestJSONParser(object):
         parser = JSONParser(options)
         result = parser._extract_via_json_path(record_data)
         assert_equal(result, [('not json', False)])
-        log_mock.assert_any_call('Embedded json is invalid: %s', 'No JSON object could be decoded')
+        log_mock.assert_any_call('Embedded json is invalid: %s',
+                                 'Expecting value: line 1 column 1 (char 0)')
 
     @patch('logging.Logger.debug')
     def test_extract_via_json_path_not_dict(self, log_mock):
@@ -1091,3 +1091,35 @@ class TestJSONParser(object):
         parser = JSONParser(options)
         result = parser._extract_via_json_regex_key(record_data)
         assert_equal(result, False)
+
+    def test_parse_record_not_dict_mismatch(self):
+        """JSONParser - Parse record not in dict type and doesn't match schema"""
+        options = {
+            'schema': {
+                'key': 'string'
+            },
+            'parser': 'json'
+        }
+        record_data = "[{\"key\": \"value\"}]"
+
+        parser = JSONParser(options)
+        assert_equal(parser.parse(record_data), False)
+
+    def test_parse_record_not_dict_matched(self):
+        """JSONParser - Parse record not in dict type but match the schema"""
+        options = {
+            'schema': {
+                'key': 'string'
+            },
+            'parser': 'json',
+            'configuration': {
+                'json_path': "[*]"
+            }
+        }
+        record_data = "[{\"key\": \"value\"}]"
+
+        parser = JSONParser(options)
+        assert_equal(parser.parse(record_data), True)
+
+        expected_result = [{'key': 'value'}]
+        assert_equal(parser.parsed_records, expected_result)

@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ import json
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.classifier.payload.payload_base import RegisterInput, StreamPayload
+from streamalert.classifier.payload.payload_base import RegisterInput, StreamPayload
 
 
-class TestRegisterInput(object):
+class TestRegisterInput:
     """RegisterInput tests"""
     # pylint: disable=no-self-use,protected-access
 
@@ -31,7 +31,7 @@ class TestRegisterInput(object):
         self._service = 'foobar'
 
         @RegisterInput
-        class Test(object):
+        class Test:
             """Fake test class to register"""
 
             def __init__(self, *args, **kwargs):
@@ -65,7 +65,7 @@ class TestRegisterInput(object):
         assert_equal(self._class, class_type)
 
 
-class TestStreamPayload(object):
+class TestStreamPayload:
     """StreamPayload tests"""
     # pylint: disable=no-self-use
 
@@ -125,11 +125,11 @@ class TestStreamPayload(object):
     def test_load_from_raw_record_app(self):
         """StreamPayload - Load from Raw Record, StreamAlertApp"""
         record = {
-            'stream_alert_app': 'test_app'
+            'streamalert_app': 'test_app'
         }
         with patch.object(RegisterInput, 'load_for_service') as load_mock:
             StreamPayload.load_from_raw_record(record)
-            load_mock.assert_called_with('stream_alert_app', 'test_app', record)
+            load_mock.assert_called_with('streamalert_app', 'test_app', record)
 
     def test_load_from_raw_record_sns_s3(self):
         """StreamPayload - Load from Raw Record, SNS S3 Event"""

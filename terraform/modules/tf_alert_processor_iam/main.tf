@@ -11,17 +11,17 @@ locals {
   // https://github.com/hashicorp/terraform/issues/11210
   // As a workaround, we append an unused dummy element to the output lists.
 
-  lambda_outputs = "${concat(var.output_lambda_functions, list("unused"))}"
-  s3_outputs     = "${concat(var.output_s3_buckets, list("unused"))}"
-  sns_outputs    = "${concat(var.output_sns_topics, list("unused"))}"
-  sqs_outputs    = "${concat(var.output_sqs_queues, list("unused"))}"
+  lambda_outputs = concat(var.output_lambda_functions, ["unused"])
+  s3_outputs     = concat(var.output_s3_buckets, ["unused"])
+  sns_outputs    = concat(var.output_sns_topics, ["unused"])
+  sqs_outputs    = concat(var.output_sqs_queues, ["unused"])
 }
 
 // Allow the Alert Processor to update the alerts table
 resource "aws_iam_role_policy" "update_alerts_table" {
   name   = "UpdateAlertsTable"
-  role   = "${var.role_id}"
-  policy = "${data.aws_iam_policy_document.update_alerts_table.json}"
+  role   = var.role_id
+  policy = data.aws_iam_policy_document.update_alerts_table.json
 }
 
 data "aws_iam_policy_document" "update_alerts_table" {
@@ -42,8 +42,8 @@ data "aws_iam_policy_document" "update_alerts_table" {
 // Allow the Alert Processor to retrieve and decrypt output secrets
 resource "aws_iam_role_policy" "output_secrets" {
   name   = "DecryptOutputSecrets"
-  role   = "${var.role_id}"
-  policy = "${data.aws_iam_policy_document.output_secrets.json}"
+  role   = var.role_id
+  policy = data.aws_iam_policy_document.output_secrets.json
 }
 
 data "aws_iam_policy_document" "output_secrets" {
@@ -56,22 +56,24 @@ data "aws_iam_policy_document" "output_secrets" {
       "kms:DescribeKey",
     ]
 
-    resources = ["${var.kms_key_arn}", "${var.sse_kms_key_arn}"]
+    resources = [var.kms_key_arn, var.sse_kms_key_arn]
   }
 
-  // Allow retrieving encrypted output secrets
+  # FIXME (Ryxias) DRY out this SSM parameter name with what is configured in the SSMDriver
+  # Allow retrieving encrypted output secrets
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.prefix}.streamalert.secrets/*"]
+    actions   = ["ssm:GetParameter"]
+    resources = ["arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.prefix}/streamalert/outputs/*"]
   }
 }
 
+
 // Allow the Alert Processor to send to default firehose and S3 outputs
 resource "aws_iam_role_policy" "default_outputs" {
-  name   = "SinkToDefaultOutputs"
-  role   = "${var.role_id}"
-  policy = "${data.aws_iam_policy_document.default_outputs.json}"
+  name   = "DefaultOutputs"
+  role   = var.role_id
+  policy = data.aws_iam_policy_document.default_outputs.json
 }
 
 data "aws_iam_policy_document" "default_outputs" {
@@ -82,7 +84,7 @@ data "aws_iam_policy_document" "default_outputs" {
     resources = ["${local.firehose_arn_prefix}:deliverystream/${var.prefix}_streamalert_alert_delivery"]
   }
 
-  // Allow saving alerts to the default .streamalerts bucket
+  // Allow saving alerts to the default -streamalerts bucket
   statement {
     effect = "Allow"
 
@@ -93,22 +95,25 @@ data "aws_iam_policy_document" "default_outputs" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}.streamalerts",
-      "arn:aws:s3:::${var.prefix}.streamalerts/*",
+      "arn:aws:s3:::${var.prefix}-streamalerts",
+      "arn:aws:s3:::${var.prefix}-streamalerts/*",
     ]
   }
 }
 
 // Allow the Alert Processor to invoke the configured output Lambda functions
 resource "aws_iam_role_policy" "invoke_lambda_outputs" {
-  count  = "${length(var.output_lambda_functions)}"
-  name   = "LambdaInvoke_${element(local.lambda_outputs, count.index)}"
-  role   = "${var.role_id}"
-  policy = "${element(data.aws_iam_policy_document.invoke_lambda_outputs.*.json, count.index)}"
+  count = length(var.output_lambda_functions)
+  name  = "LambdaInvoke_${element(local.lambda_outputs, count.index)}"
+  role  = var.role_id
+  policy = element(
+    data.aws_iam_policy_document.invoke_lambda_outputs.*.json,
+    count.index,
+  )
 }
 
 data "aws_iam_policy_document" "invoke_lambda_outputs" {
-  count = "${length(var.output_lambda_functions)}"
+  count = length(var.output_lambda_functions)
 
   statement {
     effect    = "Allow"
@@ -119,14 +124,17 @@ data "aws_iam_policy_document" "invoke_lambda_outputs" {
 
 // Allow the Alert Processor to write alerts to the configured output S3 buckets
 resource "aws_iam_role_policy" "write_to_s3_outputs" {
-  count  = "${length(var.output_s3_buckets)}"
-  name   = "S3PutObject_${element(local.s3_outputs, count.index)}"
-  role   = "${var.role_id}"
-  policy = "${element(data.aws_iam_policy_document.write_to_s3_outputs.*.json, count.index)}"
+  count = length(var.output_s3_buckets)
+  name  = "S3PutObject_${element(local.s3_outputs, count.index)}"
+  role  = var.role_id
+  policy = element(
+    data.aws_iam_policy_document.write_to_s3_outputs.*.json,
+    count.index,
+  )
 }
 
 data "aws_iam_policy_document" "write_to_s3_outputs" {
-  count = "${length(var.output_s3_buckets)}"
+  count = length(var.output_s3_buckets)
 
   statement {
     effect = "Allow"
@@ -146,14 +154,17 @@ data "aws_iam_policy_document" "write_to_s3_outputs" {
 
 // Allow the Alert Processor to publish to the configured SNS topics
 resource "aws_iam_role_policy" "publish_to_sns_topics" {
-  count  = "${length(var.output_sns_topics)}"
-  name   = "SNSPublish_${element(local.sns_outputs, count.index)}"
-  role   = "${var.role_id}"
-  policy = "${element(data.aws_iam_policy_document.publish_to_sns_topics.*.json, count.index)}"
+  count = length(var.output_sns_topics)
+  name  = "SNSPublish_${element(local.sns_outputs, count.index)}"
+  role  = var.role_id
+  policy = element(
+    data.aws_iam_policy_document.publish_to_sns_topics.*.json,
+    count.index,
+  )
 }
 
 data "aws_iam_policy_document" "publish_to_sns_topics" {
-  count = "${length(var.output_sns_topics)}"
+  count = length(var.output_sns_topics)
 
   statement {
     effect    = "Allow"
@@ -164,14 +175,17 @@ data "aws_iam_policy_document" "publish_to_sns_topics" {
 
 // Allow the Alert Processor to send to the configured SQS queues
 resource "aws_iam_role_policy" "send_to_sqs_queues" {
-  count  = "${length(var.output_sqs_queues)}"
-  name   = "SQSSend_${element(local.sqs_outputs, count.index)}"
-  role   = "${var.role_id}"
-  policy = "${element(data.aws_iam_policy_document.send_to_sqs_queues.*.json, count.index)}"
+  count = length(var.output_sqs_queues)
+  name  = "SQSSend_${element(local.sqs_outputs, count.index)}"
+  role  = var.role_id
+  policy = element(
+    data.aws_iam_policy_document.send_to_sqs_queues.*.json,
+    count.index,
+  )
 }
 
 data "aws_iam_policy_document" "send_to_sqs_queues" {
-  count = "${length(var.output_sqs_queues)}"
+  count = length(var.output_sqs_queues)
 
   statement {
     effect = "Allow"

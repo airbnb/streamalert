@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ from mock import Mock, patch
 from netaddr import IPNetwork
 from nose.tools import assert_equal
 
-from stream_alert.rules_engine.threat_intel import ThreatIntel
+from streamalert.rules_engine.threat_intel import ThreatIntel
 
 
 # Without this time.sleep patch, backoff performs sleep
 # operations and drastically slows down testing
 @patch('time.sleep', Mock())
-class TestThreatIntel(object):
+class TestThreatIntel:
     """Tests for ThreatIntel"""
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
     def setup(self):
@@ -64,11 +64,7 @@ class TestThreatIntel(object):
             },
             'clusters': {
                 'prod': {
-                    'modules': {
-                        'stream_alert': {
-                            'enable_threat_intel': True
-                        }
-                    }
+                    'enable_threat_intel': True
                 }
             }
         }
@@ -241,14 +237,12 @@ class TestThreatIntel(object):
 
     def test_segment(self):
         """ThreatIntel - Segment"""
-        values = [i for i in range(120)]
-
         expected_result = [
-            {i for i in range(100)},
-            {i for i in range(100, 120)}
+            set(range(100)),
+            set(range(100, 120))
         ]
 
-        result = list(ThreatIntel._segment(values))
+        result = list(ThreatIntel._segment(list(range(120))))
         assert_equal(result, expected_result)
 
     def test_query_client_error(self):
@@ -524,11 +518,7 @@ class TestThreatIntel(object):
             },
             'clusters': {
                 'prod': {
-                    'modules': {
-                        'stream_alert': {
-                            'enable_threat_intel': False
-                        }
-                    }
+                    'enable_threat_intel': False
                 }
             }
         }

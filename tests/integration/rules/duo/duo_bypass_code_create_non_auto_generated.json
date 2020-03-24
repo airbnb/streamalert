@@ -9,7 +9,7 @@
     },
     "description": "A DUO bypass code that was hand crafted should create an alert.",
     "log": "duo:administrator",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_admin_sm-app-name_app",
     "trigger_rules": [
       "duo_bypass_code_create_non_auto_generated"
@@ -25,7 +25,7 @@
     },
     "description": "A DUO bypass code that was auto generated should not create an alert.",
     "log": "duo:administrator",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_admin_sm-app-name_app",
     "trigger_rules": []
   }

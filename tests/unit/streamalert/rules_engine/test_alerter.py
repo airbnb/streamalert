@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,16 +18,16 @@ import os
 from botocore.exceptions import ClientError
 from mock import Mock, patch
 
-from stream_alert.rules_engine.alert_forwarder import AlertForwarder
+from streamalert.rules_engine.alert_forwarder import AlertForwarder
 
 _ALERTS_TABLE = 'corp-prefix_streamalert_alerts'
 
 
-class TestAlertForwarder(object):
+class TestAlertForwarder:
     """Test class for AlertForwarder"""
     # pylint: disable=attribute-defined-outside-init,protected-access
 
-    @patch('stream_alert.rules_engine.alert_forwarder.AlertTable', Mock())
+    @patch('streamalert.rules_engine.alert_forwarder.AlertTable', Mock())
     @patch.dict(os.environ, {'ALERTS_TABLE': _ALERTS_TABLE})
     def setup(self):
         self.forwarder = AlertForwarder()

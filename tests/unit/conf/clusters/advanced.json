@@ -1,17 +1,47 @@
 {
+  "data_sources": {},
   "id": "advanced",
+  "classifier_config": {
+    "inputs": {
+      "aws-sns": []
+    },
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "metric_alarms": {
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      }
+    },
+    "timeout": 60,
+    "vpc_config": {
+      "security_group_ids": [],
+      "subnet_ids": []
+    }
+  },
+  "enable_threat_intel": false,
   "modules": {
     "cloudtrail": {
-      "enable_kinesis": true,
       "enable_logging": true
     },
-    "cloudwatch": {
+    "cloudwatch_events": {},
+    "cloudwatch_logs_destination": {
       "cross_account_ids": [
         "123456789012"
       ],
       "enabled": true,
-      "excluded_regions": [
-        "us-west-1"
+      "regions": [
+        "us-west-2",
+        "us-east-2"
       ]
     },
     "cloudwatch_monitoring": {
@@ -34,60 +64,25 @@
         "shard_level_metrics": [
           "IncomingBytes"
         ],
-        "shards": 1
+        "shards": 1,
+        "terraform_outputs": [
+          "user_arn",
+          "access_key_id",
+          "secret_key"
+        ]
       }
     },
     "kinesis_events": {
       "enabled": true
     },
-    "s3_events": [
-      {
-        "bucket_id": "unit-test-bucket.data",
-        "filter_prefix": "AWSLogs/123456789/CloudTrail/us-east-1/",
-        "filter_suffix": ".log"
-      },
-      {
-        "bucket_id": "unit-test.cloudtrail.data",
-        "enable_events": false
-      }
-    ],
-    "stream_alert": {
-      "classifier_config": {
-        "inputs": {
-          "aws-sns": []
-        },
-        "log_level": "info",
-        "log_retention_days": 14,
-        "memory": 128,
-        "metric_alarms": {
-          "errors": {
-            "enabled": true,
-            "evaluation_periods": 1,
-            "period_secs": 120,
-            "threshold": 0
-          },
-          "throttles": {
-            "enabled": true,
-            "evaluation_periods": 1,
-            "period_secs": 120,
-            "threshold": 0
-          }
-        },
-        "timeout": 60,
-        "vpc_config": {
-          "security_group_ids": [],
-          "subnet_ids": []
+    "s3_events": {
+      "unit-test-bucket.data": [
+        {
+          "filter_prefix": "AWSLogs/123456789/CloudTrail/us-east-1/",
+          "filter_suffix": ".log"
         }
-      },
-      "enable_threat_intel": false
+      ],
+      "unit-test.cloudtrail.data": []
     }
-  },
-  "outputs": {
-    "kinesis": [
-      "username",
-      "access_key_id",
-      "secret_key"
-    ]
-  },
-  "region": "us-west-1"
+  }
 }

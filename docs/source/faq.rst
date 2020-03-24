@@ -1,6 +1,6 @@
+###
 FAQ
-===
-
+###
 Frequently Asked Questions
 
 **What language is StreamAlert written in?**
@@ -36,7 +36,10 @@ Frequently Asked Questions
 
 * StreamAlert is intended for asynchronous decision making.
 
+
+**********
 Contact Us
-----------
+**********
 Don't see your question answered here?
+
 Feel free to `open an issue <https://github.com/airbnb/streamalert/issues/new>`_, submit a PR, and/or reach out to us on `Slack <https://streamalert.herokuapp.com/>`_

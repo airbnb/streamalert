@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
+import os
 
 from mock import Mock, patch
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 
-import stream_alert.classifier.classifier as classifier_module
-from stream_alert.classifier.classifier import Classifier
+import streamalert.classifier.classifier as classifier_module
+from streamalert.classifier.classifier import Classifier
+from streamalert.shared.exceptions import ConfigError
 
 
-class TestClassifier(object):
+class TestClassifier:
     """Classifier tests"""
     # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 
@@ -34,7 +36,8 @@ class TestClassifier(object):
         with patch.object(classifier_module, 'Normalizer'), \
              patch.object(classifier_module, 'FirehoseClient'), \
              patch.object(classifier_module, 'SQSClient'), \
-             patch('stream_alert.classifier.classifier.config.load_config',
+             patch.dict(os.environ, {'CLUSTER': 'prod'}), \
+             patch('streamalert.classifier.classifier.config.load_config',
                    Mock(return_value=self._mock_conf())):
             self._classifier = Classifier()
 
@@ -47,19 +50,17 @@ class TestClassifier(object):
     def _mock_conf(cls):
         return {
             'logs': cls._mock_logs(),
-            'sources': cls._mock_sources(),
-            'global': cls._mock_sources()
+            'clusters': {'prod': {'data_sources': cls._mock_sources()}},
+            'global': cls._mock_global()
         }
 
     @classmethod
     def _mock_sources(cls):
         return {
             cls._service_name: {
-                cls._resource_name: {
-                    'logs': [
-                        'log_type_01'
-                    ]
-                }
+                cls._resource_name: [
+                    'log_type_01'
+                ]
             }
         }
 
@@ -87,6 +88,9 @@ class TestClassifier(object):
     @classmethod
     def _mock_global(cls):
         return {
+            'account': {
+                'prefix': 'unit-test'
+            },
             'infrastructure': {
                 'firehose': {
                     'enabled': True,
@@ -154,24 +158,22 @@ class TestClassifier(object):
         result = self._classifier._load_logs_for_resource(self._service_name, self._resource_name)
         assert_equal(result, expected_result)
 
-    @patch('logging.Logger.error')
-    def test_load_logs_for_resource_invalid_service(self, log_mock):
+    def test_load_logs_for_resource_invalid_service(self):
         """Classifier - Load Logs for Resource, Invalid Service"""
-        service = 'invalid_service'
-        result = self._classifier._load_logs_for_resource(service, self._resource_name)
-        assert_equal(result, False)
-        log_mock.assert_called_with('Service [%s] not declared in sources configuration', service)
+        assert_raises(
+            ConfigError,
+            self._classifier._load_logs_for_resource,
+            'invalid_service',
+            self._resource_name
+        )
 
-    @patch('logging.Logger.error')
-    def test_load_logs_for_resource_invalid_resource(self, log_mock):
+    def test_load_logs_for_resource_invalid_resource(self):
         """Classifier - Load Logs for Resource, Invalid Resource"""
-        resource = 'invalid_resource'
-        result = self._classifier._load_logs_for_resource(self._service_name, resource)
-        assert_equal(result, False)
-        log_mock.assert_called_with(
-            'Resource [%s] not declared in sources configuration for service [%s]',
-            resource,
-            self._service_name
+        assert_raises(
+            ConfigError,
+            self._classifier._load_logs_for_resource,
+            self._service_name,
+            'invalid_resource'
         )
 
     @patch.object(classifier_module, 'get_parser')
@@ -263,6 +265,9 @@ class TestClassifier(object):
                 self._service_name
             )
 
+    # Since we mock the Normalizer, we must also mock the class variable
+    # referenced in the class methods.
+    @patch('streamalert.shared.normalize.Normalizer._types_config', dict())
     def test_classify_payload_bad_record(self):
         """Classifier - Classify Payload, Bad Record"""
         with patch.object(Classifier, '_process_log_schemas'), \

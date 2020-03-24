@@ -1,33 +1,34 @@
 [
   {
     "data": {
-      "username": "user.name@email.com",
       "access_device": {
+        "browser": "Chrome",
+        "browser_version": "60.0.0000.80",
         "flash_version": "27.0.0.0",
         "java_version": "uninstalled",
-        "os_version": "10.12.6",
-        "browser_version": "60.0.0000.80",
-        "trusted_endpoint_status": "not trusted",
         "os": "Mac OS X",
-        "browser": "Chrome"
+        "os_version": "10.12.6",
+        "trusted_endpoint_status": "not trusted"
       },
-      "timestamp": 1505316499,
-      "new_enrollment": false,
-      "ip": "12.123.123.12",
+      "alias": "",
+      "device": "555-123-4567",
+      "factor": "Duo Push",
       "integration": "Test Integration",
-      "reason": "Anonymous IP",
+      "ip": "12.123.123.12",
       "location": {
         "city": "Place",
-        "state": "State",
-        "country": "US"
+        "country": "US",
+        "state": "State"
       },
-      "factor": "Duo Push",
-      "device": "555-123-4567",
-      "result": "FAILURE"
+      "new_enrollment": false,
+      "reason": "Anonymous IP",
+      "result": "FAILURE",
+      "timestamp": 1505316499,
+      "username": "user.name@email.com"
     },
     "description": "Duo authentication log marked as failure as a result of 'Anonymous IP' that will create an alert",
     "log": "duo:authentication",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_auth_sm-app-name_app",
     "trigger_rules": [
       "duo_anonymous_ip_failure"
@@ -45,7 +46,7 @@
     },
     "description": "Duo authentication log marked as failure as a result of 'Location restricted' that will not create an alert",
     "log": "duo:authentication",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_duo_auth_sm-app-name_app",
     "trigger_rules": []
   }

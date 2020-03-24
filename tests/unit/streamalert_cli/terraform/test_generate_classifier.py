@@ -1,5 +1,5 @@
 """
-Copyright 2017-present, Airbnb Inc.
+Copyright 2017-present Airbnb, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@ limitations under the License.
 """
 from nose.tools import assert_equal
 
-from stream_alert_cli.terraform import common, classifier
+from streamalert_cli.terraform import common, classifier
 
 
-class TestTerraformGenerateClassifier(object):
+class TestTerraformGenerateClassifier:
     """CLI Terraform Generate, Classifier"""
     # pylint: disable=no-self-use,attribute-defined-outside-init
 
@@ -39,37 +39,33 @@ class TestTerraformGenerateClassifier(object):
             },
             'clusters': {
                 'test': {
-                    'modules': {
-                        'stream_alert': {
-                            'classifier_config': {
-                                'inputs': {
-                                    'aws-sns': [
-                                        'arn:aws:sns:us-east-1:123456789012:foo_bar'
-                                    ]
-                                },
-                                'log_level': 'info',
-                                'log_retention_days': 14,
-                                'memory': 128,
-                                'metric_alarms': {
-                                    'errors': {
-                                        'enabled': True,
-                                        'evaluation_periods': 1,
-                                        'period_secs': 120,
-                                        'threshold': 0
-                                    },
-                                    'throttles': {
-                                        'enabled': True,
-                                        'evaluation_periods': 1,
-                                        'period_secs': 120,
-                                        'threshold': 0
-                                    }
-                                },
-                                'timeout': 60,
-                                'vpc_config': {
-                                    'security_group_ids': [],
-                                    'subnet_ids': []
-                                }
+                    'classifier_config': {
+                        'inputs': {
+                            'aws-sns': [
+                                'arn:aws:sns:us-east-1:123456789012:foo_bar'
+                            ]
+                        },
+                        'log_level': 'info',
+                        'log_retention_days': 14,
+                        'memory': 128,
+                        'metric_alarms': {
+                            'errors': {
+                                'enabled': True,
+                                'evaluation_periods': 1,
+                                'period_secs': 120,
+                                'threshold': 0
+                            },
+                            'throttles': {
+                                'enabled': True,
+                                'evaluation_periods': 1,
+                                'period_secs': 120,
+                                'threshold': 0
                             }
+                        },
+                        'timeout': 60,
+                        'vpc_config': {
+                            'security_group_ids': [],
+                            'subnet_ids': []
                         }
                     }
                 }
@@ -88,9 +84,11 @@ class TestTerraformGenerateClassifier(object):
         expected_result = {
             'module': {
                 'classifier_test_iam': {
-                    'source': 'modules/tf_classifier',
+                    'source': './modules/tf_classifier',
                     'account_id': '123456789012',
                     'region': 'us-east-1',
+                    'prefix': 'unit-test',
+                    'firehose_use_prefix': True,
                     'function_role_id': '${module.classifier_test_lambda.role_id}',
                     'function_alias_arn': '${module.classifier_test_lambda.function_alias_arn}',
                     'function_name': '${module.classifier_test_lambda.function_name}',
@@ -104,7 +102,7 @@ class TestTerraformGenerateClassifier(object):
                 },
                 'classifier_test_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-east-1:123456789012:test_topic'],
-                    'description': 'Unit-Test Streamalert Classifier Test',
+                    'description': 'Unit-Test Test Streamalert Classifier',
                     'environment_variables': {
                         'CLUSTER': 'test',
                         'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
@@ -119,11 +117,11 @@ class TestTerraformGenerateClassifier(object):
                     'errors_alarm_period_secs': 120,
                     'errors_alarm_threshold': 0,
                     'filename': 'classifier.zip',
-                    'function_name': 'unit-test_streamalert_classifier_test',
-                    'handler': 'stream_alert.classifier.main.handler',
+                    'function_name': 'unit-test_test_streamalert_classifier',
+                    'handler': 'streamalert.classifier.main.handler',
                     'log_retention_days': 14,
                     'memory_size_mb': 128,
-                    'source': 'modules/tf_lambda',
+                    'source': './modules/tf_lambda',
                     'throttles_alarm_enabled': True,
                     'throttles_alarm_evaluation_periods': 1,
                     'throttles_alarm_period_secs': 120,

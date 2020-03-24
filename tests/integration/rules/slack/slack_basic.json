@@ -14,7 +14,7 @@
     },
     "description": "basic schema validation check for slack:access",
     "log": "slack:access",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_slack_access_sm-app-name_app",
     "trigger_rules": []
   },
@@ -31,7 +31,7 @@
     },
     "description": "schema validation check for slack:integration with service log type",
     "log": "slack:integration",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_slack_integration_sm-app-name_app",
     "trigger_rules": []
   },
@@ -47,7 +47,7 @@
     },
     "description": "schema validation check for slack:integration with app log type",
     "log": "slack:integration",
-    "service": "stream_alert_app",
+    "service": "streamalert_app",
     "source": "prefix_cluster_slack_integration_sm-app-name_app",
     "trigger_rules": []
   }
