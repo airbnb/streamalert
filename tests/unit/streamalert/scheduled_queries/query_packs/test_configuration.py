@@ -59,6 +59,6 @@ class TestQueryPackRepository:
     @staticmethod
     def test_load_and_get_packs():
         """StreamQuery - QueryPackRepository - get_packs"""
-        QueryPackRepository.load_packs()
+        QueryPackRepository.load_packs(['scheduled_queries/'])
 
         assert_true(len(QueryPackRepository.get_packs()) >= 1)

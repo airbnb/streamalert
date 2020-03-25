@@ -15,8 +15,6 @@ limitations under the License.
 """
 from streamalert.shared.importer import import_folders
 
-PACKS_DIRECTORY = 'scheduled_queries/'
-
 
 class QueryPackConfiguration:
 
@@ -112,5 +110,6 @@ class QueryPackRepository:
         cls.QUERY_PACKS[name] = config
 
     @classmethod
-    def load_packs(cls):
-        import_folders(PACKS_DIRECTORY)
+    def load_packs(cls, directories):
+        for dir in directories:
+            import_folders(dir)

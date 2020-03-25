@@ -10,6 +10,9 @@
     ],
     "rule_locations": [
       "rules"
+    ],
+    "scheduled_query_locations": [
+      "scheduled_queries"
     ]
   },
   "infrastructure": {
