@@ -1,0 +1,46 @@
+name: Actions CI
+on:
+  pull_request: {}
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - 3.7
+        task:
+          - name: Lint
+            command: |
+              ./tests/scripts/pylint.sh
+          - name: Test
+            command: |
+              ./tests/scripts/unit_tests.sh
+              ./manage.py test rules
+              ./manage.py test classifier
+          - name: Docs
+            command: |
+              sphinx-build -W docs/source docs/build
+          - name: Bandit
+            command: |
+              bandit --ini setup.cfg -r .
+    name: "Python ${{ matrix.python }}/${{ matrix.task.name }}"
+    steps:
+      - uses: "actions/checkout@v2"
+      - uses: "actions/setup-python@v1"
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install requirements
+        run: pip install -r requirements.txt
+      - name: ${{ matrix.task.name }}
+        run: ${{ matrix.task.command }}
+      - name: Submit Coverage
+        run: coveralls
+        if: matrix.task.name == 'Test'
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
