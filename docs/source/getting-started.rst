@@ -103,6 +103,20 @@ Deploy
   python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
   python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
+.. note::
+
+  * Update the ``file_format`` value in ``conf/lambda.json``, choose ``parquet`` or ``json``. We will set default value to ``parquet`` in the future release.
+
+  .. code-block:: bash
+
+    "athena_partition_refresh_config": {
+      "concurrency_limit": 10,
+      "file_format": "parquet",
+      "log_level": "info"
+    }
+
+  * For more information, please visit :ref:`historical_search` page for more information.
+
 2. Build the StreamAlert infrastructure for the first time:
 
 .. code-block:: bash
