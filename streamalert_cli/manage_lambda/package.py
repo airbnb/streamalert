@@ -25,7 +25,6 @@ from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 
 # Build .zip files in the top-level of the terraform directory
 THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
-BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
 LOGGER = get_logger(__name__)
 
 

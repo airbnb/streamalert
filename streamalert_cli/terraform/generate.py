@@ -618,7 +618,7 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
                 'It is required to explicitly set "file_format" for '
                 'athena_partition_refresh_config in "conf/lambda.json" when upgrading to v3.1.0. '
                 'Available values are "parquet" and "json". For more information, refer to '
-                'https://github.com/airbnb/streamalert/issues/1143'
+                'https://github.com/airbnb/streamalert/issues/1143. '
                 'In the future release, the default value of "file_format" will '
                 'be changed to "parquet".'
             )
