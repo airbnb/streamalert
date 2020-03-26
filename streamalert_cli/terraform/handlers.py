@@ -130,7 +130,7 @@ class TerraformInitCommand(CLICommand):
             if not create_log_tables(config=config):
                 return
 
-        LOGGER.info('Building remainding infrastructure')
+        LOGGER.info('Building remaining infrastructure')
         return tf_runner(refresh=False)
 
     @staticmethod
