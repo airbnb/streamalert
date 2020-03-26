@@ -368,11 +368,6 @@ def create_table(table, bucket, config, schema_override=None):
 
     athena_client = get_athena_client(config)
 
-    config_data_bucket = firehose_data_bucket(config)
-    if not config_data_bucket:
-        LOGGER.error('The \'firehose\' module is not enabled in global.json')
-        return False
-
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
         LOGGER.info('The \'%s\' table already exists.', sanitized_table_name)
@@ -393,6 +388,11 @@ def create_table(table, bucket, config, schema_override=None):
         )
 
     else:  # all other tables are log types
+
+        config_data_bucket = firehose_data_bucket(config)
+        if not config_data_bucket:
+            LOGGER.error('The \'firehose\' module is not enabled in global.json')
+            return False
 
         # Use the bucket if supplied, otherwise use the default data bucket
         bucket = bucket or config_data_bucket
