@@ -391,7 +391,7 @@ def create_table(table, bucket, config, schema_override=None):
 
         config_data_bucket = firehose_data_bucket(config)
         if not config_data_bucket:
-            LOGGER.error('The \'firehose\' module is not enabled in global.json')
+            LOGGER.warning('The \'firehose\' module is not enabled in global.json')
             return False
 
         # Use the bucket if supplied, otherwise use the default data bucket
