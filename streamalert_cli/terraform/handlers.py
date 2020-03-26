@@ -298,7 +298,7 @@ class TerraformCleanCommand(CLICommand):
             print('Removing terraform file: {}'.format(path))
             os.remove(path)
 
-        for root, _, files in os.walk('terraform'):
+        for root, _, files in os.walk(TERRAFORM_FILES_PATH):
             for file_name in files:
                 path = os.path.join(root, file_name)
                 if path.endswith('.tf.json'):
