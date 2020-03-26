@@ -109,7 +109,7 @@ class TerraformInitCommand(CLICommand):
         alerts_bucket = firehose_alerts_bucket(config)
         create_table('alerts', alerts_bucket, config)
 
-        LOGGER.info('Building remainding infrastructure')
+        LOGGER.info('Building remaining infrastructure')
         return tf_runner(refresh=False)
 
     @staticmethod
