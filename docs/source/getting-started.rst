@@ -105,7 +105,7 @@ Deploy
 
 .. note::
 
-  * Update the ``file_format`` value in ``conf/lambda.json``, choose ``parquet`` or ``json``. We will set default value to ``parquet`` in the future release.
+  * Update the ``file_format`` value in ``conf/lambda.json``. Valid options are ``parquet`` or ``json``. The default value will be parquet in a future release, but this must be manually configured at this time.
 
   .. code-block:: bash
 
@@ -115,7 +115,7 @@ Deploy
       "log_level": "info"
     }
 
-  * For more information, please visit :ref:`historical_search` page for more information.
+  * More information can be found on the `historical search <historical-search.html>`_ page.
 
 2. Build the StreamAlert infrastructure for the first time:
 

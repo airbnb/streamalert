@@ -1,5 +1,3 @@
-.. _historical_search:
-
 Historical Search
 #################
 
