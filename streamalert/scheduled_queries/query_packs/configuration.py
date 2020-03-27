@@ -111,5 +111,4 @@ class QueryPackRepository:
 
     @classmethod
     def load_packs(cls, directories):
-        for dir in directories:
-            import_folders(dir)
+        import_folders(*directories)
