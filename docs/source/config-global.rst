@@ -66,6 +66,9 @@ Configuration
       ],
       "rule_locations": [
         "rules"
+      ],
+      "scheduled_query_locations": [
+        "scheduled_queries"
       ]
     }
   }
@@ -73,12 +76,13 @@ Configuration
 
 Options
 -------
-======================  ============  =================  ===============
-**Key**                 **Required**  **Default**        **Description**
-----------------------  ------------  -----------------  ---------------
-``matcher_locations``   Yes           ``["matchers"]``   List of local paths where ``matchers`` are defined
-``rule_locations``      Yes           ``["rules"]``      List of local paths where ``rules`` are defined
-======================  ============  =================  ===============
+=============================  =============  =========================  ===============
+**Key**                        **Required**   **Default**                **Description**
+-----------------------------  -------------  -------------------------  ---------------
+``matcher_locations``          Yes            ``["matchers"]``           List of local paths where ``matchers`` are defined
+``rule_locations``             Yes            ``["rules"]``              List of local paths where ``rules`` are defined
+``scheduled_query_locations``  Yes            ``["scheduled_queries"]``  List of local paths where ``scheduled_queries`` are defined
+=============================  =============  =========================  ===============
 
 
 **************

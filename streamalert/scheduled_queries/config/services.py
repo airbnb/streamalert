@@ -32,6 +32,7 @@ from streamalert.scheduled_queries.query_packs.manager import (
 from streamalert.scheduled_queries.state.state_manager import StateManager, StepFunctionStateManager
 from streamalert.scheduled_queries.streamalert.kinesis import KinesisClient
 from streamalert.scheduled_queries.support.clock import Clock
+from streamalert.shared.config import load_config
 
 
 # FIXME (Ryxias)
@@ -86,6 +87,11 @@ def configure_container(container):
     container.register(ServiceDefinition('clock', _make_clock))
     container.register(ServiceDefinition('boto3_athena_client', _make_boto3_athena_client))
     container.register(ServiceDefinition('boto3_kinesis_client', _make_boto3_kinesis_client))
+    container.register(ServiceDefinition('config', _load_config))
+
+
+def _load_config(_):
+    return load_config()
 
 
 def _make_command_processor(container):
@@ -135,9 +141,16 @@ def _make_param_generator(container):
     return QueryParameterGenerator(container.get('logger'), container.get('clock'))
 
 
-def _make_query_pack_repo(_):
+def _make_query_pack_repo(container):
     repo = QueryPackRepository
-    repo.load_packs()
+
+    config = container.get('config')
+    query_directories = [
+        item
+        for item in config['global']['general'].get('scheduled_query_locations', [])
+    ]
+
+    repo.load_packs(query_directories)
     return repo
 
 
