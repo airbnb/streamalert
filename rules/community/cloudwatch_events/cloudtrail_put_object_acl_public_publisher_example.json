@@ -1,0 +1,188 @@
+[
+  {
+    "data": {
+      "account": 12345,
+      "detail": {
+        "additionalEventData": {
+          "x_amz_id_2": "..."
+        },
+        "awsRegion": "...",
+        "eventID": "...",
+        "eventName": "PutObjectAcl",
+        "eventSource": "s3.amazonaws.com",
+        "eventTime": "2017-01-01T00:20:50Z",
+        "eventType": "...",
+        "eventVersion": "...",
+        "readOnly": false,
+        "recipientAccountId": "12345",
+        "requestID": "19a19cd8-5f1b-4d5e-8af4-3e826fa03d0f",
+        "requestParameters": {
+          "AccessControlPolicy": {
+            "AccessControlList": {
+              "Grant": [
+                {
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/global/AllUsers",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
+                  },
+                  "permission": "READ"
+                }
+              ]
+            },
+            "Owner": {
+              "ID": "..."
+            },
+            "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
+          },
+          "acl": "",
+          "bucketName": "example-bucket-to-ignore",
+          "key": "..."
+        },
+        "resources": [
+          {
+            "ARN": "...",
+            "type": "..."
+          },
+          {
+            "ARN": "...",
+            "accountId": "12345",
+            "type": "..."
+          }
+        ],
+        "responseElements": {},
+        "sourceIPAddress": "1.2.3.4",
+        "userAgent": "...",
+        "userIdentity": {
+          "accessKeyId": "...",
+          "accountId": "12345",
+          "arn": "...",
+          "principalId": "...:...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "..."
+            },
+            "sessionIssuer": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "...",
+              "type": "...",
+              "userName": "test_user"
+            }
+          },
+          "type": "..."
+        }
+      },
+      "detail-type": "...",
+      "id": "123",
+      "region": "...",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "0"
+    },
+    "description": "A PutObjectAcl alert to demonstrate the testing of publishers",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "trigger_rules": [
+      "cloudtrail_put_object_acl_public_publisher_example"
+    ],
+    "publisher_tests": {
+      "slack:sample-channel": [
+        {
+          "jmespath_expression": "keys(@)",
+          "condition": "is",
+          "value": [
+            "@slack.text",
+            "@slack.attachments",
+            "@slack._previous_publication"
+          ]
+        },
+        [
+          "\"@slack.text\"",
+          "is",
+          "Rule triggered"
+        ],
+        [
+          "\"@slack.attachments\"[0].title",
+          "is",
+          "cloudtrail_put_object_acl_public_publisher_example"
+        ],
+        [
+          "\"@slack.attachments\"[0].title_link",
+          "is",
+          "https://github.com/airbnb/streamalert/search?q=cloudtrail_put_object_acl_public_publisher_example+path%3A%2Frules"
+        ],
+        [
+          "\"@slack.attachments\"[1].fields[0].title",
+          "is",
+          "Note"
+        ],
+        [
+          "\"@slack.attachments\"[1].fields[0].value",
+          "is",
+          "This is purely for example purposes in testing, and is not meant to be used as-is"
+        ],
+        [
+          "\"@slack.attachments\"[2].title",
+          "is",
+          "Record"
+        ],
+        [
+          "\"@slack.attachments\"[2].text",
+          "contains",
+          "\"requestID\": \"19a19cd8-5f1b-4d5e-8af4-3e826fa03d0f\""
+        ],
+        [
+          "\"@slack.attachments\"[2].author",
+          "is",
+          "prefix_cluster1_streamalert"
+        ],
+        [
+          "\"@slack.attachments\"[2].fields[0].title",
+          "is",
+          "Alert Id"
+        ]
+      ],
+      "pagerduty:sample-integration": [
+        [
+          "\"@pagerduty.description\"",
+          "is",
+          "cloudtrail_put_object_acl_public_publisher_example"
+        ],
+        [
+          "\"@pagerduty.details\".eventName",
+          "contains",
+          "PutObjectAcl"
+        ],
+        [
+          "\"@pagerduty.details\".eventSource",
+          "contains",
+          "s3.amazonaws.com"
+        ],
+        [
+          "\"@pagerduty.details\".userName",
+          "is",
+          "test_user"
+        ],
+        [
+          "\"@pagerduty.details\".sourceIPAddress",
+          "is",
+          "1.2.3.4"
+        ],
+        [
+          "\"@pagerduty.details\".bucketName",
+          "is",
+          "example-bucket-to-ignore"
+        ],
+        [
+          "\"@pagerduty.details\".eventTime",
+          "is",
+          "2017-01-01T00:20:50Z"
+        ]
+      ]
+    }
+  }
+]

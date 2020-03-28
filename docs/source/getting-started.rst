@@ -103,6 +103,20 @@ Deploy
   python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
   python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
+.. note::
+
+  * Update the ``file_format`` value in ``conf/lambda.json``. Valid options are ``parquet`` or ``json``. The default value will be parquet in a future release, but this must be manually configured at this time.
+
+  .. code-block:: bash
+
+    "athena_partition_refresh_config": {
+      "concurrency_limit": 10,
+      "file_format": "parquet",
+      "log_level": "info"
+    }
+
+  * More information can be found on the `historical search <historical-search.html>`_ page.
+
 2. Build the StreamAlert infrastructure for the first time:
 
 .. code-block:: bash
@@ -264,10 +278,10 @@ If not, look for any errors in the CloudWatch Logs for the StreamAlert Lambda fu
 `Amazon Athena <https://console.aws.amazon.com/athena>`_. Select your StreamAlert database in the
 dropdown on the left and preview the ``alerts`` table:
 
-.. figure:: ../images/alerts-query.png
+.. figure:: ../images/athena-alerts-search.png
   :alt: Query Alerts Table in Athena
   :align: center
-  :target: _images/alerts-query.png
+  :target: _images/athena-alerts-search.png
 
 (Here, my name prefix is ``testv2``.) If no records are returned, look for errors
 in the ``athena_partition_refresh`` function or try invoking it directly.

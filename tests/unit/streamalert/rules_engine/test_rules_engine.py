@@ -18,7 +18,7 @@ limitations under the License.
 from datetime import datetime, timedelta
 
 from mock import Mock, patch, PropertyMock
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_false, assert_true
 
 from publishers.community.generic import remove_internal_fields
 from streamalert.shared.publisher import AlertPublisher, Register, DefaultPublisher
@@ -56,6 +56,7 @@ class ThisPublisher(AlertPublisher):
 # Without this time.sleep patch, backoff performs sleep
 # operations and drastically slows down testing
 # @patch('time.sleep', Mock())
+# pylint: disable=R0904
 class TestRulesEngine:
     """Tests for RulesEngine"""
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
@@ -200,6 +201,7 @@ class TestRulesEngine:
             process=Mock(return_value=True),
             is_staged=Mock(return_value=False),
             outputs_set={'slack:test'},
+            dynamic_outputs=None,
             description='rule description',
             publishers=None,
             context=None,
@@ -296,6 +298,7 @@ class TestRulesEngine:
             process=Mock(return_value=True),
             is_staged=Mock(return_value=False),
             outputs_set={'slack:test', 'demisto:test'},
+            dynamic_outputs=None,
             description='rule description',
             publishers={
                 'demisto': 'streamalert.shared.publisher.DefaultPublisher',
@@ -346,40 +349,327 @@ class TestRulesEngine:
 
             assert_equal(result is not None, True)
 
+    # --- Tests for _configure_outputs()
+
+    def test_check_valid_output_list(self):
+        """RulesEngine - _check_valid_output, list"""
+
+        output = list()
+        result = self._rules_engine._check_valid_output(output)
+
+        assert_false(result)
+
+    def test_check_valid_output_int(self):
+        """RulesEngine - _check_valid_output, int"""
+
+        output = 1
+        result = self._rules_engine._check_valid_output(output)
+
+        assert_false(result)
+
+    def test_check_valid_output_invalid_string(self):
+        """RulesEngine - _check_valid_output, invalid string"""
+
+        output = "aws-sns"  # missing :
+        result = self._rules_engine._check_valid_output(output)
+
+        assert_false(result)
+
+    def test_check_valid_output_valid_string(self):
+        """RulesEngine - _check_valid_output, valid string"""
+
+        output = "aws-sns:test"
+        result = self._rules_engine._check_valid_output(output)
+
+        assert_true(result)
+
+    @patch('logging.Logger.error')
+    def test_call_dynamic_output_function_raise_error(self, log_error):
+        """RulesEngine - _call_dynamic_output_function, raise error"""
+        dynamic_output_function = Mock(__name__='test', side_effect=Exception('BOOM!'))
+
+        rule_name = "test"
+
+        dynamic_outputs = self._rules_engine._call_dynamic_output_function(
+            dynamic_output_function, rule_name, []
+        )
+
+        assert_equal(dynamic_outputs, [])
+        log_error.assert_called_with(
+            'Exception when calling dynamic_output %s for rule %s', 'test', rule_name
+        )
+
+    def test_call_dynamic_output_function_string(self):
+        """RulesEngine - _call_dynamic_output_function, output returns string"""
+        dynamic_output_function = Mock(__name__='test', return_value="test")
+
+        record = {'foo': 'bar'}
+        dynamic_outputs = self._rules_engine._call_dynamic_output_function(
+            dynamic_output_function, "test", [record]
+        )
+
+        assert_equal(dynamic_outputs, ["test"])
+        dynamic_output_function.assert_called()
+        dynamic_output_function.assert_called_with(record)
+
+    def test_call_dynamic_output_function_list(self):
+        """RulesEngine - _call_dynamic_output_function, output returns list"""
+        dynamic_output_function = Mock(__name__='test', return_value=["test"])
+
+        record = {'foo': 'bar'}
+        dynamic_outputs = self._rules_engine._call_dynamic_output_function(
+            dynamic_output_function, "test", [record]
+        )
+
+        assert_equal(dynamic_outputs, ["test"])
+        dynamic_output_function.assert_called()
+        dynamic_output_function.assert_called_with(record)
+
+    def test_call_dynamic_output_function_none(self):
+        """RulesEngine - _call_dynamic_output_function, output returns None"""
+        dynamic_output_function = Mock(__name__='test', return_value=None)
+
+        record = {'foo': 'bar'}
+        dynamic_outputs = self._rules_engine._call_dynamic_output_function(
+            dynamic_output_function, "test", [record]
+        )
+
+        assert_equal(dynamic_outputs, [])
+        dynamic_output_function.assert_called()
+        dynamic_output_function.assert_called_with(record)
+
+    def test_configure_dynamic_outputs_no_context(self):
+        """RulesEngine - _configure_dynamic_outputs, no context"""
+        dynamic_output = Mock(return_value="aws-sns:test")
+        rule = Mock(
+            name="test",
+            outputs_set=set(),
+            dynamic_outputs_set={dynamic_output},
+            publishers=None,
+            context=None,
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_call_dynamic_output_function") as call_dynamic:
+            call_dynamic.return_value = ["aws-sns:test"]
+
+            dynamic_outputs = self._rules_engine._configure_dynamic_outputs(record, rule)
+
+            # Tests
+            assert_equal(dynamic_outputs, ["aws-sns:test"])
+            call_dynamic.assert_called()
+            call_dynamic.assert_called_with(dynamic_output, rule.name, [record])
+
+    def test_configure_dynamic_outputs_with_context(self):
+        """RulesEngine - _configure_dynamic_outputs, with context"""
+        dynamic_output = Mock(return_value="aws-sns:test")
+        rule = Mock(
+            name="test",
+            outputs_set=set(),
+            dynamic_outputs_set={dynamic_output},
+            publishers=None,
+            context={"test": True},
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_call_dynamic_output_function") as call_dynamic:
+            call_dynamic.return_value = ["aws-sns:test"]
+
+            dynamic_outputs = self._rules_engine._configure_dynamic_outputs(record, rule)
+
+            # Tests
+            assert_equal(dynamic_outputs, ["aws-sns:test"])
+            call_dynamic.assert_called()
+            call_dynamic.assert_called_with(dynamic_output, rule.name, [record, rule.context])
+
+    def test_configure_dynamic_outputs_empty_list(self):
+        """RulesEngine - _configure_dynamic_outputs, empty list"""
+        dynamic_output = Mock(return_value=None)
+        rule = Mock(
+            name="test",
+            outputs_set=set(),
+            dynamic_outputs_set={dynamic_output},
+            publishers=None,
+            context=None,
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_call_dynamic_output_function") as call_dynamic:
+            call_dynamic.return_value = []
+
+            dynamic_outputs = self._rules_engine._configure_dynamic_outputs(record, rule)
+
+            # Tests
+            assert_equal(dynamic_outputs, [])
+            call_dynamic.assert_called()
+            call_dynamic.assert_called_with(dynamic_output, rule.name, [record])
+
+    def test_configure_outputs_staged(self):
+        """RulesEngine - _configure_outputs, staged rule"""
+        rule = Mock(
+            outputs_set=set(),
+            is_staged=Mock(return_value=True),
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_check_valid_output") as check_valid:
+            check_valid.return_value = True
+
+            outputs = self._rules_engine._configure_outputs(record, rule)
+
+            # Tests
+            rule.is_staged.assert_called()
+            check_valid.assert_called()
+            assert_equal(outputs, self._rules_engine._required_outputs_set)
+
+    def test_configure_outputs_unstaged_with_static_outputs(self):
+        """RulesEngine - _configure_outputs, unstaged with static outputs"""
+        rule = Mock(
+            outputs_set={"aws-sns:static"},
+            dynamic_outputs=None,
+            is_staged=Mock(return_value=False),
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_check_valid_output") as check_valid:
+            check_valid.return_value = True
+
+            outputs = self._rules_engine._configure_outputs(record, rule)
+
+            # Tests
+            rule.is_staged.assert_called()
+            check_valid.assert_called()
+            expected = self._rules_engine._required_outputs_set.union({"aws-sns:static"})
+            assert_equal(outputs, expected)
+
+    def test_configure_outputs_unstaged_with_no_outputs(self):
+        """RulesEngine - _configure_outputs, unstaged with no additional outputs"""
+        rule = Mock(
+            outputs_set=set(),
+            dynamic_outputs=None,
+            is_staged=Mock(return_value=False),
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_check_valid_output") as check_valid:
+            check_valid.return_value = True
+
+            outputs = self._rules_engine._configure_outputs(record, rule)
+
+            # Tests
+            rule.is_staged.assert_called()
+            assert_equal(outputs, self._rules_engine._required_outputs_set)
+
+    def test_configure_outputs_unstaged_with_dynamic_outputs(self):
+        """RulesEngine - _configure_outputs, unstaged with dynamic outputs"""
+        rule = Mock(
+            outputs_set=set(),
+            dynamic_outputs=[Mock(return_value="aws-sns:dynamic")],
+            is_staged=Mock(return_value=False),
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_configure_dynamic_outputs") as configure_dynamic:
+            configure_dynamic.return_value = ["aws-sns:dynamic"]
+
+            with patch.object(RulesEngine, "_check_valid_output") as check_valid:
+                check_valid.return_value = True
+
+                outputs = self._rules_engine._configure_outputs(record, rule)
+
+                # Tests
+                rule.is_staged.assert_called()
+                configure_dynamic.assert_called()
+                configure_dynamic.assert_called_with(record, rule)
+                check_valid.assert_called()
+                expected = self._rules_engine._required_outputs_set.union({"aws-sns:dynamic"})
+                assert_equal(outputs, expected)
+
+    def test_configure_outputs_unstaged_with_all_outputs(self):
+        """RulesEngine - _configure_outputs, unstaged with all output sources"""
+        rule = Mock(
+            outputs_set={"aws-sns:static"},
+            dynamic_outputs=[Mock(return_value="aws-sns:dynamic")],
+            is_staged=Mock(return_value=False),
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_configure_dynamic_outputs") as configure_dynamic:
+            configure_dynamic.return_value = ["aws-sns:dynamic"]
+
+            with patch.object(RulesEngine, "_check_valid_output") as check_valid:
+                check_valid.return_value = True
+
+                outputs = self._rules_engine._configure_outputs(record, rule)
+
+                # Tests
+                rule.is_staged.assert_called()
+                configure_dynamic.assert_called()
+                configure_dynamic.assert_called_with(record, rule)
+                check_valid.assert_called()
+                expected = self._rules_engine._required_outputs_set.union(
+                    {"aws-sns:static", "aws-sns:dynamic"}
+                )
+                assert_equal(outputs, expected)
+
+    def test_configure_outputs_invalid_output(self):
+        """RulesEngine - _configure_outputs, unstaged with all outputs and one invalid output"""
+        rule = Mock(
+            outputs_set={"aws-sns:static"},
+            dynamic_outputs=[Mock(return_value="invalid_output_will_not_be_in_final_outputs")],
+            is_staged=Mock(return_value=False),
+        )
+        record = {'foo': 'bar'}
+
+        with patch.object(RulesEngine, "_configure_dynamic_outputs") as configure_dynamic:
+            configure_dynamic.return_value = ["invalid_output_will_not_be_in_final_outputs"]
+
+            outputs = self._rules_engine._configure_outputs(record, rule)
+
+            # Tests
+            rule.is_staged.assert_called()
+            configure_dynamic.assert_called()
+            configure_dynamic.assert_called_with(record, rule)
+            expected = self._rules_engine._required_outputs_set.union({"aws-sns:static"})
+            assert_equal(outputs, expected)
+
     # --- Tests for _configure_publishers()
 
     def test_configure_publishers_empty(self):
         """RulesEngine - _configure_publishers, Empty"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=None,
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = None
 
         assert_equal(publishers, expectation)
 
     def test_configure_publishers_single_string(self):
         """RulesEngine - _configure_publishers, Single string"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers='streamalert.shared.publisher.DefaultPublisher'
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': ['streamalert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
 
     def test_configure_publishers_single_reference(self):
         """RulesEngine - _configure_publishers, Single reference"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=DefaultPublisher
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': ['streamalert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
@@ -387,12 +677,13 @@ class TestRulesEngine:
     @patch('logging.Logger.warning')
     def test_configure_publishers_single_invalid_string(self, log_warn):
         """RulesEngine - _configure_publishers, Invalid string"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers='blah'
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': []}
 
         assert_equal(publishers, expectation)
@@ -401,12 +692,13 @@ class TestRulesEngine:
     @patch('logging.Logger.error')
     def test_configure_publishers_single_invalid_object(self, log_error):
         """RulesEngine - _configure_publishers, Invalid object"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=self  # just some random object that's not a publisher
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': []}
 
         assert_equal(publishers, expectation)
@@ -414,12 +706,13 @@ class TestRulesEngine:
 
     def test_configure_publishers_single_applies_to_multiple_outputs(self):
         """RulesEngine - _configure_publishers, Multiple outputs"""
+        outputs = {'slack:test', 'demisto:test', 'pagerduty:test'}
         rule = Mock(
-            outputs_set={'slack:test', 'demisto:test', 'pagerduty:test'},
+            outputs_set=outputs,
             publishers=DefaultPublisher
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {
             'slack:test': ['streamalert.shared.publisher.DefaultPublisher'],
             'demisto:test': ['streamalert.shared.publisher.DefaultPublisher'],
@@ -430,12 +723,13 @@ class TestRulesEngine:
 
     def test_configure_publishers_list(self):
         """RulesEngine - _configure_publishers, List"""
+        outputs = {'slack:test'}
         rule = Mock(
-            outputs_set={'slack:test'},
+            outputs_set=outputs,
             publishers=[DefaultPublisher, remove_internal_fields]
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {'slack:test': [
             'streamalert.shared.publisher.DefaultPublisher',
             'publishers.community.generic.remove_internal_fields',
@@ -445,8 +739,9 @@ class TestRulesEngine:
 
     def test_configure_publishers_mixed_list(self):
         """RulesEngine - _configure_publishers, Mixed List"""
+        outputs = {'slack:test', 'demisto:test'}
         rule = Mock(
-            outputs_set={'slack:test', 'demisto:test'},
+            outputs_set=outputs,
             publishers={
                 'demisto': 'streamalert.shared.publisher.DefaultPublisher',
                 'slack': [that_publisher],
@@ -454,7 +749,7 @@ class TestRulesEngine:
             },
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {
             'slack:test': [
                 'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
@@ -467,8 +762,9 @@ class TestRulesEngine:
 
     def test_configure_publishers_mixed_single(self):
         """RulesEngine - _configure_publishers, Mixed Single"""
+        outputs = {'slack:test', 'demisto:test'}
         rule = Mock(
-            outputs_set={'slack:test', 'demisto:test'},
+            outputs_set=outputs,
             publishers={
                 'demisto': 'streamalert.shared.publisher.DefaultPublisher',
                 'slack': that_publisher,
@@ -476,7 +772,7 @@ class TestRulesEngine:
             },
         )
 
-        publishers = self._rules_engine._configure_publishers(rule)
+        publishers = self._rules_engine._configure_publishers(rule, outputs)
         expectation = {
             'slack:test': [
                 'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',

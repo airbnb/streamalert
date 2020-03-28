@@ -1,0 +1,25 @@
+[
+  {
+    "data": {
+      "numerics": false,
+      "name": "pack/windows-hardening/Disallowed",
+      "calendarTime": "Thu Feb 27 14:34:21 2020 UTC",
+      "counter": 0,
+      "epoch": 0,
+      "snapshot": [],
+      "decorations": {
+        "hostname": "foo-hostname",
+        "hardware_serial": "8Q394Y2",
+        "uuid": "4C4C4544-0051-XXXX-YYYY-ZZZZZZZZZZZZ"
+      },
+      "unixTime": 1582814061,
+      "action": "snapshot",
+      "hostIdentifier": "4C4C4544-0051-XXXX-YYYY-ZZZZZZZZZZZZ"
+    },
+    "log": "osquery:snapshot",
+    "description": "OSQuery event.",
+    "classify_only": true,
+    "source": "prefix_cluster1_streamalert",
+    "service": "kinesis"
+  }
+]

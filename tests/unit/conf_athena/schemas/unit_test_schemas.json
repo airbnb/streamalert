@@ -1,0 +1,17 @@
+{
+  "json:embedded": {
+    "schema": {
+      "nested_key_01": "string",
+      "nested_key_02": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "embedded_json": true,
+      "envelope_keys": {
+        "env_key_01": "string",
+        "env_key_02": "string"
+      },
+      "json_path": "test_list[*].message"
+    }
+  }
+}

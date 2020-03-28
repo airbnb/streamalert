@@ -20,16 +20,18 @@ import shutil
 
 from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
-from streamalert_cli.athena.handler import create_table
+from streamalert.shared.utils import get_data_file_format
+from streamalert_cli.athena.handler import create_table, create_log_tables
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.terraform.helpers import terraform_check
 from streamalert_cli.utils import (
     add_clusters_arg,
     CLICommand,
     set_parser_epilog,
-    UniqueSetAction,
+    UniqueSortedListAction,
 )
 
 LOGGER = get_logger(__name__)
@@ -84,8 +86,15 @@ class TerraformInitCommand(CLICommand):
             'aws_s3_bucket.streamalerts',
             'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
             'aws_kms_key.streamalert_secrets', 'aws_kms_alias.streamalert_secrets',
+            'module.streamalert_athena', #required for the alerts table
             'aws_dynamodb_table.terraform_remote_state_lock'
         ]
+
+        # this bucket must exist before the log tables can be created, but
+        # shouldn't be created unless the firehose is enabled
+        if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
+            init_targets.append('aws_s3_bucket.streamalert_data')
+
         if not tf_runner(targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')
             return False
@@ -106,10 +115,22 @@ class TerraformInitCommand(CLICommand):
 
         # we need to manually create the streamalerts table since terraform does not support this
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        alerts_bucket = firehose_alerts_bucket(config)
-        create_table('alerts', alerts_bucket, config)
+        if get_data_file_format(config) == 'json':
+            # Terraform v0.12 now supports creating Athena tables. We will support
+            # to use terraform aws_glue_catalog_table resource to create table only
+            # when data file_format is set to "parquet" in "athena_partition_refresh_config"
+            #
+            # For "json" file_format, we will continue using Athena DDL query to
+            # create tables. However, this capabity will be faded out in the future
+            # release because we want users to take advantage of parquet performance.
+            alerts_bucket = firehose_alerts_bucket(config)
+            create_table('alerts', alerts_bucket, config)
 
-        LOGGER.info('Building remainding infrastructure')
+            # Create the glue catalog tables for the enabled logs
+            if not create_log_tables(config=config):
+                return
+
+        LOGGER.info('Building remaining infrastructure')
         return tf_runner(refresh=False)
 
     @staticmethod
@@ -167,6 +188,12 @@ class TerraformBuildCommand(CLICommand):
         """
         if not terraform_generate_handler(config=config):
             return False
+
+        # Will create log tables only when file_format set to "json" and return erlier if
+        # log tables creation failed.
+        # This capabity will be faded out in the future release.
+        if get_data_file_format(config) == 'json' and not create_log_tables(config=config):
+            return
 
         target_modules, valid = _get_valid_tf_targets(config, options.target)
         if not valid:
@@ -271,19 +298,20 @@ class TerraformCleanCommand(CLICommand):
             print('Removing terraform file: {}'.format(path))
             os.remove(path)
 
-        for root, _, files in os.walk('terraform'):
+        for root, _, files in os.walk(TERRAFORM_FILES_PATH):
             for file_name in files:
                 path = os.path.join(root, file_name)
                 if path.endswith('.tf.json'):
                     _rm_file(path)
 
         for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
-            path = 'terraform/{}'.format(tf_file)
+            path = os.path.join(TERRAFORM_FILES_PATH, tf_file)
             _rm_file(path)
 
         # Finally, delete the Terraform directory
-        if os.path.isdir('terraform/.terraform/'):
-            shutil.rmtree('terraform/.terraform/')
+        tf_path = os.path.join(TERRAFORM_FILES_PATH, '.terraform')
+        if os.path.isdir(tf_path):
+            shutil.rmtree(tf_path)
 
         return True
 
@@ -333,8 +361,8 @@ def _add_default_tf_args(tf_parser, add_cluster_args=True):
             'One or more Terraform module name to target. Use `list-targets` for a list '
             'of available targets'
         ),
-        action=UniqueSetAction,
-        default=set(),
+        action=UniqueSortedListAction,
+        default=[],
         nargs='+'
     )
 
@@ -354,7 +382,7 @@ def _get_valid_tf_targets(config, targets):
 
     for target in targets:
         matches = {
-            '{}.{}'.format(value_type, value)
+            '{}.{}'.format(value_type, value) if value_type == 'module' else value
             for value_type, values in modules.items()
             for value in values
             if fnmatch(value, target)
@@ -381,7 +409,7 @@ def get_tf_modules(config, generate=False):
 
     modules = set()
     resources = set()
-    for root, _, files in os.walk('terraform'):
+    for root, _, files in os.walk(TERRAFORM_FILES_PATH):
         for file_name in files:
             path = os.path.join(root, file_name)
             if path.endswith('.tf.json'):

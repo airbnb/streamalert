@@ -16,6 +16,7 @@ limitations under the License.
 from collections import defaultdict, OrderedDict
 import json
 import os
+import re
 
 from streamalert.shared import CLUSTERED_FUNCTIONS
 from streamalert.shared.exceptions import ConfigError
@@ -24,6 +25,12 @@ from streamalert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 SUPPORTED_SOURCES = {'kinesis', 's3', 'sns', 'streamalert_app'}
+
+# Used to detect special characters in log names. Log names can not contain special
+# characters except "_" (underscore) because the log names will be referenced when
+# create Athena tables and Firehose.
+SPECIAL_CHAR_REGEX = re.compile(r'\W')
+SPECIAL_CHAR_SUB = '_'
 
 
 class TopLevelConfigKeys:

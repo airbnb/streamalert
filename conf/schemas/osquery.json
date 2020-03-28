@@ -4,6 +4,7 @@
       "calendarTime": "string",
       "counter": "integer",
       "decorations": {},
+      "log_type": "string",
       "diffResults": {
         "added": [],
         "removed": []
@@ -18,6 +19,7 @@
       "optional_top_level_keys": [
         "decorations",
         "epoch",
+        "log_type",
         "counter"
       ]
     }
@@ -70,6 +72,7 @@
         "decorations",
         "epoch",
         "counter",
+        "log_type",
         "logNumericsAsNumbers",
         "numerics"
       ]
@@ -91,7 +94,8 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
-        "decorations"
+        "decorations",
+        "log_type"
       ]
     }
   }

@@ -73,7 +73,7 @@ For additional help with any command above, try:
 
     # Dynamically generate subparsers, and create a 'commands' block for the prog description
     command_block = []
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest='command', required=True)
     command_col_size = max([len(command) for command in commands]) + 10
     for command in sorted(commands):
         setup_subparser_func, description = commands[command]
@@ -109,8 +109,8 @@ def main():
     options = parser.parse_args()
 
     # Exit with the result, which will be False if an error occurs, or True otherwise
-    sys.exit(not cli_runner(options))
+    return not cli_runner(options)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

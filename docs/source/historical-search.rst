@@ -1,103 +1,96 @@
-#################
 Historical Search
 #################
 
-The historical data retention and search feature in StreamAlert is backed by Amazon Athena and S3.
-Amazon Athena is a serverless query service used to analyze large volumes of data stored in S3.
+StreamAlert historical search feature is backed by Amazon S3 and `Athena <https://aws.amazon.com/athena/>`_ services. By default, StreamAlert will send all alerts to S3 and those alerts will be searchable in Athena table. StreamAlert users have option to enable historical search feature for data as well.
 
-Data in Athena is searchable via ANSI SQL and powered by Presto.
+As of StreamAlert v3.1.0, a new field, ``file_format``, has been added to ``athena_partition_refresh_config`` in ``conf/lamba.json``, defaulting to ``null``. This field allows users to configure how the data processed by the Classifier is stored in S3 bucket—either in ``parquet`` or ``json``. Prior to v3.1.0, all data was stored in ``json``. When using this format, Athena's search performance degrades greatly when partition sizes grow. To address this, we've introduce support for ``parquet`` to provide better Athena search performance and cost saving.
 
-StreamAlert uses Amazon Athena for historical searching of:
+.. note::
 
-* Generated alerts from StreamAlert, enabled within StreamAlert out of the box
-* All incoming log data sent to StreamAlert, configurable after StreamAlert initialization
+  * When upgrading StreamAlert to v3.1.0, it is required to change the default ``file_format`` value to either ``parquet`` or ``json``, otherwise StreamAlert will raise ``MisconfigurationError`` exception when run ``python manage.py build``.
+  * For existing deployments, ``file_format`` can be set to ``json`` and there will have no change occurred. However, if the ``file_format`` is changed to ``parquet``, all Athena tables need to be created to load ``parquet`` format. The existing JSON data won't be searchable anymore unless we build a separated tables to process data in JSON format. (All data stay in S3 bucket, there is no data loss.).
+  * For new StreamAlert deployments, it is recommended to set ``file_format`` to ``parquet`` to take the advantage of better Athena search performance and save the cost when scanning data.
+  * In the future release, the default value of ``file_format`` will change to ``parquet``. So let's change now!
 
-This works by:
+************
+Architecture
+************
 
-* Creating a ``streamalert`` Athena database
-* Creating Athena tables to read S3 data
-* Using a Lambda function to periodically refresh Athena to make the data searchable
+.. image:: ../images/historical-search.png
+    :align: left
 
+The pipeline is
+* StreamAlert creates an Athena Database, alerts kinesis Firehose and ``alerts`` table during initial deployment
+* Optional to create Firehose and Athena tables for data
+* S3 events will be sent to SQS to invoke ``athena_partition_refresh`` lambda function to add new partitions when there are new alerts or data saved in S3 bucket via Firehose
+* New alerts and data are available for searching via Athena console or SDK
 
-****************
-General Concepts
-****************
-* `Amazon Athena details <https://aws.amazon.com/athena/details/>`_
-* `Amazon Athena tables <http://docs.aws.amazon.com/athena/latest/ug/creating-tables.html>`_
-* `AWS Lambda FAQ <https://aws.amazon.com/athena/faqs/>`_
-* `AWS Lambda pricing <https://aws.amazon.com/athena/pricing/>`_
+.. _alerts_search:
 
+*************
+Alerts Search
+*************
 
-***************
-Getting Started
-***************
-Searching of alerts is enabled within StreamAlert out of the box, and can be further extended to search all incoming log data.
+* Review alert Firehose configuration, see :ref:`alerts_firehose_configuration` in ``CONFIGURATION`` session. Athena database and Athena alerts table are created automatically when you first deploy StreamAlert.
+* If the ``file_format`` is set to ``parquet``, you can run ``MSCK REPAIR TABLE alerts`` command in the Athena to load all available partitions and then alerts can be searchable. However, using ``MSCK REPAIR`` command can not load new partitions automatically.
+* StreamAlert provides a lambda function ``athena_partition_refresh`` to load new partitions to Athena tables once the data arrives in the S3 buckets automatically. Update ``athena_partition_refresh_config`` if necessary. Open ``conf/lambda.json``. See more settings :ref:`configure_athena_partition_refresh_lambda`
 
-To create tables for searching data sent to StreamAlert, run:
+  .. code-block:: bash
 
-.. code-block:: bash
+    {
+      "athena_partition_refresh_config": {
+        "concurrency_limit": 10,
+        "file_format": "parquet",
+        "log_level": "info"
+      }
+    }
 
-  python manage.py athena create-table \
-    --bucket <prefix>-streamalert-data \
-    --table-name <log_name>
+* Deploy athena_partition_refresh lambda function
 
-The log name above reflects an enabled log type in your StreamAlert deployment. These are also top level keys in the various files under the ``schemas`` directory.
+  .. code-block:: bash
 
-For example, if you have 'cloudwatch' in your sources, you would want to create tables for all possible subtypes.  This includes ``cloudwatch:control_message``, ``cloudwatch:events``, and ``cloudwatch:flow_logs``. The ``:`` character is not an acceptable character in table names due to a Hive limitation, but your arguments can be either ``cloudwatch:events`` **or** ``cloudwatch_events``. Both will be handled properly by StreamAlert.
+    python manage.py deploy --function athena
 
-Repeat this process for all relevant data tables in your deployment.
+* Search alerts in `Athena Console <https://console.aws.amazon.com/athena>`_
 
+  * Choose your ``Database`` from the dropdown on the left. Database name is ``<prefix>_streamalert``
+  * Write SQL query statement in the ``Query Editor`` on the right
 
-Deploying
-=========
-Once the options above are set, deploy the infrastructure with the following commands:
+  .. image:: ../images/athena-alerts-search.png
 
-.. code-block:: bash
+***********
+Data Search
+***********
 
-  python manage.py build
-  python manage.py deploy --function classifier
+It is optional to store data in S3 bucket and available for search in Athena tables.
 
+* Enable Firehose in ``conf/global.json`` see :ref:`firehose_configuration`
+* Build the Firehose and Athena tables
 
-*******************
-Athena Architecture
-*******************
-The Athena Partition Refresh function exists to periodically refresh Athena tables, enabling the searchability of alerts and log data.
+  .. code-block:: bash
 
-The default refresh interval is 10 minutes but can be configured by the user.
+    python manage.py build
 
+* Deploy classifier so classifier will know to send data to S3 bucket via Firehose
 
-Concepts
-========
-The Athena Partition Refresh function utilizes:
+  .. code-block:: bash
 
-* `Amazon S3 Event Notifications <http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html>`_
-* `Amazon SQS <https://aws.amazon.com/sqs/details/>`_
-* `AWS Lambda Invocations by Schedule <http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html>`_
-* `Amazon Athena Repair Table <https://docs.aws.amazon.com/athena/latest/ug/msck-repair-table.html>`_
+    python manage.py deploy --function classifier
 
+* Search data `Athena Console <https://console.aws.amazon.com/athena>`_
 
-Diagram
--------
-.. figure:: ../images/athena-refresh-arch.png
-  :alt: StreamAlert Athena Refresh Partition Diagram
-  :align: center
-  :target: _images/athena-refresh-arch.png
+  * Choose your ``Database`` from the dropdown on the left. Database name is ``<prefix>_streamalert``
+  * Write SQL query statement in the ``Query Editor`` on the right
 
-
-Internals
----------
-Each time the Athena Partition Refresh Lambda function is invoked, it does the following:
-
-* Polls the SQS queue for the latest S3 event notifications (up to 100)
-* S3 event notifications contain context around any new object written to a data bucket (as configured below)
-* A set of unique S3 Bucket IDs is deduplicated from the notifications
-* Queries Athena to verify the ``streamalert`` database exists
-* Refreshes the Athena tables for data in the relevant S3 buckets, as specified below in the list of ``buckets``
-* Deletes messages off the queue once partitions are created
+  .. image:: ../images/athena-data-search.png
 
 
+.. _configure_athena_partition_refresh_lambda:
+
+*************************
 Configure Lambda Settings
-=========================
+*************************
+
 Open ``conf/lambda.json``, and fill in the following options:
 
 ===================================  ========  ====================   ===========
@@ -108,8 +101,8 @@ Key                                  Required  Default                Descriptio
 ``log_level``                        No        ``info``               The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
 ``memory``                           No        ``128``                The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          No        ``60``                 The maximum duration of the Lambda function (in seconds)
-``schedule_expression``              No        ``rate(10 minutes)``   The rate of which the Athena Partition Refresh Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
-``buckets``                          Yes       ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  By default, the alerts bucket will exist in each deployment.
+``file_format``                      Yes       ``null``               The alerts and data format stored in S3 bucket via Firehose, can be either ``parquet`` (preferred) or ``json``
+``buckets``                          No        ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  By default, the alerts bucket will exist in each deployment.
 ===================================  ========  ====================   ===========
 
 **Example:**
@@ -123,93 +116,26 @@ Key                                  Required  Default                Descriptio
       "buckets": {
         "alternative_bucket": "data"
       },
-      "...": "...",
+      "file_format": "parquet",
       "timeout": 60
     }
   }
 
 
-Deployment
-==========
-If any of the settings above are changed from the initialized defaults, the Lambda function will need to be deployed in order for them to take effect:
-
-.. code-block:: bash
-
-  python manage.py deploy --function athena
-
-Going forward, if the deploy flag ``--function all`` is used, it will redeploy this function along with the ``rule`` function and ``alert`` function.
-
-
-Monitoring
-----------
-To ensure the function is operating as expected, monitor the following SQS metrics for ``<prefix>_streamalert_athena_s3_notifications``:
-
-* ``NumberOfMessagesReceived``
-* ``NumberOfMessagesSent``
-* ``NumberOfMessagesDeleted``
-
-All three of these metrics should have very close values.
-
-If the ``NumberOfMessagesSent`` is much higher than the other two metrics, the ``schedule_expression`` should be increased in the configuration.
-
-For high throughput production environments, an interval of 1 to 2 minutes is recommended.
-
-
 *****************
-Athena User Guide
+Athena References
 *****************
 
-Concepts
-========
-* `SQL <https://www.w3schools.com/sql/sql_intro.asp>`_
-* `Athena Partitions <http://docs.aws.amazon.com/athena/latest/ug/partitions.html>`_
+* `Introduction to SQL <https://www.w3schools.com/sql/sql_intro.asp>`_
+* `Amazon Athena Getting Started <https://docs.aws.amazon.com/athena/latest/ug/getting-started.html>`_
+* `Presto Documenation <https://prestodb.io/docs/0.172/index.html#>`_
 
+.. tip::
 
-Querying Data
-=============
-All alerts generated by StreamAlert will be sent to an ``alerts`` S3 bucket via Firehose. These will then be searchable within Athena.
+  * Alerts and data are partitioned by ``dt`` in the format ``YYYY-MM-DD-hh``
+  * To improve query performance, filter data within a specific partition or range of partitions
 
-To get started with querying of this data, navigate to the AWS Console, click Services, and type 'Athena'.
+    .. code-block:: sql
 
-When the service loads, switch the ``DATABASE`` option in the dropdown to ``streamalert``:
-
-.. figure:: ../images/athena-usage-1.png
-  :alt: StreamAlert Athena Database Selection
-  :align: center
-  :target: _images/athena-usage-1.png
-
-To view the schema of the ``alerts`` table, click the eye icon:
-
-.. figure:: ../images/athena-usage-2.png
-  :alt: StreamAlert Athena Alerts Schema
-  :align: center
-  :target: _images/athena-usage-2.
-
-To make a query, type a SQL statement in the Query Editor, and click Run Query:
-
-.. figure:: ../images/athena-usage-3.png
-  :alt: StreamAlert Athena Run Query
-  :align: center
-  :target: _images/athena-usage-3.
-
-The query shown above will show the most recent 10 alerts.
-
-
-Tips
-====
-Data is partitioned in the following format ``YYYY-MM-DD-hh-mm``.
-
-An example is ``2017-08-01-22-00``.
-
-To increase query performance, filter data within a specific partition or range of partitions.
-
-With StreamAlert tables, the date partition is the ``dt`` column.
-
-As an example, the query below counts all alerts during a given minute:
-
-.. figure:: ../images/athena-usage-4.png
-  :alt: StreamAlert Athena Run Query with Partition
-  :align: center
-  :target: _images/athena-usage-4.
-
-For additional guidance on using SQL, visit the link under Concepts.
+      SELECT * FROM "<prefix>_streamalert"."alerts"
+      WHERE dt BETWEEN 2020-02-28-00 AND 2020-02-29-00

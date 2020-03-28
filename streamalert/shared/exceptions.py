@@ -19,5 +19,5 @@ class StreamAlertError(Exception):
     """Base streamalert exception for inheritance"""
 
 
-class ConfigError(StreamAlertError):
+class ConfigError(StreamAlertError, ValueError):
     """Exception to be used for config related errors"""

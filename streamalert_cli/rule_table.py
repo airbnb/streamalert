@@ -17,7 +17,7 @@ from streamalert.shared.rule_table import RuleTable
 from streamalert_cli.utils import (
     CLICommand,
     generate_subparser,
-    UniqueSetAction,
+    UniqueSortedListAction,
 )
 
 
@@ -27,8 +27,10 @@ class RuleStagingCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the rule staging subparser: manage.py rule-staging [subcommand] [options]"""
-        rule_staging_subparsers = subparser.add_subparsers(dest="rule-staging subcommand",
-                                                           required=True)
+        rule_staging_subparsers = subparser.add_subparsers(
+            dest='rule-staging subcommand',
+            required=True
+        )
 
         cls._setup_rule_staging_enable_subparser(rule_staging_subparsers)
         cls._setup_rule_staging_status_subparser(rule_staging_subparsers)
@@ -107,8 +109,8 @@ class RuleStagingCommand(CLICommand):
         """Add the default arguments to the rule staging parsers"""
         subparser.add_argument(
             'rules',
-            action=UniqueSetAction,
-            default=set(),
+            action=UniqueSortedListAction,
+            default=[],
             help='One or more rule to perform this action against, seperated by spaces',
             nargs='+'
         )

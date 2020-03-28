@@ -5,6 +5,9 @@
   "aws-s3": {
     "bucket": "aws-s3-bucket"
   },
+  "aws-ses": [
+    "sample-integration"
+  ],
   "aws-sns": {
     "sample-topic": "sample-topic-name"
   },
@@ -25,5 +28,8 @@
   ],
   "slack": [
     "sample-channel"
+  ],
+  "teams": [
+    "sample-webhook"
   ]
 }

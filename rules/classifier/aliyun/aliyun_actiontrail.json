@@ -1,0 +1,160 @@
+[
+  {
+    "data": {
+      "eventId": "3AD717A2-DC29-4C03-9F0E-2E9C8271D477",
+      "eventVersion": "1",
+      "acsRegion": "cn-hangzhou",
+      "requestParameters": {
+        "UserName": "tob_actiontrail",
+        "PolicyName": "AdministratorAccess",
+        "HostId": "ram-share.aliyuncs.com",
+        "PolicyType": "System",
+        "RequestId": "3AD717A2-DC29-4C03-9F0E-2E9C8271D477",
+        "AkProxySuffix": "ram"
+      },
+      "referencedResources": {
+        "Policy": [
+          "AdministratorAccess"
+        ],
+        "User": [
+          "tob_actiontrail"
+        ]
+      },
+      "eventType": "ApiCall",
+      "eventTime": "2018-07-19T16:47:23Z",
+      "apiVersion": "2015-05-01",
+      "eventName": "AttachPolicyToUser",
+      "userIdentity": {
+        "userName": "root",
+        "sessionContext": {
+          "attributes": {
+            "creationDate": "2018-07-19T16:47:23Z",
+            "mfaAuthenticated": "false"
+          }
+        },
+        "type": "root-account",
+        "principalId": "5105431946222327",
+        "accountId": "5105431946222327"
+      },
+      "eventSource": "ram-share.aliyuncs.com",
+      "requestId": "3AD717A2-DC29-4C03-9F0E-2E9C8271D477",
+      "serviceName": "Ram",
+      "sourceIpAddress": "65.205.72.122"
+    },
+    "description": "schema validation check for aliyun:actiontrail with ApiCall call event",
+    "log": "aliyun:actiontrail",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "classify_only": true
+  },
+  {
+    "data": {
+      "apiVersion": "2015-09-28",
+      "eventId": "aee5874f-1478-47df-932f-0ffd1851fc5f",
+      "eventName": "UpdateTrail",
+      "eventSource": "actiontrail.cn-hangzhou.aliyuncs.com",
+      "eventTime": "2016-01-06T03:29:15Z",
+      "eventType": "ApiCall",
+      "eventVersion": "1",
+      "requestId": "0D690264-0D51-4B4F-8AEE-CDEB3ABD1929",
+      "requestParameters": {
+        "CreateNewBucket": "false",
+        "Name": "default",
+        "OssBucketName": "trail",
+        "OssKeyPrefix": "",
+        "Region": "cn-hangzhou",
+        "RoleName": "aliyunactiontraildefaultrole",
+        "StartLogging": "false"
+      },
+      "serviceName": "Actiontrail",
+      "sourceIpAddress": "42.120.74.96",
+      "userAgent": "aliyuncli/2.0.6",
+      "userIdentity": {
+        "type": "ram-user",
+        "principalId": "274180646548292385",
+        "accountId": "43274",
+        "accessKeyId": "f6IzzFZMmzNwEI4d",
+        "userName": "Alice"
+      }
+    },
+    "description": "schema validation check for aliyun:actiontrail with example ApiCall event data",
+    "log": "aliyun:actiontrail",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "classify_only": true
+  },
+  {
+    "data": {
+      "apiVersion": "2014-05-26",
+      "eventId": "f4788483-70fc-476b-839b-af5ed11170cd",
+      "eventName": "StopInstance",
+      "eventSource": "ecs-cn-hangzhou.aliyuncs.com",
+      "eventTime": "2016-01-04T09:47:40Z",
+      "eventType": "ApiCall",
+      "eventVersion": "1",
+      "recipientAccountId": "43274",
+      "requestId": "275A832E-4C6A-47BE-A432-C18DDD79FDAB",
+      "requestParameters": {
+        "ForceStop": "true",
+        "InstanceId": "i-22nyrl1yf"
+      },
+      "serviceName": "Ecs",
+      "sourceIpAddress": "42.120.74.96",
+      "userAgent": "AliyunConsole",
+      "userIdentity": {
+        "type": "ram-user",
+        "accountId": "43274",
+        "principalId": "288153348682784898",
+        "userName": "Bob",
+        "sessionContext": {
+          "attributes": {
+            "creationDate": "2016-01-04T09:47:40Z",
+            "mfaAuthenticated": "true"
+          }
+        }
+      }
+    },
+    "description": "schema validation check for aliyun:actiontrail with example StopInstance console event data",
+    "log": "aliyun:actiontrail",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "classify_only": true
+  },
+  {
+    "data": {
+      "apiVersion": "2015-04-01",
+      "eventId": "64e9b93e-13da-4ea4-8b72-081069ff4d8c",
+      "eventName": "AssumeRole",
+      "eventSource": "sts.aliyuncs.com",
+      "eventTime": "2016-01-05T02:41:58Z",
+      "eventType": "ApiCall",
+      "eventVersion": "1",
+      "recipientAccountId": "1024405406196576",
+      "requestId": "F678C471-BEAA-4DE4-B09E-FD7F5A5248E8",
+      "requestParameters": {
+        "RoleArn": "acs:ram::43274:role/ram-admin",
+        "RoleSessionName": "lisi"
+      },
+      "serviceName": "Sts",
+      "sourceIpAddress": "42.120.74.96",
+      "userAgent": "AliyunConsole",
+      "userIdentity": {
+        "type": "ram-user",
+        "accountId": "1024405406196576",
+        "principalId": "248949151961082597",
+        "userName": "lisi",
+        "sessionContext": {
+          "attributes": {
+            "creationDate": "2016-01-05T02:41:58Z",
+            "mfaAuthenticated": "true"
+          }
+        }
+      }
+    },
+    "description": "schema validation check for aliyun:actiontrail with example AssumeRole event data",
+    "log": "aliyun:actiontrail",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "classify_only": true
+  }
+]

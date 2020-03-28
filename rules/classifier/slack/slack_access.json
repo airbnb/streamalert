@@ -1,0 +1,21 @@
+[
+  {
+    "data": {
+      "user_id": "U12345",
+      "username": "bob",
+      "date_first": 1422922864,
+      "date_last": 1422922864,
+      "count": 1,
+      "ip": "127.0.0.1",
+      "user_agent": "SlackWeb Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.35 Safari/537.36",
+      "isp": "BigCo ISP",
+      "country": "US",
+      "region": "CA"
+    },
+    "description": "basic schema validation check for slack:access",
+    "log": "slack:access",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_slack_access_sm-app-name_app",
+    "classify_only": true
+  }
+]

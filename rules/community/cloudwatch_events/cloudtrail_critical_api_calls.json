@@ -1,0 +1,801 @@
+[
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "DeleteSubnet",
+          "eventSource": "ec2.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "subnetId": "..."
+          },
+          "responseElements": {
+            "_return": true
+          },
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Deleting an AWS subnet (DeleteSubnet) will create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "DeleteVpc",
+          "eventSource": "ec2.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "vpcId": "..."
+          },
+          "responseElements": {
+            "_return": true
+          },
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Deleting an AWS VPC (DeleteVpc) will create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "UpdateTrail",
+          "eventSource": "cloudtrail.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "cloudWatchLogsLogGroupArn": "...",
+            "cloudWatchLogsRoleArn": "...",
+            "enableLogFileValidation": true,
+            "isMultiRegionTrail": true,
+            "kmsKeyId": "",
+            "name": "..."
+          },
+          "responseElements": {
+            "cloudWatchLogsLogGroupArn": "...",
+            "cloudWatchLogsRoleArn": "...",
+            "includeGlobalServiceEvents": true,
+            "isMultiRegionTrail": true,
+            "logFileValidationEnabled": true,
+            "name": "...",
+            "s3BucketName": "...",
+            "trailARN": "..."
+          },
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Updating an AWS CloudTrail trail (UpdateTrail) will create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "StopLogging",
+          "eventSource": "cloudtrail.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "name": "..."
+          },
+          "responseElements": null,
+          "sourceIPAddress": "...",
+          "userAgent": "...m",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "false"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Suspending the recording of AWS API calls and log file delivery for a trail will create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "DeleteDBCluster",
+          "eventSource": "rds.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "dBClusterIdentifier": "...",
+            "skipFinalSnapshot": true
+          },
+          "responseElements": {
+            "allocatedStorage": 1,
+            "associatedRoles": [],
+            "availabilityZones": [
+              "...",
+              "...",
+              "..."
+            ],
+            "backupRetentionPeriod": 1,
+            "clusterCreateTime": "...",
+            "dBClusterArn": "...",
+            "dBClusterIdentifier": "...",
+            "dBClusterMembers": [
+              {
+                "dBClusterParameterGroupStatus": "...",
+                "dBInstanceIdentifier": "...",
+                "isClusterWriter": true,
+                "promotionTier": 1
+              },
+              {
+                "dBClusterParameterGroupStatus": "...",
+                "dBInstanceIdentifier": "...",
+                "isClusterWriter": false,
+                "promotionTier": 1
+              }
+            ],
+            "dBClusterParameterGroup": "...",
+            "dBSubnetGroup": "...",
+            "databaseName": "...",
+            "dbClusterResourceId": "...",
+            "earliestRestorableTime": "...",
+            "endpoint": "...",
+            "engine": "...",
+            "engineVersion": "...",
+            "hostedZoneId": "...",
+            "iAMDatabaseAuthenticationEnabled": false,
+            "latestRestorableTime": "...",
+            "masterUsername": "...",
+            "multiAZ": true,
+            "port": 3306,
+            "preferredBackupWindow": "...",
+            "preferredMaintenanceWindow": "...",
+            "readReplicaIdentifiers": [],
+            "readerEndpoint": "...",
+            "status": "...",
+            "storageEncrypted": false,
+            "vpcSecurityGroups": [
+              {
+                "status": "...",
+                "vpcSecurityGroupId": "..."
+              }
+            ]
+          },
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "false"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Deleting a database cluster (DeleteDBCluster) will create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "StopConfigurationRecorder",
+          "eventSource": "config.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "configurationRecorderName": "..."
+          },
+          "responseElements": null,
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "false"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Suspending recording of resource changes through AWS Config (StopConfigurationRecorder) will create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "DeleteFlowLogs",
+          "eventSource": "ec2.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "flowLogId": [
+              "..."
+            ]
+          },
+          "responseElements": {
+            "unsuccessful": []
+          },
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Deleting AWS network flow logs (DeleteFlowLogs) will create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "awsRegion": "us-west-2",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName": "DescribeFlowLogs",
+          "eventSource": "ec2.amazonaws.com",
+          "eventTime": "2017-01-01T00:20:50Z",
+          "eventType": "AwsApiCall",
+          "eventVersion": "1.05",
+          "recipientAccountId": "123456789123",
+          "requestID": "...",
+          "requestParameters": {
+            "flowLogId": [
+              "..."
+            ]
+          },
+          "responseElements": {
+            "unsuccessful": []
+          },
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          }
+        }
+      ]
+    },
+    "description": "Describing AWS network flog logs will not create an alert.",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-08T19:44:37Z",
+          "eventSource": "guardduty.amazonaws.com",
+          "eventName": "DeleteDetector",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "",
+          "userAgent": "...",
+          "requestParameters": {
+            "detectorId": ""
+          },
+          "responseElements": null,
+          "requestID": "...",
+          "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+          "readOnly": false,
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Stopping GuardDuty",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-08T19:44:25Z",
+          "eventSource": "guardduty.amazonaws.com",
+          "eventName": "UpdateDetector",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "detectorId": "...",
+            "enable": false
+          },
+          "responseElements": null,
+          "requestID": "...",
+          "eventID": "...",
+          "readOnly": false,
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Disabling GuardDuty",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-08T19:44:28Z",
+          "eventSource": "guardduty.amazonaws.com",
+          "eventName": "UpdateDetector",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "detectorId": "00000000000000000000000000000000",
+            "enable": true
+          },
+          "responseElements": null,
+          "requestID": "...",
+          "eventID": "...",
+          "readOnly": false,
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Enabling GuardDuty. Do not alert",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-09T15:37:48Z",
+          "eventSource": "s3.amazonaws.com",
+          "eventName": "DeleteAccountPublicAccessBlock",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "host": [
+              "954574370272.s3-control.us-east-1.amazonaws.com"
+            ]
+          },
+          "responseElements": null,
+          "additionalEventData": {
+            "SignatureVersion": "SigV4",
+            "CipherSuite": "ECDHE-RSA-AES128-GCM-SHA256",
+            "AuthenticationMethod": "AuthHeader"
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Turning off S3 PublicAccessBlock for an entire account",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-08T19:50:33Z",
+          "eventSource": "s3.amazonaws.com",
+          "eventName": "PutBucketPublicAccessBlock",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "publicAccessBlock": [
+              ""
+            ],
+            "PublicAccessBlockConfiguration": {
+              "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+              "RestrictPublicBuckets": false,
+              "BlockPublicPolicy": false,
+              "BlockPublicAcls": false,
+              "IgnorePublicAcls": false
+            },
+            "bucketName": "...",
+            "host": [
+              "s3.amazonaws.com"
+            ]
+          },
+          "responseElements": null,
+          "additionalEventData": {
+            "SignatureVersion": "SigV4",
+            "CipherSuite": "ECDHE-RSA-AES128-SHA",
+            "AuthenticationMethod": "AuthHeader",
+            "vpcEndpointId": "..."
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123",
+          "vpcEndpointId": "..."
+        }
+      ]
+    },
+    "description": "Turning off S3 PublicAccessBlock for a single bucket",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-08T19:50:33Z",
+          "eventSource": "s3.amazonaws.com",
+          "eventName": "PutBucketPublicAccessBlock",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "publicAccessBlock": [
+              ""
+            ],
+            "PublicAccessBlockConfiguration": {
+              "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+              "RestrictPublicBuckets": true,
+              "BlockPublicPolicy": true,
+              "BlockPublicAcls": true,
+              "IgnorePublicAcls": true
+            },
+            "bucketName": "test",
+            "host": [
+              "s3.amazonaws.com"
+            ]
+          },
+          "responseElements": null,
+          "additionalEventData": {
+            "SignatureVersion": "SigV4",
+            "CipherSuite": "ECDHE-RSA-AES128-SHA",
+            "AuthenticationMethod": "AuthHeader",
+            "vpcEndpointId": "..."
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123",
+          "vpcEndpointId": "..."
+        }
+      ]
+    },
+    "description": "Turning on S3 PublicAccessBlock for a single bucket - Do not alert",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "invokedBy": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-08T19:50:33Z",
+          "eventSource": "s3.amazonaws.com",
+          "eventName": "PutAccountPublicAccessBlock",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "publicAccessBlock": [
+              ""
+            ],
+            "PublicAccessBlockConfiguration": {
+              "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+              "RestrictPublicBuckets": false,
+              "BlockPublicPolicy": false,
+              "BlockPublicAcls": false,
+              "IgnorePublicAcls": false
+            },
+            "bucketName": "...",
+            "host": [
+              "s3.amazonaws.com"
+            ]
+          },
+          "responseElements": null,
+          "additionalEventData": {
+            "SignatureVersion": "SigV4",
+            "CipherSuite": "ECDHE-RSA-AES128-SHA",
+            "AuthenticationMethod": "AuthHeader",
+            "vpcEndpointId": "..."
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123",
+          "vpcEndpointId": "..."
+        }
+      ]
+    },
+    "description": "Turning off S3 PublicAccessBlock for an account",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_critical_api_calls"
+    ]
+  }
+]

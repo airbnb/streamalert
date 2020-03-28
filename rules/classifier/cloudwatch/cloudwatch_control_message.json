@@ -1,0 +1,20 @@
+[
+  {
+    "override_record": {
+      "messageType": "CONTROL_MESSAGE",
+      "owner": "CloudwatchLogs",
+      "logEvents": [
+        {
+          "id": "100",
+          "timestamp": 1512601480749,
+          "message": "CWL CONTROL MESSAGE: Checking health of destination Kinesis stream."
+        }
+      ]
+    },
+    "description": "CloudWatch Control Message (validation only)",
+    "log": "cloudwatch:control_message",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
+  }
+]

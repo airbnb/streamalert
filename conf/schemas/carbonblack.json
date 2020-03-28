@@ -22,7 +22,7 @@
   },
   "carbonblack:alert.watchlist.hit.feedsearch.bin": {
     "schema": {
-      "alert_severity": "float",
+      "alert_severity": "string",
       "alert_type": "string",
       "assigned_to": "string",
       "cb_server": "string",
@@ -48,7 +48,7 @@
       "segment_id": "integer",
       "sensor_criticality": "integer",
       "status": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "unique_id": "string",
       "watchlist_id": "string",
@@ -71,7 +71,7 @@
   },
   "carbonblack:alert.watchlist.hit.ingress.binary": {
     "schema": {
-      "alert_severity": "float",
+      "alert_severity": "string",
       "alert_type": "string",
       "assigned_to": "string",
       "cb_server": "string",
@@ -97,7 +97,7 @@
       "segment_id": "integer",
       "sensor_criticality": "integer",
       "status": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "unique_id": "string",
       "watchlist_id": "string",
@@ -107,7 +107,7 @@
   },
   "carbonblack:alert.watchlist.hit.ingress.process": {
     "schema": {
-      "alert_severity": "integer",
+      "alert_severity": "string",
       "alert_type": "string",
       "assigned_to": "string",
       "cb_server": "string",
@@ -145,8 +145,9 @@
       "segment_id": "string",
       "sensor_criticality": "integer",
       "sensor_id": "integer",
+      "sha256": "string",
       "status": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "unique_id": "string",
       "username": "string",
@@ -166,7 +167,8 @@
         "ioc_query_index",
         "ioc_query_string",
         "ioc_value_facet",
-        "resolved_time"
+        "resolved_time",
+        "sha256"
       ]
     }
   },
@@ -234,8 +236,9 @@
       "segment_id": "string",
       "sensor_criticality": "integer",
       "sensor_id": "integer",
+      "sha256": "string",
       "status": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "unique_id": "string",
       "username": "string",
@@ -280,7 +283,8 @@
         "alliance_updated_virustotalconnector",
         "assigned_to",
         "ioc_attr",
-        "resolved_time"
+        "resolved_time",
+        "sha256"
       ]
     }
   },
@@ -298,7 +302,8 @@
       "group": "string",
       "md5": "string",
       "scores": {},
-      "timestamp": "float",
+      "sha256": "string",
+      "timestamp": "string",
       "type": "string",
       "watchlists": {}
     },
@@ -312,18 +317,25 @@
       "md5": "string",
       "scores": {},
       "sensor_id": "integer",
-      "timestamp": "float",
+      "sha256": "string",
+      "timestamp": "string",
       "type": "string",
       "watchlists": {}
     },
-    "parser": "json"
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "sha256"
+      ]
+    }
   },
   "carbonblack:binaryinfo.observed": {
     "schema": {
       "cb_server": "string",
       "md5": "string",
       "scores": {},
-      "timestamp": "float",
+      "sha256": "string",
+      "timestamp": "string",
       "type": "string",
       "watchlists": {}
     },
@@ -361,7 +373,7 @@
       "report_score": "integer",
       "sensor_id": "integer",
       "server_name": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json"
@@ -384,7 +396,7 @@
       "report_score": "integer",
       "sensor_id": "integer",
       "server_name": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json"
@@ -410,7 +422,7 @@
       "segment_id": "string",
       "sensor_id": "integer",
       "server_name": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -475,7 +487,7 @@
         "report_id": "string",
         "report_score": "integer",
         "sensor_id": "integer",
-        "timestamp": "float",
+        "timestamp": "string",
         "type": "string"
       },
       "json_path": "docs[*]",
@@ -486,6 +498,7 @@
   },
   "carbonblack:feed.query.hit.process": {
     "schema": {
+      "alliance_data_attackframework": [],
       "alliance_data_bit9endpointvisibility": [],
       "alliance_data_bit9suspiciousindicators": [],
       "alliance_data_nvd": [],
@@ -493,6 +506,7 @@
       "alliance_data_srstrust": [],
       "alliance_data_virustotal": [],
       "alliance_data_virustotalconnector": [],
+      "alliance_link_attackframework": "string",
       "alliance_link_bit9endpointvisibility": "string",
       "alliance_link_bit9suspiciousindicators": "string",
       "alliance_link_nvd": "string",
@@ -500,6 +514,7 @@
       "alliance_link_srstrust": "string",
       "alliance_link_virustotal": "string",
       "alliance_link_virustotalconnector": "string",
+      "alliance_score_attackframework": "integer",
       "alliance_score_bit9endpointvisibility": "integer",
       "alliance_score_bit9suspiciousindicators": "integer",
       "alliance_score_nvd": "integer",
@@ -507,6 +522,7 @@
       "alliance_score_srstrust": "integer",
       "alliance_score_virustotal": "integer",
       "alliance_score_virustotalconnector": "integer",
+      "alliance_updated_attackframework": "string",
       "alliance_updated_bit9endpointvisibility": "string",
       "alliance_updated_bit9suspiciousindicators": "string",
       "alliance_updated_nvd": "string",
@@ -539,6 +555,7 @@
       "process_md5": "string",
       "process_name": "string",
       "process_pid": "integer",
+      "process_sha256": "string",
       "processblock_count": "integer",
       "regmod_count": "integer",
       "segment_id": "string",
@@ -567,11 +584,12 @@
         "report_score": "integer",
         "segment_id": "string",
         "sensor_id": "integer",
-        "timestamp": "float",
+        "timestamp": "string",
         "type": "string"
       },
       "json_path": "docs[*]",
       "optional_top_level_keys": [
+        "alliance_data_attackframework",
         "alliance_data_bit9endpointvisibility",
         "alliance_data_bit9suspiciousindicators",
         "alliance_data_nvd",
@@ -579,6 +597,7 @@
         "alliance_data_srstrust",
         "alliance_data_virustotal",
         "alliance_data_virustotalconnector",
+        "alliance_link_attackframework",
         "alliance_link_bit9endpointvisibility",
         "alliance_link_bit9suspiciousindicators",
         "alliance_link_nvd",
@@ -586,6 +605,7 @@
         "alliance_link_srstrust",
         "alliance_link_virustotal",
         "alliance_link_virustotalconnector",
+        "alliance_score_attackframework",
         "alliance_score_bit9endpointvisibility",
         "alliance_score_bit9suspiciousindicators",
         "alliance_score_nvd",
@@ -593,6 +613,7 @@
         "alliance_score_srstrust",
         "alliance_score_virustotal",
         "alliance_score_virustotalconnector",
+        "alliance_updated_attackframework",
         "alliance_updated_bit9endpointvisibility",
         "alliance_updated_bit9suspiciousindicators",
         "alliance_updated_nvd",
@@ -602,6 +623,7 @@
         "alliance_updated_virustotalconnector",
         "interface_ip",
         "process_guid",
+        "process_sha256",
         "segment_id"
       ]
     }
@@ -627,13 +649,15 @@
       "report_score": "integer",
       "sensor_id": "integer",
       "server_name": "string",
-      "timestamp": "float",
+      "sha256": "string",
+      "timestamp": "string",
       "type": "string"
     },
     "configuration": {
       "optional_top_level_keys": [
         "ioc_query_index",
-        "ioc_query_string"
+        "ioc_query_string",
+        "sha256"
       ]
     },
     "parser": "json"
@@ -663,7 +687,7 @@
       "segment_id": "string",
       "sensor_id": "integer",
       "server_name": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -681,7 +705,7 @@
       "feed_name": "string",
       "feed_update_time": "string",
       "scan_start_time": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json"
@@ -703,17 +727,19 @@
       "path": "string",
       "pid": "integer",
       "process_guid": "string",
+      "process_path": "string",
       "sensor_id": "integer",
       "sha256": "string",
       "tamper": "boolean",
       "tamper_sent": "boolean",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "configuration": {
       "optional_top_level_keys": [
         "child_command_line",
-        "child_username"
+        "child_username",
+        "process_path"
       ]
     },
     "parser": "json"
@@ -738,7 +764,7 @@
       "target_pid": "integer",
       "target_process_guid": "string",
       "target_sha256": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -769,7 +795,7 @@
       "sha256": "string",
       "tamper": "boolean",
       "tamper_sent": "boolean",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -794,7 +820,7 @@
       "sensor_id": "integer",
       "sha256": "string",
       "size": "integer",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "utf8_comments": "string",
       "utf8_company_name": "string",
@@ -827,7 +853,7 @@
       "process_path": "string",
       "sensor_id": "integer",
       "sha256": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -868,7 +894,7 @@
       "remote_port": "string",
       "sensor_id": "string",
       "sha256": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -912,7 +938,7 @@
       "process_path": "string",
       "sensor_id": "integer",
       "sha256": "string",
-      "timestamp": "integer",
+      "timestamp": "string",
       "type": "string",
       "uid": "string",
       "username": "string"
@@ -952,7 +978,7 @@
       "process_create_time": "integer",
       "process_guid": "string",
       "sensor_id": "integer",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "uid": "string",
       "username": "string"
@@ -1036,7 +1062,7 @@
       "sha256": "string",
       "tamper": "boolean",
       "tamper_sent": "boolean",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -1065,7 +1091,7 @@
       "target_pid": "integer",
       "target_process_guid": "string",
       "target_sha256": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -1082,7 +1108,7 @@
       "event_type": "string",
       "sensor_id": "integer",
       "tamper_type": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json",
@@ -1166,7 +1192,7 @@
         "cb_version": "string",
         "highlights_by_doc": {},
         "server_name": "string",
-        "timestamp": "float",
+        "timestamp": "string",
         "type": "string",
         "watchlist_id": "integer",
         "watchlist_name": "string"
@@ -1214,7 +1240,7 @@
   },
   "carbonblack:watchlist.hit.ingress.binary": {
     "schema": {
-      "alert_severity": "float",
+      "alert_severity": "string",
       "alert_type": "string",
       "assigned_to": "string",
       "cb_server": "string",
@@ -1238,7 +1264,7 @@
       "report_score": "integer",
       "sensor_criticality": "integer",
       "status": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "unique_id": "string",
       "watchlist_id": "string",
@@ -1258,6 +1284,7 @@
       "alliance_data_nvd": [],
       "alliance_data_srsthreat": [],
       "alliance_data_srstrust": [],
+      "alliance_data_tor": [],
       "alliance_data_virustotal": [],
       "alliance_data_virustotalconnector": [],
       "alliance_link_bit9endpointvisibility": "string",
@@ -1265,6 +1292,7 @@
       "alliance_link_nvd": "string",
       "alliance_link_srsthreat": "string",
       "alliance_link_srstrust": "string",
+      "alliance_link_tor": "string",
       "alliance_link_virustotal": "string",
       "alliance_link_virustotalconnector": "string",
       "alliance_score_bit9endpointvisibility": "integer",
@@ -1272,6 +1300,7 @@
       "alliance_score_nvd": "integer",
       "alliance_score_srsthreat": "integer",
       "alliance_score_srstrust": "integer",
+      "alliance_score_tor": "integer",
       "alliance_score_virustotal": "integer",
       "alliance_score_virustotalconnector": "integer",
       "alliance_updated_bit9endpointvisibility": "string",
@@ -1279,6 +1308,7 @@
       "alliance_updated_nvd": "string",
       "alliance_updated_srsthreat": "string",
       "alliance_updated_srstrust": "string",
+      "alliance_updated_tor": "string",
       "alliance_updated_virustotal": "string",
       "alliance_updated_virustotalconnector": "string",
       "childproc_count": "integer",
@@ -1311,6 +1341,7 @@
       "process_md5": "string",
       "process_name": "string",
       "process_pid": "integer",
+      "process_sha256": "string",
       "processblock_count": "integer",
       "regmod_count": "integer",
       "segment_id": "integer",
@@ -1326,7 +1357,7 @@
         "cb_version": "string",
         "highlights_by_doc": {},
         "server_name": "string",
-        "timestamp": "float",
+        "timestamp": "string",
         "type": "string",
         "watchlist_id": "integer",
         "watchlist_name": "string"
@@ -1338,6 +1369,7 @@
         "alliance_data_nvd",
         "alliance_data_srsthreat",
         "alliance_data_srstrust",
+        "alliance_data_tor",
         "alliance_data_virustotal",
         "alliance_data_virustotalconnector",
         "alliance_link_bit9endpointvisibility",
@@ -1345,6 +1377,7 @@
         "alliance_link_nvd",
         "alliance_link_srsthreat",
         "alliance_link_srstrust",
+        "alliance_link_tor",
         "alliance_link_virustotal",
         "alliance_link_virustotalconnector",
         "alliance_score_bit9endpointvisibility",
@@ -1352,6 +1385,7 @@
         "alliance_score_nvd",
         "alliance_score_srsthreat",
         "alliance_score_srstrust",
+        "alliance_score_tor",
         "alliance_score_virustotal",
         "alliance_score_virustotalconnector",
         "alliance_updated_bit9endpointvisibility",
@@ -1359,9 +1393,11 @@
         "alliance_updated_nvd",
         "alliance_updated_srsthreat",
         "alliance_updated_srstrust",
+        "alliance_updated_tor",
         "alliance_updated_virustotal",
         "alliance_updated_virustotalconnector",
-        "process_guid"
+        "process_guid",
+        "process_sha256"
       ]
     }
   },
@@ -1372,7 +1408,7 @@
       "docs": [],
       "md5": "string",
       "server_name": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "watchlist_id": "integer",
       "watchlist_name": "string"
@@ -1395,7 +1431,7 @@
       "process_id": "string",
       "segment_id": "string",
       "server_name": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string",
       "watchlist_id": "integer",
       "watchlist_name": "string"

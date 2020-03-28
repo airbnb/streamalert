@@ -9,15 +9,25 @@ The ``manage.py`` CLI tool comes built-in with a ``test`` command which does exa
 *************
 Configuration
 *************
-To test a new rule, first create a new JSON file anywhere within the 'tests/integration/rules/' directory with the ``.json`` extension.
+To test a new rule, first create a new JSON file next to your rule file. The suggested convention is
+to use the same name as the rule you are testing, but you can choose any name you would like. This
+will help with organization, but you may also create test events to test your rules anywhere within
+the same top-level directory where your rules are stored.
 
-This file should contain the following structure:
+
+Basic Configuration
+===================
+
+Each test event file should contain the following structure:
 
 .. code-block:: json
 
   [
     {
-      "data": "Either a string, or JSON object",
+      "data": {
+        "key_01": "value_01",
+        "key_02": "value_02"
+      },
       "description": "This test should trigger or not trigger an alert",
       "log": "The log name declared in a json file under the conf/schemas directory",
       "service": "The service sending the log - kinesis, s3, sns, or streamalert_app",
@@ -30,6 +40,10 @@ This file should contain the following structure:
   ]
 
 .. note:: Multiple tests can be included in one file by adding them to the array above.
+
+
+Specifying Test Data
+====================
 
 When specifying the test data, it can be either of two fields:
 
@@ -100,6 +114,105 @@ Both test events would have the same result, but with much less effort.
   Either ``override_record`` or ``data`` is required in the test event
 
 
+Testing Classification
+======================
+
+Classification tests are always run on each test. Consider these two fields in the test configuration:
+
+.. code-block:: json
+
+  [
+    {
+      "log": "cloudwatch:events",
+      "classify_only": true
+    }
+  ]
+
+
+The ``log`` field in each test specifies the expected classified type of the test record.  The test will fail
+if the classified log type differs.
+
+By default, the test runner will continue on to test rules.  If you only wish to test classification,
+specify ``classify_only`` as ``true``.
+
+
+Testing Rules
+=============
+
+Assuming a test is not ``classify_only``, rules are run after classification. Consider this field in the test file:
+
+.. code-block:: json
+
+  [
+    {
+      "trigger_rules": [
+        "my_first_fake_rule",
+        "my_second_fake_rule"
+      ]
+    }
+  ]
+
+All rules are run on each set of test data.  The ``trigger_rules`` field specifies an array of rule names that should
+be triggered as a result.  An empty array implies that the test data should not trigger any rules.
+
+
+Publisher Tests
+===============
+
+Consider the following rule:
+
+.. code-block:: python
+
+  @rule(
+    logs=['cloudwatch:events'],
+    outputs=['slack:sample-channel'],
+    publishers={'slack': my_publisher}
+  )
+  def my_rule(record):
+    # .. something logic
+    return True
+
+To test the output of the Alert Publisher framework, you can specify ``publisher_tests``. Consider this field:
+
+.. code-block:: json
+
+  [
+    {
+      "trigger_rules": ["my_rule"],
+      "publisher_tests": {
+        "slack:sample-channel": [
+          {
+            "jmespath_expression": "path.to.record",
+            "condition": "is",
+            "value": 4
+          },
+          [ "path.to.other.record", "is", 5 ]
+        ]
+      }
+    }
+  ]
+
+This field is a dictionary, where keys specify outputs to test. Each key's value is an array of publisher tests.
+These tests compare the Alert Publisher's output to a configured expectation.
+
+Each publisher test can be a dict with 3 keys:
+
+- ``jmespath_expression``: A jmespath search expression. This is run on the Alert Publisher output for the given OutputDispatcher.
+- ``condition``: Either "is" or "in", for equality or substring/subset matching, respectively.
+- ``value``: The expected value of the field.
+
+The field that is extract via the ``jmespath_expression`` is tested against the expected value, using the conditional.
+
+
+.. note::
+
+    An alternate shorthand syntax to the above is to specify a triple of strings:
+
+    .. code-block:: json
+
+      ["path.to.field", "is", "value"]
+
+
 Rule Test Reference
 ===================
 =========================  ======================  ========  ===========
@@ -123,11 +236,75 @@ Key                        Type                    Required  Description
                                                              provided in the ``data_sources`` field defined within a cluster in ``conf/clusters/<cluster>.json``
 ``trigger_rules``          ``list``                No        A list of zero or more rule names that this test record should trigger.
                                                              An empty list implies this record should not trigger any alerts
-``validate_schema_only``   ``boolean``             No        Whether or not the test record should go through the rule processing engine.
-                                                             If set to ``true``, this record will only have validation performed
+``classify_only``          ``boolean``             No        Whether or not the test record should go through the rule processing engine.
+                                                             If set to ``true``, this record will only be tested for valid classification
+``publisher_tests``        ``dict``                No        This is a dict of tests to run against the Alert's published representation.
+                                                             The keys of the dict are output descriptors. The values of the dict should be
+                                                             arrays of individual tests. Publisher tests use jmespath to extract values from
+                                                             the final publication dictionary for testing. At least one rule should be triggered,
+                                                             or publisher tests will do nothing.
+``test_fixtures``          ``dict``                No        Values to be mocked out for use within rules for the ``threat_intel`` and
+                                                             ``lookup_tables`` features. See below for examples of this.
 =========================  ======================  ========  ===========
 
-For more examples, see the provided default rule tests in ``tests/integration/rules``
+
+Test Fixtures Configuration
+===========================
+
+Fixtures for tests events should be configured as part of the event itself. These should be
+added within the ``threat_intel`` or ``lookup_tables`` keys under a ``test_fixtures`` section
+of the test event. Usage of these two sections is outlined below.
+
+
+Threat Intel Fixtures
+---------------------
+
+The below format should be used to "mock" out threat intel data to test rules that leverage this feature.
+
+.. code-block:: json
+
+  [
+    {
+      "test_fixtures": {
+        "threat_intel": [
+          {
+            "ioc_value": "1.2.3.4",
+            "ioc_type": "ip",
+            "sub_type": "mal_ip"
+          },
+          {
+            "ioc_value": "0123456789abcdef0123456789abcdef",
+            "ioc_type": "md5",
+            "sub_type": "mal_md5"
+          }
+        ]
+      }
+    }
+  ]
+
+Lookup Tables Fixtures
+----------------------
+
+The below format should be used to "mock" out lookup table data to test rules that leverage this feature.
+
+.. code-block:: json
+
+  [
+    {
+      "test_fixtures": {
+        "lookup_tables": {
+          "dynamodb-table-name": {
+            "lookup_key": [
+              "value_for_rule"
+            ]
+          }
+        }
+      }
+    }
+  ]
+
+
+For more examples of how to configure tests for rules, see the provided default rules and tests in the ``rules/`` directory
 
 
 *************
@@ -210,18 +387,18 @@ Here is a sample command showing how to run tests against two test event files i
 
 .. code-block:: bash
 
-  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
 This will produce output similar to the following::
 
-  Running tests for files found in: tests/integration/rules/
+  Running tests for files found in: rules
 
-  File: cloudtrail/cloudtrail_put_bucket_acl.json
+  File: rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json
 
   Test #01: Pass
   Test #02: Pass
 
-  File: cloudtrail/cloudtrail_root_account_usage.json
+  File: rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
   Test #01: Pass
   Test #02: Pass
@@ -235,47 +412,68 @@ This will produce output similar to the following::
 To see more verbose output for any of the test commands, add the ``--verbose`` flag. The previous
 command, with the addition of the ``--verbose`` flag, produces the following output::
 
-    Running tests for files found in: tests/integration/rules/
+  Running tests for files found in: rules
 
-    File: cloudtrail/cloudtrail_put_bucket_acl.json
+  File: rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json
 
-    Test #01: Pass
-        Description: Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: cloudtrail_put_bucket_acl
-        Expected Rules: cloudtrail_put_bucket_acl
+  Test #01:
 
-    Test #02: Pass
-        Description: Modifying an S3 bucket ACL without use of AllUsers or AuthenticatedUsers should not create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: <None>
-        Expected Rules: <None>
+      Description: Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.
 
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
 
-    File: cloudtrail/cloudtrail_root_account_usage.json
+      Rules: Pass
+          Triggered Rules: cloudtrail_put_bucket_acl
+          Expected Rules: cloudtrail_put_bucket_acl
 
-    Test #01: Pass
-        Description: Use of the AWS 'Root' account will create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: cloudtrail_root_account_usage
-        Expected Rules: cloudtrail_root_account_usage
+  Test #02:
 
-    Test #02: Pass
-        Description: AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.
-        Classified Type: cloudwatch:events
-        Expected Type: cloudwatch:events
-        Triggered Rules: <None>
-        Expected Rules: <None>
+      Description: Modifying an S3 bucket ACL without use of AllUsers or AuthenticatedUsers should not create an alert.
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Pass
+          Triggered Rules: <None>
+          Expected Rules: <None>
 
 
-    Summary:
+  File: rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
-    Total Tests: 4
-    Pass: 4
-    Fail: 0
+  Test #01:
+
+      Description: Use of the AWS 'Root' account will create an alert.
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Pass
+          Triggered Rules: cloudtrail_root_account_usage
+          Expected Rules: cloudtrail_root_account_usage
+
+  Test #02:
+
+      Description: AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Pass
+          Triggered Rules: <None>
+          Expected Rules: <None>
+
+
+  Summary:
+
+  Total Tests: 4
+  Pass: 4
+  Fail: 0
+
 
 Additionally, any given test that results in a status of **Fail** will, by default, print verbosely.
 In the below example, the ``cloudtrail_put_bucket_acl.json`` file has been altered to include a triggering
@@ -283,24 +481,29 @@ rule that does not actually exist.
 
 .. code-block:: bash
 
-  python manage.py test rules --test-files cloudtrail_put_bucket_acl.json cloudtrail_root_account_usage.json
+  python manage.py test rules --test-files rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
 ::
 
-  Running tests for files found in: tests/integration/rules/
+  Running tests for files found in: rules
 
-  File: cloudtrail/cloudtrail_put_bucket_acl.json
+  File: rules/community/cloudwatch_events/cloudtrail_put_bucket_acl.json
 
-  Test #01: Fail
+  Test #01:
+
       Description: Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.
-      Classified Type: cloudwatch:events
-      Expected Type: cloudwatch:events
-      Triggered Rules: cloudtrail_put_bucket_acl
-      Expected Rules: cloudtrail_put_bucket_acl, nonexistent_rule (does not exist)
+
+      Classification: Pass
+          Classified Type: cloudwatch:events
+          Expected Type: cloudwatch:events
+
+      Rules: Fail
+          Triggered Rules: cloudtrail_put_bucket_acl
+          Expected Rules: cloudtrail_put_bucket_acl, nonexistent_rule (does not exist)
 
   Test #02: Pass
 
-  File: cloudtrail/cloudtrail_root_account_usage.json
+  File: rules/community/cloudwatch_events/cloudtrail_root_account_usage.json
 
   Test #01: Pass
   Test #02: Pass

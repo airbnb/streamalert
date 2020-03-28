@@ -1,0 +1,24 @@
+{
+  "enabled": false,
+  "config": {
+    "destination_kinesis_stream": "KINESIS_STREAM",
+    "sfn_timeout_secs": 300,
+    "sfn_wait_secs": 30
+  },
+  "packs": {
+    "sample": {
+      "description": "Runs sample queries once per hour",
+      "schedule_expression": "rate(1 hour)"
+    }
+  },
+  "lambda_config": {
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "timeout": 60,
+    "alarms_enabled": false,
+    "error_threshold": 1,
+    "error_period_secs": 3600,
+    "error_evaluation_periods": 2
+  }
+}

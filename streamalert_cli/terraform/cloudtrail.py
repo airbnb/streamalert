@@ -73,6 +73,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'enable_logging',
         'is_global_trail',
         's3_event_selector_type',
+        'send_to_sns',
     }
     for value in settings_with_defaults:
         if value in settings:

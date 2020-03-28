@@ -421,7 +421,7 @@ class OutputGetSubCommand(CLICommand):
         get_parser.add_argument(
             '--descriptors',
             '-d',
-            nargs="+",
+            nargs='+',
             default=False,
             help='Pass descriptor and service to pull back the relevant configuration'
         )

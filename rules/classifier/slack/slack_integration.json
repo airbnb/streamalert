@@ -1,0 +1,35 @@
+[
+  {
+    "data": {
+      "service_id": "1234567890",
+      "service_type": "Google Calendar",
+      "user_id": "U1234ABCD",
+      "user_name": "Johnny",
+      "channel": "C1234567890",
+      "date": "1392163200",
+      "change_type": "enabled",
+      "scope": "incoming-webhook"
+    },
+    "description": "schema validation check for slack:integration with service log type",
+    "log": "slack:integration",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_slack_integration_sm-app-name_app",
+    "classify_only": true
+  },
+  {
+    "data": {
+      "app_id": "2345678901",
+      "app_type": "Johnny App",
+      "user_id": "U2345BCDE",
+      "user_name": "Billy",
+      "date": "1392163201",
+      "change_type": "added",
+      "scope": "chat:write:user,channels:read"
+    },
+    "description": "schema validation check for slack:integration with app log type",
+    "log": "slack:integration",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_slack_integration_sm-app-name_app",
+    "classify_only": true
+  }
+]

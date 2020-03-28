@@ -21,10 +21,8 @@ import zipfile
 
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 
-# Build .zip files in the top-level of the terraform directory
-THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
-BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
 LOGGER = get_logger(__name__)
 
 
@@ -54,6 +52,7 @@ class LambdaPackage:
         'netaddr': 'netaddr==0.7.19',
         'policyuniverse': 'policyuniverse==1.3.2.1',
         'requests': 'requests==2.22.0',
+        'pymsteams': 'pymsteams==0.1.12'
     }
 
     def __init__(self, config):
@@ -83,8 +82,9 @@ class LambdaPackage:
             sys.exit(1)
 
         # Zip up files
+        # Build these in the top-level of the terraform directory
         result = shutil.make_archive(
-            os.path.join(BUILD_DIRECTORY, self.package_name), 'zip', temp_package_path)
+            os.path.join(TERRAFORM_FILES_PATH, self.package_name), 'zip', temp_package_path)
         LOGGER.info('Successfully created %s', os.path.basename(result))
 
         # Remove temp files
@@ -95,11 +95,17 @@ class LambdaPackage:
     def _copy_files(self, temp_package_path):
         """Copy all files and folders into temporary package path."""
         for path in self.package_files:
+            # Default to ignoring zipped dependencies
+            ignored_items = {'*dependencies.zip'}
+            if path == 'rules':
+                # Also ignore json test event files if this is the rules directory
+                ignored_items.add('*.json')
+
             if os.path.isdir(path):
                 # Copy the directory, skipping any files with a 'dependencies.zip' suffix
                 shutil.copytree(
                     path, os.path.join(temp_package_path, path),
-                    ignore=shutil.ignore_patterns(*{'*dependencies.zip'})
+                    ignore=shutil.ignore_patterns(*ignored_items)
                 )
             else:
                 # Ensure the parent directory of the file being copied already exists
@@ -226,7 +232,7 @@ class AlertProcessorPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'alert_processor'
-    package_libs = {'cbapi', 'netaddr', 'requests'}
+    package_libs = {'cbapi', 'netaddr', 'pymsteams', 'requests'}
 
 
 class AlertMergerPackage(LambdaPackage):
@@ -273,6 +279,7 @@ class AthenaPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'athena_partition_refresh'
+    package_libs = {'netaddr'}
 
 
 class ThreatIntelDownloaderPackage(LambdaPackage):
@@ -300,3 +307,17 @@ class RulePromotionPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'rule_promotion'
+
+
+class ScheduledQueriesPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert scheduled queries lambda function"""
+    config_key = 'scheduled_queries'
+    lambda_handler = 'streamalert.scheduled_queries.main.handler'
+    package_files = {
+        'conf',
+        'streamalert/__init__.py',
+        'streamalert/scheduled_queries',
+        'streamalert/shared',
+        'scheduled_queries'
+    }
+    package_name = 'scheduled_queries'

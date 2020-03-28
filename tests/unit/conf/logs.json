@@ -360,5 +360,14 @@
       "Field4": {}
     },
     "parser": "json"
+  },
+  "test:log.name.with.dots": {
+    "schema": {
+      "Field1": {},
+      "Field2": {},
+      "Field3": {},
+      "Field4": {}
+    },
+    "parser": "json"
   }
 }

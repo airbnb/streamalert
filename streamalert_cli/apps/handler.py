@@ -37,7 +37,7 @@ class AppCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the app integration subparser: manage.py app [subcommand] [options]"""
-        app_subparsers = subparser.add_subparsers(dest="app subcommand", required=True)
+        app_subparsers = subparser.add_subparsers(dest='app subcommand', required=True)
 
         cls._setup_app_list_subparser(app_subparsers)
         cls._setup_app_new_subparser(app_subparsers)

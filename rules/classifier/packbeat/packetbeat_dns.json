@@ -1,0 +1,23 @@
+[
+  {
+    "data": {
+      "@timestamp": "2018-02-06T07:22:59.991Z",
+      "bytes_in": 39,
+      "bytes_out": 71,
+      "client_ip": "172.16.1.10",
+      "dns": {
+        "answers_count": 2,
+        "opt": { "udp_size": 512 },
+        "question": { "name": "evil.com.", "type": "A" },
+        "response_code": "NOERROR"
+      },
+      "transport": "udp",
+      "type": "dns"
+    },
+    "description": "basic schema validation check for packetbeat:dns",
+    "log": "packetbeat:dns",
+    "source": "prefix.cluster.sample.bucket",
+    "service": "s3",
+    "classify_only": true
+  }
+]

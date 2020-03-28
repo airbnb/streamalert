@@ -24,7 +24,7 @@ To run terraform by hand, change to the terraform directory and run:
 terraform <cmd>
 """
 from abc import abstractmethod
-from argparse import Action, RawDescriptionHelpFormatter
+from argparse import Action, ArgumentTypeError, RawDescriptionHelpFormatter
 import os
 import textwrap
 from streamalert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
@@ -56,12 +56,20 @@ class CLICommand:
         """
 
 
-class UniqueSetAction(Action):
+class UniqueSortedListAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
 
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = set(values)
-        setattr(namespace, self.dest, unique_items)
+        setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
+
+
+class UniqueSortedFileListAction(Action):
+    """Subclass of argparse.Action to avoid multiple of the same choice from a list of files"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        unique_items = {value.name for value in values}
+        setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
 
 
 class MutuallyExclusiveStagingAction(Action):
@@ -82,6 +90,18 @@ class MutuallyExclusiveStagingAction(Action):
             if offending_rules:
                 raise parser.error(error.format(', '.join(list(offending_rules))))
         setattr(namespace, self.dest, unique_items)
+
+
+class DirectoryType:
+    """Factory for ensuring a directory exists"""
+
+    def __call__(self, value):
+        if os.path.isdir(value):
+            return value
+
+        raise ArgumentTypeError(
+            '\'%(filename)s\' is not a directory' % {'filename': value}
+        )
 
 
 def add_timeout_arg(parser):
@@ -183,7 +203,7 @@ def add_clusters_arg(parser, required=False):
             'If omitted, this action will be performed against all clusters.'
         ) if not required else 'One or more clusters to target',
         'nargs': '+',
-        'action': UniqueSetAction,
+        'action': UniqueSortedListAction,
         'required': required
     }
 
@@ -224,7 +244,7 @@ def add_default_lambda_args(lambda_parser):
 
     functions = sorted([
         'alert', 'alert_merger', 'apps', 'athena', 'classifier',
-        'rule', 'rule_promo', 'threat_intel_downloader'
+        'rule', 'rule_promo', 'scheduled_queries', 'threat_intel_downloader'
     ])
     # require the name of the function being deployed/rolled back
     lambda_parser.add_argument(
@@ -236,7 +256,7 @@ def add_default_lambda_args(lambda_parser):
             'Use \'all\' to act against all functions.'
         ).format(', '.join(functions)),
         nargs='+',
-        action=UniqueSetAction,
+        action=UniqueSortedListAction,
         required=True
     )
 

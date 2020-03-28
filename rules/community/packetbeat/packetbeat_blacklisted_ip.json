@@ -1,0 +1,27 @@
+[
+  {
+    "data": {
+      "@timestamp": "2018-02-06T07:24:00.006Z",
+      "dest": {
+        "ip": "222.173.190.239",
+        "port": 44172
+      },
+      "final": true,
+      "last_time": "2018-02-06T07:23:00.620Z",
+      "source": {
+        "ip": "192.30.253.125",
+        "mac": "00:08:a2:09:e4:6a",
+        "port": 443
+      },
+      "start_time": "2018-02-06T07:23:00.620Z",
+      "type": "flow"
+    },
+    "description": "packetbeat:flow showing outbound connection to bad domain",
+    "log": "packetbeat:flow",
+    "source": "prefix.cluster.sample.bucket",
+    "service": "s3",
+    "trigger_rules": [
+      "packetbeat_blacklisted_ip"
+    ]
+  }
+]
