@@ -15,7 +15,7 @@ These services above can accept data from:
 * Amazon CloudWatch Events
 * And more
 
-To configure datasources, read `datasource configuration <conf-datasources.html>`_
+To configure datasources for a cluster, read `datasource configuration <config-clusters.html#datasource-configuration>`_
 
 
 *********
@@ -41,7 +41,7 @@ Example non-AWS use-cases:
 Amazon Kinesis Data Streams
 ***************************
 StreamAlert also utilizes Amazon Kinesis Data Streams for real-time data ingestion and analysis.
-By default, StreamAlert creates an Amazon Kinesis Data Stream per `cluster <clusters.html>`_.
+By default, StreamAlert creates an Amazon Kinesis Data Stream per `cluster <config-clusters.html>`_.
 
 
 Sending to Amazon Kinesis Data Streams
