@@ -6,7 +6,7 @@ Inbound data is directed to one of StreamAlert's *clusters*, each with its own d
 and classifier function. For many applications, one cluster may be enough. However, adding
 additional clusters can potentially improve performance. For example, you could have:
 
-  * A cluster dedicated to `StreamAlert apps <app-configuration.html>`_
+  * A cluster dedicated to `StreamAlert apps <apps.html>`_
   * A separate cluster for each of your inbound `Kinesis Data Streams <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_
   * A separate cluster for data from each environment (prod, staging, corp, etc)
 
@@ -53,7 +53,7 @@ from that source.
 .. note::
 
   Log schemas are defined in one or more files in the ``conf/schemas`` directory. See
-  the `Schemas <conf-schemas.html>`_ page for more information, or the
+  the `Schemas <config-schemas.html>`_ page for more information, or the
   `Example Schemas <conf-schemas-examples.html>`_ page for some sample log definitions.
 
 Each log in the list of logs instructs StreamAlert's classifier function to attempt
@@ -97,7 +97,7 @@ Example
 .. important::
 
   Any data source log type that is listed must have an associated log definition
-  within your `schemas <conf-schemas.html>`_ definitions.
+  within your `schemas <config-schemas.html>`_ definitions.
 
 
 Classifier Configuration

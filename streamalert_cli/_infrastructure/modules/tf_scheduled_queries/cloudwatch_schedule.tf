@@ -7,6 +7,10 @@ resource "aws_cloudwatch_event_rule" "event" {
   name                = "${var.prefix}_streamalert_scheduled_queries_event_${count.index}"
   description         = var.query_packs[count.index].description
   schedule_expression = var.query_packs[count.index].schedule_expression
+
+  tags = {
+    Name = "StreamAlert"
+  }
 }
 
 resource "aws_cloudwatch_event_target" "run_step_function" {

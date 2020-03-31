@@ -169,7 +169,7 @@ SNS for both sending the log data and receiving the alert, but StreamAlert also 
 
 .. note:: You will need to click the verification link in your email to activate the subscription.
 
-4. Add the ``streamalert-test-data`` SNS topic as an input to the (default) ``prod`` `cluster <clusters.html>`_.
+4. Add the ``streamalert-test-data`` SNS topic as an input to the (default) ``prod`` `cluster <config-clusters.html>`_.
 Open ``conf/clusters/prod.json`` and change the ``streamalert`` module to look like this:
 
 .. code-block:: json
@@ -189,7 +189,7 @@ Open ``conf/clusters/prod.json`` and change the ``streamalert`` module to look l
     }
   }
 
-5. Tell StreamAlert which `log schemas <conf-schemas.html>`_ will be sent to this input.
+5. Tell StreamAlert which `log schemas <config-schemas.html>`_ will be sent to this input.
 Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look like this:
 
 .. code-block:: json
@@ -284,7 +284,7 @@ dropdown on the left and preview the ``alerts`` table:
   :target: _images/athena-alerts-search.png
 
 (Here, my name prefix is ``testv2``.) If no records are returned, look for errors
-in the ``athena_partition_refresh`` function or try invoking it directly.
+in the Athena Partition Refresh function or try invoking it directly.
 
 And there you have it! Ingested log data is parsed, classified, and scanned by the rules engine.
 Any resulting alerts are delivered to your configured output(s) within a matter of minutes.

@@ -1,16 +1,32 @@
+#################
 Historical Search
 #################
 
-StreamAlert historical search feature is backed by Amazon S3 and `Athena <https://aws.amazon.com/athena/>`_ services. By default, StreamAlert will send all alerts to S3 and those alerts will be searchable in Athena table. StreamAlert users have option to enable historical search feature for data as well.
+StreamAlert historical search feature is backed by Amazon S3 and `Athena <https://aws.amazon.com/athena/>`_ services.
+By default, StreamAlert will send all alerts to S3 and those alerts will be searchable in Athena table. StreamAlert
+users have option to enable historical search feature for data as well.
 
-As of StreamAlert v3.1.0, a new field, ``file_format``, has been added to ``athena_partition_refresh_config`` in ``conf/lamba.json``, defaulting to ``null``. This field allows users to configure how the data processed by the Classifier is stored in S3 bucket—either in ``parquet`` or ``json``. Prior to v3.1.0, all data was stored in ``json``. When using this format, Athena's search performance degrades greatly when partition sizes grow. To address this, we've introduce support for ``parquet`` to provide better Athena search performance and cost saving.
+As of StreamAlert v3.1.0, a new field, ``file_format``, has been added to ``athena_partition_refresh_config``
+in ``conf/lamba.json``, defaulting to ``null``. This field allows users to configure how the data processed
+by the Classifier is stored in S3 bucket, either in ``parquet`` or ``json``.
+
+Prior to v3.1.0, all data was stored in ``json``. When using this format, Athena's search performance
+degrades greatly when partition sizes grow. To address this, we've introduce support for ``parquet``
+to provide better Athena search performance and cost saving.
 
 .. note::
 
-  * When upgrading StreamAlert to v3.1.0, it is required to change the default ``file_format`` value to either ``parquet`` or ``json``, otherwise StreamAlert will raise ``MisconfigurationError`` exception when run ``python manage.py build``.
-  * For existing deployments, ``file_format`` can be set to ``json`` and there will have no change occurred. However, if the ``file_format`` is changed to ``parquet``, all Athena tables need to be created to load ``parquet`` format. The existing JSON data won't be searchable anymore unless we build a separated tables to process data in JSON format. (All data stay in S3 bucket, there is no data loss.).
-  * For new StreamAlert deployments, it is recommended to set ``file_format`` to ``parquet`` to take the advantage of better Athena search performance and save the cost when scanning data.
-  * In the future release, the default value of ``file_format`` will change to ``parquet``. So let's change now!
+  * When upgrading to StreamAlert v3.1.0, you must set the ``file_format`` value to either ``parquet``
+    or ``json``, otherwise StreamAlert will raise ``MisconfigurationError`` exception when running
+    ``python manage.py build``.
+  * For existing deployments, the ``file_format`` value can be set to ``json`` to retain current
+    functionality. However, if the ``file_format`` is changed to ``parquet``, new Athena tables will
+    need to be recreated to load the ``parquet`` format. The existing JSON data won't be searchable
+    anymore unless we build a separated tables to process data in JSON format. All of the underlying
+    data remains stored in S3 bucket, there is no data loss.
+  * For new StreamAlert deployments, it is recommended to set ``file_format`` to ``parquet`` to
+    take advantage of better Athena search performance and cost savings when scanning data.
+  * In an upcoming release, the value for ``file_format`` will be set to ``parquet`` by default, so let's change now!
 
 ************
 Architecture
@@ -19,11 +35,13 @@ Architecture
 .. image:: ../images/historical-search.png
     :align: left
 
-The pipeline is
-* StreamAlert creates an Athena Database, alerts kinesis Firehose and ``alerts`` table during initial deployment
-* Optional to create Firehose and Athena tables for data
-* S3 events will be sent to SQS to invoke ``athena_partition_refresh`` lambda function to add new partitions when there are new alerts or data saved in S3 bucket via Firehose
-* New alerts and data are available for searching via Athena console or SDK
+The pipeline is:
+
+  #. StreamAlert creates an Athena Database, alerts kinesis Firehose and ``alerts`` table during initial deployment
+  #. Optionally create Firehose resources and Athena tables for historical data retention
+  #. S3 events will be sent to an SQS that is mapped to the Athena Partition Refresh Lambda function
+  #. The Lambda function adds new partitions when there are new alerts or data saved in S3 bucket via Firehose
+  #. Alerts, and optionally data, are available for searching via Athena console or the Athena API
 
 .. _alerts_search:
 
@@ -31,9 +49,15 @@ The pipeline is
 Alerts Search
 *************
 
-* Review alert Firehose configuration, see :ref:`alerts_firehose_configuration` in ``CONFIGURATION`` session. Athena database and Athena alerts table are created automatically when you first deploy StreamAlert.
-* If the ``file_format`` is set to ``parquet``, you can run ``MSCK REPAIR TABLE alerts`` command in the Athena to load all available partitions and then alerts can be searchable. However, using ``MSCK REPAIR`` command can not load new partitions automatically.
-* StreamAlert provides a lambda function ``athena_partition_refresh`` to load new partitions to Athena tables once the data arrives in the S3 buckets automatically. Update ``athena_partition_refresh_config`` if necessary. Open ``conf/lambda.json``. See more settings :ref:`configure_athena_partition_refresh_lambda`
+* Review the settings for the :ref:`Alerts Firehose Configuration <alerts_firehose_configuration>` and
+  the :ref:`Athena Partition Refresh<configure_athena_partition_refresh_lambda>` function. Note that
+  the Athena database and alerts table are created automatically when you first deploy StreamAlert.
+* If the ``file_format`` value within the :ref:`Athena Partition Refresh<configure_athena_partition_refresh_lambda>`
+  function config is set to ``parquet``, you can run the ``MSCK REPAIR TABLE alerts`` command in
+  Athena to load all available partitions and then alerts can be searchable. Note, however, that the
+  ``MSCK REPAIR`` command cannot load new partitions automatically.
+* StreamAlert includes a Lambda function to automatically add new partitions for Athena tables when
+  the data arrives in S3. See :ref:`configure_athena_partition_refresh_lambda`
 
   .. code-block:: bash
 
@@ -45,7 +69,7 @@ Alerts Search
       }
     }
 
-* Deploy athena_partition_refresh lambda function
+* Deploy the Athena Partition Refresh Lambda function
 
   .. code-block:: bash
 

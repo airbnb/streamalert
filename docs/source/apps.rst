@@ -224,7 +224,7 @@ To update an App's credentials, run the the following command:
   python manage.py app update-auth --cluster <cluster> --name <app_name>
 
 
-This will have you follow a process similar to `configuring a new App <app-configuration.html#example-prompts-for-duo-auth>`_.
+This will have you follow a process similar to `configuring a new App <#configuring-an-app>`_.
 
 
 ********************

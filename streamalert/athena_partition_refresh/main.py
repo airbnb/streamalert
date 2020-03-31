@@ -23,7 +23,7 @@ import urllib.error
 
 from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert.shared.athena import AthenaClient
-from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket, load_config
+from streamalert.shared.config import athena_partition_buckets, load_config
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
@@ -83,7 +83,7 @@ class AthenaRefresher:
             )
             raise ConfigError(message)
 
-        self._athena_buckets = self.buckets_from_config(config)
+        self._athena_buckets = athena_partition_buckets(config)
 
         db_name = get_database_name(config)
 
@@ -96,25 +96,6 @@ class AthenaRefresher:
         self._s3_buckets_and_keys = defaultdict(set)
 
         self._create_client(db_name, results_bucket)
-
-    @classmethod
-    def buckets_from_config(cls, config):
-        """Get the buckets from default buckets and additionally configured ones
-
-        Args:
-            config (dict): The loaded config from the 'conf/' directory
-
-        Returns:
-            list: Bucket names for which Athena is enabled
-        """
-        athena_config = config['lambda']['athena_partition_refresh_config']
-        data_buckets = athena_config.get('buckets', {})
-        data_buckets[firehose_alerts_bucket(config)] = 'alerts'
-        data_bucket = firehose_data_bucket(config)  # Data retention is optional, so check for this
-        if data_bucket:
-            data_buckets[data_bucket] = 'data'
-
-        return data_buckets
 
     @classmethod
     def _create_client(cls, db_name, results_bucket):
