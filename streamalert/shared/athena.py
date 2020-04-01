@@ -59,11 +59,15 @@ class AthenaClient:
         if not results_bucket.startswith('s3://'):
             results_bucket = 's3://{}'.format(results_bucket)
 
-        # Produces s3://<results_bucket_name>/<results_prefix>/YYYY/MM/DD S3 keys
-        self._s3_results_path = posixpath.join(
-            results_bucket,
-            results_prefix,
-            datetime.utcnow().strftime('%Y/%m/%d')
+        # Produces s3://<results_bucket_name>/<results_prefix>
+        self._s3_results_path_prefix = posixpath.join(results_bucket, results_prefix)
+
+    @property
+    def results_path(self):
+        # Returns a path for the current hour: /YYYY/MM/DD/HH
+        return posixpath.join(
+            self._s3_results_path_prefix,
+            datetime.utcnow().strftime('%Y/%m/%d/%H')
         )
 
     @staticmethod
@@ -125,7 +129,7 @@ class AthenaClient:
             return self._client.start_query_execution(
                 QueryString=query,
                 QueryExecutionContext={'Database': self.database},
-                ResultConfiguration={'OutputLocation': self._s3_results_path}
+                ResultConfiguration={'OutputLocation': self.results_path}
             )
         except ClientError as err:
             raise AthenaQueryExecutionError('Athena query failed:\n{}'.format(err))
