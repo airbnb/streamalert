@@ -57,25 +57,6 @@ class CLIConfig:
         """Return list of cluster configuration keys"""
         return list(self.config['clusters'].keys())
 
-    def generate_athena(self):
-        """Generate a base Athena config"""
-        if 'athena_partitioner_config' in self.config['lambda']:
-            LOGGER.warning('The Athena configuration already exists, skipping.')
-            return
-
-        athena_config_template = {
-            'enable_custom_metrics': False,
-            'timeout': '60',
-            'memory': '128',
-            'log_level': 'info',
-            'third_party_libraries': []
-        }
-
-        self.config['lambda']['athena_partitioner_config'] = athena_config_template
-        self.write()
-
-        LOGGER.info('Athena configuration successfully created')
-
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
         if not isinstance(prefix, str):
