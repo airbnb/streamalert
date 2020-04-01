@@ -59,6 +59,7 @@ def generate_athena(config):
         'queue_name': queue_name,
         'athena_data_buckets': data_buckets,
         'results_bucket': results_bucket_name,
+        'lambda_timeout': athena_config['timeout'],
         'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
         'function_role_id': '${module.athena_partitioner_lambda.role_id}',
         'function_name': '${module.athena_partitioner_lambda.function_name}',

@@ -25,8 +25,8 @@ def test_generate_athena():
     """CLI - Terraform Generate Athena Partitioner"""
 
     CONFIG['lambda']['athena_partitioner_config'] = {
-        'timeout': '60',
-        'memory': '128',
+        'timeout': 60,
+        'memory': 128,
         'third_party_libraries': []
     }
 
@@ -46,6 +46,7 @@ def test_generate_athena():
                     'unit-test-streamalert-data',
                     'unit-test-streamalerts'
                 ],
+                'lambda_timeout': 60,
                 'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
                 'function_role_id': '${module.athena_partitioner_lambda.role_id}',
                 'function_name': '${module.athena_partitioner_lambda.function_name}',
@@ -63,9 +64,9 @@ def test_generate_athena():
                 'filename': 'athena_partitioner.zip',
                 'function_name': 'unit-test_streamalert_athena_partitioner',
                 'handler': 'streamalert.athena_partitioner.main.handler',
-                'memory_size_mb': '128',
+                'memory_size_mb': 128,
                 'source': './modules/tf_lambda',
-                'timeout_sec': '60',
+                'timeout_sec': 60,
             }
         }
     }

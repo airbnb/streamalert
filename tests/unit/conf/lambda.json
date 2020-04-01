@@ -29,8 +29,8 @@
     }
   },
   "athena_partitioner_config": {
-    "memory": "128",
-    "timeout": "60",
+    "memory": 128,
+    "timeout": 60,
     "file_format": "parquet",
     "buckets": {
       "bucket": "data"

@@ -1,12 +1,12 @@
 // IAM Role Policy: Allow the function read and delete SQS messages
-resource "aws_iam_role_policy" "sqs" {
+resource "aws_iam_role_policy" "sqs_role_policy" {
   name   = "SQSReadDeleteMessages"
   role   = var.function_role_id
-  policy = data.aws_iam_policy_document.sqs.json
+  policy = data.aws_iam_policy_document.sqs_role_policy.json
 }
 
 // IAM Policy Doc: decrypt, read, and delete SQS messages
-data "aws_iam_policy_document" "sqs" {
+data "aws_iam_policy_document" "sqs_role_policy" {
   statement {
     effect = "Allow"
 
@@ -50,14 +50,14 @@ data "aws_iam_policy_document" "sqs" {
 
 // IAM Role Policy: Allow the Lambda function to execute Athena queries and perform Glue operations
 // Ref: http://amzn.to/2tSyxUV
-resource "aws_iam_role_policy" "athena_glue_permissions" {
+resource "aws_iam_role_policy" "athena_glue_role_policy" {
   name   = "AthenaGlueAccess"
   role   = var.function_role_id
-  policy = data.aws_iam_policy_document.athena_glue_permissions.json
+  policy = data.aws_iam_policy_document.athena_glue_role_policy.json
 }
 
 // IAM Policy Doc: Athena and Glue permissions
-data "aws_iam_policy_document" "athena_glue_permissions" {
+data "aws_iam_policy_document" "athena_glue_role_policy" {
   statement {
     effect = "Allow"
 
@@ -103,15 +103,15 @@ data "aws_iam_policy_document" "athena_glue_permissions" {
 }
 
 // IAM Role Policy: Allow the Lambda function to read data buckets
-resource "aws_iam_role_policy" "athena_results_bucket" {
+resource "aws_iam_role_policy" "athena_results_bucket_role_policy" {
   name   = "S3ResultsBucket"
   role   = var.function_role_id
-  policy = data.aws_iam_policy_document.athena_results_bucket.json
+  policy = data.aws_iam_policy_document.athena_results_bucket_role_policy.json
 }
 
 // IAM Policy Doc: Allow Athena to read data from configured buckets
 //                 This is necessary for table repairs
-data "aws_iam_policy_document" "athena_results_bucket" {
+data "aws_iam_policy_document" "athena_results_bucket_role_policy" {
   statement {
     effect = "Allow"
 
@@ -133,15 +133,15 @@ data "aws_iam_policy_document" "athena_results_bucket" {
 }
 
 // IAM Role Policy: Allow the Lambda function to read data buckets
-resource "aws_iam_role_policy" "data_bucket" {
+resource "aws_iam_role_policy" "data_bucket_role_policy" {
   name   = "S3DataBucket"
   role   = var.function_role_id
-  policy = data.aws_iam_policy_document.data_bucket.json
+  policy = data.aws_iam_policy_document.data_bucket_role_policy.json
 }
 
 // IAM Policy Doc: Allow Athena to read data from configured buckets
 //                 This is necessary for table repairs
-data "aws_iam_policy_document" "data_bucket" {
+data "aws_iam_policy_document" "data_bucket_role_policy" {
   statement {
     effect = "Allow"
 
