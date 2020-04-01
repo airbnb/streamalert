@@ -71,7 +71,7 @@ resource "aws_sqs_queue" "data_bucket_notifications" {
   receive_wait_time_seconds = 10
 
   # The amount of time messages are hidden after being received from a consumer
-  visibility_timeout_seconds = format("%d", var.lambda_timeout + 2)
+  visibility_timeout_seconds = (var.lambda_timeout + 2)
 
   # Retain messages for one day
   message_retention_seconds = 86400

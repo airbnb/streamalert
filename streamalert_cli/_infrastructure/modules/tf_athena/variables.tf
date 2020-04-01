@@ -41,3 +41,7 @@ variable "database_name" {
 variable "queue_name" {
   type = string
 }
+
+variable "lambda_timeout" {
+  type = number
+}
