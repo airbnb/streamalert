@@ -152,7 +152,7 @@ def get_database_name(config):
         str: The name of the athena database
     """
     prefix = config['global']['account']['prefix']
-    athena_config = config['lambda'].get('athena_partition_refresh_config')
+    athena_config = config['lambda'].get('athena_partitioner_config')
 
     return athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
@@ -163,6 +163,6 @@ def get_data_file_format(config):
     Returns:
         str: The data store format either "parquet" or "json"
     """
-    athena_config = config['lambda'].get('athena_partition_refresh_config', {})
+    athena_config = config['lambda'].get('athena_partitioner_config', {})
 
     return athena_config.get('file_format')

@@ -40,7 +40,7 @@ configured `outputs <outputs.html>`_. All alerts implicitly include a Firehose o
 an S3 bucket that can be queried with Athena. Alerts will be retried indefinitely until they are
 successfully delivered, at which point they will be removed from the DynamoDB table.
 
-6. An "athena partition refresh" Lambda function runs periodically to onboard new StreamAlert data
+6. An Athena Partitioner Lambda function runs periodically to onboard new StreamAlert data
 and alerts into their respective Athena databases for historical search.
 
 Other StreamAlert components include DynamoDB tables and Lambda functions for optional rule

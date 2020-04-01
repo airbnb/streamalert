@@ -268,17 +268,17 @@ class AppPackage(LambdaPackage):
     }
 
 
-class AthenaPackage(LambdaPackage):
-    """Create the Athena Partition Refresh Lambda function package"""
-    config_key = 'athena_partition_refresh_config'
-    lambda_handler = 'streamalert.athena_partition_refresh.main.handler'
+class AthenaPartitionerPackage(LambdaPackage):
+    """Create the Athena Partitioner Lambda function package"""
+    config_key = 'athena_partitioner_config'
+    lambda_handler = 'streamalert.athena_partitioner.main.handler'
     package_files = {
         'conf',
         'streamalert/__init__.py',
-        'streamalert/athena_partition_refresh',
+        'streamalert/athena_partitioner',
         'streamalert/shared'
     }
-    package_name = 'athena_partition_refresh'
+    package_name = 'athena_partitioner'
     package_libs = {'netaddr'}
 
 

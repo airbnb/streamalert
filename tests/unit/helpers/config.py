@@ -110,7 +110,7 @@ def basic_streamalert_config():
                 'memory': 128,
                 'timeout': 10
             },
-            'athena_partition_refresh_config': {
+            'athena_partitioner_config': {
                 'enable_custom_metrics': False,
                 'memory': 128,
                 'timeout': 60
@@ -288,6 +288,6 @@ def athena_cli_basic_config():
             }
         },
         'lambda': {
-            'athena_partition_refresh_config': {}
+            'athena_partitioner_config': {}
         }
     }

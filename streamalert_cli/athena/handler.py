@@ -198,7 +198,7 @@ def get_athena_client(config):
         AthenaClient: instantiated client for performing athena actions
     """
     prefix = config['global']['account']['prefix']
-    athena_config = config['lambda']['athena_partition_refresh_config']
+    athena_config = config['lambda']['athena_partitioner_config']
 
     db_name = get_database_name(config)
 
@@ -451,11 +451,11 @@ def create_table(table, bucket, config, schema_override=None):
     if table != 'alerts' and bucket != config_data_bucket:
         # Only add buckets to the config if they are not one of the default/configured buckets
         # Ensure 'buckets' exists in the config (since it is not required)
-        config['lambda']['athena_partition_refresh_config']['buckets'] = (
-            config['lambda']['athena_partition_refresh_config'].get('buckets', {})
+        config['lambda']['athena_partitioner_config']['buckets'] = (
+            config['lambda']['athena_partitioner_config'].get('buckets', {})
         )
-        if bucket not in config['lambda']['athena_partition_refresh_config']['buckets']:
-            config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
+        if bucket not in config['lambda']['athena_partitioner_config']['buckets']:
+            config['lambda']['athena_partitioner_config']['buckets'][bucket] = 'data'
             config.write()
 
     LOGGER.info('The %s table was successfully created!', sanitized_table_name)
