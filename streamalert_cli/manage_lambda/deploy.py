@@ -211,7 +211,7 @@ def _create(function_name, config, clusters=None):
                 for info in config['clusters'].values())
         ),
         'athena': PackageMap(
-            streamalert_packages.AthenaPackage,
+            streamalert_packages.AthenaPartitionerPackage,
             {'module.streamalert_athena'},
             True
         ),

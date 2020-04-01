@@ -31,11 +31,11 @@ from streamalert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class AthenaRefreshError(Exception):
+class AthenaPartitionerError(Exception):
     """Generic Athena Partition Error for erroring the Lambda function"""
 
 
-class AthenaRefresher:
+class AthenaPartitioner:
     """Handle polling an SQS queue and running Athena queries for updating tables"""
 
     ALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
@@ -58,14 +58,14 @@ class AthenaRefresher:
                                     r'\-(?P<day>\d{2})'
                                     r'\-(?P<hour>\d{2})\/.*')
 
-    ATHENA_S3_PREFIX = 'athena_partition_refresh'
+    ATHENA_S3_PREFIX = 'athena_partitioner'
 
     _ATHENA_CLIENT = None
 
     def __init__(self):
         config = load_config(include={'lambda.json', 'global.json'})
         prefix = config['global']['account']['prefix']
-        athena_config = config['lambda']['athena_partition_refresh_config']
+        athena_config = config['lambda']['athena_partitioner_config']
         self._file_format = get_data_file_format(config)
 
         if self._file_format == 'parquet':
@@ -78,7 +78,7 @@ class AthenaRefresher:
         else:
             message = (
                 'file format "{}" is not supported. Supported file format are '
-                '"parquet", "json". Please update the setting in athena_partition_refresh_config '
+                '"parquet", "json". Please update the setting in athena_partitioner_config '
                 'in "conf/lambda.json"'.format(self._file_format)
             )
             raise ConfigError(message)
@@ -106,7 +106,7 @@ class AthenaRefresher:
 
         # Check if the database exists when the client is created
         if not cls._ATHENA_CLIENT.check_database_exists():
-            raise AthenaRefreshError('The \'{}\' database does not exist'.format(db_name))
+            raise AthenaPartitionerError('The \'{}\' database does not exist'.format(db_name))
 
     def _get_partitions_from_keys(self):
         """Get the partitions that need to be added for the Athena tables
@@ -198,7 +198,7 @@ class AthenaRefresher:
 
             success = self._ATHENA_CLIENT.run_query(query=query)
             if not success:
-                raise AthenaRefreshError(
+                raise AthenaPartitionerError(
                     'The add hive partition query has failed:\n{}'.format(query)
                 )
 
@@ -247,5 +247,5 @@ class AthenaRefresher:
 
 
 def handler(event, _):
-    """Athena Partition Refresher Handler Function"""
-    AthenaRefresher().run(event)
+    """Athena Partitioner Handler Function"""
+    AthenaPartitioner().run(event)

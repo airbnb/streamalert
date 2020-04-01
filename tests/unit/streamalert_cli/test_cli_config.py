@@ -63,9 +63,9 @@ class TestCLIConfig:
 
     def test_toggle_metric(self):
         """CLI - Metric toggling"""
-        self.config.toggle_metrics('athena_partition_refresh', enabled=True)
+        self.config.toggle_metrics('athena_partitioner', enabled=True)
         assert_equal(
-            self.config['lambda']['athena_partition_refresh_config']['enable_custom_metrics'],
+            self.config['lambda']['athena_partitioner_config']['enable_custom_metrics'],
             True
         )
 

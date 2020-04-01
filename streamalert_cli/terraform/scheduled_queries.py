@@ -25,14 +25,14 @@ def generate_scheduled_queries_module_configuration(config):
     # FIXME (derek.wang)
     # should violently break if athena configurations don't exist.
     # Alternatively, could read off streamalert_athena module and get more outputs from that.
-    athena_config = config['lambda']['athena_partition_refresh_config']
+    athena_config = config['lambda']['athena_partitioner_config']
 
     # FIXME (derek.wang) make consistent with streamalert_athena module,
     # maybe make this dependent on output of that module?
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
     # The results bucket cannot reference the output from the streamalert_athena module:
-    #   '${module.streamalert_athena.results_bucket_arn}'
+    #   '${module.athena_partitioner_iam.results_bucket_arn}'
     # Because it takes a bucket name, not an ARN
     # FIXME (derek.wang) DRY out this code
     results_bucket = athena_query_results_bucket(config)

@@ -127,7 +127,7 @@ class RollbackCommand(CLICommand):
         if rollback_all or 'athena' in options.function:
             success = success and _rollback_production(
                 client,
-                '{}_streamalert_athena_partition_refresh'.format(prefix)
+                '{}_streamalert_athena_partitioner'.format(prefix)
             )
 
         if rollback_all or 'classifier' in options.function:

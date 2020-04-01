@@ -6,29 +6,16 @@ variable "prefix" {
   type = string
 }
 
-variable "lambda_handler" {
-  type    = string
-  default = "main.handler"
+variable "function_role_id" {
+  description = "Athena Partitioner function IAM Role ID, exported from the tf_lambda module"
 }
 
-variable "lambda_memory" {
-  type    = string
-  default = "128"
+variable "function_alias_arn" {
+  description = "Athena Partitioner function alias arn, exported from the tf_lambda module"
 }
 
-variable "lambda_timeout" {
-  type    = string
-  default = "60"
-}
-
-variable "filename" {
-  type    = string
-  default = "athena_partition_refresh.zip"
-}
-
-variable "lambda_log_level" {
-  type    = string
-  default = "info"
+variable "function_name" {
+  description = "Athena Partitioner function name, exported from the tf_lambda module"
 }
 
 variable "athena_data_buckets" {
@@ -53,18 +40,4 @@ variable "database_name" {
 
 variable "queue_name" {
   type = string
-}
-
-variable "athena_metric_filters" {
-  type    = list(string)
-  default = []
-}
-
-variable "namespace" {
-  type    = string
-  default = "StreamAlert"
-}
-
-variable "concurrency_limit" {
-  default = 10
 }

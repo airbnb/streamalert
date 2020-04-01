@@ -49,7 +49,7 @@ def generate_rule_promotion(config):
         'rules_table_arn': '${module.globals.rules_table_arn}',
         'function_alias_arn': '${module.rule_promotion_lambda.function_alias_arn}',
         'function_name': '${module.rule_promotion_lambda.function_name}',
-        'athena_results_bucket_arn': '${module.streamalert_athena.results_bucket_arn}',
+        'athena_results_bucket_arn': '${module.athena_partitioner_iam.results_bucket_arn}',
         'alerts_bucket': alerts_bucket,
         's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
     }
