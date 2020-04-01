@@ -122,7 +122,7 @@ def athena_partition_buckets(config):
     Returns:
         list: Bucket names for which Athena is enabled
     """
-    athena_config = config['lambda']['athena_partition_refresh_config']
+    athena_config = config['lambda']['athena_partitioner_config']
     data_buckets = athena_config.get('buckets', {})
     data_buckets[firehose_alerts_bucket(config)] = 'alerts'
     data_bucket = firehose_data_bucket(config)  # Data retention is optional, so check for this
@@ -140,7 +140,7 @@ def athena_query_results_bucket(config):
     Returns:
         str: The name of the S3 bucket.
     """
-    athena_config = config['lambda']['athena_partition_refresh_config']
+    athena_config = config['lambda']['athena_partitioner_config']
     prefix = config['global']['account']['prefix']
 
     return athena_config.get(

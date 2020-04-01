@@ -39,11 +39,11 @@ class TestAthenaPartitioner:
     def setup(self, boto_patch):
         """Setup the AthenaPartitioner tests"""
         boto_patch.client.return_value = MockAthenaClient()
-        self._refresher = AthenaPartitioner()
+        self._partitioner = AthenaPartitioner()
 
     def test_add_partitions(self):
         """AthenaPartitioner - Add Partitions"""
-        self._refresher._s3_buckets_and_keys = {
+        self._partitioner._s3_buckets_and_keys = {
             'unit-test-streamalerts': {
                 b'parquet/alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
                 b'parquet/alerts/dt=2020-02-13-08/prefix_streamalert_alert_delivery-01-abcd.parquet'
@@ -63,14 +63,14 @@ class TestAthenaPartitioner:
                 b'dt=2020-02-12-07/log_type_2_abcd.parquet'
             }
         }
-        result = self._refresher._add_partitions()
+        result = self._partitioner._add_partitions()
 
         assert_true(result)
 
     @patch('logging.Logger.warning')
     def test_add_partitions_none(self, log_mock):
         """AthenaPartitioner - Add Partitions, None to Add"""
-        result = self._refresher._add_partitions()
+        result = self._partitioner._add_partitions()
         log_mock.assert_called_with('No partitions to add')
         assert_equal(result, False)
 
@@ -103,7 +103,7 @@ class TestAthenaPartitioner:
             }
         }
 
-        self._refresher._s3_buckets_and_keys = {
+        self._partitioner._s3_buckets_and_keys = {
             'unit-test-streamalerts': {
                 b'parquet/alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.parquet',
                 b'parquet/alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.parquet',
@@ -123,7 +123,7 @@ class TestAthenaPartitioner:
             }
         }
 
-        result = self._refresher._get_partitions_from_keys()
+        result = self._partitioner._get_partitions_from_keys()
 
         assert_equal(result, expected_result)
 
@@ -131,13 +131,13 @@ class TestAthenaPartitioner:
     def test_get_partitions_from_keys_error(self, log_mock):
         """AthenaPartitioner - Get Partitions From Keys, Bad Key"""
         bad_key = b'bad_match_string'
-        self._refresher._s3_buckets_and_keys = {
+        self._partitioner._s3_buckets_and_keys = {
             'unit-test-streamalerts': {
                 bad_key
             }
         }
 
-        result = self._refresher._get_partitions_from_keys()
+        result = self._partitioner._get_partitions_from_keys()
 
         log_mock.assert_called_with('The key %s does not match any regex, skipping',
                                     bad_key.decode('utf-8'))
@@ -203,7 +203,7 @@ class TestAthenaPartitioner:
     def test_run(self, add_mock, log_mock):
         """AthenaPartitioner - Run"""
         add_mock.return_value = True
-        self._refresher.run(self._create_test_message(1))
+        self._partitioner.run(self._create_test_message(1))
         log_mock.assert_called_with(
             'Received notification for object \'%s\' in bucket \'%s\'',
             'parquet/alerts/dt=2017-08-01-14/02/test.json'.encode(),
@@ -213,7 +213,7 @@ class TestAthenaPartitioner:
     @patch('logging.Logger.info')
     def test_run_placeholder_file(self, log_mock):
         """AthenaPartitioner - Run, Placeholder File"""
-        self._refresher.run(self._create_test_message(1, True))
+        self._partitioner.run(self._create_test_message(1, True))
         log_mock.assert_has_calls([
             call(
                 'Skipping placeholder file notification with key: %s',
@@ -224,7 +224,7 @@ class TestAthenaPartitioner:
     @patch('logging.Logger.warning')
     def test_run_no_messages(self, log_mock):
         """AthenaPartitioner - Run, No Messages"""
-        self._refresher.run(self._create_test_message(0))
+        self._partitioner.run(self._create_test_message(0))
         log_mock.assert_called_with('No partitions to add')
 
     @patch('logging.Logger.error')
@@ -235,7 +235,7 @@ class TestAthenaPartitioner:
         s3_record = self._s3_record(1)
         s3_record['Records'][0]['s3']['bucket']['name'] = bucket
         event['Records'][0]['body'] = json.dumps(s3_record)
-        self._refresher.run(event)
+        self._partitioner.run(event)
         log_mock.assert_called_with('\'%s\' not found in \'buckets\' config. Please add this '
                                     'bucket to enable additions of Hive partitions.',
                                     bucket)
@@ -251,7 +251,7 @@ class TestAthenaPartitionerJSON:
     def setup(self, boto_patch):
         """Setup the AthenaPartitioner tests"""
         boto_patch.client.return_value = MockAthenaClient()
-        self._refresher = AthenaPartitioner()
+        self._partitioner = AthenaPartitioner()
 
     def test_get_partitions_from_keys_json(self):
         """AthenaPartitioner - Get Partitions From Keys in json format"""
@@ -282,7 +282,7 @@ class TestAthenaPartitionerJSON:
             }
         }
 
-        self._refresher._s3_buckets_and_keys = {
+        self._partitioner._s3_buckets_and_keys = {
             'unit-test-streamalerts': {
                 b'parquet/alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 b'parquet/alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
@@ -302,6 +302,6 @@ class TestAthenaPartitionerJSON:
             }
         }
 
-        result = self._refresher._get_partitions_from_keys()
+        result = self._partitioner._get_partitions_from_keys()
 
         assert_equal(result, expected_result)

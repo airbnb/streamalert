@@ -59,7 +59,7 @@ class CLIConfig:
 
     def generate_athena(self):
         """Generate a base Athena config"""
-        if 'athena_partition_refresh_config' in self.config['lambda']:
+        if 'athena_partitioner_config' in self.config['lambda']:
             LOGGER.warning('The Athena configuration already exists, skipping.')
             return
 
@@ -71,7 +71,7 @@ class CLIConfig:
             'third_party_libraries': []
         }
 
-        self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
+        self.config['lambda']['athena_partitioner_config'] = athena_config_template
         self.write()
 
         LOGGER.info('Athena configuration successfully created')

@@ -785,13 +785,13 @@ class TestTerraformGenerate:
 
     def test_generate_main_file_format_unspecified(self):
         "CLI - Terraform Generate Main raises error when file_format unspecified"
-        self.config['lambda']['athena_partition_refresh_config']['file_format'] = None
+        self.config['lambda']['athena_partitioner_config']['file_format'] = None
 
         assert_raises(
             ConfigError,
             generate.generate_global_lambda_settings,
             config=self.config,
-            config_name='athena_partition_refresh_config',
+            config_name='athena_partitioner_config',
             generate_func='test_func',
             tf_tmp_file='test_tf_tmp_file_path',
             message='test message'
@@ -799,13 +799,13 @@ class TestTerraformGenerate:
 
     def test_generate_main_file_format_misconfigured(self):
         "CLI - Terraform Generate Main raises error when file_format misconfigured"
-        self.config['lambda']['athena_partition_refresh_config']['file_format'] = 'Parquet'
+        self.config['lambda']['athena_partitioner_config']['file_format'] = 'Parquet'
 
         assert_raises(
             ConfigError,
             generate.generate_global_lambda_settings,
             config=self.config,
-            config_name='athena_partition_refresh_config',
+            config_name='athena_partitioner_config',
             generate_func='test_func',
             tf_tmp_file='test_tf_tmp_file_path',
             message='test message'

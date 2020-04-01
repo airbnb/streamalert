@@ -50,8 +50,10 @@
       "subnet_ids": []
     }
   },
-  "athena_partition_refresh_config": {
+  "athena_partitioner_config": {
     "concurrency_limit": 10,
+    "memory": 128,
+    "timeout": 300,
     "file_format": null,
     "log_level": "info"
   },

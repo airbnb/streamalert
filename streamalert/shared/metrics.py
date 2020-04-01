@@ -29,7 +29,7 @@ LOGGER = get_logger(__name__)
 CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 
 # The FUNC_PREFIXES dict acts as a simple map to a human-readable name
-# Add ATHENA_PARTITIONER_NAME: 'AthenaPartitionRefresh', to the
+# Add ATHENA_PARTITIONER_NAME: 'AthenaPartitioner', to the
 # below when metrics are supported there
 FUNC_PREFIXES = {
     ALERT_MERGER_NAME: 'AlertMerger',

@@ -59,7 +59,7 @@ class AthenaClient:
         if not results_bucket.startswith('s3://'):
             results_bucket = 's3://{}'.format(results_bucket)
 
-        # Produces athena_partition_refresh/YYYY/MM/DD S3 keys
+        # Produces athena_partitioner/YYYY/MM/DD S3 keys
         self._s3_results_path = posixpath.join(
             results_bucket,
             results_prefix,
