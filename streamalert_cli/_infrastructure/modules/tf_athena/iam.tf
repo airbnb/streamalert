@@ -1,56 +1,7 @@
-// IAM Role: Lambda Execution Role
-resource "aws_iam_role" "athena_partition_role" {
-  name               = "${var.prefix}_athena_partition_refresh"
-  path               = "/streamalert/"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy.json
-
-  tags = {
-    Name    = "StreamAlert"
-    AltName = "Athena"
-  }
-}
-
-// IAM Policy Doc: Generic Lambda trust relationship policy
-data "aws_iam_policy_document" "lambda_assume_role_policy" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-  }
-}
-
-// IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
-resource "aws_iam_role_policy" "cloudwatch" {
-  name   = "CloudWatchPutLogs"
-  role   = aws_iam_role.athena_partition_role.id
-  policy = data.aws_iam_policy_document.cloudwatch.json
-}
-
-// IAM Policy Doc: Cloudwatch creation and logging of events
-data "aws_iam_policy_document" "cloudwatch" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-
-    resources = [
-      "arn:aws:logs:*:*:*",
-    ]
-  }
-}
-
-// IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
+// IAM Role Policy: Allow the function read and delete SQS messages
 resource "aws_iam_role_policy" "sqs" {
   name   = "SQSReadDeleteMessages"
-  role   = aws_iam_role.athena_partition_role.id
+  role   = var.function_role_id
   policy = data.aws_iam_policy_document.sqs.json
 }
 
@@ -92,21 +43,21 @@ data "aws_iam_policy_document" "sqs" {
     ]
 
     resources = [
-      aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn,
+      aws_sqs_queue.data_bucket_notifications.arn,
     ]
   }
 }
 
-// IAM Role Policy: Allow the Lambda function to execute Athena queries
+// IAM Role Policy: Allow the Lambda function to execute Athena queries and perform Glue operations
 // Ref: http://amzn.to/2tSyxUV
-resource "aws_iam_role_policy" "athena_query_permissions" {
-  name   = "AthenaQuery"
-  role   = aws_iam_role.athena_partition_role.id
-  policy = data.aws_iam_policy_document.athena_permissions.json
+resource "aws_iam_role_policy" "athena_glue_permissions" {
+  name   = "AthenaGlueAccess"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.athena_glue_permissions.json
 }
 
-// IAM Policy Doc: Athena and S3 permissions
-data "aws_iam_policy_document" "athena_permissions" {
+// IAM Policy Doc: Athena and Glue permissions
+data "aws_iam_policy_document" "athena_glue_permissions" {
   statement {
     effect = "Allow"
 
@@ -149,7 +100,18 @@ data "aws_iam_policy_document" "athena_permissions" {
       "*",
     ]
   }
+}
 
+// IAM Role Policy: Allow the Lambda function to read data buckets
+resource "aws_iam_role_policy" "athena_results_bucket" {
+  name   = "S3ResultsBucket"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.athena_results_bucket.json
+}
+
+// IAM Policy Doc: Allow Athena to read data from configured buckets
+//                 This is necessary for table repairs
+data "aws_iam_policy_document" "athena_results_bucket" {
   statement {
     effect = "Allow"
 
@@ -171,15 +133,15 @@ data "aws_iam_policy_document" "athena_permissions" {
 }
 
 // IAM Role Policy: Allow the Lambda function to read data buckets
-resource "aws_iam_role_policy" "athena_query_data_bucket_permissions" {
-  name   = "AthenaGetData"
-  role   = aws_iam_role.athena_partition_role.id
-  policy = data.aws_iam_policy_document.athena_data_bucket_read.json
+resource "aws_iam_role_policy" "data_bucket" {
+  name   = "S3DataBucket"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.data_bucket.json
 }
 
 // IAM Policy Doc: Allow Athena to read data from configured buckets
 //                 This is necessary for table repairs
-data "aws_iam_policy_document" "athena_data_bucket_read" {
+data "aws_iam_policy_document" "data_bucket" {
   statement {
     effect = "Allow"
 
@@ -202,7 +164,7 @@ data "aws_iam_policy_document" "athena_data_bucket_read" {
 }
 
 // IAM Policy Doc: Allow configured data buckets to send SQS messages
-data "aws_iam_policy_document" "athena_data_bucket_sqs_sendmessage" {
+data "aws_iam_policy_document" "data_bucket_sqs" {
   statement {
     effect = "Allow"
 
@@ -216,7 +178,7 @@ data "aws_iam_policy_document" "athena_data_bucket_sqs_sendmessage" {
     }
 
     resources = [
-      aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn,
+      aws_sqs_queue.data_bucket_notifications.arn,
     ]
 
     condition {
@@ -225,38 +187,5 @@ data "aws_iam_policy_document" "athena_data_bucket_sqs_sendmessage" {
 
       values = formatlist("arn:aws:s3:*:*:%s", var.athena_data_buckets)
     }
-  }
-}
-
-// Allow S3 to use the SSE key when publishing events to SQS
-data "aws_iam_policy_document" "kms_sse_allow_s3" {
-  statement {
-    sid    = "Enable IAM User Permissions"
-    effect = "Allow"
-
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${var.account_id}:root"]
-    }
-
-    actions   = ["kms:*"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "AllowS3ToUseKey"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["s3.amazonaws.com"]
-    }
-
-    actions = [
-      "kms:Decrypt",
-      "kms:GenerateDataKey",
-    ]
-
-    resources = ["*"]
   }
 }
