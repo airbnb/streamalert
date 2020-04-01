@@ -37,7 +37,7 @@ def generate_scheduled_queries_module_configuration(config):
     # FIXME (derek.wang) DRY out this code
     results_bucket = athena_query_results_bucket(config)
 
-    athena_s3_buckets = athena_partition_buckets(config)
+    athena_s3_buckets = sorted(athena_partition_buckets(config))
 
     # Copy the config over directly
     scheduled_queries_module = streamquery_config.get('config', {})
