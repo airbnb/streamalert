@@ -145,7 +145,7 @@ def athena_query_results_bucket(config):
 
     return athena_config.get(
         'results_bucket',
-        '{}.streamalert.athena-results'.format(prefix)
+        '{}-streamalert-athena-results'.format(prefix)
     ).strip()
 
 

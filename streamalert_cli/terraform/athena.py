@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared import metrics
-from streamalert.shared.config import athena_partition_buckets
+from streamalert.shared.config import athena_partition_buckets, athena_query_results_bucket
 from streamalert_cli.manage_lambda.package import AthenaPackage
 from streamalert_cli.terraform.common import (
     infinitedict,
@@ -40,10 +40,7 @@ def generate_athena(config):
     prefix = config['global']['account']['prefix']
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
-    results_bucket_name = athena_config.get(
-        'results_bucket',
-        '{}-streamalert-athena-results'.format(prefix)
-    ).strip()
+    results_bucket_name = athena_query_results_bucket(config)
 
     queue_name = athena_config.get(
         'queue_name',
