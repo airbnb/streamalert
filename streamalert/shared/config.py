@@ -231,10 +231,10 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
         ]
 
     if not (conf_files or include_clusters or schema_files):
-        available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
-        raise ConfigError('No config files to load. This is likely due the misuse of '
-                          'the \'include\' or \'exclude\' keyword arguments. Available '
-                          'files are: {}, clusters, and schemas.'.format(available_files))
+        raise ConfigError(
+            'No config files to load. The supplied directory could be incorrect or this could '
+            'be due the misuse of the \'include\' or \'exclude\' keyword arguments.'
+        )
 
     config = defaultdict(dict)
     for name in conf_files:
