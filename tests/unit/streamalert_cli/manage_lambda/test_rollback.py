@@ -15,7 +15,7 @@ class MockOptions:
 
     def __init__(self, clusters, function):
         self.clusters = clusters
-        self.function = function
+        self.functions = function
 
 
 @mock.patch.object(rollback, 'boto3', mock.MagicMock())
@@ -64,9 +64,13 @@ class RollbackTest(unittest.TestCase):
     def test_rollback_all(self, mock_helper):
         """CLI - Lambda rollback all"""
         mock_helper.return_value = True
+        funcs = [
+            'alert', 'alert_merger', 'apps', 'athena', 'classifier',
+            'rule', 'rule_promo', 'scheduled_queries', 'threat_intel_downloader'
+        ]
         assert_equal(
             rollback.RollbackCommand.handler(
-                MockOptions(None, ['all']),
+                MockOptions(None, funcs),
                 MockCLIConfig(config=basic_streamalert_config())
             ),
             True
@@ -80,6 +84,8 @@ class RollbackTest(unittest.TestCase):
             mock.call(mock.ANY, 'unit-test_corp_streamalert_classifier'),
             mock.call(mock.ANY, 'unit-test_prod_streamalert_classifier'),
             mock.call(mock.ANY, 'unit-test_streamalert_rules_engine'),
+            mock.call(mock.ANY, 'unit-test_streamalert_rule_promotion'),
+            mock.call(mock.ANY, 'unit-test_streamalert_scheduled_queries_runner'),
             mock.call(mock.ANY, 'unit-test_streamalert_threat_intel_downloader')
         ])
 
