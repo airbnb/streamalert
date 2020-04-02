@@ -4,7 +4,7 @@ multiple rules.  For example, if we write an osquery rule that
 is specific for the `prod` environment, we can define a matcher
 and add it to our rules' `matchers` keyword argument:
 
-from matchers import matchers
+from matchers import default
 
 @rule('root_logins', logs=['osquery:differential'], matchers=[matchers.prod],
       outputs=['pagerduty:sample-integration'])
