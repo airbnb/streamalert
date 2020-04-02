@@ -1,5 +1,5 @@
 """Alert on GuardDuty"""
-from rules.matchers.matchers import AwsGuardDutyMatcher
+from matchers.default import AwsGuardDutyMatcher
 from streamalert.shared.rule import rule
 
 
