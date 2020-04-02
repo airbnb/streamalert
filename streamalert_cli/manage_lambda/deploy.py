@@ -212,7 +212,7 @@ def _create(function_name, config, clusters=None):
         ),
         'athena': PackageMap(
             streamalert_packages.AthenaPartitionerPackage,
-            {'module.streamalert_athena'},
+            {'module.athena_partitioner_iam', 'module.athena_partitioner_lambda'},
             True
         ),
         'classifier': PackageMap(
