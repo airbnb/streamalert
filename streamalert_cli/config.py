@@ -25,13 +25,13 @@ from streamalert_cli.helpers import continue_prompt
 from streamalert_cli.apps.helpers import save_app_auth_info
 
 LOGGER = get_logger(__name__)
+DEFAULT_CONFIG_PATH = 'conf'
 
 
 class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
-    DEFAULT_CONFIG_PATH = 'conf/'
 
-    def __init__(self, config_path=DEFAULT_CONFIG_PATH):
+    def __init__(self, config_path):
         self.config_path = config_path
         self.config = config.load_config(config_path)
 

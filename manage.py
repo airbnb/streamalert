@@ -27,8 +27,9 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 
 from streamalert import __version__ as version
+from streamalert_cli.config import DEFAULT_CONFIG_PATH
 from streamalert_cli.runner import cli_runner, StreamAlertCLICommandRepository
-from streamalert_cli.utils import generate_subparser
+from streamalert_cli.utils import DirectoryType, generate_subparser
 
 
 def build_parser():
@@ -51,7 +52,6 @@ For additional help with any command above, try:
 
         {} [command] --help
 """
-
     parser = ArgumentParser(
         formatter_class=RawDescriptionHelpFormatter,
         prog=__file__
@@ -69,6 +69,14 @@ For additional help with any command above, try:
         '--debug',
         help='enable debugging logger output for all of the StreamAlert loggers',
         action='store_true'
+    )
+
+    parser.add_argument(
+        '-c',
+        '--config-dir',
+        default=DEFAULT_CONFIG_PATH,
+        help='Path to directory containing configuration files',
+        type=DirectoryType()
     )
 
     # Dynamically generate subparsers, and create a 'commands' block for the prog description
