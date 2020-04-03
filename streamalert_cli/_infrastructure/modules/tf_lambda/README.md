@@ -8,10 +8,10 @@ This Terraform module creates a single AWS Lambda function and its related compo
 * CloudWatch log group
 * CloudWatch metric alarms related to Lambda
 
-All StreamAlert Lambda functions will eventually leverage this module.
+All StreamAlert Lambda functions should leverage this module.
 
 The created IAM role has permission to publish CloudWatch logs and metrics. To add function-specific
-permissions, attach/inline them to the created IAM role.
+permissions, attach them to the created IAM role.
 
 ## Example
 ```hcl
@@ -25,13 +25,11 @@ module "alert_processor" {
   }
 
   // Commonly used optional variables
-  enabled                   = true
   description               = "Function Description"
   memory_size_mb            = 128
   timeout_sec               = 60
   vpc_subnet_ids            = ["abc"]
   vpc_security_group_ids    = ["id0"]
-  aliased_version           = 1
   log_retention_days        = 14
   alarm_actions             = ["SNS_ARN"]
   errors_alarm_threshold    = 1
@@ -57,8 +55,4 @@ data "aws_iam_policy_document" "policy" {
 For a complete list of available options and their descriptions, see [`variables.tf`](variables.tf).
 
 ## Outputs
-If your Lambda function is in a VPC, `function_vpc_arn` is the ARN of the generated Lambda
-function. Otherwise, it will be `function_no_vpc_arn`. (This split is a workaround for a
-[Terraform bug](https://github.com/terraform-providers/terraform-provider-aws/issues/443)).
-
-This module also exports the `role_arn` and `role_id` for the Lambda execution role.
+This module exports the `function_arn` for the Lambda function, along with the `role_arn`, and `role_id` for the Lambda execution role.
