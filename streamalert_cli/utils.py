@@ -99,9 +99,7 @@ class DirectoryType:
         if os.path.isdir(value):
             return value
 
-        raise ArgumentTypeError(
-            '\'%(filename)s\' is not a directory' % {'filename': value}
-        )
+        raise ArgumentTypeError('\'{}\' is not a directory'.format(value))
 
 
 def add_timeout_arg(parser):
