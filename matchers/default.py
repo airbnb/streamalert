@@ -4,7 +4,7 @@ multiple rules.  For example, if we write an osquery rule that
 is specific for the `prod` environment, we can define a matcher
 and add it to our rules' `matchers` keyword argument:
 
-from rules.matchers import matchers
+from matchers import default
 
 @rule('root_logins', logs=['osquery:differential'], matchers=[matchers.prod],
       outputs=['pagerduty:sample-integration'])
@@ -14,12 +14,15 @@ You can also supply multiple matchers for many common scenarios:
 @rule('root_logins', logs=['osquery:differential'],
       matchers=[matchers.prod, matchers.pci], outputs=['pagerduty:sample-integration'])
 """
+
+
 class AwsGuardDutyMatcher:
     """A class contains matchers for AWS GuardDuty service"""
 
     @classmethod
     def guard_duty(cls, rec):
         return rec['detail-type'] == 'GuardDuty Finding'
+
 
 class OsqueryMatcher:
     """A class defines contains matchers for Osquery events"""
@@ -33,11 +36,9 @@ class OsqueryMatcher:
         'runlevel'
     }
 
-
     @classmethod
     def added(cls, rec):
         return rec['action'] == 'added'
-
 
     @classmethod
     def user_login(cls, rec):

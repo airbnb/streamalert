@@ -13,6 +13,9 @@
     ],
     "scheduled_query_locations": [
       "scheduled_queries"
+    ],
+    "publisher_locations": [
+      "publishers"
     ]
   },
   "infrastructure": {

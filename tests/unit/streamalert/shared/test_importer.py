@@ -30,7 +30,7 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
 
         # Add rule and matcher files which should be imported.
-        self.fs.create_file('matchers/matchers.py')
+        self.fs.create_file('matchers/default.py')
         self.fs.create_file('rules/example.py')
         self.fs.create_file('rules/community/cloudtrail/critical_api.py')
 
@@ -45,7 +45,7 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
         """Rule - Python File Paths"""
         result = set(_python_file_paths('matchers', 'rules'))
         expected = {
-            'matchers/matchers.py',
+            'matchers/default.py',
             'rules/example.py',
             'rules/community/cloudtrail/critical_api.py'
         }
@@ -72,7 +72,7 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
         """Rule - Import Folders"""
         import_folders('matchers', 'rules')
         mock_import.assert_has_calls([
-            call('matchers.matchers'),
+            call('matchers.default'),
             call('rules.example'),
             call('rules.community.cloudtrail.critical_api')
         ], any_order=True)

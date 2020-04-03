@@ -17,6 +17,7 @@ from abc import abstractmethod
 from copy import deepcopy
 from inspect import isclass
 
+from streamalert.shared.config import load_config
 from streamalert.shared.importer import import_folders
 from streamalert.shared.logger import get_logger
 
@@ -117,16 +118,15 @@ class AlertPublisherRepository:
     As a usability optimization, using this Repository will eagerly load and register all
     publishers in the application.
     """
-    _PUBLISHERS_DIRECTORY = 'publishers'
     _publishers = {}
     _is_imported = False
 
     @classmethod
     def import_publishers(cls):
         if not cls._is_imported:
-            import_folders(cls._PUBLISHERS_DIRECTORY)
+            config = load_config()
+            import_folders(*config['global']['general'].get('publisher_locations', []))
             cls._is_imported = True
-
 
     @staticmethod
     def is_valid_publisher(thing):
