@@ -1,18 +1,16 @@
 module "scheduled_queries_lambda" {
   source = "../tf_lambda"
 
-  enabled       = true
-
   function_name = "${var.prefix}_streamalert_scheduled_queries_runner"
   description   = "Lambda function that powers StreamQuery, StreamAlert's scheduled query service"
   runtime       = "python3.7"
   handler       = var.lambda_handler
 
-  memory_size_mb        = var.lambda_memory
-  timeout_sec           = var.lambda_timeout
-  filename              = var.lambda_filename
+  memory_size_mb = var.lambda_memory
+  timeout_sec    = var.lambda_timeout
+  filename       = var.lambda_filename
 
-  concurrency_limit     = var.lambda_concurrency_limit
+  concurrency_limit = var.lambda_concurrency_limit
 
   environment_variables = {
     REGION                = var.region
@@ -28,8 +26,8 @@ module "scheduled_queries_lambda" {
 
   auto_publish_versions = true
 
-  log_retention_days    = var.lambda_log_retention_days
-  alarm_actions         = var.lambda_alarm_actions
+  log_retention_days = var.lambda_log_retention_days
+  alarm_actions      = var.lambda_alarm_actions
 
   errors_alarm_enabled            = var.lambda_alarms_enabled
   errors_alarm_evaluation_periods = var.lambda_error_evaluation_periods

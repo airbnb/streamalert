@@ -1,58 +1,27 @@
-// Defined only if the Lambda is in a VPC
-output "function_vpc_arn" {
-  value = join(" ", aws_lambda_function.function_vpc.*.arn)
-}
-
-// Defined only if the Lambda is NOT in a VPC
-output "function_no_vpc_arn" {
-  value = join(" ", aws_lambda_function.function_no_vpc.*.arn)
+output "function_arn" {
+  value = aws_lambda_function.function.arn
 }
 
 output "role_arn" {
-  value = aws_iam_role.role[0].arn
+  value = aws_iam_role.role.arn
 }
 
 output "role_id" {
-  value = aws_iam_role.role[0].id
+  value = aws_iam_role.role.id
 }
 
-// Combine the two mutually exclusive lists and export the first element as the function alias
 output "function_alias" {
-  value = element(
-    concat(
-      aws_lambda_alias.alias_vpc.*.name,
-      aws_lambda_alias.alias_no_vpc.*.name,
-    ),
-    0,
-  )
+  value = aws_lambda_alias.alias.name
 }
 
-// Combine the two mutually exclusive lists and export the first element as the function name
 output "function_name" {
-  value = element(
-    concat(
-      aws_lambda_function.function_vpc.*.function_name,
-      aws_lambda_function.function_no_vpc.*.function_name,
-    ),
-    0,
-  )
+  value = aws_lambda_function.function.function_name
 }
 
-// Combine the two mutually exclusive lists and export the first element as the function alias arn
 output "function_alias_arn" {
-  value = element(
-    concat(
-      aws_lambda_alias.alias_vpc.*.arn,
-      aws_lambda_alias.alias_no_vpc.*.arn,
-    ),
-    0,
-  )
+  value = aws_lambda_alias.alias.arn
 }
 
-// Log group name for this Lambda function to enable applying metrics filters
 output "log_group_name" {
-  value = element(
-    concat(aws_cloudwatch_log_group.lambda_log_group.*.name, [""]),
-    0,
-  )
+  value = aws_cloudwatch_log_group.lambda_log_group.name
 }
