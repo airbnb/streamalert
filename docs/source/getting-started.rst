@@ -237,7 +237,7 @@ alerts on any usage of the root AWS account. Change the rule decorator to:
   python manage.py build
 
   # Deploy a new version of all of the Lambda functions with the updated rule and config files
-  python manage.py deploy --function all
+  python manage.py deploy
 
 .. note:: Use ``build`` and ``deploy`` to apply any changes to StreamAlert's
    configuration or Lambda functions, respectively. Some changes (like this example) require both.

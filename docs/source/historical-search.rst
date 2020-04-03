@@ -73,7 +73,7 @@ Alerts Search
 
   .. code-block:: bash
 
-    python manage.py deploy --function athena
+    python manage.py deploy --functions athena
 
 * Search alerts in `Athena Console <https://console.aws.amazon.com/athena>`_
 
@@ -99,7 +99,7 @@ It is optional to store data in S3 bucket and available for search in Athena tab
 
   .. code-block:: bash
 
-    python manage.py deploy --function classifier
+    python manage.py deploy --functions classifier
 
 * Search data `Athena Console <https://console.aws.amazon.com/athena>`_
 

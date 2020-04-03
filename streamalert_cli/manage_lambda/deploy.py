@@ -93,26 +93,11 @@ class DeployCommand(CLICommand):
         if not terraform_generate_handler(config=config):
             return False
 
-        functions = options.function
-
-        if 'all' in options.function:
-            functions = {
-                'alert',
-                'alert_merger',
-                'apps',
-                'athena',
-                'classifier',
-                'rule',
-                'rule_promo',
-                'scheduled_queries',
-                'threat_intel_downloader'
-            }
-
-        if not deploy(functions, config, options.clusters):
+        if not deploy(options.functions, config, options.clusters):
             return False
 
         # Update the rule table now if the rules engine is being deployed
-        if 'rule' in functions:
+        if 'rule' in set(options.functions):
             _update_rule_table(options, config)
 
         return True
@@ -129,8 +114,7 @@ def deploy(functions, config, clusters=None):
     Returns:
         bool: False if errors occurred, True otherwise
     """
-
-    LOGGER.info('Deploying: %s', ' '.join(sorted(functions)))
+    LOGGER.info('Deploying: %s', ', '.join(sorted(functions)))
 
     # Terraform apply only to the module which contains our lambda functions
     deploy_targets = set()

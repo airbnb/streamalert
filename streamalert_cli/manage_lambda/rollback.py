@@ -21,6 +21,7 @@ from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.utils import (
     add_default_lambda_args,
     CLICommand,
+    function_map,
     set_parser_epilog,
 )
 
@@ -97,55 +98,37 @@ class RollbackCommand(CLICommand):
         if not terraform_generate_handler(config=config):
             return False
 
-        LOGGER.info('Rolling back: %s', ' '.join(options.function))
+        functions = function_map()
+        targeted_funcs = set(options.functions)
+        functions = {
+            key: value for key, value in functions.items() if key in targeted_funcs
+        }
 
-        rollback_all = 'all' in options.function
+        LOGGER.info('Rolling back: %s', ', '.join(sorted(functions)))
+
         prefix = config['global']['account']['prefix']
         clusters = sorted(options.clusters or config.clusters())
         client = boto3.client('lambda')
 
         # Track the success of rolling back the functions
         success = True
-        if rollback_all or 'alert' in options.function:
-            success = success and _rollback_production(
-                client,
-                '{}_streamalert_alert_processor'.format(prefix)
-            )
-
-        if rollback_all or 'alert_merger' in options.function:
-            success = success and _rollback_production(
-                client,
-                '{}_streamalert_alert_merger'.format(prefix)
-            )
-
-        if rollback_all or 'apps' in options.function:
-            for cluster in clusters:
-                apps_config = config['clusters'][cluster]['modules'].get('streamalert_apps', {})
-                for lambda_name in sorted(apps_config):
-                    success = success and _rollback_production(client, lambda_name)
-
-        if rollback_all or 'athena' in options.function:
-            success = success and _rollback_production(
-                client,
-                '{}_streamalert_athena_partitioner'.format(prefix)
-            )
-
-        if rollback_all or 'classifier' in options.function:
-            for cluster in clusters:
+        for func, suffix in functions.items():
+            if suffix:  # A suffix implies this is a standard function naming convention
                 success = success and _rollback_production(
                     client,
-                    '{}_{}_streamalert_classifier'.format(prefix, cluster)
+                    '{}_streamalert_{}'.format(prefix, suffix)
                 )
-
-        if rollback_all or 'rule' in options.function:
-            success = success and _rollback_production(
-                client, '{}_streamalert_rules_engine'.format(prefix)
-            )
-
-        if rollback_all or 'threat_intel_downloader' in options.function:
-            success = success and _rollback_production(
-                client,
-                '{}_streamalert_threat_intel_downloader'.format(prefix)
-            )
+            elif func == 'apps':  # Apps need special handling due to unique naming
+                for cluster in clusters:
+                    cluster_modules = config['clusters'][cluster]['modules']
+                    apps_config = cluster_modules.get('streamalert_apps', {})
+                    for lambda_name in sorted(apps_config):
+                        success = success and _rollback_production(client, lambda_name)
+            elif func == 'classifier':  # Classifers need special handling due to clustering
+                for cluster in clusters:
+                    success = success and _rollback_production(
+                        client,
+                        '{}_{}_streamalert_{}'.format(prefix, cluster, func)
+                    )
 
         return success

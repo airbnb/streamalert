@@ -150,7 +150,7 @@ The recommended process is to deploy both the `apps` function and the `classifie
 
 .. code-block:: bash
 
-  python manage.py deploy --function classifier apps
+  python manage.py deploy --functions classifier apps
 
 
 Authorizing the Slack App
