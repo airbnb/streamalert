@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "lambda_execution_policy" {
 
 // Create the execution role for the Lambda function.
 resource "aws_iam_role" "role" {
-  name               = "${aws_lambda_function.function.function_name}_role"
+  name               = "${var.function_name}_role"
   path               = "/streamalert/"
   assume_role_policy = data.aws_iam_policy_document.lambda_execution_policy.json
 

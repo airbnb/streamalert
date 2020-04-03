@@ -13,7 +13,7 @@ resource "aws_cloudwatch_event_rule" "invocation_schedule" {
 
 resource "aws_cloudwatch_event_target" "invoke_lambda" {
   count = local.schedule_enabled ? 1 : 0
-  rule  = aws_cloudwatch_event_rule.invocation_schedule.name
+  rule  = aws_cloudwatch_event_rule.invocation_schedule[0].name
   arn   = aws_lambda_alias.alias.arn
   input = jsonencode(var.lambda_input_event)
 }
