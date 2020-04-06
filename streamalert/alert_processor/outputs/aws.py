@@ -260,7 +260,7 @@ class LambdaOutput(AWSOutput):
 
 
 @StreamAlertOutput
-class LambdaOutputV2(AWSOutput):
+class LambdaOutputV2(OutputDispatcher):
     """LambdaOutput handles all alert dispatching to AWS Lambda"""
     __service__ = 'aws-lambda-v2'
 
