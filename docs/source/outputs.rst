@@ -44,9 +44,9 @@ Adding a new configuration for a currently supported service is handled using ``
 .. note::
 
   ``<SERVICE_NAME>`` above should be one of the following supported service identifiers.
-  ``aws-cloudwatch-log``, ``aws-firehose``, ``aws-lambda``, ``aws-s3``, ``aws-sns``, ``aws-sqs``,
-  ``carbonblack``, ``github``, ``jira``, ``komand``, ``pagerduty``, ``pagerduty-incident``,
-  ``pagerduty-v2``, ``phantom``, ``slack``
+  ``aws-cloudwatch-log``, ``aws-firehose``, ``aws-lambda``, ``aws-lambda-v2``, ``aws-s3``,
+  ``aws-sns``, ``aws-sqs``, ``carbonblack``, ``github``, ``jira``, ``komand``, ``pagerduty``,
+  ``pagerduty-incident``, ``pagerduty-v2``, ``phantom``, ``slack``
 
 For example:
 
