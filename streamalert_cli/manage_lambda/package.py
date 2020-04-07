@@ -307,6 +307,7 @@ class RulePromotionPackage(LambdaPackage):
         'streamalert/shared'
     }
     package_name = 'rule_promotion'
+    package_libs = {'netaddr'}
 
 
 class ScheduledQueriesPackage(LambdaPackage):
