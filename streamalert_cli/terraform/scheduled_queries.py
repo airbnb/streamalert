@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.shared.config import athena_partition_buckets, athena_query_results_bucket
+from streamalert.shared.config import athena_partition_buckets_tf, athena_query_results_bucket
 from streamalert_cli.manage_lambda.package import ScheduledQueriesPackage
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
@@ -37,7 +37,7 @@ def generate_scheduled_queries_module_configuration(config):
     # FIXME (derek.wang) DRY out this code
     results_bucket = athena_query_results_bucket(config)
 
-    athena_s3_buckets = sorted(athena_partition_buckets(config))
+    athena_s3_buckets = athena_partition_buckets_tf(config)
 
     # Copy the config over directly
     scheduled_queries_module = streamquery_config.get('config', {})

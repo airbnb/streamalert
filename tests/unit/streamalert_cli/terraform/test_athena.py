@@ -43,8 +43,8 @@ def test_generate_athena():
                 'queue_name': '{}_streamalert_athena_s3_notifications'.format(prefix),
                 'results_bucket': '{}-streamalert-athena-results'.format(prefix),
                 'athena_data_buckets': [
-                    'unit-test-streamalert-data',
-                    'unit-test-streamalerts'
+                    '${aws_s3_bucket.streamalerts.bucket}',
+                    '${module.kinesis_firehose_setup.data_bucket_name}',
                 ],
                 'lambda_timeout': 60,
                 'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
