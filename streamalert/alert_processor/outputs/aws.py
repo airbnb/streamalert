@@ -293,8 +293,7 @@ class LambdaOutputV2(OutputDispatcher):
                     'descriptor',
                     OutputProperty(
                         description='a short and unique descriptor for this Lambda function '
-                        'configuration (ie: abbreviated name)',
-                        cred_requirement=True
+                        'configuration (ie: abbreviated name)'
                     )
                 ),
                 (
