@@ -293,28 +293,32 @@ class LambdaOutputV2(OutputDispatcher):
                     'descriptor',
                     OutputProperty(
                         description='a short and unique descriptor for this Lambda function '
-                        'configuration (ie: abbreviated name)'
+                        'configuration (ie: abbreviated name)',
+                        cred_requirement=True
                     )
                 ),
                 (
                     'lambda_function_arn',
                     OutputProperty(
                         description='The ARN of the AWS Lambda function to Invoke',
-                        input_restrictions={' '}
+                        input_restrictions={' '},
+                        cred_requirement=True
                     )
                 ),
                 (
                     'function_qualifier',
                     OutputProperty(
                         description='The function qualifier/alias to invoke.',
-                        input_restrictions={' '}
+                        input_restrictions={' '},
+                        cred_requirement=True
                     )
                 ),
                 (
                     'assume_role_arn',
                     OutputProperty(
                         description='When provided, will use AssumeRole with this ARN',
-                        input_restrictions={' '}
+                        input_restrictions={' '},
+                        cred_requirement=True
                     )
                 ),
             ]
