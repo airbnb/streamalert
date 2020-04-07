@@ -158,7 +158,7 @@ The ``OutputProperty`` object used in ``get_user_defined_properties`` is a ``nam
 
 :cred_requirement:
   A ``boolean`` that indicates whether this value is required for API access with this service. Ultimately, setting this value to ``True`` indicates
-  that the value should be encrypted and stored in Amazon S3.
+  that the value should be encrypted and stored in Amazon Systems Manager.
   Default is: ``False``
 
 
