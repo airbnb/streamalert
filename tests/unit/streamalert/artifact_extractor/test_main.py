@@ -20,7 +20,7 @@ from nose.tools import assert_equal
 
 # from streamalert.artifact_extractor.artifact_extractor import ArtifactExtractor
 from streamalert.artifact_extractor.main import ArtifactExtractor, handler
-from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 
 from tests.unit.streamalert.artifact_extractor.helpers import (
     native_firehose_records,

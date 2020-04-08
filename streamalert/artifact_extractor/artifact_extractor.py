@@ -15,7 +15,7 @@ import json
 import re
 from os import environ as env
 
-from streamalert.classifier.clients.firehose import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared import config
 from streamalert.shared.normalize import Normalizer
 from streamalert.shared.logger import get_logger

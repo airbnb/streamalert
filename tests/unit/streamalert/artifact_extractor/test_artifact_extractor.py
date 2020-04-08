@@ -22,7 +22,7 @@ from streamalert.artifact_extractor.artifact_extractor import (
     Artifact,
     ArtifactExtractor
 )
-from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 from tests.unit.streamalert.artifact_extractor.helpers import (
     native_firehose_records,
     transformed_firehose_records,

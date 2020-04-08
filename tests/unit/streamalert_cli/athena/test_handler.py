@@ -17,7 +17,7 @@ limitations under the License.
 from mock import Mock, patch
 from nose.tools import assert_equal, assert_true
 
-from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 from streamalert_cli.athena import handler
 from streamalert_cli.config import CLIConfig
 
