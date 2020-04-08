@@ -1,0 +1,7 @@
+{
+  "athena_partitioner_config": {
+    "file_format": "json",
+    "memory": "128",
+    "timeout": "60"
+  }
+}

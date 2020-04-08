@@ -24,6 +24,9 @@ from botocore.exceptions import ClientError, NoCredentialsError
 
 from streamalert.shared.logger import get_logger
 
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
+
+
 LOGGER = get_logger(__name__)
 
 SCHEMA_TYPE_LOOKUP = {
@@ -49,8 +52,7 @@ def run_command(runner_args, **kwargs):
     """
     default_error_message = "An error occurred while running: {}".format(' '.join(runner_args))
     error_message = kwargs.get('error_message', default_error_message)
-    default_cwd = 'terraform'
-    cwd = kwargs.get('cwd', default_cwd)
+    cwd = kwargs.get('cwd', TERRAFORM_FILES_PATH)
 
     # Add the -force-copy flag for s3 state copying to suppress dialogs that
     # the user must type 'yes' into.

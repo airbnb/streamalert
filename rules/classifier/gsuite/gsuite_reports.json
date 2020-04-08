@@ -1,0 +1,40 @@
+[
+  {
+    "data": {
+      "actor": {
+        "callerType": "USER",
+        "email": "liz@example.com",
+        "key": "consumer key of requestor in OAuth 2LO requests",
+        "profileId": "user's unique G Suite profile ID"
+      },
+      "events": [
+        {
+          "name": "CHANGE_GROUP_SETTING",
+          "parameters": [
+            {
+              "boolValue": "boolean value of parameter",
+              "intValue": "integer value of parameter",
+              "name": "SETTING_NAME",
+              "value": "WHO_CAN_JOIN"
+            }
+          ],
+          "type": "GROUP_SETTINGS"
+        }
+      ],
+      "id": {
+        "applicationName": "admin",
+        "customerId": "C03az79cb",
+        "time": "2011-06-17T15:39:18.460Z",
+        "uniqueQualifier": "-1234567890987654321"
+      },
+      "ipAddress": "user's IP address",
+      "kind": "audit#activity",
+      "ownerDomain": "example.com"
+    },
+    "description": "G Suite Admin Report Log example (validation only)",
+    "log": "gsuite:reports",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_gsuite_admin_sm-app-name_app",
+    "classify_only": true
+  }
+]

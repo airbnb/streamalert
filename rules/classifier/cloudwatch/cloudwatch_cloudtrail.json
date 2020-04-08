@@ -1,0 +1,25 @@
+[
+  {
+    "data": {
+      "messageType": "DATA_MESSAGE",
+      "owner": "123456789012",
+      "logGroup": "CloudTrail/DefaultLogGroup",
+      "logStream": "123456789012_CloudTrail_us-east-1",
+      "subscriptionFilters": [
+        "FooBarSubscription"
+      ],
+      "logEvents": [
+        {
+          "id": "44056647182143267075860006634052172261824828947338793472",
+          "timestamp": 1526951139360,
+          "message": "{\"eventVersion\": \"foo\", \"eventID\": \"bar\", \"eventTime\": \"foo\", \"sharedEventID\": \"bar\", \"additionalEventData\": {}, \"requestParameters\": {}, \"eventType\": \"foo\", \"responseElements\": {}, \"awsRegion\": \"foo\", \"eventName\": \"bar\", \"readOnly\": true, \"userIdentity\": {}, \"eventSource\": \"foo\", \"requestID\": \"bar\", \"userAgent\": \"foo\", \"sourceIPAddress\": \"bar\", \"resources\": [], \"recipientAccountId\": \"bar\"}"
+        }
+      ]
+    },
+    "description": "CloudTrail logs via CloudWatch logs DATA_MESSAGE (validation only)",
+    "log": "cloudwatch:cloudtrail",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "classify_only": true
+  }
+]

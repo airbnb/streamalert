@@ -42,7 +42,9 @@ class TestRulePromotion:
                     'source': './modules/tf_rule_promotion_iam',
                     'send_digest_schedule_expression': 'cron(30 13 * * ? *)',
                     'digest_sns_topic': 'unit-test_streamalert_rule_staging_stats',
-                    'athena_results_bucket_arn': '${module.streamalert_athena.results_bucket_arn}',
+                    'athena_results_bucket_arn': (
+                        '${module.athena_partitioner_iam.results_bucket_arn}'
+                    ),
                     'alerts_bucket': 'unit-test-streamalerts',
                     's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },

@@ -60,6 +60,7 @@ class SlackOutput(OutputDispatcher):
             ('url',
              OutputProperty(description='the full Slack webhook url, including the secret',
                             mask_input=True,
+                            input_restrictions={' '},
                             cred_requirement=True))
         ])
 

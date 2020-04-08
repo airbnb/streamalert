@@ -103,6 +103,20 @@ Deploy
   python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
   python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
 
+.. note::
+
+  * Update the ``file_format`` value in ``conf/lambda.json``. Valid options are ``parquet`` or ``json``. The default value will be parquet in a future release, but this must be manually configured at this time.
+
+  .. code-block:: bash
+
+    "athena_partitioner_config": {
+      "concurrency_limit": 10,
+      "file_format": "parquet",
+      "log_level": "info"
+    }
+
+  * More information can be found on the `historical search <historical-search.html>`_ page.
+
 2. Build the StreamAlert infrastructure for the first time:
 
 .. code-block:: bash
@@ -155,7 +169,7 @@ SNS for both sending the log data and receiving the alert, but StreamAlert also 
 
 .. note:: You will need to click the verification link in your email to activate the subscription.
 
-4. Add the ``streamalert-test-data`` SNS topic as an input to the (default) ``prod`` `cluster <clusters.html>`_.
+4. Add the ``streamalert-test-data`` SNS topic as an input to the (default) ``prod`` `cluster <config-clusters.html>`_.
 Open ``conf/clusters/prod.json`` and change the ``streamalert`` module to look like this:
 
 .. code-block:: json
@@ -175,7 +189,7 @@ Open ``conf/clusters/prod.json`` and change the ``streamalert`` module to look l
     }
   }
 
-5. Tell StreamAlert which `log schemas <conf-schemas.html>`_ will be sent to this input.
+5. Tell StreamAlert which `log schemas <config-schemas.html>`_ will be sent to this input.
 Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look like this:
 
 .. code-block:: json
@@ -223,7 +237,7 @@ alerts on any usage of the root AWS account. Change the rule decorator to:
   python manage.py build
 
   # Deploy a new version of all of the Lambda functions with the updated rule and config files
-  python manage.py deploy --function all
+  python manage.py deploy
 
 .. note:: Use ``build`` and ``deploy`` to apply any changes to StreamAlert's
    configuration or Lambda functions, respectively. Some changes (like this example) require both.
@@ -264,13 +278,13 @@ If not, look for any errors in the CloudWatch Logs for the StreamAlert Lambda fu
 `Amazon Athena <https://console.aws.amazon.com/athena>`_. Select your StreamAlert database in the
 dropdown on the left and preview the ``alerts`` table:
 
-.. figure:: ../images/alerts-query.png
+.. figure:: ../images/athena-alerts-search.png
   :alt: Query Alerts Table in Athena
   :align: center
-  :target: _images/alerts-query.png
+  :target: _images/athena-alerts-search.png
 
 (Here, my name prefix is ``testv2``.) If no records are returned, look for errors
-in the ``athena_partition_refresh`` function or try invoking it directly.
+in the Athena Partitioner function or try invoking it directly.
 
 And there you have it! Ingested log data is parsed, classified, and scanned by the rules engine.
 Any resulting alerts are delivered to your configured output(s) within a matter of minutes.

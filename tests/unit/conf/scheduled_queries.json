@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "config": {
+    "destination_kinesis_stream": "unit-test_stream",
+    "sfn_timeout_secs": 3600,
+    "sfn_wait_secs": 30
+  },
+  "packs": {
+    "hourly": {
+      "description": "Runs all hourly queries. Once per day on :05",
+      "schedule_expression": "cron(5 * * * ? *)"
+    }
+  },
+  "lambda_config": {
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "timeout": 60,
+    "alarms_enabled": true,
+    "error_threshold": 1,
+    "error_period_secs": 3600,
+    "error_evaluation_periods": 2
+  }
+}

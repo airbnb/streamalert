@@ -16,7 +16,11 @@ limitations under the License.
 import json
 
 from mock import Mock
-from nose.tools import assert_equal, assert_count_equal, assert_raises
+from nose.tools import (
+    assert_equal,
+    assert_count_equal,
+    assert_raises,
+)
 from pyfakefs import fake_filesystem_unittest
 
 from streamalert.shared.config import (
@@ -86,6 +90,10 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file(
             'conf_schemas/schemas/json.json',
             contents='{"json_log": {"schema": {"name": "string"},"parser": "json"}}'
+        )
+        self.fs.create_file(
+            'conf_schemas/schemas/json_log_with_dots.json',
+            contents='{"json:log.with.dots": {"schema": {"name": "string"},"parser": "json"}}'
         )
 
     def test_load_invalid_file(self):

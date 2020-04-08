@@ -59,7 +59,7 @@ def cli_runner(args):
     Returns:
         bool: False if errors occurred, True otherwise
     """
-    config = CLIConfig()
+    config = CLIConfig(args.config_dir)
 
     set_logger_levels(args.debug)
 

@@ -7,7 +7,9 @@
   },
   "general": {
     "matcher_locations": [],
-    "rule_locations": []
+    "rule_locations": [],
+    "scheduled_query_locations": [],
+    "publisher_locations": []
   },
   "infrastructure": {
     "alerts_table": {

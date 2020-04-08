@@ -91,7 +91,9 @@ def test_output_loading():
     expected_outputs = {
         'aws-firehose',
         'aws-lambda',
+        'aws-lambda-v2',
         'aws-s3',
+        'aws-ses',
         'aws-sns',
         'aws-sqs',
         'aws-cloudwatch-log',
@@ -104,7 +106,8 @@ def test_output_loading():
         'pagerduty-v2',
         'pagerduty-incident',
         'phantom',
-        'slack'
+        'slack',
+        'teams'
     }
     assert_count_equal(loaded_outputs, expected_outputs)
 

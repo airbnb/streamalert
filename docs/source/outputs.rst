@@ -8,9 +8,10 @@ Out of the box, StreamAlert supports:
 * **Amazon CloudWatch Logs**
 * **Amazon Kinesis Firehose**
 * **AWS Lambda**
-* **Amazon Simple Storage Service (S3)**
-* **Amazon Simple Notification Service (SNS)**
-* **Amazon Simple Queue Service (SQS)**
+* **AWS S3**
+* **AWS SES**
+* **AWS SNS**
+* **AWS SQS**
 * **Carbon Black**
 * **Demisto**
 * **GitHub**
@@ -19,6 +20,7 @@ Out of the box, StreamAlert supports:
 * **PagerDuty**
 * **Phantom**
 * **Slack**
+* **Microsoft Teams**
 
 StreamAlert can be extended to support any API. Creating a new output to send alerts to is easily accomplished through inheritance from the ``StreamOutputBase`` class. More on that in the `Adding Support for New Services`_ section below.
 
@@ -35,7 +37,6 @@ Configuration
 *************
 Adding a new configuration for a currently supported service is handled using ``manage.py``:
 
-
 .. code-block:: bash
 
   python manage.py output <SERVICE_NAME>
@@ -43,9 +44,9 @@ Adding a new configuration for a currently supported service is handled using ``
 .. note::
 
   ``<SERVICE_NAME>`` above should be one of the following supported service identifiers.
-  ``aws-cloudwatch-log``, ``aws-firehose``, ``aws-lambda``, ``aws-s3``, ``aws-sns``, ``aws-sqs``,
-  ``carbonblack``, ``github``, ``jira``, ``komand``, ``pagerduty``, ``pagerduty-incident``,
-  ``pagerduty-v2``, ``phantom``, ``slack``
+  ``aws-cloudwatch-log``, ``aws-firehose``, ``aws-lambda``, ``aws-lambda-v2``, ``aws-s3``,
+  ``aws-sns``, ``aws-sqs``, ``carbonblack``, ``github``, ``jira``, ``komand``, ``pagerduty``,
+  ``pagerduty-incident``, ``pagerduty-v2``, ``phantom``, ``slack``
 
 For example:
 
@@ -157,7 +158,7 @@ The ``OutputProperty`` object used in ``get_user_defined_properties`` is a ``nam
 
 :cred_requirement:
   A ``boolean`` that indicates whether this value is required for API access with this service. Ultimately, setting this value to ``True`` indicates
-  that the value should be encrypted and stored in Amazon S3.
+  that the value should be encrypted and stored in Amazon Systems Manager.
   Default is: ``False``
 
 

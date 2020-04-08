@@ -1,0 +1,25 @@
+[
+  {
+    "data": {
+      "@timestamp": "2018-02-06T07:23:00.010Z",
+      "dest": {
+        "ip": "172.16.2.3",
+        "port": 50717
+      },
+      "final": false,
+      "last_time": "2018-02-06T07:22:34.933Z",
+      "source": {
+        "ip": "35.195.65.23",
+        "mac": "00:08:a2:09:e4:6a",
+        "port": 443
+      },
+      "start_time": "2018-02-06T07:22:34.933Z",
+      "type": "flow"
+    },
+    "description": "basic schema validation check for packetbeat:flow",
+    "log": "packetbeat:flow",
+    "source": "prefix.cluster.sample.bucket",
+    "service": "s3",
+    "classify_only": true
+  }
+]

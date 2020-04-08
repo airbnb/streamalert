@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from mock import patch
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_true
 
 from streamalert_cli.athena import helpers
 from streamalert_cli.config import CLIConfig
+from streamalert.classifier.clients import FirehoseClient
 
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
@@ -48,7 +49,7 @@ def test_generate_athena_schema_special_key():
         '`key2`': 'string',
         '`key3`': 'bigint',
         '`key9`': 'boolean',
-        '`key10`': 'map<string, string>',
+        '`key10`': 'map<string,string>',
         '`key11`': 'decimal(10,3)'
     }
 
@@ -127,3 +128,25 @@ def test_add_partition_statements_exceed_length():
                          "LOCATION 's3://bucket/test/2018/12/01/05'")
     assert_equal(results_copy[0], expected_result_0)
     assert_equal(results_copy[1], expected_result_1)
+
+# pylint: disable=protected-access
+def test_generate_data_table_schema():
+    """CLI - Athena generate_data_table_schema helper"""
+    config = CLIConfig(config_path='tests/unit/conf')
+    config['global']['infrastructure']['firehose']['enabled_logs'] = {
+        'test:log.name.with.dots': {}
+    }
+
+    assert_true(helpers.generate_data_table_schema(config, 'test:log.name.with.dots'))
+    FirehoseClient._ENABLED_LOGS.clear()
+
+# pylint: disable=protected-access
+def test_generate_data_table_schema_2():
+    """CLI - Athena generate_data_table_schema helper"""
+    config = CLIConfig(config_path='tests/unit/conf')
+    config['global']['infrastructure']['firehose']['enabled_logs'] = {
+        'cloudwatch:test_match_types': {}
+    }
+
+    assert_true(helpers.generate_data_table_schema(config, 'cloudwatch:test_match_types'))
+    FirehoseClient._ENABLED_LOGS.clear()

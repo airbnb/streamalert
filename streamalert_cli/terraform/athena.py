@@ -13,14 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.athena_partition_refresh.main import AthenaRefresher
-from streamalert.shared import metrics
-from streamalert_cli.manage_lambda.package import AthenaPackage
+from streamalert.shared import ATHENA_PARTITIONER_NAME
+from streamalert.shared.config import athena_partition_buckets_tf, athena_query_results_bucket
+from streamalert_cli.manage_lambda.package import AthenaPartitionerPackage
 from streamalert_cli.terraform.common import (
     infinitedict,
-    monitoring_topic_arn,
     s3_access_logging_bucket,
 )
+from streamalert_cli.terraform.lambda_module import generate_lambda
 
 
 def generate_athena(config):
@@ -32,18 +32,15 @@ def generate_athena(config):
     Returns:
         dict: Athena dict to be marshalled to JSON
     """
-    athena_dict = infinitedict()
-    athena_config = config['lambda']['athena_partition_refresh_config']
-
-    data_buckets = sorted(AthenaRefresher.buckets_from_config(config))
+    result = infinitedict()
 
     prefix = config['global']['account']['prefix']
+    athena_config = config['lambda']['athena_partitioner_config']
+
+    data_buckets = athena_partition_buckets_tf(config)
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
-    results_bucket_name = athena_config.get(
-        'results_bucket',
-        '{}-streamalert-athena-results'.format(prefix)
-    ).strip()
+    results_bucket_name = athena_query_results_bucket(config)
 
     queue_name = athena_config.get(
         'queue_name',
@@ -51,52 +48,34 @@ def generate_athena(config):
     ).strip()
 
     logging_bucket, _ = s3_access_logging_bucket(config)
-    athena_dict['module']['streamalert_athena'] = {
-        's3_logging_bucket': logging_bucket,
+
+    # Set variables for the athena partitioner's IAM permissions
+    result['module']['athena_partitioner_iam'] = {
         'source': './modules/tf_athena',
+        'account_id': config['global']['account']['aws_account_id'],
+        'prefix': prefix,
+        's3_logging_bucket': logging_bucket,
         'database_name': database,
         'queue_name': queue_name,
-        'results_bucket': results_bucket_name,
-        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
-        'lambda_handler': AthenaPackage.lambda_handler,
-        'lambda_memory': athena_config.get('memory', '128'),
-        'lambda_timeout': athena_config.get('timeout', '60'),
-        'lambda_log_level': athena_config.get('log_level', 'info'),
         'athena_data_buckets': data_buckets,
-        'concurrency_limit': athena_config.get('concurrency_limit', 10),
-        'account_id': config['global']['account']['aws_account_id'],
-        'prefix': prefix
+        'results_bucket': results_bucket_name,
+        'lambda_timeout': athena_config['timeout'],
+        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
+        'function_role_id': '${module.athena_partitioner_lambda.role_id}',
+        'function_name': '${module.athena_partitioner_lambda.function_name}',
+        'function_alias_arn': '${module.athena_partitioner_lambda.function_alias_arn}',
     }
 
-    # Cloudwatch monitoring setup
-    athena_dict['module']['athena_monitoring'] = {
-        'source': './modules/tf_monitoring',
-        'sns_topic_arn': monitoring_topic_arn(config),
-        'lambda_functions': ['{}_streamalert_athena_partition_refresh'.format(prefix)],
-        'kinesis_alarms_enabled': False
-    }
+    # Set variables for the Lambda module
+    result['module']['athena_partitioner_lambda'] = generate_lambda(
+        '{}_streamalert_{}'.format(prefix, ATHENA_PARTITIONER_NAME),
+        AthenaPartitionerPackage.package_name + '.zip',
+        AthenaPartitionerPackage.lambda_handler,
+        athena_config,
+        config,
+        tags={
+            'Subcomponent': 'AthenaPartitioner'
+        }
+    )
 
-    # Metrics setup
-    if not athena_config.get('enable_custom_metrics', False):
-        return athena_dict
-
-    # Check to see if there are any metrics configured for the athena function
-    current_metrics = metrics.MetricLogger.get_available_metrics()
-    if metrics.ATHENA_PARTITION_REFRESH_NAME not in current_metrics:
-        return athena_dict
-
-    metric_prefix = 'AthenaRefresh'
-    filter_pattern_idx, filter_value_idx = 0, 1
-
-    # Add filters for the cluster and aggregate
-    # Use a list of strings that represent the following comma separated values:
-    #   <filter_name>,<filter_pattern>,<value>
-    filters = ['{},{},{}'.format('{}-{}'.format(metric_prefix, metric),
-                                 settings[filter_pattern_idx],
-                                 settings[filter_value_idx])
-               for metric, settings in
-               current_metrics[metrics.ATHENA_PARTITION_REFRESH_NAME].items()]
-
-    athena_dict['module']['streamalert_athena']['athena_metric_filters'] = filters
-
-    return athena_dict
+    return result

@@ -192,15 +192,18 @@ class RulesEngine:
         if not rule_result:
             return
 
+        # Define the outputs
+        outputs = self._configure_outputs(payload['record'], rule)
+
         alert = Alert(
-            rule.name, payload['record'], self._configure_outputs(rule),
+            rule.name, payload['record'], outputs,
             cluster=payload['cluster'],
             context=rule.context,
             log_source=payload['log_schema_type'],
             log_type=payload['data_type'],
             merge_by_keys=rule.merge_by_keys,
             merge_window=timedelta(minutes=rule.merge_window_mins),
-            publishers=self._configure_publishers(rule),
+            publishers=self._configure_publishers(rule, outputs),
             rule_description=rule.description,
             source_entity=payload['resource'],
             source_service=payload['service'],
@@ -213,17 +216,129 @@ class RulesEngine:
 
         return alert
 
-    def _configure_outputs(self, rule):
+    def _configure_outputs(self, record, rule):
+        """Configure the outputs for the rule
+
+        Args:
+            record (dict): Record to pass through to dynamic_outputs
+            rule (rule.Rule): Attributes for the rule which triggered the alert
+        Returns:
+            set: unique set of outputs, only required outputs if the rule is staged
+        """
         # Check if the rule is staged and, if so, only use the required alert outputs
         if rule.is_staged(self._rule_table):
-            all_outputs = self._required_outputs_set
-        else:  # Otherwise, combine the required alert outputs with the ones for this rule
-            all_outputs = self._required_outputs_set.union(rule.outputs_set)
+            output_sources = [self._required_outputs_set]
+        else:  # Otherwise, combine all outputs into one
+            output_sources = [self._required_outputs_set, rule.outputs_set]
+            if rule.dynamic_outputs:
+                # append dynamic_outputs to output sources if they exist
+                dynamic_outputs = self._configure_dynamic_outputs(record, rule)
+                output_sources.append(dynamic_outputs)
 
-        return all_outputs
+        return {
+            output
+            for output_source in output_sources
+            for output in output_source
+            if self._check_valid_output(output)
+        }
 
     @classmethod
-    def _configure_publishers(cls, rule):
+    def _configure_dynamic_outputs(cls, record, rule):
+        """Generate list of outputs from dynamic_outputs
+
+        Args:
+            record (dict): Record to pass through to the dynamic_output function
+            rule (rule.Rule): Attributes for the rule which triggered the alert
+        Returns:
+            list: list of additional outputs to append to the current set
+        """
+        args_list = [record]
+        if rule.context:
+            # Pass context to dynamic_output function if context exists
+            args_list.append(rule.context)
+
+        return [
+            output
+            for dynamic_output_function in rule.dynamic_outputs_set
+            for output in cls._call_dynamic_output_function(
+                dynamic_output_function, rule.name, args_list
+            )
+        ]
+
+    @staticmethod
+    def _call_dynamic_output_function(function, rule_name, args_list):
+        """Call the dynamic_output function
+
+        Args:
+            dynamic_output (func): Callable function which returns None, str or List[str]
+            rule_name (str): The name of the rule the functions belong to
+            args_list (list): list of args to be passed to the dynamic function
+                should be (record or record and context)
+        Returns:
+            list: list of additional outputs
+        """
+        LOGGER.debug("invoking function %s", function.__name__)
+
+        outputs = []
+
+        try:
+            outputs = function(*args_list)
+        except Exception:  # pylint: disable=broad-except
+            # Logger error and return []
+            LOGGER.error(
+                "Exception when calling dynamic_output %s for rule %s",
+                function.__name__, rule_name
+            )
+        else:
+            LOGGER.debug("function %s returned: %s", function.__name__, outputs)
+
+            if isinstance(outputs, str):
+                # Case 1: outputs is a string
+                #   return outputs wrapped in a list
+                outputs = [outputs]
+            elif isinstance(outputs, list):
+                # Case 2: outputs is a list
+                #   return outputs
+                pass
+            else:
+                # Case 3: outputs is neither a string or a list
+                #   return an empty list
+                outputs = []
+
+        return outputs
+
+    @staticmethod
+    def _check_valid_output(output):
+        """Verify output is valid
+
+        Args:
+            output (str): The output to check if its valid
+        Returns:
+            True (bool): Output is valid
+            False (bool): Output is invalid
+        """
+        valid = False
+
+        if not isinstance(output, str):
+            # Case 1: output is not a string
+            #   return False
+            LOGGER.warning("Output (%s) is not a string", output)
+            valid = False
+        elif isinstance(output, str) and ":" not in output:
+            # Case 2: output is a string but missing ":"
+            #   Log warning and return False
+            LOGGER.warning("Output (%s) is missing ':'", output)
+
+            valid = False
+        else:
+            # Case 3: output is a string and contains ":"
+            # return True
+            valid = True
+
+        return valid
+
+    @classmethod
+    def _configure_publishers(cls, rule, requested_outputs):
         """Assigns publishers to each output.
 
         The @Rule publisher syntax accepts several formats, including a more permissive blanket
@@ -234,11 +349,11 @@ class RulesEngine:
 
         Args:
             rule (Rule): The rule to create publishers for
+            requested_outputs (set): A set containing the outputs
 
         Returns:
             dict: Maps string outputs names to lists of strings of their fully qualified publishers
         """
-        requested_outputs = rule.outputs_set
         requested_publishers = rule.publishers
         if not requested_publishers:
             return None
@@ -246,6 +361,10 @@ class RulesEngine:
         configured_publishers = {}
 
         for output in requested_outputs:
+            if output == "aws-firehose:alerts":
+                # This output doesn't require a publisher
+                continue
+
             assigned_publishers = []
 
             if cls.is_publisher_declaration(requested_publishers):

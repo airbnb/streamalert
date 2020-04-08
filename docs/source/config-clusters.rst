@@ -6,7 +6,7 @@ Inbound data is directed to one of StreamAlert's *clusters*, each with its own d
 and classifier function. For many applications, one cluster may be enough. However, adding
 additional clusters can potentially improve performance. For example, you could have:
 
-  * A cluster dedicated to `StreamAlert apps <app-configuration.html>`_
+  * A cluster dedicated to `StreamAlert apps <apps.html>`_
   * A separate cluster for each of your inbound `Kinesis Data Streams <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_
   * A separate cluster for data from each environment (prod, staging, corp, etc)
 
@@ -53,7 +53,7 @@ from that source.
 .. note::
 
   Log schemas are defined in one or more files in the ``conf/schemas`` directory. See
-  the `Schemas <conf-schemas.html>`_ page for more information, or the
+  the `Schemas <config-schemas.html>`_ page for more information, or the
   `Example Schemas <conf-schemas-examples.html>`_ page for some sample log definitions.
 
 Each log in the list of logs instructs StreamAlert's classifier function to attempt
@@ -97,7 +97,7 @@ Example
 .. important::
 
   Any data source log type that is listed must have an associated log definition
-  within your `schemas <conf-schemas.html>`_ definitions.
+  within your `schemas <config-schemas.html>`_ definitions.
 
 
 Classifier Configuration
@@ -275,6 +275,7 @@ Options
 ``is_global_trail``             ``true``                                             If ``true``, the CloudTrail is applied to all regions
 ``send_to_cloudwatch``          ``false``                                            Enable CloudTrail delivery to CloudWatch Logs. Logs sent to CloudWatch Logs are forwarded to this cluster's Kinesis stream for processing. If this is enabled, the ``enable_s3_events`` option should be disabled to avoid duplicative processing.
 ``cloudwatch_destination_arn``  (Computed from CloudWatch Logs Destination module)   CloudWatch Destination ARN used for forwarding data to this cluster's Kinesis stream. This has a default value but can be overriden here with a different CloudWatch Logs Destination ARN
+``send_to_sns``                 ``false``                                            Create an SNS topic to which notifications should be sent when CloudTrail puts a new object in the S3 bucket. The topic name will be the same as the S3 bucket name
 ``enable_s3_events``            ``false``                                            Enable S3 events for the logs sent to the S3 bucket. These will invoke this cluster's classifier for every new object in the CloudTrail S3 bucket
 ``s3_bucket_name``              ``prefix-cluster-streamalert-cloudtrail``            Name of the S3 bucket to be used for the CloudTrail logs. This can be overriden, but defaults to ``prefix-cluster-streamalert-cloudtrail``
 ``s3_event_selector_type``      ``""``                                               An S3 event selector to enable object level logging for the account's S3 buckets. Choices are: "ReadOnly", "WriteOnly", "All", or "", where "" disables object level logging for S3

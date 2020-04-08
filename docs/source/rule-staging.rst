@@ -83,7 +83,7 @@ staged during a deploy. To allow for this, the Rules Engine can be deployed with
 
 .. code-block:: bash
 
-  python manage.py deploy --function rule --skip-rule-staging
+  python manage.py deploy --functions rule --skip-rule-staging
 
 This will force all new rules to send to user-defined outputs immediately upon deploy, bypassing
 the default staging period. Alternatively, the ``--stage-rules`` and ``--unstage-rules`` flags

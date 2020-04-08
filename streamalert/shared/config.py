@@ -16,6 +16,7 @@ limitations under the License.
 from collections import defaultdict, OrderedDict
 import json
 import os
+import re
 
 from streamalert.shared import CLUSTERED_FUNCTIONS
 from streamalert.shared.exceptions import ConfigError
@@ -24,6 +25,12 @@ from streamalert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 SUPPORTED_SOURCES = {'kinesis', 's3', 'sns', 'streamalert_app'}
+
+# Used to detect special characters in log names. Log names can not contain special
+# characters except "_" (underscore) because the log names will be referenced when
+# create Athena tables and Firehose.
+SPECIAL_CHAR_REGEX = re.compile(r'\W')
+SPECIAL_CHAR_SUB = '_'
 
 
 class TopLevelConfigKeys:
@@ -108,6 +115,70 @@ def firehose_alerts_bucket(config):
     )
 
 
+def athena_partition_buckets(config):
+    """Get the buckets from default buckets and additionally configured ones
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        list: Bucket names for which Athena is enabled
+    """
+    athena_config = config['lambda']['athena_partitioner_config']
+    data_buckets = athena_config.get('buckets', {})
+    data_buckets[firehose_alerts_bucket(config)] = 'alerts'
+    data_bucket = firehose_data_bucket(config)  # Data retention is optional, so check for this
+    if data_bucket:
+        data_buckets[data_bucket] = 'data'
+
+    return data_buckets
+
+
+def athena_partition_buckets_tf(config):
+    """Get Terraform references for buckets from defaults and additionally configured ones
+
+    When Terraform outputs/references are used, it ensures the bucket(s) are actually created
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        list: Bucket names for which Athena is enabled
+    """
+    # Add the Terraform module output for the alerts bucket
+    buckets = {
+        '${aws_s3_bucket.streamalerts.bucket}',
+    }
+    if firehose_data_bucket(config):  # Data retention is optional, so check for this
+        # Add the Terraform module output for the data bucket
+        buckets.add('${module.kinesis_firehose_setup.data_bucket_name}')
+
+    athena_config = config['lambda']['athena_partitioner_config']
+
+    # Add any user-defined bucket names
+    # These are controlled by the user and not by us, so we trust they exist
+    buckets.update(set(athena_config.get('buckets', {})))
+
+    return sorted(buckets)
+
+
+def athena_query_results_bucket(config):
+    """Get the S3 bucket where Athena queries store results to.
+
+    Args:
+        config (dict): The loaded config
+    Returns:
+        str: The name of the S3 bucket.
+    """
+    athena_config = config['lambda']['athena_partitioner_config']
+    prefix = config['global']['account']['prefix']
+
+    return athena_config.get(
+        'results_bucket',
+        '{}-streamalert-athena-results'.format(prefix)
+    ).strip()
+
+
 def parse_lambda_arn(function_arn):
     """Extract info on the current environment from the lambda function ARN
 
@@ -190,10 +261,10 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
         ]
 
     if not (conf_files or include_clusters or schema_files):
-        available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
-        raise ConfigError('No config files to load. This is likely due the misuse of '
-                          'the \'include\' or \'exclude\' keyword arguments. Available '
-                          'files are: {}, clusters, and schemas.'.format(available_files))
+        raise ConfigError(
+            'No config files to load. The supplied directory could be incorrect or this could '
+            'be due the misuse of the \'include\' or \'exclude\' keyword arguments.'
+        )
 
     config = defaultdict(dict)
     for name in conf_files:

@@ -1,0 +1,41 @@
+[
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "arn": "arn",
+            "accountId": "accountId",
+            "userName": "userName",
+            "type": "type"
+          },
+          "eventTime": "eventTime",
+          "eventSource": "quicksight.amazonaws.com",
+          "eventName": "QueryDatabase",
+          "awsRegion": "awsRegion",
+          "requestParameters": null,
+          "responseElements": null,
+          "eventID": "eventID",
+          "readOnly": true,
+          "eventType": "AwsServiceEvent",
+          "recipientAccountId": "recipientAccountId",
+          "serviceEventDetails": {
+            "eventRequestDetails": {
+              "dataSourceId": "dataSourceId",
+              "queryId": "queryId",
+              "resourceId": "resourceId",
+              "dataSetId": "dataSetId",
+              "dataSetMode": "dataSetMode"
+            }
+          }
+        }
+      ]
+    },
+    "description": "quicksight event via cloudtrail",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "classify_only": true
+  }
+]

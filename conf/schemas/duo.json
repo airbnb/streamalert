@@ -17,6 +17,7 @@
       "factor": "string",
       "integration": "string",
       "ip": "string",
+      "isotimestamp": "string",
       "location": {},
       "new_enrollment": "boolean",
       "reason": "string",

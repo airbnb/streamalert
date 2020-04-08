@@ -10,6 +10,12 @@
     ],
     "rule_locations": [
       "rules"
+    ],
+    "scheduled_query_locations": [
+      "scheduled_queries"
+    ],
+    "publisher_locations": [
+      "publishers"
     ]
   },
   "infrastructure": {
@@ -21,7 +27,6 @@
       "use_prefix": true,
       "buffer_interval": 900,
       "buffer_size": 128,
-      "compression_format": "GZIP",
       "enabled": false,
       "enabled_logs": {}
     },

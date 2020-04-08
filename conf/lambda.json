@@ -50,8 +50,11 @@
       "subnet_ids": []
     }
   },
-  "athena_partition_refresh_config": {
+  "athena_partitioner_config": {
     "concurrency_limit": 10,
+    "memory": 128,
+    "timeout": 300,
+    "file_format": null,
     "log_level": "info"
   },
   "classifier_config": {},
@@ -79,7 +82,7 @@
     "timeout": 120
   },
   "rules_engine_config": {
-    "concurrency_limit": 200,
+    "concurrency_limit": 10,
     "enable_custom_metrics": true,
     "log_level": "info",
     "log_retention_days": 14,

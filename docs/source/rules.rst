@@ -51,7 +51,7 @@ The simplest possible rule looks like this:
       return True
 
 This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined in a schema file in the ``conf/schemas`` directory, i.e ``conf/schemas/cloudwatch.json``.
-In this case, *all* CloudWatch events will generate an alert, which will be sent to the `alerts Athena table <historical-search.html#athena-user-guide>`_.
+In this case, *all* CloudWatch events will generate an alert, which will be sent to the `alerts Athena table <historical-search.html#alerts-search>`_.
 
 
 Example: Logic & Outputs
@@ -70,7 +70,8 @@ Let's modify the rule to page the security team if anyone ever uses AWS root cre
                 and record['detail']['eventType'] != 'AwsServiceEvent')
 
 Now, any AWS root account usage is reported to PagerDuty, Slack, and the aforementioned Athena table.
-In order for this to work, your `datasources <conf-datasources.html>`_ and `outputs <outputs.html>`_ must be configured so that:
+In order for this to work, your `datasources <config-clusters.html#datasource-configuration>`_ and
+`outputs <outputs.html>`_ must be configured so that:
 
 * CloudTrail logs are being sent to StreamAlert via CloudWatch events
 * The ``pagerduty:csirt`` and ``slack:security`` outputs have the proper credentials
@@ -139,6 +140,7 @@ The following table provides an overview of each rule option, with more details 
 ``merge_by_keys``      ``List[str]``             List of key names that must match in value before merging alerts
 ``merge_window_mins``  ``int``                   Merge related alerts at this interval rather than sending immediately
 ``outputs``            ``List[str]``             List of alert outputs
+``dynamic_outputs``    ``List[function]``        List of functions which return valid outputs
 ``req_subkeys``        ``Dict[str, List[str]]``  Subkeys which must be present in the record
 =====================  ========================  ===============
 
@@ -186,8 +188,9 @@ The following table provides an overview of each rule option, with more details 
 
   ``logs`` define the log schema(s) supported by the rule.
 
-  Log `sources <conf-datasources.html>`_ are defined under the ``data_sources`` field for a cluster defined in ``conf/clusters/<cluster>.json``
-  and their `schemas <conf-schemas.html>`_ are defined in one or more files in the ``conf/schemas`` directory.
+  Log `datasources <config-clusters.html#datasource-configuration>`_ are defined within the
+  ``data_sources`` field of a cluster such as ``conf/clusters/<cluster>.json`` and their
+  `schemas <config-schemas.html>`_ are defined in one or more files in the ``conf/schemas`` directory.
 
   .. note::
 
@@ -253,12 +256,17 @@ The following table provides an overview of each rule option, with more details 
 
   .. note::
 
-    The original (unmerged) alert will always be sent to `Athena <historical-search.html#athena-user-guide>`_.
+    The original (unmerged) alert will always be sent to `Athena <historical-search.html#alerts-search>`_.
+
+:dynamic_outputs:
+
+  The ``dynamic_outputs`` keyword argument defines additional `outputs <outputs.html>`_ to an Alert which are dynamically generated.
+  See `dynamic_outputs <dynamic-outputs.html>`_ for more info
 
 :outputs:
 
-  Defines the alert destination if the return value of a rule is ``True``.
-  Alerts are always sent to an `Athena table <historical-search.html#athena-user-guide>`_ which is easy to query.
+  The ``outputs`` keyword argument defines the alert destination if the return value of a rule is ``True``.
+  Alerts are always sent to an :ref:`Athena alerts table <alerts_search>` which is easy to query.
   Any number of additional `outputs <outputs.html>`_ can be specified.
 
 :req_subkeys:

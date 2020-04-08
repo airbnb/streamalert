@@ -73,6 +73,7 @@ Table of Contents
    rules
    testing
    outputs
+   dynamic-outputs
    publishers
    lookup-tables
    apps
@@ -80,6 +81,7 @@ Table of Contents
    rule-staging
    rule-promotion
    historical-search
+   scheduled-queries
    conf-schemas-examples
    troubleshooting
    faq

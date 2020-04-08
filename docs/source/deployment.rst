@@ -35,20 +35,20 @@ To deploy new changes for all AWS Lambda functions:
 
 .. code-block:: bash
 
-  python manage.py deploy --function all
+  python manage.py deploy
 
 Optionally, to deploy changes for only a specific AWS Lambda function:
 
 .. code-block:: bash
 
-  python manage.py deploy --function alert
-  python manage.py deploy --function alert_merger
-  python manage.py deploy --function apps
-  python manage.py deploy --function athena
-  python manage.py deploy --function classifier
-  python manage.py deploy --function rule
-  python manage.py deploy --function rule_promo
-  python manage.py deploy --function threat_intel_downloader
+  python manage.py deploy --functions alert
+  python manage.py deploy --functions alert_merger
+  python manage.py deploy --functions apps
+  python manage.py deploy --functions athena
+  python manage.py deploy --functions classifier
+  python manage.py deploy --functions rule
+  python manage.py deploy --functions rule_promo
+  python manage.py deploy --functions threat_intel_downloader
 
 To apply infrastructure level changes (additional Kinesis Shards, new CloudTrails, etc), run:
 
@@ -95,8 +95,8 @@ to point to the previous version:
 
 .. code-block:: bash
 
-  python manage.py rollback --function rule
-  python manage.py rollback --function alert
-  python manage.py rollback --function all
+  python manage.py rollback --functions rule
+  python manage.py rollback --functions alert
+  python manage.py rollback
 
 This is helpful to quickly revert changes to Lambda functions, e.g. if a bad rule was deployed.
