@@ -179,10 +179,11 @@ class ArtifactExtractor:
         ArtifactExtractor._config = ArtifactExtractor._config or config.load_config(validate=True)
         # FIXME: we don't need firehose_config and log_sources here.
         ArtifactExtractor._firehose_client = (
-            ArtifactExtractor._firehose_client or FirehoseClient.load_from_config(
+            ArtifactExtractor._firehose_client or FirehoseClient.get_client(
                 prefix=self.config['global']['account']['prefix'],
-                firehose_config=self.config['global'].get('infrastructure', {}).get('firehose', {}),
-                log_sources=self.config['logs']
+                artifact_extractor_config=self.config['lambda'].get(
+                    'artifact_extractor_config', {}
+                ).get('enabled', {})
             )
         )
 

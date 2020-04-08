@@ -60,10 +60,7 @@ class TestArtifactExtractor:
     def setup(self):
         """Setup before each method"""
         with patch('boto3.client'):
-            ArtifactExtractor._firehose_client = FirehoseClient(
-                prefix='unit-test',
-                firehose_config={'enabled': True}
-            )
+            ArtifactExtractor._firehose_client = FirehoseClient(prefix='unit-test')
 
         self._artifact_extractor = ArtifactExtractor(
             'us-east-1', 'prefix_streamalert_unit_test'

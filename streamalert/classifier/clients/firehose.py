@@ -69,7 +69,7 @@ class FirehoseClient:
     FIREHOSE_NAME_MIN_HASH_LEN = 8
 
     def __init__(self, prefix, firehose_config=None, log_sources=None):
-        self._prefix = prefix if firehose_config.get('use_prefix', True) else ''
+        self._prefix = prefix if firehose_config and firehose_config.get('use_prefix', True) else ''
         self._client = boto3.client('firehose', config=boto_helpers.default_config())
         self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
@@ -413,6 +413,22 @@ class FirehoseClient:
         if not firehose_config.get('enabled'):
             return
         return cls(prefix=prefix, firehose_config=firehose_config, log_sources=log_sources)
+
+    @classmethod
+    def get_client(cls, prefix, artifact_extractor_config):
+        """Get a Firehose client for sending artifacts
+
+        Args:
+            prefix (str): Account prefix from global.json
+            artifact_extractor_config (dict): Loaded Artifact Extractor config from lambda.json
+
+        Returns:
+            FirehoseClient or None: If disabled, this returns None, otherwise it returns an
+                instanec of FirehoseClient
+        """
+        if not artifact_extractor_config.get('enabled'):
+            return
+        return cls(prefix=prefix)
 
     def send(self, payloads):
         """Send all classified records to a respective Firehose Delivery Stream
