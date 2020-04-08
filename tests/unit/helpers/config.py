@@ -126,11 +126,7 @@ def basic_streamalert_config():
                         'statistic': 'Sum',
                         'threshold': 1.0
                     }
-                },
-                'third_party_libraries': [
-                    'jsonpath_rw',
-                    'netaddr'
-                ]
+                }
             },
             'threat_intel_downloader_config': {
                 'autoscale': True,

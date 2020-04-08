@@ -16,6 +16,10 @@
     ],
     "publisher_locations": [
       "publishers"
+    ],
+    "third_party_libraries": [
+      "pathlib2==2.3.5",
+      "policyuniverse==1.3.2.1"
     ]
   },
   "infrastructure": {

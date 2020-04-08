@@ -27,6 +27,7 @@ variable "timeout_sec" {
 }
 
 variable "filename" {
+  default     = "streamalert.zip"
   description = "Path to .zip deployment package"
 }
 

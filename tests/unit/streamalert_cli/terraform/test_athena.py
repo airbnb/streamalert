@@ -27,7 +27,6 @@ def test_generate_athena():
     CONFIG['lambda']['athena_partitioner_config'] = {
         'timeout': 60,
         'memory': 128,
-        'third_party_libraries': []
     }
 
     prefix = CONFIG['global']['account']['prefix']

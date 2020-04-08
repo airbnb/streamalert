@@ -15,7 +15,6 @@ limitations under the License.
 """
 from streamalert.shared import ATHENA_PARTITIONER_NAME
 from streamalert.shared.config import athena_partition_buckets_tf, athena_query_results_bucket
-from streamalert_cli.manage_lambda.package import AthenaPartitionerPackage
 from streamalert_cli.terraform.common import (
     infinitedict,
     s3_access_logging_bucket,
@@ -69,8 +68,7 @@ def generate_athena(config):
     # Set variables for the Lambda module
     result['module']['athena_partitioner_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(prefix, ATHENA_PARTITIONER_NAME),
-        AthenaPartitionerPackage.package_name + '.zip',
-        AthenaPartitionerPackage.lambda_handler,
+        'streamalert.athena_partitioner.main.handler',
         athena_config,
         config,
         tags={

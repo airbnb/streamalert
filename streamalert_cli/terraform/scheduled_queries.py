@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared.config import athena_partition_buckets_tf, athena_query_results_bucket
-from streamalert_cli.manage_lambda.package import ScheduledQueriesPackage
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -51,8 +50,7 @@ def generate_scheduled_queries_module_configuration(config):
         'athena_database': database,
         'athena_results_bucket': results_bucket,
         'athena_s3_buckets': athena_s3_buckets,
-        'lambda_filename': ScheduledQueriesPackage.package_name + '.zip',
-        'lambda_handler': ScheduledQueriesPackage.lambda_handler,
+        'lambda_handler': 'streamalert.scheduled_queries.main.handler',
     })
 
     # Transforms the query_packs key

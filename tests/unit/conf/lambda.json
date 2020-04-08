@@ -17,7 +17,6 @@
         "threshold": 6
       }
     },
-    "third_party_libraries": [],
     "timeout": 60,
     "vpc_config": {
       "security_group_ids": [
@@ -78,9 +77,6 @@
         "threshold": 0
       }
     },
-    "third_party_libraries": [
-      "pathlib2"
-    ],
     "timeout": 60,
     "vpc_config": {
       "security_group_ids": [],
