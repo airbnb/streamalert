@@ -194,6 +194,11 @@ def _create(function_name, config, clusters=None):
             any(info['modules'].get('streamalert_apps')
                 for info in config['clusters'].values())
         ),
+        'artifact_extractor': PackageMap(
+            streamalert_packages.ArtifactExtractorPackage,
+            {'module.artifact_extractor_iam', 'module.artifact_extractor_lambda'},
+            config['lambda'].get('artifact_extractor_config', {}).get('enabled', False)
+        ),
         'athena': PackageMap(
             streamalert_packages.AthenaPartitionerPackage,
             {'module.athena_partitioner_iam', 'module.athena_partitioner_lambda'},

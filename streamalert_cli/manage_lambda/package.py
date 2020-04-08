@@ -268,6 +268,19 @@ class AppPackage(LambdaPackage):
     }
 
 
+class ArtifactExtractorPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert Artifact Extractor function"""
+    config_key = 'artifact_extractor_config'
+    lambda_handler = 'streamalert.artifact_extractor.main.handler'
+    package_files = {
+        'conf',
+        'streamalert/__init__.py',
+        'streamalert/artifact_extractor',
+        'streamalert/shared',
+    }
+    package_name = 'artifact_extractor'
+
+
 class AthenaPartitionerPackage(LambdaPackage):
     """Create the Athena Partitioner Lambda function package"""
     config_key = 'athena_partitioner_config'

@@ -50,6 +50,27 @@
       "subnet_ids": []
     }
   },
+  "artifact_extractor_config": {
+    "concurrency_limit": 10,
+    "enabled": false,
+    "log_level": "info",
+    "memory": 128,
+    "metric_alarms": {
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 300,
+        "threshold": 0
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 300,
+        "threshold": 0
+      }
+    },
+    "timeout": 300
+  },
   "athena_partitioner_config": {
     "concurrency_limit": 10,
     "memory": 128,
