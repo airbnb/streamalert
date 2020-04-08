@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - release-3-2-0
     tags:
       - 'v*.*.*'
 
