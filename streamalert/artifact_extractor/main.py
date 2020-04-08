@@ -62,6 +62,5 @@ def handler(event, _):
         # Data Firehose then skips that batch of records. The skipped records are treated as
         # unsuccessfully processed records.
         # https://docs.aws.amazon.com/firehose/latest/dev/data-transformation.html
-        print(event)
         LOGGER.exception('Invocation event: %s', event)
         raise
