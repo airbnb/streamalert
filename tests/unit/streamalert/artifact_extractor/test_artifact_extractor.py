@@ -15,7 +15,7 @@ limitations under the License.
 """
 import os
 
-from mock import call, Mock, patch
+from mock import call, patch
 from nose.tools import assert_equal
 
 from streamalert.artifact_extractor.artifact_extractor import (
