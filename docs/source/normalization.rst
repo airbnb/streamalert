@@ -6,24 +6,6 @@ StreamAlert has an unannounced feature Data Normalization. In its current implem
 
 This is useful for rules, as they can be written to compare data fields against IoCs, such as IP Address, instead of writing one rule for each incoming data type. However, there are couple limitations we have identified as we use Normalization internally for a while.
 
-***********
-Limitations
-***********
-
-“On Which Table Can I Find X?”
-==============================
-
-When we search in Athena, it is very difficult to figure out which table(s) contain any particular data type. For example, ``hostname``. Knowing which tables have these data requires memorization.
-
-This is because all of our data is stored in their native formats. These vendor-specific formats are subject to the definitions and conventions of each vendor that provides the log data. In order to use StreamAlert data, users must memorize the log types and schemas of each vendor (e.g. Carbon Black, CloudWatch, CloudTrail, Osquery etc).
-
-Normalization per Schema
-========================
-
-Right now, Normalization is configured on a file separate from the schema itself. In addition, this is configured on a vendor-namespace-specific format. For example, many different normalizers apply to all ``carbonblack:*`` data.
-
-It is hard to tell, at a glance, which normalizers are applied to specific schemas, as they exist in a separate file. Additionally, there could be normalizers applied to all schemas within a vendor that are irrelevant.
-
 **************************
 Normalization 2.0 (Reboot)
 **************************
@@ -37,6 +19,16 @@ Artifacts Inventory
 An artifact is any field or subset of data within a record that bears meaning beyond the record itself, and is of interest in computer security. For example, a “carbonblack_version” would not be an artifact, as it is meaningless outside of the context of Carbon Black data. However, an ``ip_address`` would be an artifact.
 
 ``Artifact Extractor`` Lambda function will build an artifacts inventory based on S3 and Athena services. It enables users to search for all artifacts across whole infrastructure from a single Athena table.
+
+Configuration
+=============
+
+Coming soon.
+
+Deployment
+==========
+
+Stay tuned.
 
 **************
 Considerations
