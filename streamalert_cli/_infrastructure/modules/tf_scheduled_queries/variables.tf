@@ -61,11 +61,11 @@ variable "query_packs" {
    *  - description: A string describing the query pack
    */
   default = [
-//    {
-//      name: "sample",
-//      schedule_expression: "rate(1 hour)"
-//      description: "Placeholder"
-//    }
+    //    {
+    //      name: "sample",
+    //      schedule_expression: "rate(1 hour)"
+    //      description: "Placeholder"
+    //    }
   ]
 }
 
@@ -73,7 +73,6 @@ variable "query_packs" {
 #
 # Below are all variables proxied to the Lambda module that builds the StreamQuery lambda function
 #
-variable "lambda_filename" {}
 variable "lambda_handler" {}
 
 variable "lambda_concurrency_limit" {
@@ -81,8 +80,8 @@ variable "lambda_concurrency_limit" {
 }
 variable "lambda_log_level" {
   description = "logging level for the lambda function"
-  type = string
-  default = "info"
+  type        = string
+  default     = "info"
 }
 
 /*
@@ -135,6 +134,6 @@ variable "lambda_error_period_secs" {
 }
 
 variable "lambda_error_evaluation_periods" {
-  type        = string
-  default     = 2
+  type    = string
+  default = 2
 }
