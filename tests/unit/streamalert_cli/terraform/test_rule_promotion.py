@@ -62,7 +62,6 @@ class TestRulePromotion:
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 2,
                     'errors_alarm_threshold': 3,
-                    'filename': 'rule_promotion.zip',
                     'function_name': 'unit-test_streamalert_rule_promotion',
                     'handler': 'streamalert.rule_promotion.main.handler',
                     'log_retention_days': 10,

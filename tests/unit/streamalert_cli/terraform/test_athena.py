@@ -60,7 +60,6 @@ def test_generate_athena():
                 'tags': {
                     'Subcomponent': 'AthenaPartitioner'
                 },
-                'filename': 'athena_partitioner.zip',
                 'function_name': 'unit-test_streamalert_athena_partitioner',
                 'handler': 'streamalert.athena_partitioner.main.handler',
                 'memory_size_mb': 128,

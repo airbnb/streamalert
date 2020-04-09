@@ -41,7 +41,6 @@ def test_generate_scheduled_queries():
                     '${module.kinesis_firehose_setup.data_bucket_name}',
                     'bucket',
                 ],
-                'lambda_filename': 'scheduled_queries.zip',
                 'lambda_handler': 'streamalert.scheduled_queries.main.handler',
                 'query_packs': [
                     {

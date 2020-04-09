@@ -57,6 +57,7 @@ def basic_streamalert_config():
                 }
             }
         },
+        'scheduled_queries': {},
         'threat_intel': {
             'dynamodb_table_name': 'table_name',
             'enabled': False,
