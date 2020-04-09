@@ -108,7 +108,12 @@ class LambdaPackage:
         return result
 
     def _copy_files(self, paths, ignores=None):
-        """Copy all files and folders into temporary package path."""
+        """Copy all files and folders into temporary package path
+
+        Args:
+            paths (list): Paths of folders to be copied into the Lambda package
+            ignores (set=None): File globs to be ignored during the copying of files in paths
+        """
         for path in paths:
             # Copy the directory, skipping any files explicitly ignored
             kwargs = {'ignore': shutil.ignore_patterns(*ignores)} if ignores else dict()
