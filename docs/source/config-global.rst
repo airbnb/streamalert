@@ -72,6 +72,9 @@ Configuration
       ],
       "publisher_locations": [
         "publishers"
+      ],
+      "third_party_libraries": [
+        "pathlib2==2.3.5"
       ]
     }
   }
@@ -86,6 +89,7 @@ Options
 ``rule_locations``             Yes            ``["rules"]``              List of local paths where ``rules`` are defined
 ``scheduled_query_locations``  Yes            ``["scheduled_queries"]``  List of local paths where ``scheduled_queries`` are defined
 ``publisher_locations``        Yes            ``["publishers"]``         List of local paths where ``publishers`` are defined
+``third_party_libraries``      No             ``["pathlib2==2.3.5"]``    List of third party dependencies that should be installed via ``pip`` at deployment time. These are libraries needed in rules, custom code, etc that are defined in one of the above settings.
 =============================  =============  =========================  ===============
 
 
