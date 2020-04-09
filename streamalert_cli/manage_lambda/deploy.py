@@ -245,7 +245,7 @@ def _lambda_terraform_targets(config, functions, clusters):
     targets = set()
     for function in functions:
         if not target_mapping[function]['enabled']:
-            LOGGER.error('Function is not enabled and will be ignored: %s', function)
+            LOGGER.warning('Function is not enabled and will be ignored: %s', function)
             continue
 
         targets.update(target_mapping[function]['targets'])

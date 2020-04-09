@@ -40,7 +40,7 @@ class DeployTest(unittest.TestCase):
         }
         assert_equal(result, expected_result)
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.warning')
     def test_lambda_terraform_targets_invalid_target(self, log_mock):
         """CLI - Deploy, Lambda Terraform Targets, Invalid Target"""
         config = basic_streamalert_config()
