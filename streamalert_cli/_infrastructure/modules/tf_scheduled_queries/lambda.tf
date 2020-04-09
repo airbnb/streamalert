@@ -8,7 +8,6 @@ module "scheduled_queries_lambda" {
 
   memory_size_mb = var.lambda_memory
   timeout_sec    = var.lambda_timeout
-  filename       = var.lambda_filename
 
   concurrency_limit = var.lambda_concurrency_limit
 

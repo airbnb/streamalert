@@ -16,7 +16,6 @@ limitations under the License.
 from streamalert.rule_promotion.publisher import StatsPublisher
 from streamalert.shared import RULE_PROMOTION_NAME
 from streamalert.shared.config import firehose_alerts_bucket
-from streamalert_cli.manage_lambda.package import RulePromotionPackage
 from streamalert_cli.terraform.common import infinitedict
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
@@ -57,8 +56,7 @@ def generate_rule_promotion(config):
     # Set variables for the Lambda module
     result['module']['rule_promotion_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(config['global']['account']['prefix'], RULE_PROMOTION_NAME),
-        RulePromotionPackage.package_name + '.zip',
-        RulePromotionPackage.lambda_handler,
+        'streamalert.rule_promotion.main.handler',
         config['lambda']['rule_promotion_config'],
         config
     )

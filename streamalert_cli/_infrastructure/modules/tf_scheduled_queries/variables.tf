@@ -43,46 +43,49 @@ variable "athena_s3_buckets" {
 
 variable "sfn_timeout_secs" {
   description = "The maximum time in seconds a state machine will run"
-  type        = string
+  type        = number
 }
 
 variable "sfn_wait_secs" {
   description = "The time interval in seconds to wait between checking whether Athena queries are complete"
-  type        = string
+  type        = number
 }
 
 variable "query_packs" {
   description = "The configuration of each query pack"
+  default     = []
 
   /*
    * The structure of each item in this list is a dictionary with 3 keys:
    *  - name: Name of the query pack. This is passed to the cloudwatch event as a tag
    *  - schedule_expression: CloudWatch event schedule expression (e.g. "rate(1 hour)")
    *  - description: A string describing the query pack
-   */
+
   default = [
-//    {
-//      name: "sample",
-//      schedule_expression: "rate(1 hour)"
-//      description: "Placeholder"
-//    }
+    {
+      "name": "sample",
+      "schedule_expression": "rate(1 hour)",
+      "description": "Placeholder"
+    }
   ]
+
+  */
 }
 
 
 #
 # Below are all variables proxied to the Lambda module that builds the StreamQuery lambda function
 #
-variable "lambda_filename" {}
 variable "lambda_handler" {}
 
 variable "lambda_concurrency_limit" {
   default = -1
 }
+
 variable "lambda_log_level" {
   description = "logging level for the lambda function"
-  type = string
-  default = "info"
+  type        = string
+  default     = "info"
 }
 
 /*
@@ -91,7 +94,7 @@ variable "lambda_log_level" {
  */
 variable "lambda_timeout" {
   description = "The timeout in seconds for the StreamQuery lambda"
-  type        = string
+  type        = number
   default     = 30
 }
 
@@ -101,13 +104,13 @@ variable "lambda_timeout" {
  */
 variable "lambda_memory" {
   description = "The memory in megabytes allocated to the StreamQuery lambda function"
-  type        = string
+  type        = number
   default     = 128
 }
 
 variable "lambda_log_retention_days" {
   description = "Number of days to retain CloudWatch logs for the Lambda function"
-  type        = string
+  type        = number
   default     = 14
 }
 
@@ -124,17 +127,17 @@ variable "lambda_alarm_actions" {
 
 variable "lambda_error_threshold" {
   description = "The number of lambda errors tolerated within the error period before an Alarm triggers"
-  type        = string
+  type        = number
   default     = 1
 }
 
 variable "lambda_error_period_secs" {
   description = "The number of seconds for each Lambda function error period"
-  type        = string
+  type        = number
   default     = 3600
 }
 
 variable "lambda_error_evaluation_periods" {
-  type        = string
-  default     = 2
+  type    = number
+  default = 2
 }

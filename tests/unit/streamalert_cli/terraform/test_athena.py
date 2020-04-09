@@ -27,7 +27,6 @@ def test_generate_athena():
     CONFIG['lambda']['athena_partitioner_config'] = {
         'timeout': 60,
         'memory': 128,
-        'third_party_libraries': []
     }
 
     prefix = CONFIG['global']['account']['prefix']
@@ -61,7 +60,6 @@ def test_generate_athena():
                 'tags': {
                     'Subcomponent': 'AthenaPartitioner'
                 },
-                'filename': 'athena_partitioner.zip',
                 'function_name': 'unit-test_streamalert_athena_partitioner',
                 'handler': 'streamalert.athena_partitioner.main.handler',
                 'memory_size_mb': 128,

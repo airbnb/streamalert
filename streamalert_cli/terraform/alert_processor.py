@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared import ALERT_PROCESSOR_NAME
-from streamalert_cli.manage_lambda.package import AlertProcessorPackage
 from streamalert_cli.terraform.common import infinitedict
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
@@ -53,8 +52,7 @@ def generate_alert_processor(config):
     # Set variables for the Lambda module
     result['module']['alert_processor_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(config['global']['account']['prefix'], ALERT_PROCESSOR_NAME),
-        AlertProcessorPackage.package_name + '.zip',
-        AlertProcessorPackage.lambda_handler,
+        'streamalert.alert_processor.main.handler',
         config['lambda']['alert_processor_config'],
         config,
         environment={

@@ -111,7 +111,7 @@ class TerraformInitCommand(CLICommand):
 
         functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
 
-        deploy(functions, config)
+        deploy(config, functions)
 
         # we need to manually create the streamalerts table since terraform does not support this
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
