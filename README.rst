@@ -1,8 +1,8 @@
 StreamAlert - Serverless, Realtime Data Analysis Framework
 ==========================================================
 
-.. image:: https://travis-ci.org/airbnb/streamalert.svg?branch=master
-  :target: https://travis-ci.org/airbnb/streamalert
+.. image:: https://github.com/airbnb/streamalert/workflows/Actions%20CI/badge.svg
+  :target: https://github.com/airbnb/streamalert/actions?query=workflow%3AActions+CI
 
 .. image:: https://coveralls.io/repos/github/airbnb/streamalert/badge.svg?branch=master
   :target: https://coveralls.io/github/airbnb/streamalert?branch=master

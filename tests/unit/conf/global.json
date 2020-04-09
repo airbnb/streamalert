@@ -8,7 +8,11 @@
   "general": {
     "matcher_locations": [],
     "rule_locations": [],
-    "scheduled_query_locations": []
+    "scheduled_query_locations": [],
+    "publisher_locations": [],
+    "third_party_libraries": [
+      "pathlib2==2.3.5"
+    ]
   },
   "infrastructure": {
     "alerts_table": {

@@ -17,7 +17,6 @@
         "threshold": 6
       }
     },
-    "third_party_libraries": [],
     "timeout": 60,
     "vpc_config": {
       "security_group_ids": [
@@ -28,9 +27,9 @@
       ]
     }
   },
-  "athena_partition_refresh_config": {
-    "memory": "128",
-    "timeout": "60",
+  "athena_partitioner_config": {
+    "memory": 128,
+    "timeout": 60,
     "file_format": "parquet",
     "buckets": {
       "bucket": "data"
@@ -78,9 +77,6 @@
         "threshold": 0
       }
     },
-    "third_party_libraries": [
-      "pathlib2"
-    ],
     "timeout": 60,
     "vpc_config": {
       "security_group_ids": [],

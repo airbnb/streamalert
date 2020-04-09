@@ -1,4 +1,18 @@
-"""Test ./manage.py lambda rollback functionality."""
+"""
+Copyright 2017-present Airbnb, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 # pylint: disable=no-self-use,protected-access
 import unittest
 
@@ -15,7 +29,7 @@ class MockOptions:
 
     def __init__(self, clusters, function):
         self.clusters = clusters
-        self.function = function
+        self.functions = function
 
 
 @mock.patch.object(rollback, 'boto3', mock.MagicMock())
@@ -64,9 +78,13 @@ class RollbackTest(unittest.TestCase):
     def test_rollback_all(self, mock_helper):
         """CLI - Lambda rollback all"""
         mock_helper.return_value = True
+        funcs = [
+            'alert', 'alert_merger', 'apps', 'athena', 'classifier',
+            'rule', 'rule_promo', 'scheduled_queries', 'threat_intel_downloader'
+        ]
         assert_equal(
             rollback.RollbackCommand.handler(
-                MockOptions(None, ['all']),
+                MockOptions(None, funcs),
                 MockCLIConfig(config=basic_streamalert_config())
             ),
             True
@@ -76,10 +94,12 @@ class RollbackTest(unittest.TestCase):
             mock.call(mock.ANY, 'unit-test_streamalert_alert_merger'),
             mock.call(mock.ANY, 'unit-test_corp_box_admin_events_box_collector_app'),
             mock.call(mock.ANY, 'unit-test_corp_duo_admin_duo_admin_collector_app'),
-            mock.call(mock.ANY, 'unit-test_streamalert_athena_partition_refresh'),
+            mock.call(mock.ANY, 'unit-test_streamalert_athena_partitioner'),
             mock.call(mock.ANY, 'unit-test_corp_streamalert_classifier'),
             mock.call(mock.ANY, 'unit-test_prod_streamalert_classifier'),
             mock.call(mock.ANY, 'unit-test_streamalert_rules_engine'),
+            mock.call(mock.ANY, 'unit-test_streamalert_rule_promotion'),
+            mock.call(mock.ANY, 'unit-test_streamalert_scheduled_queries_runner'),
             mock.call(mock.ANY, 'unit-test_streamalert_threat_intel_downloader')
         ])
 

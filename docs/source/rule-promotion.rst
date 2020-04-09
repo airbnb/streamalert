@@ -76,7 +76,7 @@ function code.
 
 .. code-block:: bash
 
-  python manage.py deploy --function rule_promo
+  python manage.py deploy --functions rule_promo
 
 .. note::
 

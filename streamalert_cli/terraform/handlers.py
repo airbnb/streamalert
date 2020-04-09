@@ -111,14 +111,14 @@ class TerraformInitCommand(CLICommand):
 
         functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
 
-        deploy(functions, config)
+        deploy(config, functions)
 
         # we need to manually create the streamalerts table since terraform does not support this
         # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
         if get_data_file_format(config) == 'json':
             # Terraform v0.12 now supports creating Athena tables. We will support
             # to use terraform aws_glue_catalog_table resource to create table only
-            # when data file_format is set to "parquet" in "athena_partition_refresh_config"
+            # when data file_format is set to "parquet" in "athena_partitioner_config"
             #
             # For "json" file_format, we will continue using Athena DDL query to
             # create tables. However, this capabity will be faded out in the future

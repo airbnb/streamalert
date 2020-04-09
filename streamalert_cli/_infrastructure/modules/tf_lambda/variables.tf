@@ -1,10 +1,3 @@
-// Note: We use this variable because terraform does not support "count" for module resources
-// https://github.com/hashicorp/terraform/issues/953
-variable "enabled" {
-  default     = true
-  description = "If true, the Lambda function and all associated components will be created"
-}
-
 variable "function_name" {
   description = "Name of the Lambda function"
 }
@@ -34,6 +27,7 @@ variable "timeout_sec" {
 }
 
 variable "filename" {
+  default     = "streamalert.zip"
   description = "Path to .zip deployment package"
 }
 
@@ -82,12 +76,7 @@ variable "auto_publish_versions" {
 
 variable "alias_name" {
   default     = "production"
-  description = "An alias with this name is automatically created which points to aliased_version"
-}
-
-variable "aliased_version" {
-  default     = ""
-  description = "Alias points to this version (or the latest published version if not specified)"
+  description = "An alias with this name is automatically created which points to the current version"
 }
 
 variable "schedule_expression" {

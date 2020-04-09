@@ -109,7 +109,7 @@ Deploy
 
   .. code-block:: bash
 
-    "athena_partition_refresh_config": {
+    "athena_partitioner_config": {
       "concurrency_limit": 10,
       "file_format": "parquet",
       "log_level": "info"
@@ -237,7 +237,7 @@ alerts on any usage of the root AWS account. Change the rule decorator to:
   python manage.py build
 
   # Deploy a new version of all of the Lambda functions with the updated rule and config files
-  python manage.py deploy --function all
+  python manage.py deploy
 
 .. note:: Use ``build`` and ``deploy`` to apply any changes to StreamAlert's
    configuration or Lambda functions, respectively. Some changes (like this example) require both.
@@ -284,7 +284,7 @@ dropdown on the left and preview the ``alerts`` table:
   :target: _images/athena-alerts-search.png
 
 (Here, my name prefix is ``testv2``.) If no records are returned, look for errors
-in the Athena Partition Refresh function or try invoking it directly.
+in the Athena Partitioner function or try invoking it directly.
 
 And there you have it! Ingested log data is parsed, classified, and scanned by the rules engine.
 Any resulting alerts are delivered to your configured output(s) within a matter of minutes.

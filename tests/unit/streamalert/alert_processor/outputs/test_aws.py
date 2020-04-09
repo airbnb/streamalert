@@ -37,7 +37,8 @@ from streamalert.alert_processor.outputs.aws import (
     SESOutput,
     SNSOutput,
     SQSOutput,
-    CloudwatchLogOutput
+    CloudwatchLogOutput,
+    LambdaOutputV2,
 )
 from tests.unit.streamalert.alert_processor import (
     CONFIG,
@@ -149,6 +150,44 @@ class TestLambdaOutput:
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, alt_descriptor)
+
+
+@patch.object(aws_outputs, 'boto3', MagicMock())
+class TestLambdaV2Output:
+    """Test class for LambdaOutput"""
+    DESCRIPTOR = 'unit_test_lambda'
+    SERVICE = 'aws-lambda-v2'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
+    CREDS = {
+        'lambda_function_arn': 'arn:aws:lambda:us-east-1:11111111:function:my_func',
+        'function_qualifier': 'production',
+        'assume_role_arn': 'arn:aws:iam::11111111:role/my_path/my_role',
+    }
+
+    @patch('streamalert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def setup(self, provider_constructor):
+        """Setup before each method"""
+        provider = MagicMock()
+        provider_constructor.return_value = provider
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
+
+        self._provider = provider
+        self._dispatcher = LambdaOutputV2(None)
+
+    def test_locals(self):
+        """LambdaOutput local variables"""
+        assert_equal(self._dispatcher.__class__.__name__, 'LambdaOutputV2')
+        assert_equal(self._dispatcher.__service__, self.SERVICE)
+
+    @patch('logging.Logger.info')
+    def test_dispatch(self, log_mock):
+        """LambdaOutput dispatch"""
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
 
 @mock_s3

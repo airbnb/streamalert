@@ -67,7 +67,6 @@ class TestAlertProcessor(unittest.TestCase):
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 2,
                     'errors_alarm_threshold': 3,
-                    'filename': 'alert_processor.zip',
                     'function_name': 'unit-test_streamalert_alert_processor',
                     'handler': 'streamalert.alert_processor.main.handler',
                     'log_retention_days': 7,
@@ -121,7 +120,6 @@ class TestAlertProcessor(unittest.TestCase):
                         'LOGGER_LEVEL': 'info'
                     },
                     'tags': {},
-                    'filename': 'alert_processor.zip',
                     'function_name': 'unit-test_streamalert_alert_processor',
                     'handler': 'streamalert.alert_processor.main.handler',
                     'memory_size_mb': 128,

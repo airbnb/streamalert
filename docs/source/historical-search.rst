@@ -6,7 +6,7 @@ StreamAlert historical search feature is backed by Amazon S3 and `Athena <https:
 By default, StreamAlert will send all alerts to S3 and those alerts will be searchable in Athena table. StreamAlert
 users have option to enable historical search feature for data as well.
 
-As of StreamAlert v3.1.0, a new field, ``file_format``, has been added to ``athena_partition_refresh_config``
+As of StreamAlert v3.1.0, a new field, ``file_format``, has been added to ``athena_partitioner_config``
 in ``conf/lamba.json``, defaulting to ``null``. This field allows users to configure how the data processed
 by the Classifier is stored in S3 bucket, either in ``parquet`` or ``json``.
 
@@ -39,7 +39,7 @@ The pipeline is:
 
   #. StreamAlert creates an Athena Database, alerts kinesis Firehose and ``alerts`` table during initial deployment
   #. Optionally create Firehose resources and Athena tables for historical data retention
-  #. S3 events will be sent to an SQS that is mapped to the Athena Partition Refresh Lambda function
+  #. S3 events will be sent to an SQS that is mapped to the Athena Partitioner Lambda function
   #. The Lambda function adds new partitions when there are new alerts or data saved in S3 bucket via Firehose
   #. Alerts, and optionally data, are available for searching via Athena console or the Athena API
 
@@ -50,30 +50,30 @@ Alerts Search
 *************
 
 * Review the settings for the :ref:`Alerts Firehose Configuration <alerts_firehose_configuration>` and
-  the :ref:`Athena Partition Refresh<configure_athena_partition_refresh_lambda>` function. Note that
+  the :ref:`Athena Partitioner<configure_athena_partitioner_lambda>` function. Note that
   the Athena database and alerts table are created automatically when you first deploy StreamAlert.
-* If the ``file_format`` value within the :ref:`Athena Partition Refresh<configure_athena_partition_refresh_lambda>`
+* If the ``file_format`` value within the :ref:`Athena Partitioner<configure_athena_partitioner_lambda>`
   function config is set to ``parquet``, you can run the ``MSCK REPAIR TABLE alerts`` command in
   Athena to load all available partitions and then alerts can be searchable. Note, however, that the
   ``MSCK REPAIR`` command cannot load new partitions automatically.
 * StreamAlert includes a Lambda function to automatically add new partitions for Athena tables when
-  the data arrives in S3. See :ref:`configure_athena_partition_refresh_lambda`
+  the data arrives in S3. See :ref:`configure_athena_partitioner_lambda`
 
   .. code-block:: bash
 
     {
-      "athena_partition_refresh_config": {
+      "athena_partitioner_config": {
         "concurrency_limit": 10,
         "file_format": "parquet",
         "log_level": "info"
       }
     }
 
-* Deploy the Athena Partition Refresh Lambda function
+* Deploy the Athena Partitioner Lambda function
 
   .. code-block:: bash
 
-    python manage.py deploy --function athena
+    python manage.py deploy --functions athena
 
 * Search alerts in `Athena Console <https://console.aws.amazon.com/athena>`_
 
@@ -99,7 +99,7 @@ It is optional to store data in S3 bucket and available for search in Athena tab
 
   .. code-block:: bash
 
-    python manage.py deploy --function classifier
+    python manage.py deploy --functions classifier
 
 * Search data `Athena Console <https://console.aws.amazon.com/athena>`_
 
@@ -109,7 +109,7 @@ It is optional to store data in S3 bucket and available for search in Athena tab
   .. image:: ../images/athena-data-search.png
 
 
-.. _configure_athena_partition_refresh_lambda:
+.. _configure_athena_partitioner_lambda:
 
 *************************
 Configure Lambda Settings
@@ -120,8 +120,8 @@ Open ``conf/lambda.json``, and fill in the following options:
 ===================================  ========  ====================   ===========
 Key                                  Required  Default                Description
 -----------------------------------  --------  --------------------   -----------
-``enabled``                          Yes       ``true``               Enables/Disables the Athena Partition Refresh Lambda function
-``enable_custom_metrics``            No        ``false``              Enables/Disables logging of metrics for the Athena Partition Refresh Lambda function
+``enabled``                          Yes       ``true``               Enables/Disables the Athena Partitioner Lambda function
+``enable_custom_metrics``            No        ``false``              Enables/Disables logging of metrics for the Athena Partitioner Lambda function
 ``log_level``                        No        ``info``               The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
 ``memory``                           No        ``128``                The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          No        ``60``                 The maximum duration of the Lambda function (in seconds)
@@ -134,7 +134,7 @@ Key                                  Required  Default                Descriptio
 .. code-block:: json
 
   {
-    "athena_partition_refresh_config": {
+    "athena_partitioner_config": {
       "log_level": "info",
       "memory": 128,
       "buckets": {

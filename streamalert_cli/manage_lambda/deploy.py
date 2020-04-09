@@ -13,13 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import namedtuple
-import sys
-
 from streamalert.shared import rule_table
 from streamalert.shared.logger import get_logger
 from streamalert_cli import helpers
-from streamalert_cli.manage_lambda import package as streamalert_packages
+from streamalert_cli.manage_lambda import package
 from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.utils import (
     add_default_lambda_args,
@@ -29,8 +26,6 @@ from streamalert_cli.utils import (
 )
 
 LOGGER = get_logger(__name__)
-
-PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
 
 
 class DeployCommand(CLICommand):
@@ -93,32 +88,17 @@ class DeployCommand(CLICommand):
         if not terraform_generate_handler(config=config):
             return False
 
-        functions = options.function
-
-        if 'all' in options.function:
-            functions = {
-                'alert',
-                'alert_merger',
-                'apps',
-                'athena',
-                'classifier',
-                'rule',
-                'rule_promo',
-                'scheduled_queries',
-                'threat_intel_downloader'
-            }
-
-        if not deploy(functions, config, options.clusters):
+        if not deploy(config, options.functions, options.clusters):
             return False
 
         # Update the rule table now if the rules engine is being deployed
-        if 'rule' in functions:
+        if 'rule' in set(options.functions):
             _update_rule_table(options, config)
 
         return True
 
 
-def deploy(functions, config, clusters=None):
+def deploy(config, functions, clusters=None):
     """Deploy the functions
 
     Args:
@@ -129,21 +109,19 @@ def deploy(functions, config, clusters=None):
     Returns:
         bool: False if errors occurred, True otherwise
     """
+    LOGGER.info('Deploying: %s', ', '.join(sorted(functions)))
 
-    LOGGER.info('Deploying: %s', ' '.join(sorted(functions)))
+    deployment_package = package.LambdaPackage(config)
+    package_path = deployment_package.create()
+    if not package_path:
+        return False
 
     # Terraform apply only to the module which contains our lambda functions
-    deploy_targets = set()
-    packages = []
+    clusters = clusters or config.clusters()
 
-    for function in functions:
-        package, targets = _create(function, config, clusters)
-        # Continue if the package isn't enabled
-        if not all([package, targets]):
-            continue
+    deploy_targets = _lambda_terraform_targets(config, functions, clusters)
 
-        packages.append(package)
-        deploy_targets.update(targets)
+    LOGGER.debug('Applying terraform targets: %s', ', '.join(sorted(deploy_targets)))
 
     # Terraform applies the new package and publishes a new version
     return helpers.tf_runner(targets=deploy_targets)
@@ -175,80 +153,101 @@ def _update_rule_table(options, config):
             table.toggle_staged_state(rule, stage)
 
 
-def _create(function_name, config, clusters=None):
-    """
+def _lambda_terraform_targets(config, functions, clusters):
+    """Return any terraform targets for the function(s) being deployed
+
+    NOTE: This is very hacky and should go away. A complete refactor of how we peform
+        terraform generation would help with this, but this hack will do for now.
+
     Args:
-        function_name: The name of the function to create and upload
         config (CLIConfig): The loaded StreamAlert config
-        cluster (string): The cluster to deploy to
+        functions (list): Functions to target during deploy
+        clusters (list): Clusters to target during deploy
 
     Returns:
-        tuple (LambdaPackage, set): The created Lambda package and the set of Terraform targets
+        set: Terraform module paths to target during this deployment
     """
-    clusters = clusters or config.clusters()
 
-    package_mapping = {
-        'alert': PackageMap(
-            streamalert_packages.AlertProcessorPackage,
-            {'module.alert_processor_iam', 'module.alert_processor_lambda'},
-            True
-        ),
-        'alert_merger': PackageMap(
-            streamalert_packages.AlertMergerPackage,
-            {'module.alert_merger_iam', 'module.alert_merger_lambda'},
-            True
-        ),
-        'apps': PackageMap(
-            streamalert_packages.AppPackage,
-            {'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
-             for suffix in {'lambda', 'iam'}
-             for cluster in clusters
-             for app_info in config['clusters'][cluster]['modules'].get(
-                 'streamalert_apps', {}
-             ).values()
-             if 'app_name' in app_info},
-            any(info['modules'].get('streamalert_apps')
-                for info in config['clusters'].values())
-        ),
-        'athena': PackageMap(
-            streamalert_packages.AthenaPackage,
-            {'module.streamalert_athena'},
-            True
-        ),
-        'classifier': PackageMap(
-            streamalert_packages.ClassifierPackage,
-            {'module.classifier_{}_{}'.format(cluster, suffix)
-             for suffix in {'lambda', 'iam'}
-             for cluster in clusters},
-            True
-        ),
-        'rule': PackageMap(
-            streamalert_packages.RulesEnginePackage,
-            {'module.rules_engine_iam', 'module.rules_engine_lambda'},
-            True
-        ),
-        'rule_promo': PackageMap(
-            streamalert_packages.RulePromotionPackage,
-            {'module.rule_promotion_iam', 'module.rule_promotion_lambda'},
-            config['lambda'].get('rule_promotion_config', {}).get('enabled', False)
-        ),
-        'scheduled_queries': PackageMap(
-            streamalert_packages.ScheduledQueriesPackage,
-            {'module.scheduled_queries'},
-            config['scheduled_queries'].get('enabled', False)
-        ),
-        'threat_intel_downloader': PackageMap(
-            streamalert_packages.ThreatIntelDownloaderPackage,
-            {'module.threat_intel_downloader'},
-            config['lambda'].get('threat_intel_downloader_config', False)
-        )
+    target_mapping = {
+        'alert': {
+            'targets': {
+                'module.alert_processor_iam',
+                'module.alert_processor_lambda',
+            },
+            'enabled': True  # required function
+        },
+        'alert_merger': {
+            'targets': {
+                'module.alert_merger_iam',
+                'module.alert_merger_lambda',
+            },
+            'enabled': True  # required function
+        },
+        'athena': {
+            'targets': {
+                'module.athena_partitioner_iam',
+                'module.athena_partitioner_lambda',
+            },
+            'enabled': True  # required function
+        },
+        'rule': {
+            'targets': {
+                'module.rules_engine_iam',
+                'module.rules_engine_lambda',
+            },
+            'enabled': True  # required function
+        },
+        'classifier': {
+            'targets': {
+                'module.classifier_{}_{}'.format(cluster, suffix)
+                for suffix in {'lambda', 'iam'}
+                for cluster in clusters
+            },
+            'enabled': bool(clusters)  # one cluster at least is required
+        },
+        'apps': {
+            'targets': {
+                'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
+                for suffix in {'lambda', 'iam'}
+                for cluster in clusters
+                for app_info in config['clusters'][cluster]['modules'].get(
+                    'streamalert_apps', {}
+                ).values()
+                if 'app_name' in app_info
+            },
+            'enabled': any(
+                info['modules'].get('streamalert_apps')
+                for info in config['clusters'].values()
+            )
+        },
+        'rule_promo': {
+            'targets': {
+                'module.rule_promotion_iam',
+                'module.rule_promotion_lambda',
+            },
+            'enabled': config['lambda'].get('rule_promotion_config', {}).get('enabled', False)
+        },
+        'scheduled_queries': {
+            'targets': {
+                'module.scheduled_queries',
+            },
+            'enabled': config['scheduled_queries'].get('enabled', False),
+        },
+        'threat_intel_downloader': {
+            'targets': {
+                'module.threat_intel_downloader',
+                'module.threat_intel_downloader_iam',
+            },
+            'enabled': config['lambda'].get('threat_intel_downloader_config', False),
+        }
     }
 
-    if not package_mapping[function_name].enabled:
-        return False, False
+    targets = set()
+    for function in functions:
+        if not target_mapping[function]['enabled']:
+            LOGGER.warning('Function is not enabled and will be ignored: %s', function)
+            continue
 
-    package = package_mapping[function_name].package_class(config=config)
-    if not package.create():
-        return sys.exit(1)
+        targets.update(target_mapping[function]['targets'])
 
-    return package, package_mapping[function_name].targets
+    return targets

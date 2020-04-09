@@ -1,5 +1,5 @@
 """Alert on AWS Config"""
-from rules.matchers.matchers import AwsConfigMatcher
+from matchers.default import AwsConfigMatcher
 from streamalert.shared.rule import rule
 
 

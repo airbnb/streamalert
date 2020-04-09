@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert_cli.manage_lambda.package import ClassifierPackage
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
 
@@ -90,8 +89,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
     # Set variables for the Lambda module
     cluster_dict['module']['{}_lambda'.format(tf_module_prefix)] = generate_lambda(
         '{}_{}_streamalert_classifier'.format(config['global']['account']['prefix'], cluster_name),
-        ClassifierPackage.package_name + '.zip',
-        ClassifierPackage.lambda_handler,
+        'streamalert.classifier.main.handler',
         classifier_config,
         config,
         environment={

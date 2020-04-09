@@ -39,19 +39,19 @@ class TestCLIConfig:
         self.fs_patcher.setUp()
 
         self.fs_patcher.fs.create_file(
-            '/conf/global.json', contents=json.dumps(config_data['global']))
+            './conf/global.json', contents=json.dumps(config_data['global']))
         self.fs_patcher.fs.create_file(
-            '/conf/threat_intel.json', contents=json.dumps(config_data['threat_intel']))
+            './conf/threat_intel.json', contents=json.dumps(config_data['threat_intel']))
         self.fs_patcher.fs.create_file(
-            '/conf/normalized_types.json', contents=json.dumps(config_data['normalized_types']))
+            './conf/normalized_types.json', contents=json.dumps(config_data['normalized_types']))
         self.fs_patcher.fs.create_file(
-            '/conf/lambda.json', contents=json.dumps(config_data['lambda']))
+            './conf/lambda.json', contents=json.dumps(config_data['lambda']))
         self.fs_patcher.fs.create_file(
-            '/conf/clusters/prod.json', contents=json.dumps(config_data['clusters']['prod']))
+            './conf/clusters/prod.json', contents=json.dumps(config_data['clusters']['prod']))
 
         # Create the config instance after creating the fake filesystem so that
         # CLIConfig uses our mocked config files instead of the real ones.
-        self.config = CLIConfig()
+        self.config = CLIConfig('./conf/')
 
     def teardown(self):
         """Teardown after each method"""
@@ -63,9 +63,9 @@ class TestCLIConfig:
 
     def test_toggle_metric(self):
         """CLI - Metric toggling"""
-        self.config.toggle_metrics('athena_partition_refresh', enabled=True)
+        self.config.toggle_metrics('athena_partitioner', enabled=True)
         assert_equal(
-            self.config['lambda']['athena_partition_refresh_config']['enable_custom_metrics'],
+            self.config['lambda']['athena_partitioner_config']['enable_custom_metrics'],
             True
         )
 

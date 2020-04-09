@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared import RULES_ENGINE_FUNCTION_NAME
-from streamalert_cli.manage_lambda.package import RulesEnginePackage
 from streamalert_cli.terraform.common import infinitedict
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
@@ -61,8 +60,7 @@ def generate_rules_engine(config):
     # Set variables for the Lambda module
     result['module']['rules_engine_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(prefix, RULES_ENGINE_FUNCTION_NAME),
-        RulesEnginePackage.package_name + '.zip',
-        RulesEnginePackage.lambda_handler,
+        'streamalert.rules_engine.main.handler',
         config['lambda']['rules_engine_config'],
         config,
         environment=environment,

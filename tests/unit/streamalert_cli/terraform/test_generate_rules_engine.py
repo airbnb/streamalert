@@ -110,7 +110,6 @@ class TestTerraformGenerateRuleEngine:
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 120,
                     'errors_alarm_threshold': 0,
-                    'filename': 'rules_engine.zip',
                     'function_name': 'unit-test_streamalert_rules_engine',
                     'handler': 'streamalert.rules_engine.main.handler',
                     'log_retention_days': 14,

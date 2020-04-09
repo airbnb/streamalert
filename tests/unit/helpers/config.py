@@ -57,6 +57,7 @@ def basic_streamalert_config():
                 }
             }
         },
+        'scheduled_queries': {},
         'threat_intel': {
             'dynamodb_table_name': 'table_name',
             'enabled': False,
@@ -110,7 +111,7 @@ def basic_streamalert_config():
                 'memory': 128,
                 'timeout': 10
             },
-            'athena_partition_refresh_config': {
+            'athena_partitioner_config': {
                 'enable_custom_metrics': False,
                 'memory': 128,
                 'timeout': 60
@@ -126,11 +127,7 @@ def basic_streamalert_config():
                         'statistic': 'Sum',
                         'threshold': 1.0
                     }
-                },
-                'third_party_libraries': [
-                    'jsonpath_rw',
-                    'netaddr'
-                ]
+                }
             },
             'threat_intel_downloader_config': {
                 'autoscale': True,
@@ -288,6 +285,6 @@ def athena_cli_basic_config():
             }
         },
         'lambda': {
-            'athena_partition_refresh_config': {}
+            'athena_partitioner_config': {}
         }
     }

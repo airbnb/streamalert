@@ -35,6 +35,26 @@ CLUSTERS = [
 ]
 
 
+def function_map():
+    """Provide a map of CLI function name to their expected actual function suffix
+
+    Returns:
+        dict: Mapping of CLI function name to expected actual function suffix
+    """
+    # This is purposely not a constant because it is expected to be modifiable
+    return {
+        'alert': 'alert_processor',
+        'alert_merger': 'alert_merger',
+        'apps': None,  # needs special handling
+        'athena': 'athena_partitioner',
+        'classifier': None,  # needs special handling
+        'rule': 'rules_engine',
+        'rule_promo': 'rule_promotion',
+        'scheduled_queries': 'scheduled_queries_runner',
+        'threat_intel_downloader': 'threat_intel_downloader',
+    }
+
+
 class CLICommand:
     """
     An abstract class that encapsulates the logic of a single manage.py CLI command.
@@ -99,9 +119,7 @@ class DirectoryType:
         if os.path.isdir(value):
             return value
 
-        raise ArgumentTypeError(
-            '\'%(filename)s\' is not a directory' % {'filename': value}
-        )
+        raise ArgumentTypeError('\'{}\' is not a directory'.format(value))
 
 
 def add_timeout_arg(parser):
@@ -241,23 +259,19 @@ def generate_subparser(parser, name, description=None, subcommand=False, **kwarg
 
 def add_default_lambda_args(lambda_parser):
     """Add the default arguments to the deploy and rollback parsers"""
-
-    functions = sorted([
-        'alert', 'alert_merger', 'apps', 'athena', 'classifier',
-        'rule', 'rule_promo', 'scheduled_queries', 'threat_intel_downloader'
-    ])
-    # require the name of the function being deployed/rolled back
+    functions = sorted(function_map())
+    # optionally allow for the name of 1+ functions being deployed/rolled back
     lambda_parser.add_argument(
-        '-f', '--function',
-        choices=functions + ['all'],
-        metavar='FUNCTION',
+        '-f', '--functions',
+        choices=functions,
+        default=functions,
+        metavar='FUNCTIONS',
         help=(
             'One or more of the following functions to perform this action against: {}. '
-            'Use \'all\' to act against all functions.'
+            'If omitted, this action will be performed against all functions.'
         ).format(', '.join(functions)),
         nargs='+',
         action=UniqueSortedListAction,
-        required=True
     )
 
     # Add the option to specify cluster(s)
