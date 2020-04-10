@@ -71,3 +71,15 @@ resource "aws_dynamodb_table" "rules_table" {
     Name = "StreamAlert"
   }
 }
+
+resource "aws_lambda_layer_version" "aliyun_dependencies" {
+  filename            = "./lambda_layers/aliyun-python-sdk-actiontrail==2.0.0_dependencies.zip"
+  layer_name          = "aliyun"
+  compatible_runtimes = ["python3.7"]
+}
+
+resource "aws_lambda_layer_version" "box_dependencies" {
+  filename            = "./lambda_layers/boxsdk[jwt]==2.6.1_dependencies.zip"
+  layer_name          = "box"
+  compatible_runtimes = ["python3.7"]
+}
