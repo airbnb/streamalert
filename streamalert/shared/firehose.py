@@ -451,7 +451,6 @@ class FirehoseClient:
                 response = self._send_batch(formatted_stream_name, record_batch)
                 self._finalize(response, formatted_stream_name, batch_size)
 
-    # FIXME: move firehose client to shared folder
     def send_artifacts(self, artifacts, stream_name):
         """Send artifacts to artifacts Firehose delievery stream
         Args:
