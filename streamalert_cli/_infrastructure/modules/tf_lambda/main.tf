@@ -34,6 +34,8 @@ resource "aws_lambda_function" "function" {
     security_group_ids = var.vpc_security_group_ids
   }
 
+  layers = var.layers
+
   tags = local.tags
 }
 
