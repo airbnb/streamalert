@@ -52,7 +52,7 @@ def _tf_vpc_config(lambda_config):
 
 
 def generate_lambda(function_name, handler, lambda_config, config, environment=None,
-                    input_event=None, tags=None, zip_file=None):
+                    input_event=None, tags=None, **kwargs):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
@@ -63,6 +63,9 @@ def generate_lambda(function_name, handler, lambda_config, config, environment=N
         environment (dict): Optional environment variables to specify.
             ENABLE_METRICS and LOGGER_LEVEL are included automatically.
         tags (dict): Optional tags to be added to this Lambda resource.
+
+    Keyword Args:
+        include_layers (bool): Optionally include the default Lambda Layers (default: False)
         zip_file (str): Optional name for the .zip of deployment package (default: streamalert.zip)
 
     Example Lambda config:
@@ -121,9 +124,12 @@ def generate_lambda(function_name, handler, lambda_config, config, environment=N
         'tags': tags or {},
     }
 
+    if kwargs.get('include_layers', False):
+        lambda_module['layers'] = '${module.globals.lamdba_layer_arns}'
+
     # The lambda module defaults to using the 'streamalert.zip' file that is created
-    if zip_file:
-        lambda_module['filename'] = zip_file
+    if kwargs.get('zip_file'):
+        lambda_module['filename'] = kwargs.get('zip_file')
 
     # Add Classifier input config from the loaded cluster file
     input_config = lambda_config.get('inputs')

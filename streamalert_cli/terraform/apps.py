@@ -59,5 +59,6 @@ def generate_apps(cluster_name, cluster_dict, config):
             'streamalert.apps.main.handler',
             config['clusters'][cluster_name]['modules']['streamalert_apps'][function_name],
             config,
-            input_event=app_config
+            input_event=app_config,
+            include_layers=True,
         )
