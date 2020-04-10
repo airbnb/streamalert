@@ -17,7 +17,8 @@ from collections import OrderedDict
 import os
 import logging
 
-from streamalert.classifier.clients import FirehoseClient, SQSClient
+from streamalert.classifier.clients import SQSClient
+from streamalert.shared.firehose import FirehoseClient
 from streamalert.classifier.parsers import get_parser
 from streamalert.classifier.payload.payload_base import StreamPayload
 from streamalert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME

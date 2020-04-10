@@ -1,6 +1,7 @@
 """Define some shared resources."""
 ALERT_MERGER_NAME = 'alert_merger'
 ALERT_PROCESSOR_NAME = 'alert_processor'
+ARTIFACT_EXTRACTOR_NAME = 'artifact_extractor'
 ATHENA_PARTITIONER_NAME = 'athena_partitioner'
 CLASSIFIER_FUNCTION_NAME = 'classifier'
 RULES_ENGINE_FUNCTION_NAME = 'rules_engine'

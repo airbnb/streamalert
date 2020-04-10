@@ -18,7 +18,7 @@ from nose.tools import assert_equal, assert_true
 
 from streamalert_cli.athena import helpers
 from streamalert_cli.config import CLIConfig
-from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')

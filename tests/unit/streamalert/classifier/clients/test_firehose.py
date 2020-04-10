@@ -17,7 +17,7 @@ from botocore.exceptions import ClientError
 from mock import Mock, patch
 from nose.tools import assert_equal
 
-from streamalert.classifier.clients.firehose import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 
 
 class TestFirehoseClient:

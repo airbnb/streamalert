@@ -15,7 +15,7 @@ limitations under the License.
 """
 import re
 
-from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.logger import get_logger
 from streamalert.shared.alert import Alert
 from streamalert_cli.helpers import record_to_schema
