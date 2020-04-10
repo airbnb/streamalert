@@ -16,7 +16,6 @@ limitations under the License.
 import os
 import shutil
 import tempfile
-import zipfile
 
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
@@ -54,11 +53,6 @@ class LambdaPackage:
         'pymsteams==0.1.12',
     }
 
-    PRECOMPILED_LIBS = {               # Default precompiled dependencies
-        'aliyun-python-sdk-actiontrail==2.0.0',
-        'boxsdk[jwt]==2.6.1',
-    }
-
     def __init__(self, config):
         self.config = config
         self.temp_package_path = os.path.join(tempfile.gettempdir(), self.package_name)
@@ -78,18 +72,13 @@ class LambdaPackage:
             shutil.rmtree(self.temp_package_path)
 
         # Copy all of the default package files
-        self._copy_files(self.DEFAULT_PACKAGE_FILES, ignores={'*dependencies.zip'})
+        self._copy_files(self.DEFAULT_PACKAGE_FILES)
 
         # Copy in any user-specified files
         self._copy_user_config_files()
 
         if not self._resolve_libraries():
             LOGGER.error('Failed to install necessary libraries')
-            return False
-
-        # Extract any precompiled libs for this package
-        if not self._extract_precompiled_libs():
-            LOGGER.error('Failed to extract precompiled libraries')
             return False
 
         # Zip it all up
@@ -118,41 +107,6 @@ class LambdaPackage:
             # Copy the directory, skipping any files explicitly ignored
             kwargs = {'ignore': shutil.ignore_patterns(*ignores)} if ignores else dict()
             shutil.copytree(path, os.path.join(self.temp_package_path, path), **kwargs)
-
-    def _extract_precompiled_libs(self):
-        """Extract any precompiled libraries into the deployment package folder
-
-        Returns:
-            bool: True if precompiled libs were extracted successfully, False if some are missing
-        """
-        vendored_dir = os.path.join('streamalert', '_vendored')
-        found_libs = set()
-        for zipped_file in os.listdir(vendored_dir):
-            # Skip files that are not explicitly deps
-            if not zipped_file.endswith('_dependencies.zip'):
-                continue
-
-            value = zipped_file.rstrip('_dependencies.zip')
-            if value not in self.PRECOMPILED_LIBS:
-                LOGGER.error(
-                    'Found precompiled libraries not included in PRECOMPILED_LIBS: %s', value
-                )
-                return False
-
-            LOGGER.info('Extracting precompiled library: %s', zipped_file)
-
-            # Copy the contents of the dependency zip to the package directory
-            with zipfile.ZipFile(os.path.join(vendored_dir, zipped_file), 'r') as libs_file:
-                libs_file.extractall(self.temp_package_path)
-
-            found_libs.add(value)
-
-        diff = self.PRECOMPILED_LIBS.difference(found_libs)
-        if diff:
-            LOGGER.error('Missing required precompiled libraries: %s', ', '.join(diff))
-            return False
-
-        return True
 
     def _resolve_libraries(self):
         """Install all libraries into the deployment package folder
