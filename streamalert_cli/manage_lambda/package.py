@@ -16,7 +16,6 @@ limitations under the License.
 import os
 import shutil
 import tempfile
-import zipfile
 
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
