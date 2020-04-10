@@ -51,19 +51,19 @@ def _tf_vpc_config(lambda_config):
     return result
 
 
-def generate_lambda(function_name, zip_file, handler, lambda_config, config,
-                    environment=None, input_event=None, tags=None):
+def generate_lambda(function_name, handler, lambda_config, config, environment=None,
+                    input_event=None, tags=None, zip_file=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
         function_name (str): Name of the Lambda function (e.g. 'alert_processor')
-        zip_file (str): Path where the .zip deployment package lives
         handler (str): Lambda function handler
         lambda_config (dict): Section of the config for this particular Lambda function
         config (dict): Parsed config from conf/
         environment (dict): Optional environment variables to specify.
             ENABLE_METRICS and LOGGER_LEVEL are included automatically.
         tags (dict): Optional tags to be added to this Lambda resource.
+        zip_file (str): Optional name for the .zip of deployment package (default: streamalert.zip)
 
     Example Lambda config:
         {
@@ -117,10 +117,13 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         'handler': handler,
         'memory_size_mb': lambda_config['memory'],
         'timeout_sec': lambda_config['timeout'],
-        'filename': zip_file,
         'environment_variables': environment_variables,
         'tags': tags or {},
     }
+
+    # The lambda module defaults to using the 'streamalert.zip' file that is created
+    if zip_file:
+        lambda_module['filename'] = zip_file
 
     # Add Classifier input config from the loaded cluster file
     input_config = lambda_config.get('inputs')

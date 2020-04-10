@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert_cli.manage_lambda.package import AppPackage
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
 
@@ -57,8 +56,7 @@ def generate_apps(cluster_name, cluster_dict, config):
         # Format the lambda module with 'app_<app_name_<cluster>_lambda'
         cluster_dict['module']['{}_lambda'.format(tf_module_prefix)] = generate_lambda(
             function_name,
-            AppPackage.package_name + '.zip',
-            AppPackage.lambda_handler,
+            'streamalert.apps.main.handler',
             config['clusters'][cluster_name]['modules']['streamalert_apps'][function_name],
             config,
             input_event=app_config

@@ -37,11 +37,10 @@ def test_generate_scheduled_queries():
                 'athena_database': 'unit-test_streamalert',
                 'athena_results_bucket': 'unit-test-streamalert-athena-results',
                 'athena_s3_buckets': [
+                    '${aws_s3_bucket.streamalerts.bucket}',
+                    '${module.kinesis_firehose_setup.data_bucket_name}',
                     'bucket',
-                    'unit-test-streamalert-data',
-                    'unit-test-streamalerts'
                 ],
-                'lambda_filename': 'scheduled_queries.zip',
                 'lambda_handler': 'streamalert.scheduled_queries.main.handler',
                 'query_packs': [
                     {

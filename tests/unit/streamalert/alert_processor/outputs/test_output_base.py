@@ -91,6 +91,7 @@ def test_output_loading():
     expected_outputs = {
         'aws-firehose',
         'aws-lambda',
+        'aws-lambda-v2',
         'aws-s3',
         'aws-ses',
         'aws-sns',

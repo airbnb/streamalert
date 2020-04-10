@@ -2,6 +2,9 @@
   "aws-lambda": {
     "sample-lambda": "function-name:qualifier"
   },
+  "aws-lambda-v2": [
+    "sample-lambda"
+  ],
   "aws-s3": {
     "bucket": "aws-s3-bucket"
   },

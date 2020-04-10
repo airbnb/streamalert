@@ -57,6 +57,7 @@ def basic_streamalert_config():
                 }
             }
         },
+        'scheduled_queries': {},
         'threat_intel': {
             'dynamodb_table_name': 'table_name',
             'enabled': False,
@@ -126,11 +127,7 @@ def basic_streamalert_config():
                         'statistic': 'Sum',
                         'threshold': 1.0
                     }
-                },
-                'third_party_libraries': [
-                    'jsonpath_rw',
-                    'netaddr'
-                ]
+                }
             },
             'threat_intel_downloader_config': {
                 'autoscale': True,

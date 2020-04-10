@@ -117,8 +117,10 @@ def firehose_alerts_bucket(config):
 
 def athena_partition_buckets(config):
     """Get the buckets from default buckets and additionally configured ones
+
     Args:
         config (dict): The loaded config from the 'conf/' directory
+
     Returns:
         list: Bucket names for which Athena is enabled
     """
@@ -130,6 +132,34 @@ def athena_partition_buckets(config):
         data_buckets[data_bucket] = 'data'
 
     return data_buckets
+
+
+def athena_partition_buckets_tf(config):
+    """Get Terraform references for buckets from defaults and additionally configured ones
+
+    When Terraform outputs/references are used, it ensures the bucket(s) are actually created
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        list: Bucket names for which Athena is enabled
+    """
+    # Add the Terraform module output for the alerts bucket
+    buckets = {
+        '${aws_s3_bucket.streamalerts.bucket}',
+    }
+    if firehose_data_bucket(config):  # Data retention is optional, so check for this
+        # Add the Terraform module output for the data bucket
+        buckets.add('${module.kinesis_firehose_setup.data_bucket_name}')
+
+    athena_config = config['lambda']['athena_partitioner_config']
+
+    # Add any user-defined bucket names
+    # These are controlled by the user and not by us, so we trust they exist
+    buckets.update(set(athena_config.get('buckets', {})))
+
+    return sorted(buckets)
 
 
 def athena_query_results_bucket(config):

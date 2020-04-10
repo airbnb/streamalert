@@ -116,7 +116,6 @@ class TestTerraformGenerateClassifier:
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 120,
                     'errors_alarm_threshold': 0,
-                    'filename': 'classifier.zip',
                     'function_name': 'unit-test_test_streamalert_classifier',
                     'handler': 'streamalert.classifier.main.handler',
                     'log_retention_days': 14,

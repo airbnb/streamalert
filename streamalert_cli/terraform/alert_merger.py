@@ -11,7 +11,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared import ALERT_MERGER_NAME
-from streamalert_cli.manage_lambda.package import AlertMergerPackage
 from streamalert_cli.terraform.common import infinitedict
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
@@ -39,8 +38,7 @@ def generate_alert_merger(config):
     # Set variables for the Lambda module
     result['module']['alert_merger_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(config['global']['account']['prefix'], ALERT_MERGER_NAME),
-        AlertMergerPackage.package_name + '.zip',
-        AlertMergerPackage.lambda_handler,
+        'streamalert.alert_merger.main.handler',
         config['lambda']['alert_merger_config'],
         config,
         environment={
