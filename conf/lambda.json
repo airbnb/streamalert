@@ -53,6 +53,8 @@
   "artifact_extractor_config": {
     "concurrency_limit": 10,
     "enabled": false,
+    "firehose_buffer_size": 128,
+    "firehose_buffer_interval": 900,
     "log_level": "info",
     "memory": 128,
     "metric_alarms": {

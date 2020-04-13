@@ -42,11 +42,12 @@ class Artifact:
                 record processed by classifier. This field is very useful for cross reference back
                 to the original record in the future.
         """
-        self._function = kwargs.get('function', 'not_specified')
-        self._record_id = kwargs.get('record_id', 'RESERVED')
-        self._source_type = source_type
-        self._type = normalized_type
-        self._value = value
+        # Enforce all fields are strings in a Artifact to prevent type corruption in Parquet format
+        self._function = str(kwargs.get('function', 'not_specified'))
+        self._record_id = str(kwargs.get('record_id', 'RESERVED'))
+        self._source_type = str(source_type)
+        self._type = str(normalized_type)
+        self._value = str(value)
 
     @property
     def record(self):

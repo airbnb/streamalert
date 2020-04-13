@@ -26,3 +26,9 @@ variable "s3_logging_bucket" {
 variable "kms_key_id" {
   type = string
 }
+
+variable "function_alias_arn" {
+  type        = string
+  default     = ""
+  description = "Fully qualified function arn of alias of Artifact extractor lambda"
+}

@@ -30,6 +30,7 @@ from streamalert_cli.terraform.common import (
     s3_access_logging_bucket,
     terraform_state_bucket,
 )
+from streamalert_cli.terraform.artifact_extractor import generate_artifact_extractor
 from streamalert_cli.terraform.alert_merger import generate_alert_merger
 from streamalert_cli.terraform.alert_processor import generate_alert_processor
 from streamalert_cli.terraform.apps import generate_apps
@@ -512,6 +513,14 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
 
     # Setup StreamQuery
     _generate_streamquery_module(config)
+
+    # Setup Artifact Extractor if it is enabled
+    generate_global_lambda_settings(
+        config,
+        conf_name='artifact_extractor_config',
+        generate_func=generate_artifact_extractor,
+        tf_tmp_file_name=os.path.join(TERRAFORM_FILES_PATH, 'artifact_extractor.tf.json')
+    )
 
     return True
 

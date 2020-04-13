@@ -15,6 +15,7 @@ limitations under the License.
 """
 import re
 
+from streamalert.artifact_extractor.artifact_extractor import Artifact
 from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.logger import get_logger
 from streamalert.shared.alert import Alert
@@ -245,5 +246,22 @@ def generate_data_table_schema(config, table, schema_override=None):
                     'Schema override column %s not found in Athena Schema, skipping',
                     column_name
                 )
+
+    return format_schema_tf(athena_schema)
+
+def generate_artifacts_table_schema():
+    """Generate the schema for artifacts table in terraform by using a test artifact instance
+
+    Returns:
+        athena_schema (dict): Equivalent Athena schema used for generating create table statement
+    """
+    # alert = Alert('temp_rule_name', {}, {})
+    # output = alert.output_dict()
+    # schema = record_to_schema(output)
+    # athena_schema = logs_schema_to_athena_schema(schema, False)
+
+    artifact = Artifact('test_source_type', 'test_normalized_type', 'test_value')
+    schema = record_to_schema(artifact.record)
+    athena_schema = logs_schema_to_athena_schema(schema, False)
 
     return format_schema_tf(athena_schema)

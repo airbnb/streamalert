@@ -443,3 +443,29 @@ def _validate_sources(cluster_name, data_sources, existing_sources):
             existing_sources.add(source)
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
+
+def artifact_extractor_enabled(config, log_name=None):
+    """Determine if artifactor extractor enabled one a firehose
+    TODO: (cylin) docstring
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+        log_name (string): expect to be original log names, e.g. 'aliyun', 'osquery:differential'
+
+    Returns:
+        bool: Return True if 'normalization' is configured in a log definition.
+    """
+    if not config['lambda'].get('artifact_extractor_config', {}).get('enabled', False):
+        return False
+
+    # Artifact extractor lambda is based on StreamAlert data Firehoses. Consider Artifact Extractor
+    # is enabled once when firehose is enabled
+    if not config['global']['infrastructure'].get('firehose', {}).get('enabled', False):
+        return False
+
+    # if log_name is empty, it means caller only want to know if artifact extractor lambda
+    # function enabled or not, so return early.
+    if not log_name:
+        return False
+    # FIXME: (cylin) pretty this line and add more comment
+    log_config = config.get('logs', {}).get(log_name, {})
+    return 'normalization' in log_config.get('configuration', {})

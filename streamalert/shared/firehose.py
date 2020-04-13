@@ -335,6 +335,30 @@ class FirehoseClient:
         )[:cls.AWS_FIREHOSE_NAME_MAX_LEN]
 
     @classmethod
+    def artifacts_firehose_stream_name(cls, config):
+        """Return Artifacts Firehose Stream Name
+
+        Args:
+            config (dict): The loaded config from the 'conf/' directory
+
+        Returns:
+            str: Artifacts Firehose Stream Name
+        """
+        stream_name = config.get('lambda', {}).get(
+            'artifact_extractor_config', {}
+        ).get('firehose_stream_name')
+
+        if stream_name:
+            # support custom firehose stream name of Artifacts
+            return cls.generate_firehose_name(prefix='', log_stream_name=stream_name)
+
+        return cls.generate_firehose_name(
+            prefix=config['global']['account']['prefix'],
+            log_stream_name='artifacts'
+        )
+
+
+    @classmethod
     def enabled_log_source(cls, log_source_name):
         """Check that the incoming record is an enabled log source for Firehose
 
