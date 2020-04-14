@@ -108,7 +108,7 @@ data "aws_iam_policy_document" "firehose_glue_catalog" {
 
 // IAM Policy: Invoke lambda function
 resource "aws_iam_role_policy" "streamalert_firehose_lambda" {
-  count = var.function_alias_arn == "" ? 0 : 1
+  count = var.artifact_extractor_enabled ? 1 : 0
   name  = "streamalert_firehose_invoke_lambda"
   role  = "${aws_iam_role.streamalert_kinesis_firehose.id}"
 
@@ -117,7 +117,7 @@ resource "aws_iam_role_policy" "streamalert_firehose_lambda" {
 
 // IAM Policy Document: Allow firehose to invoke artifact extractor lambda function
 data "aws_iam_policy_document" "firehose_lambda" {
-  count = var.function_alias_arn == "" ? 0 : 1
+  count = var.artifact_extractor_enabled ? 1 : 0
 
   statement {
     effect = "Allow"

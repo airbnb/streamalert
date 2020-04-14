@@ -27,6 +27,12 @@ variable "kms_key_id" {
   type = string
 }
 
+variable "artifact_extractor_enabled" {
+  type        = bool
+  default     = false
+  description = "Is Artifact Extractor Lambda function enabled"
+}
+
 variable "function_alias_arn" {
   type        = string
   default     = ""

@@ -465,7 +465,7 @@ def artifact_extractor_enabled(config, log_name=None):
     # if log_name is empty, it means caller only want to know if artifact extractor lambda
     # function enabled or not, so return early.
     if not log_name:
-        return False
+        return True
     # FIXME: (cylin) pretty this line and add more comment
     log_config = config.get('logs', {}).get(log_name, {})
     return 'normalization' in log_config.get('configuration', {})

@@ -46,13 +46,15 @@ def generate_firehose(logging_bucket, main_dict, config):
         'region': config['global']['account']['region'],
         's3_logging_bucket': logging_bucket,
         's3_bucket_name': firehose_s3_bucket_name,
-        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
-        # TODO: (optional?) maybe only add this alias if extractor is enabled on the firehose
-        # Set artifact_extractor_alias to null or empty string in variables.tf
-        'artifact_extractor_alias': (
+        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
+    }
+
+    # Only add allow firehose to invoke Artifact Extractor Lambda if Lambda if enabled in
+    # conf/lambda.json
+    if artifact_extractor_enabled(config):
+        main_dict['module']['kinesis_firehose_setup']['function_alias_arn'] = (
             '${module.artifact_extractor_lambda.function_alias_arn}'
         )
-    }
 
     enabled_logs = FirehoseClient.load_enabled_log_sources(
         firehose_conf,
@@ -83,9 +85,7 @@ def generate_firehose(logging_bucket, main_dict, config):
             'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
             'glue_catalog_db_name': db_name,
             'glue_catalog_table_name': log_stream_name,
-            'schema': generate_data_table_schema(config, log_type_name),
-            'artifact_extractor_enabled': artifact_extractor_enabled(config, log_type_name),
-            'artifact_extractor_arn': '${module.artifact_extractor_lambda.function_alias_arn}'
+            'schema': generate_data_table_schema(config, log_type_name)
         }
 
         # Try to get alarm info for this specific log type
@@ -115,5 +115,15 @@ def generate_firehose(logging_bucket, main_dict, config):
                     module_dict['alarm_actions'] = alarm_info.get('alarm_actions')
             else:
                 module_dict['alarm_actions'] = [monitoring_topic_arn(config)]
+
+        # Only enable "processing_configuration" and pass Artifact Extractor Lambda function arn to
+        # a firehose if
+        # 1) lambda function is enabled in conf/lambda.json
+        # 2) "normalization" field is configured in the log schema settings in conf/schemas/*.json
+        #    or conf/logs.json
+        if artifact_extractor_enabled(config, log_type_name):
+            module_dict['function_alias_arn'] = (
+                '${module.artifact_extractor_lambda.function_alias_arn}'
+            )
 
         main_dict['module']['kinesis_firehose_{}'.format(log_stream_name)] = module_dict

@@ -83,7 +83,7 @@ data "aws_iam_policy_document" "firehose_s3" {
       "kms:GenerateDataKey*",
     ]
 
-    resources = ["arn:aws:kms:${var.region}:${var.account_id}:key/${var.kms_key_id}"]
+    resources = [var.kms_key_arn]
   }
 }
 

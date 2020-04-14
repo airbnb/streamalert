@@ -519,7 +519,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         config,
         conf_name='artifact_extractor_config',
         generate_func=generate_artifact_extractor,
-        tf_tmp_file_name=os.path.join(TERRAFORM_FILES_PATH, 'artifact_extractor.tf.json')
+        tf_tmp_file_name='artifact_extractor'
     )
 
     return True
