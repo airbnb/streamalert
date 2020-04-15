@@ -497,6 +497,6 @@ def artifact_extractor_enabled(config, log_name=None):
     # function enabled or not, so return early.
     if not log_name:
         return True
-    
+
     log_config = config.get('logs', {}).get(log_name, {})
     return 'normalization' in log_config.get('configuration', {})
