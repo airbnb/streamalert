@@ -185,7 +185,7 @@ def _lambda_terraform_targets(config, functions, clusters):
         },
         'artifact_extractor': {
             'targets': {
-                'module.artifact_extractor_iam',
+                'module.artifact_extractor',
                 'module.artifact_extractor_lambda'
             },
             'enabled': config['lambda'].get('artifact_extractor_config', {}).get('enabled', False)

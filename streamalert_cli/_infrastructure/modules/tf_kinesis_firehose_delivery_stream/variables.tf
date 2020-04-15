@@ -66,3 +66,9 @@ variable "glue_catalog_table_name" {
 variable "schema" {
   type = list(tuple([string, string]))
 }
+
+variable "function_alias_arn" {
+  type        = string
+  default     = ""
+  description = "Fully qualified function arn of alias of Artifact extractor lambda"
+}

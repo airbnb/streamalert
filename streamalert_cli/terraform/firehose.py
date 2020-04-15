@@ -14,7 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared.firehose import FirehoseClient
-from streamalert.shared.config import firehose_data_bucket
+from streamalert.shared.config import (
+    artifact_extractor_enabled,
+    artifact_extractor_enabled_for_log,
+    firehose_data_bucket
+)
 from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_data_table_schema
 from streamalert_cli.terraform.common import monitoring_topic_arn
@@ -48,6 +52,13 @@ def generate_firehose(logging_bucket, main_dict, config):
         's3_bucket_name': firehose_s3_bucket_name,
         'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
     }
+
+    # Only add allow firehose to invoke Artifact Extractor Lambda if Lambda if enabled in
+    # conf/lambda.json
+    if artifact_extractor_enabled(config):
+        main_dict['module']['kinesis_firehose_setup']['function_alias_arn'] = (
+            '${module.artifact_extractor_lambda.function_alias_arn}'
+        )
 
     enabled_logs = FirehoseClient.load_enabled_log_sources(
         firehose_conf,
@@ -108,5 +119,15 @@ def generate_firehose(logging_bucket, main_dict, config):
                     module_dict['alarm_actions'] = alarm_info.get('alarm_actions')
             else:
                 module_dict['alarm_actions'] = [monitoring_topic_arn(config)]
+
+        # Only enable "processing_configuration" and pass Artifact Extractor Lambda function arn to
+        # a firehose if
+        # 1) lambda function is enabled in conf/lambda.json
+        # 2) "normalization" field is configured in the log schema settings in conf/schemas/*.json
+        #    or conf/logs.json
+        if artifact_extractor_enabled_for_log(config, log_type_name):
+            module_dict['function_alias_arn'] = (
+                '${module.artifact_extractor_lambda.function_alias_arn}'
+            )
 
         main_dict['module']['kinesis_firehose_{}'.format(log_stream_name)] = module_dict

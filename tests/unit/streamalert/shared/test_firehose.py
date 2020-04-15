@@ -522,3 +522,30 @@ class TestFirehoseClient:
         ]
 
         assert_equal(expected_results, results)
+
+    def test_artifacts_firehose_stream_name(self):
+        """FirehoseClient - Test generate artifacts firehose stream name"""
+        config_data = {
+            'global': {
+                'account': {
+                    'prefix': 'unittest'
+                }
+            },
+            'lambda': {
+                'artifact_extractor_config': {}
+            }
+        }
+
+        assert_equal(
+            self._client.artifacts_firehose_stream_name(config_data),
+            'unittest_streamalert_artifacts'
+        )
+
+        config_data['lambda']['artifact_extractor_config']['firehose_stream_name'] = (
+            'test_artifacts_fh_name'
+        )
+
+        assert_equal(
+            self._client.artifacts_firehose_stream_name(config_data),
+            'test_artifacts_fh_name'
+        )
