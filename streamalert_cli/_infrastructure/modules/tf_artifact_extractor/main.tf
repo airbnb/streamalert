@@ -40,14 +40,12 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_artifacts" {
         }
       }
       schema_configuration {
-        database_name = var.glue_catalog_db_name
+        database_name = aws_glue_catalog_table.artifacts.database_name
         role_arn      = aws_iam_role.streamalert_kinesis_firehose.arn
-        table_name    = var.glue_catalog_table_name
+        table_name    = aws_glue_catalog_table.artifacts.name
       }
     }
   }
-
-  depends_on = [aws_glue_catalog_table.artifacts]
 
   tags = {
     Name = "StreamAlert"

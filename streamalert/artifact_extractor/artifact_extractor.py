@@ -26,6 +26,8 @@ LOGGER = get_logger(__name__)
 class Artifact:
     """Encapsulation of a single Artifact that is extracted from an input record."""
 
+    RESERVED = 'RESERVED'
+
     def __init__(self, source_type, normalized_type, value, **kwargs):
         """Create a new Artifact based on normalized information
 
@@ -44,7 +46,7 @@ class Artifact:
         """
         # Enforce all fields are strings in a Artifact to prevent type corruption in Parquet format
         self._function = str(kwargs.get('function', 'not_specified'))
-        self._record_id = str(kwargs.get('record_id', 'RESERVED'))
+        self._record_id = str(kwargs.get('record_id', self.RESERVED))
         self._source_type = str(source_type)
         self._type = str(normalized_type)
         self._value = str(value)

@@ -344,18 +344,15 @@ class FirehoseClient:
         Returns:
             str: Artifacts Firehose Stream Name
         """
+        # support custom firehose stream name of Artifacts. User should make sure the length of
+        # the custom firehose name is no longer than 64 chars, otherwise the firehose will be
+        # failed to create. StreamAlert is not responsible for checking for custom firehose name
+        # since it should not change custom settings.
         stream_name = config.get('lambda', {}).get(
             'artifact_extractor_config', {}
         ).get('firehose_stream_name')
 
-        if stream_name:
-            # support custom firehose stream name of Artifacts. User should make sure the length of
-            # the custom firehose name is no longer than 64 chars, otherwise the firehose will be
-            # failed to create. StreamAlert is not responsible for checking for custom firehose name
-            # since it should not change custom settings.
-            return stream_name
-
-        return cls.generate_firehose_name(
+        return stream_name or cls.generate_firehose_name(
             prefix=config['global']['account']['prefix'],
             log_stream_name='artifacts'
         )
