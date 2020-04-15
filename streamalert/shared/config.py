@@ -444,7 +444,7 @@ def _validate_sources(cluster_name, data_sources, existing_sources):
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
 
-def artifact_extractor_enabled(config, log_name=None):
+def _artifact_extractor_enabled_helper(config, log_name):
     """Validate if Artifactor Extractor enabled.
     There are two cases need validate if Artifact Extractor enabled.
     1. For deploy Artifact Extractor Lambda function.
@@ -500,3 +500,11 @@ def artifact_extractor_enabled(config, log_name=None):
 
     log_config = config.get('logs', {}).get(log_name, {})
     return 'normalization' in log_config.get('configuration', {})
+
+def artifact_extractor_enabled_for_log(config, log_name):
+    """Validate if Artifact Extractor enabled for a log"""
+    return _artifact_extractor_enabled_helper(config, log_name=log_name)
+
+def artifact_extractor_enabled(config):
+    """Validate if Artifact Extractor enabled"""
+    return _artifact_extractor_enabled_helper(config, log_name=None)

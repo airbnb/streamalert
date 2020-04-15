@@ -27,6 +27,7 @@ from pyfakefs import fake_filesystem_unittest
 
 from streamalert.shared.config import (
     artifact_extractor_enabled,
+    artifact_extractor_enabled_for_log,
     _validate_config,
     load_config,
     parse_lambda_arn,
@@ -343,5 +344,5 @@ class TestConfigArtifactExtractor():
 
         self.default_conf_data['global']['infrastructure']['firehose']['enabled'] = True
         assert_true(artifact_extractor_enabled(self.default_conf_data))
-        assert_true(artifact_extractor_enabled(self.default_conf_data, 'test_log:type_1'))
-        assert_false(artifact_extractor_enabled(self.default_conf_data, 'test_log:type_2'))
+        assert_true(artifact_extractor_enabled_for_log(self.default_conf_data, 'test_log:type_1'))
+        assert_false(artifact_extractor_enabled_for_log(self.default_conf_data, 'test_log:type_2'))

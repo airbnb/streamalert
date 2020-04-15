@@ -14,7 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared.firehose import FirehoseClient
-from streamalert.shared.config import artifact_extractor_enabled, firehose_data_bucket
+from streamalert.shared.config import (
+    artifact_extractor_enabled,
+    artifact_extractor_enabled_for_log,
+    firehose_data_bucket
+)
 from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_data_table_schema
 from streamalert_cli.terraform.common import monitoring_topic_arn
@@ -121,7 +125,7 @@ def generate_firehose(logging_bucket, main_dict, config):
         # 1) lambda function is enabled in conf/lambda.json
         # 2) "normalization" field is configured in the log schema settings in conf/schemas/*.json
         #    or conf/logs.json
-        if artifact_extractor_enabled(config, log_type_name):
+        if artifact_extractor_enabled_for_log(config, log_type_name):
             module_dict['function_alias_arn'] = (
                 '${module.artifact_extractor_lambda.function_alias_arn}'
             )
