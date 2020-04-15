@@ -445,14 +445,45 @@ def _validate_sources(cluster_name, data_sources, existing_sources):
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
 
 def artifact_extractor_enabled(config, log_name=None):
-    """Determine if artifactor extractor enabled one a firehose
-    TODO: (cylin) docstring
+    """Validate if Artifactor Extractor enabled.
+    There are two cases need validate if Artifact Extractor enabled.
+    1. For deploy Artifact Extractor Lambda function.
+    2. To enable firehoses to invoke Artifact Extractor Lambda function.
+
+    For case 1, Artifact Extractor Lambda function will be created and deployed if both
+    "artifact_extractor_config" in conf/lambda.json and "firehose" in conf/global.json both enabled.
+
+    For case 2, in addition to above two conditions, a firehose will be setup to
+    "processing_configure" invoke Artifact Extractor lambda function if "normalization" is
+    configured in its schema configuration.
+    For example, the mapped firehose for following log type will setup:
+        {
+            "some_log_type": {
+                "schema": {
+                    "key1": "string",
+                    "key2": "string"
+                },
+                "parser": "json",
+                "configuration": {
+                    "normalization": {
+                        "command": [
+                            "cmdline",
+                            "command"
+                        ]
+                    }
+                }
+            }
+        }
+
     Args:
         config (dict): The loaded config from the 'conf/' directory
         log_name (string): expect to be original log names, e.g. 'aliyun', 'osquery:differential'
 
     Returns:
-        bool: Return True if 'normalization' is configured in a log definition.
+        bool: For case 1, return True if both "artifact_extractor_config" in conf/lambda.json and
+            "firehose" in conf/global.json both enabled.
+            For case 2, return True in addition to have "normalization" configured in the log schema
+            configuration.
     """
     if not config['lambda'].get('artifact_extractor_config', {}).get('enabled', False):
         return False
@@ -466,6 +497,6 @@ def artifact_extractor_enabled(config, log_name=None):
     # function enabled or not, so return early.
     if not log_name:
         return True
-    # FIXME: (cylin) pretty this line and add more comment
+    
     log_config = config.get('logs', {}).get(log_name, {})
     return 'normalization' in log_config.get('configuration', {})
