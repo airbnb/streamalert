@@ -255,11 +255,6 @@ def generate_artifacts_table_schema():
     Returns:
         athena_schema (dict): Equivalent Athena schema used for generating create table statement
     """
-    # alert = Alert('temp_rule_name', {}, {})
-    # output = alert.output_dict()
-    # schema = record_to_schema(output)
-    # athena_schema = logs_schema_to_athena_schema(schema, False)
-
     artifact = Artifact('test_source_type', 'test_normalized_type', 'test_value')
     schema = record_to_schema(artifact.record)
     athena_schema = logs_schema_to_athena_schema(schema, False)

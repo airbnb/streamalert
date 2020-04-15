@@ -349,8 +349,11 @@ class FirehoseClient:
         ).get('firehose_stream_name')
 
         if stream_name:
-            # support custom firehose stream name of Artifacts
-            return cls.generate_firehose_name(prefix='', log_stream_name=stream_name)
+            # support custom firehose stream name of Artifacts. User should make sure the length of
+            # the custom firehose name is no longer than 64 chars, otherwise the firehose will be
+            # failed to create. StreamAlert is not responsible for checking for custom firehose name
+            # since it should not change custom settings.
+            return stream_name
 
         return cls.generate_firehose_name(
             prefix=config['global']['account']['prefix'],

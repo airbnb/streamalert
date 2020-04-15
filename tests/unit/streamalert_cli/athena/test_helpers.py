@@ -150,3 +150,17 @@ def test_generate_data_table_schema_2():
 
     assert_true(helpers.generate_data_table_schema(config, 'cloudwatch:test_match_types'))
     FirehoseClient._ENABLED_LOGS.clear()
+
+def test_generate_artifact_table_schema():
+    """CLI - Athena test generate_artifact_table_schema helper"""
+    result = helpers.generate_artifacts_table_schema()
+
+    expected_result = [
+        ('function', 'string'),
+        ('record_id', 'string'),
+        ('source_type', 'string'),
+        ('type', 'string'),
+        ('value', 'string')
+    ]
+
+    assert_equal(result, expected_result)

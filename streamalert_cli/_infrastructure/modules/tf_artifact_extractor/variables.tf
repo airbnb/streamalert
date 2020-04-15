@@ -51,11 +51,6 @@ variable "kms_key_arn" {
   type = string
 }
 
-variable "cloudwatch_log_group" {
-  type    = string
-  default = "/aws/kinesisfirehose/streamalert"
-}
-
 variable "schema" {
   type = list(tuple([string, string]))
 }

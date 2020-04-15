@@ -87,29 +87,6 @@ data "aws_iam_policy_document" "firehose_s3" {
   }
 }
 
-# FIXME: Confirm do we need cloudwatch permission here. Probably we need.
-// IAM Policy: Write logs to CloudWatch
-resource "aws_iam_role_policy" "streamalert_firehose_cloudwatch" {
-  name   = "WriteDataToCloudWatch"
-  role   = aws_iam_role.streamalert_kinesis_firehose.id
-  policy = data.aws_iam_policy_document.firehose_cloudwatch.json
-}
-
-// IAM Policy Document: Write logs to CloudWatch
-data "aws_iam_policy_document" "firehose_cloudwatch" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "logs:PutLogEvents",
-    ]
-
-    resources = [
-      "arn:aws:logs:${var.region}:${var.account_id}:log-group:${var.cloudwatch_log_group}:log-stream:*",
-    ]
-  }
-}
-
 // IAM Policy: Interact with the Glue Catalog
 resource "aws_iam_role_policy" "streamalert_firehose_glue" {
   name = "FirehoseReadGlueCatalog"

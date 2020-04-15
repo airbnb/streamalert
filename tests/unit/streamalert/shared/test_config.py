@@ -19,11 +19,14 @@ from mock import Mock
 from nose.tools import (
     assert_equal,
     assert_count_equal,
+    assert_false,
     assert_raises,
+    assert_true,
 )
 from pyfakefs import fake_filesystem_unittest
 
 from streamalert.shared.config import (
+    artifact_extractor_enabled,
     _validate_config,
     load_config,
     parse_lambda_arn,
@@ -292,3 +295,53 @@ class TestConfigValidation:
         config = basic_streamalert_config()
         config['clusters']['dev'] = config['clusters']['prod']
         assert_raises(ConfigError, _validate_config, config)
+
+
+class TestConfigArtifactExtractor():
+    """Shared - Test Artifact Extractor configuration with mocked config files"""
+
+    def __init__(self):
+        self.default_conf_data = {}
+
+    def setup(self):
+        self.default_conf_data = {
+            'global': {
+                'infrastructure': {
+                    'firehose': {
+                        'enabled': False,
+                        'enabled_logs': {}
+                    }
+                }
+            },
+            'lambda': {
+                'artifact_extractor_config': {
+                    'enabled': False
+                }
+            },
+            'logs': {
+                'test_log:type_1': {
+                    'schema': {},
+                    'configuration': {
+                        'normalization': {}
+                    }
+                },
+                'test_log:type_2': {
+                    'schema': {},
+                }
+            }
+        }
+
+    def test_artifact_extractor_disabled_by_default(self):
+        """Shared - artifact extractor is disabled with default config"""
+        assert_false(artifact_extractor_enabled(self.default_conf_data))
+
+
+    def test_artifact_extractor(self):
+        """Shared - test artifact_extractor_enabled helper"""
+        self.default_conf_data['lambda']['artifact_extractor_config']['enabled'] = True
+        assert_false(artifact_extractor_enabled(self.default_conf_data))
+
+        self.default_conf_data['global']['infrastructure']['firehose']['enabled'] = True
+        assert_true(artifact_extractor_enabled(self.default_conf_data))
+        assert_true(artifact_extractor_enabled(self.default_conf_data, 'test_log:type_1'))
+        assert_false(artifact_extractor_enabled(self.default_conf_data, 'test_log:type_2'))
