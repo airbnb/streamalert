@@ -56,8 +56,11 @@ def generate_firehose(logging_bucket, main_dict, config):
     # Only add allow firehose to invoke Artifact Extractor Lambda if Lambda if enabled in
     # conf/lambda.json
     if artifact_extractor_enabled(config):
+        main_dict['module']['kinesis_firehose_setup']['artifact_extractor_enabled'] = True
+
+        # FIXME: change variable name to function arn
         main_dict['module']['kinesis_firehose_setup']['function_alias_arn'] = (
-            '${module.artifact_extractor_lambda.function_alias_arn}'
+            '${module.artifact_extractor_lambda.function_arn}'
         )
 
     enabled_logs = FirehoseClient.load_enabled_log_sources(
@@ -126,6 +129,7 @@ def generate_firehose(logging_bucket, main_dict, config):
         # 2) "normalization" field is configured in the log schema settings in conf/schemas/*.json
         #    or conf/logs.json
         if artifact_extractor_enabled_for_log(config, log_type_name):
+            # FIXME: change variable name to function_arn
             module_dict['function_alias_arn'] = (
                 '${module.artifact_extractor_lambda.function_alias_arn}'
             )

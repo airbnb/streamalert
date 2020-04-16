@@ -37,13 +37,6 @@ def generate_artifact_extractor(config):
     ae_config = config['lambda']['artifact_extractor_config']
     stream_name = FirehoseClient.artifacts_firehose_stream_name(config)
 
-    # generate Artifacts Firehose ARN
-    firehose_arn = 'arn:aws:firehose:{region}:{account}:deliverystream/{stream_name}'.format(
-        region=config['global']['account']['region'],
-        account=config['global']['account']['aws_account_id'],
-        stream_name=stream_name
-    )
-
     # Set variables for the artifact extractor module
     result['module']['artifact_extractor'] = {
         'source': './modules/tf_artifact_extractor',
@@ -51,7 +44,7 @@ def generate_artifact_extractor(config):
         'prefix': config['global']['account']['prefix'],
         'region': config['global']['account']['region'],
         'function_role_id': '${module.artifact_extractor_lambda.role_id}',
-        'function_alias_arn': '${module.artifact_extractor_lambda.function_alias}',
+        'function_alias_arn': '${module.artifact_extractor_lambda.function_alias_arn}',
         'glue_catalog_db_name': get_database_name(config),
         'glue_catalog_table_name': ae_config.get('table_name', DEFAULT_ARTIFACTS_TABLE_NAME),
         's3_bucket_name': firehose_data_bucket(config),
@@ -68,8 +61,9 @@ def generate_artifact_extractor(config):
         'streamalert.artifact_extractor.main.handler',
         ae_config,
         config,
+        # Only pass Firehose stream name. Firehose client will translate it to full ARN
         environment={
-            'DESTINATION_FIREHOSE_ARN': firehose_arn
+            'DESTINATION_FIREHOSE_STREAM_NAME': stream_name
         }
     )
 

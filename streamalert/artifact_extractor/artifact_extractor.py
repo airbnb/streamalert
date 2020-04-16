@@ -175,18 +175,16 @@ class ArtifactExtractor:
     def __init__(self, region, src_firehose_arn):
         self._region = region
         self._src_firehose_arn = src_firehose_arn
-        self._dst_firehose_arn = env.get('DESTINATION_FIREHOSE_ARN')
+        self._dst_firehose_arn = env.get('DESTINATION_FIREHOSE_STREAM_NAME')
         self._artifacts = list()
         self._source_type = self._get_source_type()
 
         ArtifactExtractor._config = ArtifactExtractor._config or config.load_config(validate=True)
-        # FIXME: we don't need firehose_config and log_sources here.
+
         ArtifactExtractor._firehose_client = (
             ArtifactExtractor._firehose_client or FirehoseClient.get_client(
                 prefix=self.config['global']['account']['prefix'],
-                artifact_extractor_config=self.config['lambda'].get(
-                    'artifact_extractor_config', {}
-                ).get('enabled', {})
+                artifact_extractor_config=self.config['lambda'].get('artifact_extractor_config', {})
             )
         )
 

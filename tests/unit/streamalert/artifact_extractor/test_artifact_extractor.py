@@ -56,7 +56,7 @@ class TestArtifactExtractor:
     """Test ArtifactExtractor class """
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
 
-    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_ARN': 'unit_test_dst_fh_arn'})
+    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     def setup(self):
         """Setup before each method"""
         with patch('boto3.client'):
