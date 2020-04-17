@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import defaultdict
 import logging
 
 from streamalert.shared.config import TopLevelConfigKeys
+from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
 
@@ -27,6 +29,9 @@ class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
     NORMALIZATION_KEY = 'streamalert:normalization'
+    NORMALIZATION_FIELDS = 'fields'
+    NORMALIZATION_FUNCTION = 'function'
+    NORMALIZATION_VALUES = 'values'
 
     # Store the normalized CEF types mapping to original keys from the records
     _types_config = dict()
@@ -42,25 +47,37 @@ class Normalizer:
         Returns:
             dict: A dict of normalized keys with a list of values
 
+        FIXME: update example
         Example:
-            record={
-                'region': 'us-east-1',
-                'detail': {
-                    'awsRegion': 'us-west-2'
-                }
-            }
-            normalized_types={
-                'region': ['region', 'awsRegion']
+            {
+              'record': {
+                  'region': 'us-east-1',
+                  'detail': {
+                      'awsRegion': 'us-west-2'
+                  }
+              },
+              'normalization': {
+                  'region': {
+                      'values': ['us-east-1', 'us-west-2']
+                      'function': 'AWS region'
+                  }
+              }
             }
 
-            return={
-                'region': ['us-east-1', 'us-west-2']
+            return
+            {
+                'region': {
+                    'values': ['us-east-1', 'us-west-2']
+                    'function': 'AWS region'
+                }
             }
         """
         result = {}
         for key, keys_to_normalize in normalized_types.items():
             values = set()
-            for value in cls._extract_values(record, set(keys_to_normalize)):
+            for value in cls._extract_values(
+                    record, set(keys_to_normalize.get(cls.NORMALIZATION_FIELDS, []))
+                ):
                 # Skip emtpy values
                 if value is None or value == '':
                     continue
@@ -70,7 +87,10 @@ class Normalizer:
             if not values:
                 continue
 
-            result[key] = sorted(values, key=str)
+            result[key] = {
+                cls.NORMALIZATION_VALUES: sorted(values, key=str),
+                cls.NORMALIZATION_FUNCTION: keys_to_normalize.get(cls.NORMALIZATION_FUNCTION)
+            }
 
         return result
 
@@ -129,7 +149,12 @@ class Normalizer:
         Returns:
             set: The values for the normalized type specified
         """
-        return set(record.get(cls.NORMALIZATION_KEY, {}).get(datatype, set()))
+        # return set(record.get(cls.NORMALIZATION_KEY, {}).get(datatype, set()))
+        return set(
+            record.get(
+                cls.NORMALIZATION_KEY, {}
+            ).get(datatype, {}).get(cls.NORMALIZATION_VALUES, set())
+        )
 
     @classmethod
     def load_from_config(cls, config):
@@ -144,9 +169,133 @@ class Normalizer:
         if cls._types_config:
             return cls  # config is already populated
 
-        if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
-            return cls  # nothing to do
-
-        cls._types_config = config[TopLevelConfigKeys.NORMALIZED_TYPES]
+        cls._types_config = cls._load_types_config(config)
 
         return cls  # there are no instance methods, so just return the class
+
+    @classmethod
+    def _load_types_config(cls, config):
+        """Load normalization config both from "logs" and "normalized_types" fields in the config
+
+        Args:
+            config (dict): Config read from 'conf/' directory
+
+        Returns:
+            dict: Return merged normalization config in the format of
+            {
+                'cloudwatch:events': {
+                    'region': {
+                        'fields': [
+                            'region',
+                            'awsRegion'
+                        ]
+                    },
+                    'sourceAccount': {
+                        'fields': [
+                            'account',
+                            'accountId'
+                        ]
+                    },
+                    'sourceAddress': {
+                        'fields': [
+                            'source',
+                            'sourceIPAddress'
+                        ],
+                        'function': 'source ip address'
+                    }
+                }
+            }
+        """
+        # the merged_normalization will have following structure
+        # {
+        #     'cloudwatch:events': {
+        #         'sourceAccount': ['account', 'accountId'],
+        #         'sourceAddress': {
+        #             'fields': ['source', 'sourceIPAddress'],
+        #             'function': 'source ip address'
+        #         }
+        #     }
+        # }
+        merged_normalization = cls._merge_normalization(config)
+
+        types_config = defaultdict(dict)
+        for log_type, normalized_types in merged_normalization.items():
+            type_config = defaultdict(dict)
+            for key, val in normalized_types.items():
+                if isinstance(val, list):
+                    # The normalized type only contains original keys in a list.
+                    type_config[key][cls.NORMALIZATION_FIELDS] = val
+                elif isinstance(val, dict):
+                    # The normalized type has rich definition including "fields" and
+                    # "function" information.
+                    type_config[key] = val
+                else:
+                    raise ConfigError(
+                        'Invalid value type "{}" defiend for {}'.format(type(val), log_type)
+                    )
+
+            types_config[log_type] = type_config
+
+        if not types_config:
+            return
+
+        return types_config
+
+    @classmethod
+    def _merge_normalization(cls, config):
+        """Merge normalization config from "logs" and "normalization" fields in the config
+
+        In Normalization v1, the normalized types are defined in conf/normalized_types.json and it
+        is log source based, e.g. osquery, cloudwatch.
+
+        In Normalization v2, the normalized types are defined in conf/logs.json or conf/schemas/ and
+        it is log type based, e.g. osquery:differential, cloudwatch:events, cloudwatch:cloudtrail.
+
+        Both definitions are valid and they will be merged to provide backward compatiblility and
+        flexibility.
+
+        Args:
+            config (dict): Config read from 'conf/' directory
+
+        Returns:
+            dict: return merged normalization information with following structure
+                {
+                    'cloudwatch:events': {
+                        'sourceAccount': ['account', 'accountId'],
+                        'sourceAddress': {
+                            'fields': ['source', 'sourceIPAddress'],
+                            'function': 'source ip address'
+                        }
+                    }
+                }
+        """
+        normalized_config = defaultdict(dict)
+        for log_type, val in config.get(TopLevelConfigKeys.LOGS, {}).items():
+            log_type_normalization = val.get('configuration', {}).get('normalization')
+
+            if log_type_normalization:
+                # add normalization info if it is defined in log type configuration field
+                normalized_config[log_type] = log_type_normalization
+
+            # osquery is the log_source of log type "osquery:differential"
+            log_source = log_type.split(':')[0]
+
+            if not config.get(TopLevelConfigKeys.NORMALIZED_TYPES):
+                # skip if config['normalized_types'] doesn't exist
+                continue
+
+            if log_source not in config.get(TopLevelConfigKeys.NORMALIZED_TYPES):
+                # skip if the log source has no normalized types defined in
+                # config['normalized_types']
+                continue
+
+            if normalized_config.get(log_type):
+                normalized_config[log_type].update(
+                    config[TopLevelConfigKeys.NORMALIZED_TYPES][log_source]
+                )
+            else:
+                normalized_config[log_type] = (
+                    config[TopLevelConfigKeys.NORMALIZED_TYPES][log_source]
+                )
+
+        return normalized_config

@@ -26,8 +26,6 @@ LOGGER = get_logger(__name__)
 class Artifact:
     """Encapsulation of a single Artifact that is extracted from an input record."""
 
-    RESERVED = 'RESERVED'
-
     def __init__(self, source_type, normalized_type, value, **kwargs):
         """Create a new Artifact based on normalized information
 
@@ -39,14 +37,16 @@ class Artifact:
                 could have a value of “50.50.50.50”
 
         Kwargs (optional):
-            function (str): Describes how this field is used in the record, or what it means.
+            function (str): Describes how this field is used in the record, or what it means. It
+                will be "None" if no "function" information when searching artifacts in Athena.
             record_id (str): Currently it is reserved for future support. It will come from the
                 record processed by classifier. This field is very useful for cross reference back
-                to the original record in the future.
+                to the original record in the future. It will be "None" if no "record_id"
+                information when searching artifacts in Athena.
         """
         # Enforce all fields are strings in a Artifact to prevent type corruption in Parquet format
-        self._function = str(kwargs.get('function', 'not_specified'))
-        self._record_id = str(kwargs.get('record_id', self.RESERVED))
+        self._function = str(kwargs.get('function'))
+        self._record_id = str(kwargs.get('record_id'))
         self._source_type = str(source_type)
         self._type = str(normalized_type)
         self._value = str(value)
@@ -112,10 +112,26 @@ class FirehoseRecord:
             # Return immediately if can not identify source_type. a.k.a do not extract artifacts.
             return artifacts
 
+        # normalized information in the record will be similar to
+        # {
+        #   'record': {
+        #       'region': 'us-east-1',
+        #       'detail': {
+        #           'awsRegion': 'us-west-2'
+        #       }
+        #   },
+        #   'normalization': {
+        #       'region': {
+        #           'values': ['us-east-1', 'us-west-2']
+        #           'function': 'AWS region'
+        #       }
+        #   }
+        # }
         for normalized_type, values in self._decoded_record[Normalizer.NORMALIZATION_KEY].items():
-            for value in values:
+            for value in values.get('values'):
                 artifacts.append(Artifact(
-                    record_id=self._decoded_record.get('record_id', 'RESERVED'),
+                    function=values.get('function'),
+                    record_id=self._decoded_record.get('record_id'),
                     source_type=self._source_type,
                     normalized_type=normalized_type,
                     value=value

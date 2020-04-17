@@ -42,7 +42,7 @@ class TestArtifact:
             record_id='test_record_id'
         )
         expected_result = {
-            'function': 'not_specified',
+            'function': 'None',
             'record_id': 'test_record_id',
             'source_type': 'test_source_type',
             'type': 'test_normalized_type',

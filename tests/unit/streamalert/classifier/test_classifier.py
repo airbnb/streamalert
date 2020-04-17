@@ -246,7 +246,7 @@ class TestClassifier:
                 ])
             )
             normalizer_mock.normalize.assert_called_with(
-                payload_record.parsed_records[-1], 'foo'
+                payload_record.parsed_records[-1], 'foo:bar'
             )
             assert_equal(self._classifier._payloads, [payload_record])
             log_mock.assert_called_with(payload_record, 1)
