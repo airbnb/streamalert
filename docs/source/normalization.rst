@@ -59,6 +59,19 @@ Giving some examples to configure normalization v2. All normalized types are arb
       "parser": "json",
       "configuration": {
         "normalization": {
+          "event_name": [
+            "eventName"
+          ],
+          "account": [
+            {
+              "fields": ["account"],
+              "function": "Source account ID"
+            },
+            {
+              "fields": ["recipientAccountId"],
+              "function": "Destination account ID"
+            }
+          ],
           "ip_address": [
             {
               "fields": [
@@ -73,6 +86,9 @@ Giving some examples to configure normalization v2. All normalized types are arb
               ],
               "function": "Destination IP addresses"
             }
+          ],
+          "user_agent": [
+            "userAgent"
           ],
           "user_identity": [
             "userName",
@@ -198,6 +214,29 @@ Deployment
   .. code-block:: bash
 
     python manage.py deploy --function classifier
+
+Artifacts
+=========
+
+Artifacts will be searching via Athena ``artifacts`` table. During the test in staging environment, two fake ``cloudwatch:events`` were sent to a Kinesis data stream.
+
+Those two fake events were searchable in ``cloudwatch_events`` table.
+
+.. figure:: ../images/cloudwatch_events.png
+  :alt: Testing Results from cloudwatch_events Table
+  :align: left
+  :target: _images/cloudwatch_events.png
+
+  (click to enlarge)
+
+Artifacts extracted from those two fake events were searchable in ``artifacts`` table.
+
+.. figure:: ../images/artifacts.png
+  :alt: Artifacts from artifacts Table
+  :align: left
+  :target: _images/artifacts.png
+
+  (click to enlarge)
 
 **************
 Considerations
