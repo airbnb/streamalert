@@ -255,7 +255,13 @@ def generate_artifacts_table_schema():
     Returns:
         athena_schema (dict): Equivalent Athena schema used for generating create table statement
     """
-    artifact = Artifact('test_source_type', 'test_normalized_type', 'test_value')
+    artifact = artifact = Artifact(
+        normalized_type='test_normalized_type',
+        value='test_value',
+        source_type='test_source_type',
+        record_id='test_record_id',
+        function=None
+    )
     schema = record_to_schema(artifact.record)
     athena_schema = logs_schema_to_athena_schema(schema, False)
 

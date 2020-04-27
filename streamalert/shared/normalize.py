@@ -25,10 +25,14 @@ from streamalert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
+CONST_FUNCTION = 'function'
+CONST_PATH = 'path'
+CONST_VALUES = 'values'
+
 class NormalizedType:
     """The class encapsulates normalization information for each normalized type"""
 
-    VALID_KEYS = {'fields', 'function'}
+    VALID_KEYS = {CONST_PATH, CONST_FUNCTION}
     CONST_STR = 'str'
     CONST_DICT = 'dict'
 
@@ -38,18 +42,19 @@ class NormalizedType:
             log_type (str): log type name, e.g. osquery:differential
             normalized_type (str): Normalized type name defined in conf/, e.g. 'sourceAddress',
                 'destination_ip' may be normalized to 'ip_address'.
-            params (list): a list of str or dict contains normalization configuration.
-                When it is read from conf/normalized_type.json, the params is a list of str, e.g.
-                    ['ipv4', 'local_ip']
-                When it is read from conf/schemas/*.json, the params should be a list of dictionary
-                having following format, otherwise it will raise ConfigError.
+            params (list): a list of str or dict contains normalization configuration read from
+                conf/schemas/*.json. The params can be a list of str or a list of dict to specify
+                the path to the keys which will be normalized.
+                e.g.
+                    ['path', 'to', 'the', 'key']
+                or
                     [
                         {
-                            'fields': ['source', 'sourceIPAddress'],
+                            'path': ['detail', 'sourceIPAddress'],
                             'function': 'source ip address'
                         },
                         {
-                            'fields': ['destination'],
+                            'path': ['path', 'to', 'the', 'key'],
                             'function': 'destination ip address'
                         }
                     ]
@@ -72,7 +77,7 @@ class NormalizedType:
             return False
 
         for idx in range(len(self._parsed_params)):
-            if self._parsed_params[idx]['fields'] == other.parsed_params[idx]['fields']:
+            if self._parsed_params[idx][CONST_PATH] == other.parsed_params[idx][CONST_PATH]:
                 continue
 
             return False
@@ -99,7 +104,7 @@ class NormalizedType:
         """Return the normalization configuration which is a list of dict, e.g.
             [
                 {
-                    'fields': {'account', 'accountId'},
+                    'path': ['path', 'to', 'the', 'key'],
                     'function': None
                 }
             ]
@@ -107,11 +112,11 @@ class NormalizedType:
             or
             [
                 {
-                    'fields': {'source', 'sourceIPAddress'},
+                    'path': ['detail', 'sourceIPAddress'],
                     'function': 'source ip address'
                 },
                 {
-                    'fields': {'destination'},
+                    'path': ['path', 'to', 'the', 'destination', 'ip'],
                     'function': 'destination ip address'
                 }
             ]
@@ -119,27 +124,21 @@ class NormalizedType:
         return self._parsed_params
 
     def _parse_params(self, params):
-        """Extract fields and function information from params argument
+        """Extract path and function information from params argument
 
         Args:
             params (list): a list of str or dict contains normalization configuration.
         """
         param_type = self._parse_param_type(params)
 
-        # When it is read from conf/normalized_type.json, the params is a list of str.
-        # When it is read from conf/schemas/*.json, the params should be a list of dictionary
-        # containing 'fields' and 'function' information for normalized types
         if param_type == self.CONST_STR:
+            # Format params to include 'function' field which is set to None.
             return [
                 {
-                    'fields': set(params),
-                    'function': None
+                    CONST_PATH: params,
+                    CONST_FUNCTION: None
                 }
             ]
-
-        for param in params:
-            # Use set to remove duplicated value in 'fields'
-            param['fields'] = set(param['fields'])
 
         return params
 
@@ -168,67 +167,11 @@ class NormalizedType:
              'valid keys are {}').format(params, self.VALID_KEYS)
         )
 
-    def update(self, params):
-        """Update parsed_params attribute.
-
-        This method will be only called when merging normalization v1 configuration
-        (conf/normalized_types.json) into v2.
-        """
-        param_type = self._parse_param_type(params)
-        if param_type == self.CONST_STR:
-            self._deduplicate_params(params)
-            if not params:
-                # Do nothing if the key exist in self._parsed_params
-                return
-
-            # New params will be added to the entry has no 'function' information otherwise add a
-            # new entry.
-            for parsed_param in self._parsed_params:
-                if not parsed_param.get('function'):
-                    parsed_param['fields'].update(params)
-                    return
-
-            # Add a new entry to parsed_params attribute and set 'function' field to None
-            self._parsed_params.append({
-                'fields': set(params),
-                'function': None
-            })
-        else:
-            raise ConfigError(
-                ('Unexpected type detected. It only supports a list of string, but get a list of '
-                 '{} in params {}'.format(param_type, params))
-            )
-
-    def _deduplicate_params(self, params):
-        """Remove duplicated keys from params"""
-        # Flatten all keys from the 'fields' to a list
-        # e.g. self._parse_params = [
-        #     {
-        #         'fields': {'source', 'sourceIPAddress'},
-        #         'function': 'source ip address'
-        #     },
-        #     {
-        #         'fields': {'destination'},
-        #         'function': 'destination ip address'
-        #     }
-        # ]
-        # all_fields will be ['source', 'sourceAddress', 'destination']
-        all_fields = list(
-            itertools.chain(*[parsed_param.get('fields') for parsed_param in self._parsed_params])
-        )
-
-        for param in params:
-            if param in all_fields:
-                params.remove(param)
-
 
 class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
     NORMALIZATION_KEY = 'streamalert:normalization'
-    NORMALIZATION_FIELDS = 'fields'
-    NORMALIZATION_FUNCTION = 'function'
-    NORMALIZATION_VALUES = 'values'
 
     # Store the normalized types mapping to original keys from the records
     _types_config = dict()
@@ -245,80 +188,74 @@ class Normalizer:
             dict: A dict of normalized keys with a list of values
 
         Example:
-            {
-              'record': {
-                  'region': 'us-east-1',
-                  'detail': {
-                      'awsRegion': 'us-west-2'
-                  }
-              },
-              'normalization': {
-                  'region': {
-                      'values': ['us-east-1', 'us-west-2']
-                      'function': 'AWS region'
-                  }
-              }
-            }
-
             return
             {
-                'region': {
-                    'values': ['us-east-1', 'us-west-2']
-                    'function': 'AWS region'
-                }
+                'region': [
+                    {
+                        'values': ['us-east-1']
+                        'function': 'AWS region'
+                    },
+                    {
+                        'values': ['us-west-2']
+                        'function': 'AWS region'
+                    }
+                ]
             }
         """
-        result = {}
-        for key, normalized_type in normalized_types.items():
-            for parsed_param in normalized_type.parsed_params:
-                values = set()
-                # Yikes, 3rd for loop.
-                for value in cls._extract_values(
-                        record, set(parsed_param.get(cls.NORMALIZATION_FIELDS, []))
-                    ):
-                    # Skip emtpy values
-                    if value is None or value == '':
-                        continue
+        results = {}
+        for type_name, type_info in normalized_types.items():
+            result = list(cls._extract_values(record, type_info))
 
-                    values.add(value)
+            if result:
+                results[type_name] = result
 
-                if not values:
-                    continue
+        return results
 
-                result[key] = {
-                    cls.NORMALIZATION_VALUES: sorted(values, key=str),
-                    cls.NORMALIZATION_FUNCTION: parsed_param.get(cls.NORMALIZATION_FUNCTION)
-                }
-
-        return result
 
     @classmethod
-    def _extract_values(cls, record, keys_to_normalize):
+    def _extract_values(cls, record, paths_to_normalize):
         """Recursively extract lists of path parts from a dictionary
 
+        FIXME: update docstring
         Args:
             record (dict): Parsed payload of log
-            keys_to_normalize (set): Normalized keys for which to extract paths
+            paths_to_normalize (set): Normalized keys for which to extract paths
             path (list=None): Parts of current path for which keys are being extracted
 
         Yields:
             list: Parts of path in dictionary that contain normalized keys
         """
-        for key, value in record.items():
-            if isinstance(value, dict):  # If this is a dict, look for nested
-                for nested_value in cls._extract_values(value, keys_to_normalize):
-                    yield nested_value
-                continue
+        # for key, value in record.items():
+        #     if isinstance(value, dict):  # If this is a dict, look for nested
+        #         for nested_value in cls._extract_values(value, paths_to_normalize):
+        #             yield nested_value
+        #         continue
+        #
+        #     if key not in paths_to_normalize:
+        #         continue
+        #
+        #     if isinstance(value, list):  # If this is a list of values, return all of them
+        #         for item in value:
+        #             yield item
+        #         continue
+        #
+        #     yield value
+        for param in paths_to_normalize.parsed_params:
+            found_value = False
+            value = record
+            for key in param.get(CONST_PATH):
+                value = value.get(key)
+                if not value:
+                    break
+                found_value = True
 
-            if key not in keys_to_normalize:
-                continue
-
-            if isinstance(value, list):  # If this is a list of values, return all of them
-                for item in value:
-                    yield item
-                continue
-
-            yield value
+            if found_value:
+                yield {
+                    CONST_FUNCTION: param.get(CONST_FUNCTION) or None,
+                    # if value not a list, it will be cast to a str even it is a dict or other
+                    # types
+                    CONST_VALUES: value if isinstance(value, list) else [str(value)]
+                }
 
     @classmethod
     def normalize(cls, record, log_type):
@@ -347,11 +284,10 @@ class Normalizer:
         Returns:
             set: The values for the normalized type specified
         """
-        return set(
-            record.get(
-                cls.NORMALIZATION_KEY, {}
-            ).get(datatype, {}).get(cls.NORMALIZATION_VALUES, set())
-        )
+        normalization_results = record.get(cls.NORMALIZATION_KEY, {}).get(datatype)
+        if not normalization_results:
+            return
+        return set(itertools.chain(*[result.get(CONST_VALUES) for result in normalization_results]))
 
     @classmethod
     def load_from_config(cls, config):
@@ -366,83 +302,48 @@ class Normalizer:
         if cls._types_config:
             return cls  # config is already populated
 
-        cls._types_config = cls._merge_normalization(config)
+        cls._types_config = cls._parse_normalization(config)
 
         return cls  # there are no instance methods, so just return the class
 
     @classmethod
-    def _merge_normalization(cls, config):
-        """Merge normalization config from conf/schemas/*.json and conf/normalized_types.json
+    def _parse_normalization(cls, config):
+        """Load and parse normalization config from conf/schemas/*.json. Normalization will be
+        configured along with log schema and a path will be provided to find the original key.
 
-        In Normalization v1, the normalized types are defined in conf/normalized_types.json and it
-        is log source based, e.g. osquery, cloudwatch.
-
-        In Normalization v2, the normalized types are defined in conf/logs.json or conf/schemas/ and
-        it is log type based, e.g. osquery:differential, cloudwatch:events, cloudwatch:cloudtrail.
-
-        Both definitions are valid and they will be merged to provide backward compatiblility and
-        flexibility.
+        For example: conf/schemas/cloudwatch.json looks like
+            'cloudwatch:events': {
+                'schema': {
+                    'account': 'string',
+                    'source': 'string',
+                    'other_key': 'string'
+                },
+                'configuration': {
+                    'normalization': {
+                        'region': ['path', 'to', 'original', 'key'],
+                        'ip_address': [
+                            {
+                                'path': ['detail', 'sourceIPAddress'],
+                                'function': 'source ip address'
+                            },
+                            {
+                                'path': ['path', 'to', 'original', 'key'],
+                                'function': 'destination ip address'
+                            }
+                        ]
+                    }
+                }
+            }
 
         Args:
             config (dict): Config read from 'conf/' directory
 
-            conf/schemas/cloudwatch.json looks like (preferred in Normalization v2)
-                'cloudwatch:events': {
-                    'schema': {
-                        'account': 'string',
-                        'source': 'string',
-                        'other_key': 'string'
-                    },
-                    'configuration': {
-                        'normalization': {
-                            'region': ['awsRegion'],
-                            'ip_address': [
-                                {
-                                    'fields': ['source', 'sourceIPAddress'],
-                                    'function': 'source ip address'
-                                },
-                                {
-                                    'fields': ['destination'],
-                                    'function': 'destination ip address'
-                                }
-                            ]
-                        }
-                    }
-                }
-
-            conf/normalized_types.json looks like
-                'cloudwatch': {
-                    'region': ['region', 'awsRegion'],
-                    'sourceAccount': ['account', 'accountId']
-                }
-
         Returns:
-            dict: return merged normalization configuration with following structure
+            dict: return a dict contains normalization information per log type basis.
                 {
                     'cloudwatch:events': {
-                        'region': NormalizedType(
-                            'cloudwatch:events',
-                            'region',
-                            ['region', 'awsRegion']),
-                        'sourceAccount': NormalizedType(
-                            'cloudwatch:events',
-                            'sourceAccount',
-                            ['account', 'accountId']
-                        ),
-                        'ip_address': NormalizedType(
-                            'cloudwatch:events',
-                            'ip_address',
-                            [
-                                {
-                                    'fields': ['source', 'sourceIPAddress'],
-                                    'function': 'source ip address'
-                                },
-                                {
-                                    'fields': ['destination'],
-                                    'function': 'destination ip address'
-                                }
-                            ]
-                        )
+                        'region': NormalizedType(),
+                        'ip_address': NormalizedType()
                     }
                 }
         """
@@ -456,33 +357,8 @@ class Normalizer:
                 # add normalization info if it is defined in log type configuration field
                 result[normalized_type] = NormalizedType(log_type, normalized_type, params)
 
-            # osquery is the log_source of log type "osquery:differential"
-            log_source = log_type.split(':')[0]
-
-            if not cls._normalized_types_field(log_source, config) and result:
-                normalized_config[log_type] = result
-                continue
-
-            # Merge from config['normalized_types'], loading from conf/normalized_types.json
-            for normalized_type, params in config[TopLevelConfigKeys.NORMALIZED_TYPES].get(
-                    log_source, {}
-                ).items():
-                if normalized_type in result:
-                    # FIXME: maybe can use defaultdict(NormalizedType)
-                    result[normalized_type].update(params)
-                else:
-                    result[normalized_type] = NormalizedType(log_type, normalized_type, params)
-
             if result:
                 normalized_config[log_type] = result
 
         # return None is normalized_config is an empty defaultdict.
         return normalized_config or None
-
-    @classmethod
-    def _normalized_types_field(cls, log_source, config):
-        """Check if "normalized_types" field exists and the log_source defined in the conf"""
-        return (
-            config.get(TopLevelConfigKeys.NORMALIZED_TYPES)
-            and log_source in config.get(TopLevelConfigKeys.NORMALIZED_TYPES)
-        )
