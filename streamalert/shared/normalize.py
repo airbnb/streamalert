@@ -216,30 +216,18 @@ class Normalizer:
     def _extract_values(cls, record, paths_to_normalize):
         """Recursively extract lists of path parts from a dictionary
 
-        FIXME: update docstring
         Args:
             record (dict): Parsed payload of log
             paths_to_normalize (set): Normalized keys for which to extract paths
             path (list=None): Parts of current path for which keys are being extracted
 
         Yields:
-            list: Parts of path in dictionary that contain normalized keys
+            dict: A dict contians the values of normalized types. For example,
+                {
+                    'values': ['1.1.1.2']
+                    'function': 'Source ip address'
+                }
         """
-        # for key, value in record.items():
-        #     if isinstance(value, dict):  # If this is a dict, look for nested
-        #         for nested_value in cls._extract_values(value, paths_to_normalize):
-        #             yield nested_value
-        #         continue
-        #
-        #     if key not in paths_to_normalize:
-        #         continue
-        #
-        #     if isinstance(value, list):  # If this is a list of values, return all of them
-        #         for item in value:
-        #             yield item
-        #         continue
-        #
-        #     yield value
         for param in paths_to_normalize.parsed_params:
             found_value = False
             value = record

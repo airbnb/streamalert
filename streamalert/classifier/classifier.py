@@ -188,14 +188,12 @@ class Classifier:
             self._log_bad_records(record, len(record.invalid_records))
 
             for parsed_rec in record.parsed_records:
-                # Normalizer.normalize(parsed_rec, record.log_type)
+                #
                 # In Normalization v1, the normalized types are defined based on log source
-                # (e.g. osquery, cloudwatch etc).
+                # (e.g. osquery, cloudwatch etc) and this will be deprecated.
                 # In Normalization v2, the normalized types are defined based on log type
                 # (e.g. osquery:differential, cloudwatch:cloudtrail, cloudwatch:events etc)
                 #
-                # Both definitions are valid and they will be merged to provide backward
-                # compatibility and flexibility.
                 Normalizer.normalize(parsed_rec, record.log_schema_type)
 
             self._payloads.append(record)
