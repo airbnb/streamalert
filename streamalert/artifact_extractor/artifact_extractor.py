@@ -133,14 +133,15 @@ class FirehoseRecord:
         # }
         #
         for key, values in self._decoded_record[Normalizer.NORMALIZATION_KEY].items():
-            for value in values.get('values', []):
-                artifacts.append(Artifact(
-                    function=values.get('function'),
-                    record_id=self._decoded_record.get('record_id'),
-                    source_type=self._source_type,
-                    normalized_type=key,
-                    value=value
-                ))
+            for value in values:
+                for val in value.get('values', []):
+                    artifacts.append(Artifact(
+                        function=value.get('function'),
+                        record_id=self._decoded_record.get('record_id'),
+                        source_type=self._source_type,
+                        normalized_type=key,
+                        value=val
+                    ))
 
         return artifacts
 

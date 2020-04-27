@@ -27,14 +27,18 @@ def native_firehose_records(normalized=False, count=2):
     if normalized:
         for data in json_data:
             data[Normalizer.NORMALIZATION_KEY] = {
-                'normalized_type1': {
-                    'values': ['value1'],
-                    'function': None
-                },
-                'normalized_type2': {
-                    'values': ['value2', 'value3'],
-                    'function': None
-                }
+                'normalized_type1': [
+                    {
+                        'values': ['value1'],
+                        'function': None
+                    }
+                ],
+                'normalized_type2': [
+                    {
+                        'values': ['value2', 'value3'],
+                        'function': None
+                    }
+                ]
             }
 
     return [
@@ -54,14 +58,18 @@ def transformed_firehose_records(normalized=False, count=2):
     if normalized:
         for data in json_data:
             data[Normalizer.NORMALIZATION_KEY] = {
-                'normalized_type1': {
-                    'values': ['value1'],
-                    'function': None
-                },
-                'normalized_type2': {
-                    'values': ['value2', 'value3'],
-                    'function': None
-                }
+                'normalized_type1': [
+                    {
+                        'values': ['value1'],
+                        'function': None
+                    }
+                ],
+                'normalized_type2': [
+                    {
+                        'values': ['value2', 'value3'],
+                        'function': None
+                    }
+                ]
             }
 
     return {
