@@ -1,0 +1,41 @@
+[
+  {
+    "data": {
+      "action": "added",
+      "calendarTime": "Wed Feb 12 21:38:11 2020 UTC",
+      "columns": {
+        "host": "10.0.2.2",
+        "pid": 12345,
+        "time": 1581542540,
+        "tty": "ttys001",
+        "type": "8",
+        "username": "runlevel"
+      },
+      "decorations": {
+        "envIdentifier": "fake-environment",
+        "roleIdentifier": "fake-role"
+      },
+      "epoch": "0",
+      "hostIdentifier": "sample_demisto",
+      "log_type": "result",
+      "name": "pack_incident-response_last",
+      "unixTime": "1581543491"
+    },
+    "description": "Just shows how to do Demisto stuff",
+    "log": "osquery:differential",
+    "service": "kinesis",
+    "source": "prefix_cluster1_streamalert",
+    "trigger_rules": [
+      "sample_demisto"
+    ],
+    "publisher_tests": {
+      "demisto:sample-integration": [
+        {
+          "jmespath_expression": "\"@demisto.incident_type\"",
+          "condition": "is",
+          "value": "My sample type"
+        }
+      ]
+    }
+  }
+]
