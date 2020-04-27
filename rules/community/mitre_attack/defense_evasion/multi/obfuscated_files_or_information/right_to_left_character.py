@@ -1,9 +1,9 @@
-"""Detection of the right to left override unicode character U+202E in filename or process name."""
+"""Detection of the right to left override unicode character U+202E in file_name or process name."""
 from streamalert.shared.rule import rule
 from streamalert.shared.normalize import Normalizer
 
 
-@rule(datatypes=['command', 'filePath', 'processPath', 'fileName'])
+@rule(datatypes=['command', 'path', 'file_name'])
 def right_to_left_character(rec):
     """
     author:           @javutin
@@ -27,17 +27,12 @@ def right_to_left_character(rec):
         if isinstance(command, str) and rlo in command:
             return True
 
-    file_paths = Normalizer.get_values_for_normalized_type(rec, 'filePath')
-    for file_path in file_paths:
-        if isinstance(file_path, str) and rlo in file_path:
+    paths = Normalizer.get_values_for_normalized_type(rec, 'path')
+    for path in paths:
+        if isinstance(path, str) and rlo in path:
             return True
 
-    process_paths = Normalizer.get_values_for_normalized_type(rec, 'processPath')
-    for process_path in process_paths:
-        if isinstance(process_path, str) and rlo in process_path:
-            return True
-
-    file_names = Normalizer.get_values_for_normalized_type(rec, 'fileName')
+    file_names = Normalizer.get_values_for_normalized_type(rec, 'file_name')
     for file_name in file_names:
         if isinstance(file_name, str) and rlo in file_name:
             return True

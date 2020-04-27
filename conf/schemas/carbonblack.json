@@ -1043,7 +1043,29 @@
         "uid",
         "username",
         "sha256"
-      ]
+      ],
+      "normalization": {
+        "command": [
+          {
+            "path": ["command_line"],
+            "function": "Command line"
+          }
+        ],
+        "path": [
+          {
+            "path": ["path"],
+            "function": "Process path"
+          },
+          {
+            "path": ["parent_path"],
+            "function": "Process parent path"
+          },
+          {
+            "path": ["process_path"],
+            "function": "Process parent path"
+          }
+        ]
+      }
     }
   },
   "carbonblack:ingress.event.regmod": {
