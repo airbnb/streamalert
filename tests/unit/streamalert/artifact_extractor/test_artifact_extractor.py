@@ -39,7 +39,8 @@ class TestArtifact:
             normalized_type='test_normalized_type',
             value='test_value',
             source_type='test_source_type',
-            record_id='test_record_id'
+            record_id='test_record_id',
+            function=None
         )
         expected_result = {
             'function': 'None',

@@ -43,41 +43,95 @@ class TestNormalizer:
             'sourceIPAddress': '1.1.1.3'
         }
 
+    @classmethod
+    def _normalized_type_ip(cls):
+        return NormalizedType(
+            'test_log_type',
+            'ip_address',
+            [
+                {
+                    'path': ['sourceIPAddress'],
+                    'function': 'source ip address'
+                },
+                {
+                    'path': ['detail', 'source'],
+                    'function': 'source ip address'
+                }
+            ]
+        )
+
+    @classmethod
+    def _normalized_type_region(cls):
+        return NormalizedType(
+            'test_log_type',
+            'region',
+            [
+                {
+                    'path': ['region'],
+                    'function': 'AWS region'
+                },
+                {
+                    'path': ['detail', 'awsRegion'],
+                    'function': 'AWS region'
+                }
+            ]
+        )
+
+    @classmethod
+    def _normalized_type_account(cls):
+        return NormalizedType('test_log_type', 'account', ['account'])
+
+    @classmethod
+    def _normalized_type_user_identity(cls):
+        return NormalizedType(
+            'test_log_type',
+            'user_identity',
+            [
+                {
+                    'path': ['detail', 'userIdentity', 'userName'],
+                    'function': 'User name'
+                },
+                {
+                    'path': ['detail', 'userIdentity', 'invokedBy'],
+                    'function': 'Service name'
+                }
+            ]
+        )
+
     def test_match_types(self):
         """Normalizer - Match Types"""
         normalized_types = {
-            'region': NormalizedType('log_type', 'region', ['region', 'awsRegion']),
-            'sourceAccount': NormalizedType(
-                'log_type', 'sourceAccount', ['account', 'accountId']
-            ),
-            'ipv4': NormalizedType(
-                'log_type',
-                'ipv4',
-                [
-                    {
-                        'fields': ['source', 'sourceIPAddress'],
-                        'function': 'source ip address'
-                    },
-                    {
-                        'fields': ['destination'],
-                        'function': 'destination ip address'
-                    }
-                ]
-            )
+            'region': self._normalized_type_region(),
+            'account': self._normalized_type_account(),
+            'ipv4': self._normalized_type_ip()
         }
         expected_results = {
-            'sourceAccount': {
-                'values': [123456],
-                'function': None
-            },
-            'ipv4': {
-                'values': ['1.1.1.2', '1.1.1.3'],
-                'function': 'source ip address'
-            },
-            'region': {
-                'values': ['region_name'],
-                'function': None
-            }
+            'account': [
+                {
+                    'values': ['123456'],
+                    'function': None
+                }
+            ],
+            'ipv4': [
+                {
+                    'values': ['1.1.1.3'],
+                    'function': 'source ip address'
+                },
+                {
+                    'values': ['1.1.1.2'],
+                    'function': 'source ip address'
+                }
+            ],
+            'region': [
+                {
+                    'values': ['region_name'],
+                    'function': 'AWS region'
+                },
+                {
+                    'values': ['region_name'],
+                    'function': 'AWS region'
+                }
+            ]
         }
 
         results = Normalizer.match_types(self._test_record(), normalized_types)
@@ -86,60 +140,51 @@ class TestNormalizer:
     def test_match_types_multiple(self):
         """Normalizer - Match Types, Mutiple Sub-keys"""
         normalized_types = {
-            'account': NormalizedType('test_log_type', 'account', ['account']),
-            'region': NormalizedType('test_log_type', 'region', ['region', 'awsRegion']),
-            'ipv4':  NormalizedType(
-                'test_log_type',
-                'ipv4',
-                ['destination', 'source', 'sourceIPAddress']
-            ),
-            'userName': NormalizedType(
-                'test_log_type',
-                'userName',
-                ['userName', 'owner', 'invokedBy']
-            )
+            'account': self._normalized_type_account(),
+            'ipv4':  self._normalized_type_ip(),
+            'region': self._normalized_type_region(),
+            'user_identity': self._normalized_type_user_identity()
         }
         expected_results = {
-            'account': {
-                'values': [123456],
-                'function': None
-            },
-            'ipv4': {
-                'values': ['1.1.1.2', '1.1.1.3'],
-                'function': None
-            },
-            'region': {
-                'values': ['region_name'],
-                'function': None
-            },
-            'userName': {
-                'values': ['Alice', 'signin.amazonaws.com'],
-                'function': None
-            }
+            'account': [
+                {
+                    'values': ['123456'],
+                    'function': None
+                }
+            ],
+            'ipv4': [
+                {
+                    'values': ['1.1.1.3'],
+                    'function': 'source ip address'
+                },
+                {
+                    'values': ['1.1.1.2'],
+                    'function': 'source ip address'
+                }
+            ],
+            'region': [
+                {
+                    'values': ['region_name'],
+                    'function': 'AWS region'
+                },
+                {
+                    'values': ['region_name'],
+                    'function': 'AWS region'
+                }
+            ],
+            'user_identity': [
+                {
+                    'values': ['Alice'],
+                    'function': 'User name'
+                },
+                {
+                    'values': ['signin.amazonaws.com'],
+                    'function': 'Service name'
+                }
+            ]
         }
 
         results = Normalizer.match_types(self._test_record(), normalized_types)
-        assert_equal(results, expected_results)
-
-    def test_match_types_list(self):
-        """Normalizer - Match Types, List of Values"""
-        normalized_types = {
-            'ipv4': NormalizedType('test_log_type', 'ipv4', ['sourceIPAddress'])
-        }
-
-        expected_results = {
-            'ipv4': {
-                'values': ['1.1.1.2', '1.1.1.3'],
-                'function': None
-            }
-        }
-
-        test_record = {
-            'account': 123456,
-            'sourceIPAddress': ['1.1.1.2', '1.1.1.3']
-        }
-
-        results = Normalizer.match_types(test_record, normalized_types)
         assert_equal(results, expected_results)
 
     def test_normalize(self):
@@ -147,8 +192,8 @@ class TestNormalizer:
         log_type = 'cloudtrail'
         Normalizer._types_config = {
             log_type: {
-                'region': NormalizedType(log_type, 'region', ['region', 'awsRegion']),
-                'sourceAccount': NormalizedType(log_type, 'sourceAccount', ['account', 'accountId'])
+                'region': self._normalized_type_region(),
+                'ipv4': self._normalized_type_ip()
             }
         }
         record = self._test_record()
@@ -167,14 +212,26 @@ class TestNormalizer:
             },
             'sourceIPAddress': '1.1.1.3',
             'streamalert:normalization': {
-                'region': {
-                    'values': ['region_name'],
-                    'function': None
-                },
-                'sourceAccount': {
-                    'values': [123456],
-                    'function': None
-                }
+                'region': [
+                    {
+                        'values': ['region_name'],
+                        'function': 'AWS region'
+                    },
+                    {
+                        'values': ['region_name'],
+                        'function': 'AWS region'
+                    }
+                ],
+                'ipv4': [
+                    {
+                        'values': ['1.1.1.3'],
+                        'function': 'source ip address'
+                    },
+                    {
+                        'values': ['1.1.1.2'],
+                        'function': 'source ip address'
+                    }
+                ]
             }
         }
 
@@ -188,9 +245,9 @@ class TestNormalizer:
                 'normalized_key': NormalizedType(
                     log_type,
                     'normalized_key',
-                    ['normalized_key', 'original_key']
+                    ['original_key', 'original_key']
                 ),
-                'sourceAccount': NormalizedType(log_type, 'sourceAccount', ['account', 'accountId'])
+                'account': self._normalized_type_account()
             }
         }
         record = {
@@ -207,10 +264,12 @@ class TestNormalizer:
                 'original_key': 'fizzbuzz',
             },
             'streamalert:normalization': {
-                'normalized_key': {
-                    'values': ['fizzbuzz'],
-                    'function': None
-                }
+                'normalized_key': [
+                    {
+                        'values': ['fizzbuzz'],
+                        'function': None
+                    }
+                ]
             }
         }
 
@@ -232,24 +291,24 @@ class TestNormalizer:
         }
 
         normalized_types = {
-            'region': NormalizedType('test_log_type', 'region', ['region', 'awsRegion']),
-            'sourceAccount': NormalizedType(
-                'test_log_type',
-                'sourceAccount',
-                ['account', 'accountId']
-            ),
+            'region': self._normalized_type_region(),
+            'account': NormalizedType('test_log_type', 'account', ['accountId']),
             # There is no IP value in record, so normalization should not include this
-            'ipv4': NormalizedType('test_log_type', 'ipv4', ['sourceIPAddress'])
+            'ipv4': self._normalized_type_ip()
         }
         expected_results = {
-            'sourceAccount': {
-                'values': [123456],
-                'function': None
-            },
-            'region': {
-                'values': ['region_name'],
-                'function': None
-            }
+            'account': [
+                {
+                    'values': ['123456'],
+                    'function': None
+                }
+            ],
+            'region': [
+                {
+                    'values': ['region_name'],
+                    'function': 'AWS region'
+                }
+            ]
         }
 
         results = Normalizer.match_types(test_record, normalized_types)
@@ -263,19 +322,17 @@ class TestNormalizer:
         }
 
         normalized_types = {
-            'region': NormalizedType('test_log_type', 'region', ['region', 'awsRegion']),
-            'sourceAccount': NormalizedType(
-                'test_log_type',
-                'sourceAccount',
-                ['account', 'accountId']
-            ),
-            'ipv4': NormalizedType('test_log_type', 'ipv4', ['sourceIPAddress'])
+            'region': self._normalized_type_region(),
+            'account': self._normalized_type_account(),
+            'ipv4': self._normalized_type_ip()
         }
         expected_results = {
-            'sourceAccount': {
-                'values': [123456],
-                'function': None
-            }
+            'account': [
+                {
+                    'values': ['123456'],
+                    'function': None
+                }
+            ]
         }
 
         results = Normalizer.match_types(test_record, normalized_types)
@@ -287,10 +344,12 @@ class TestNormalizer:
         record = {
             'sourceIPAddress': '1.1.1.3',
             'streamalert:normalization': {
-                'ip_v4': {
-                    'values': expected_result,
-                    'function': None
-                },
+                'ip_v4': [
+                    {
+                        'values': expected_result,
+                        'function': None
+                    }
+                ],
             }
         }
 
@@ -303,7 +362,7 @@ class TestNormalizer:
             'streamalert:normalization': {}
         }
 
-        assert_equal(Normalizer.get_values_for_normalized_type(record, 'ip_v4'), set())
+        assert_equal(Normalizer.get_values_for_normalized_type(record, 'ip_v4'), None)
 
     def test_load_from_config_exist_types_config(self):
         """Normalizer - Load normalized_types from conf when it was loaded previously"""
@@ -314,21 +373,23 @@ class TestNormalizer:
         """Normalizer - Load From Config"""
         config = {
             'logs': {
-                'cloudtrail': {}
-            },
-            'normalized_types': {
                 'cloudtrail': {
-                    'region': ['region', 'awsRegion'],
-                    'sourceAccount': ['account', 'accountId']
+                    'schema': {},
+                    'configuration': {
+                        'normalization': {
+                            'region': ['path', 'to', 'awsRegion'],
+                            'sourceAccount': ['path', 'to', 'accountId']
+                        }
+                    }
                 }
             }
         }
         normalizer = Normalizer.load_from_config(config)
         expected_config = {
             'cloudtrail': {
-                'region': NormalizedType('cloudtrail', 'region', ['region', 'awsRegion']),
+                'region': NormalizedType('cloudtrail', 'region', ['path', 'to', 'awsRegion']),
                 'sourceAccount': NormalizedType(
-                    'cloudtrail', 'sourceAccount', ['account', 'accountId']
+                    'cloudtrail', 'sourceAccount', ['path', 'to', 'accountId']
                 )
             }
         }
@@ -354,21 +415,21 @@ class TestNormalizer:
                     'parser': 'json',
                     'configuration': {
                         'normalization': {
+                            'event_name': ['detail', 'eventName'],
                             'region': [
                                 {
-                                    'fields': ['region', 'awsRegion'],
-                                    'function': 'AWS region information'
-                                }
-                            ],
-                            'sourceAccount': ['account', 'accountId'],
-                            'ip_address': [
-                                {
-                                    'fields': ['source', 'sourceIPAddress'],
-                                    'function': 'source ip address'
+                                    'path': ['region'],
+                                    'function': 'aws region information'
                                 },
                                 {
-                                    'fields': ['destination'],
-                                    'function': 'destination ip address'
+                                    'path': ['detail', 'awsRegion'],
+                                    'function': 'aws region information'
+                                }
+                            ],
+                            'ip_address': [
+                                {
+                                    'path': ['detail', 'sourceIPAddress'],
+                                    'function': 'source ip address'
                                 }
                             ]
                         }
@@ -379,21 +440,30 @@ class TestNormalizer:
 
         expected_config = {
             'cloudwatch:events': {
-                'region': NormalizedType('cloudwatch:events', 'region', ['region', 'awsRegion']),
-                'sourceAccount': NormalizedType(
-                    'cloudwatch:events', 'sourceAccount', ['account', 'accountId']
+                'event_name': NormalizedType(
+                    'cloudwatch:events', 'event_name', ['detail', 'eventName']
+                ),
+                'region': NormalizedType(
+                    'cloudwatch:events',
+                    'region',
+                    [
+                        {
+                            'path': ['region'],
+                            'function': 'aws region information'
+                        },
+                        {
+                            'path': ['detail', 'awsRegion'],
+                            'function': 'aws region information'
+                        }
+                    ]
                 ),
                 'ip_address': NormalizedType(
                     'cloudwatch:events',
                     'ip_address',
                     [
                         {
-                            'fields': ['source', 'sourceIPAddress'],
+                            'path': ['detail', 'sourceIPAddress'],
                             'function': 'source ip address'
-                        },
-                        {
-                            'fields': ['destination'],
-                            'function': 'destination ip address'
                         }
                     ]
                 )
@@ -404,9 +474,8 @@ class TestNormalizer:
         assert_equal(normalizer, Normalizer)
         assert_equal(normalizer._types_config, expected_config)
 
-    def test_load_from_config_merge(self):
-        """Normalizer - Load normalization config by merging "normalization" and "logs" fields in
-        the config.
+    def test_load_from_config_deprecate_normalized_types(self):
+        """Normalizer - Load normalization config and deprecate conf/normalized_types.json
         """
         config = {
             'logs': {
@@ -419,15 +488,10 @@ class TestNormalizer:
                     'parser': 'json',
                     'configuration': {
                         'normalization': {
-                            'sourceAccount': ['account', 'accountId'],
                             'ip_address': [
                                 {
-                                    'fields': ['source', 'sourceIPAddress'],
+                                    'path': ['path', 'to', 'sourceIPAddress'],
                                     'function': 'source ip address'
-                                },
-                                {
-                                    'fields': ['destination'],
-                                    'function': 'destination ip address'
                                 }
                             ]
                         }
@@ -444,21 +508,13 @@ class TestNormalizer:
         }
         expected_config = {
             'cloudwatch:events': {
-                'region': NormalizedType('cloudwatch:events', 'region', ['region', 'awsRegion']),
-                'sourceAccount': NormalizedType(
-                    'cloudwatch:events', 'sourceAccount', ['account', 'accountId']
-                ),
                 'ip_address': NormalizedType(
                     'cloudwatch:events',
                     'ip_address',
                     [
                         {
-                            'fields': ['source', 'sourceIPAddress'],
+                            'path': ['path', 'to', 'sourceIPAddress'],
                             'function': 'source ip address'
-                        },
-                        {
-                            'fields': ['destination'],
-                            'function': 'destination ip address'
                         }
                     ]
                 )
@@ -493,71 +549,23 @@ class TestNormalizer:
 
         config = {
             'logs': {
-                'cloudtrail': {}
-            },
-            'normalized_types': {
-                'cloudtrail': {
-                    'region': {
-                        'fields': ['region', 'awsRegion']
+                'cloudwatch:events': {
+                    'schema': {
+                        'account': 'string',
+                        'source': 'string',
+                        'key': 'string'
+                    },
+                    'parser': 'json',
+                    'configuration': {
+                        'normalization': {
+                            'ip_address':{
+                                'path': ['detail', 'sourceIPAddress'],
+                                'function': 'source ip address'
+                            }
+                        }
                     }
-                }
+                },
+                'other_log_type': {}
             }
         }
         assert_raises(ConfigError, Normalizer.load_from_config, config)
-
-class TestNormalizedType:
-    """Test NormalizedType class"""
-    # pylint: disable=no-self-use
-
-    def test_update_one_entry(self):
-        """NormalizedType - Update a NormalizedType instance when normalized types exist"""
-        normalized_type = NormalizedType('cloudwatch:events', 'region', ['region', 'awsRegion'])
-        normalized_type.update(['region'])
-
-        assert_equal(normalized_type.log_type, 'cloudwatch:events')
-        assert_equal(normalized_type.log_source, 'cloudwatch')
-        assert_equal(normalized_type.normalized_type, 'region')
-        assert_equal(
-            normalized_type.parsed_params,
-            [{'fields': {'region', 'awsRegion'}, 'function': None}]
-        )
-
-    def test_update_multiple_entries(self):
-        """NormalizedType - Update a NormalizedType instance to add a new entry"""
-        normalized_type = NormalizedType(
-            'cloudwatch:events',
-            'ip_address',
-            [
-                {
-                    'fields': ['source', 'sourceIPAddress'],
-                    'function': 'source ip address'
-                },
-                {
-                    'fields': ['destination'],
-                    'function': 'destination ip address'
-                }
-            ]
-        )
-
-        normalized_type.update(['source', 'destinationIPAddress'])
-
-        assert_equal(normalized_type.log_type, 'cloudwatch:events')
-        assert_equal(normalized_type.log_source, 'cloudwatch')
-        assert_equal(normalized_type.normalized_type, 'ip_address')
-        assert_equal(
-            normalized_type.parsed_params,
-            [
-                {
-                    'fields': {'source', 'sourceIPAddress'},
-                    'function': 'source ip address'
-                },
-                {
-                    'fields': {'destination'},
-                    'function': 'destination ip address'
-                },
-                {
-                    'fields': {'destinationIPAddress'},
-                    'function': None
-                }
-            ]
-        )
