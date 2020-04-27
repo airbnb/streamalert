@@ -32,13 +32,13 @@ Architecture
 
 Configuration
 =============
-In Normalization v1, the normalized types are based on log source (e.g. osquery, cloudwatch, etc) and defined in ``conf/normalized_types.json`` file.
+In Normalization v1, the normalized types are based on log source (e.g. ``osquery``, ``cloudwatch``, etc) and defined in ``conf/normalized_types.json`` file.
 
-In Normalization v2, the normalized types will be based on log type (e.g. osquery:differential, cloudwatch:cloudtrail, cloudwatch:events, etc) and defined in ``conf/schemas/*.json``. Although, it is recommended to configure normalization in ``conf/schemas/*.json``, the v1 configuration will be still valid and merged to v2.
+In Normalization v2, the normalized types will be based on log type (e.g. ``osquery:differential``, ``cloudwatch:cloudtrail``, ``cloudwatch:events``, etc) and defined in ``conf/schemas/*.json``. Please note, ``conf/normalized_types.json`` will is deprecated.
 
-Giving some examples to configure normalization v2. All normalized types are arbitrary, but we recommend to use all lower cases and underscores to name the normalized types to have better compatibility with Athena.
+Below are some example configurations for normalization v2. All normalized types are arbitrary, but only lower case alphabetic characters and underscores should be used for names in order to be compatible with Athena.
 
-* Normalized all ip addresses (``ip_address``) and user identities (``user_identity``) for ``cloudwatch:events`` events
+* Normalize all ip addresses (``ip_address``) and user identities (``user_identity``) for ``cloudwatch:events`` logs
 
   ``conf/schemas/cloudwatch.json``
 
@@ -59,48 +59,34 @@ Giving some examples to configure normalization v2. All normalized types are arb
       "parser": "json",
       "configuration": {
         "normalization": {
-          "event_name": [
-            "eventName"
-          ],
-          "account": [
-            {
-              "fields": ["account"],
-              "function": "Source account ID"
-            },
-            {
-              "fields": ["recipientAccountId"],
-              "function": "Destination account ID"
-            }
-          ],
           "ip_address": [
             {
-              "fields": [
-                "source",
+              "path": [
+                "detail",
                 "sourceIPAddress"
               ],
               "function": "Source IP addresses"
-            },
-            {
-              "fields": [
-                "destination"
-              ],
-              "function": "Destination IP addresses"
             }
           ],
-          "user_agent": [
-            "userAgent"
-          ],
           "user_identity": [
-            "userName",
-            "owner",
-            "invokedBy",
-            "type"
+            {
+              "path": ["detail", "userIdentity", "type"],
+              "function": "User identity type"
+            },
+            {
+              "path": ["detail", "userIdentity", "arn"],
+              "function": "User identity arn"
+            },
+            {
+              "path": ["detail", "userIdentity", "userName"],
+              "function": "User identity username"
+            }
           ]
         }
       }
     }
 
-* Normalized all commands (``command``) and user identities (``user_identity``) for ``osquery:differential`` events
+* Normalize all commands (``command``) and file paths (``file_path``) for ``osquery:differential`` logs
 
   ``conf/schemas/osquery.json``
 
@@ -133,40 +119,25 @@ Giving some examples to configure normalization v2. All normalized types are arb
         ],
         "normalization": {
           "command": [
-            "cmdline",
-            "command"
-          ],
-          "ip_address": [
             {
-              "fields": [
-                "host",
-                "source",
-                "local_address",
-                "address"
-              ],
-              "function": "Source IP addresses"
-            },
-            {
-              "fields": [
-                "destination",
-                "remote_address",
-                "gateway"
-              ],
-              "function": "Destination IP addresses"
+              "path": ["columns", "command"],
+              "function": "Command line from shell history"
             }
           ],
-          "user_identity": [
-            "username",
-            "user"
+          "file_path": [
+            {
+              "path": ["columns", "history_file"],
+              "function": "Shell history file path"
+            }
           ]
         }
       }
-    }
+    },
 
 Deployment
 ==========
 
-* Artifact Extractor will only work if firehose and historical search enabled in ``conf/global.json``
+* Artifact Extractor will only work if Firehose and Historical Search are enabled in ``conf/global.json``
 
   .. code-block::
 
@@ -195,21 +166,21 @@ Deployment
       ...
     },
 
-* Use StreamAlert cli to deploy Artifact Extractor lambda function and new resources
+* Use StreamAlert cli to deploy Artifact Extractor Lambda function and new resources
 
   The deployment will add following resources.
 
   * A new Lambda function
   * A new Glue catalog table ``artifacts`` for Historical Search via Athena
   * A new Firehose to deliver artifacts to S3 bucket
-  * Update existing Firehoses to allow to invoke Artifact Extractor lambda if it is enabled on the Firehoses
+  * Update existing Firehose delivery streams to allow to invoke Artifact Extractor Lambda if it is enabled on the Firehose delivery streams
   * New permissions, metrics and alarms.
 
   .. code-block:: bash
 
     python manage.py deploy --function artifact_extractor
 
-* If normalization configuration changed in ``conf/schemas/*.json``, make sure deploy classifier as well
+* If the normalization configuration has changed in ``conf/schemas/*.json``, make sure to deploy the classifier Lambda function as well
 
   .. code-block:: bash
 
@@ -218,22 +189,22 @@ Deployment
 Artifacts
 =========
 
-Artifacts will be searching via Athena ``artifacts`` table. During the test in staging environment, two fake ``cloudwatch:events`` were sent to a Kinesis data stream.
+Artifacts will be searchable within the Athena ``artifacts`` table while original logs are still searchable within dedicated table.
 
-Those two fake events were searchable in ``cloudwatch_events`` table.
+Search ``cloudwatch:events`` logs:
 
 .. figure:: ../images/cloudwatch_events.png
   :alt: Testing Results from cloudwatch_events Table
-  :align: left
+  :align: center
   :target: _images/cloudwatch_events.png
 
   (click to enlarge)
 
-Artifacts extracted from those two fake events were searchable in ``artifacts`` table.
+All artifacts, including artifacts extracted from ``cloudwatch:events``, will live in ``artifacts`` table.
 
 .. figure:: ../images/artifacts.png
   :alt: Artifacts from artifacts Table
-  :align: left
+  :align: center
   :target: _images/artifacts.png
 
   (click to enlarge)
