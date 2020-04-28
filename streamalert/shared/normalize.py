@@ -234,6 +234,7 @@ class Normalizer:
             for key in param.get(CONST_PATH):
                 value = value.get(key)
                 if not value:
+                    found_value = False
                     break
                 found_value = True
 
