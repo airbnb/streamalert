@@ -39,10 +39,11 @@ class TestArtifact:
             normalized_type='test_normalized_type',
             value='test_value',
             source_type='test_source_type',
-            record_id='test_record_id'
+            record_id='test_record_id',
+            function=None
         )
         expected_result = {
-            'function': 'not_specified',
+            'function': 'None',
             'record_id': 'test_record_id',
             'source_type': 'test_source_type',
             'type': 'test_normalized_type',
@@ -56,7 +57,7 @@ class TestArtifactExtractor:
     """Test ArtifactExtractor class """
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
 
-    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_ARN': 'unit_test_dst_fh_arn'})
+    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     def setup(self):
         """Setup before each method"""
         with patch('boto3.client'):

@@ -128,7 +128,7 @@ data "aws_iam_policy_document" "firehose_lambda" {
     ]
 
     resources = [
-      var.function_alias_arn
+      "${var.function_alias_arn}*"
     ]
   }
 }

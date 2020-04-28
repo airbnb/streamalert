@@ -64,7 +64,7 @@ class TestTerraformArtifactExtractor:
                     'prefix': 'unit-test',
                     'region': 'us-west-1',
                     'function_role_id': '${module.artifact_extractor_lambda.role_id}',
-                    'function_alias_arn': '${module.artifact_extractor_lambda.function_alias}',
+                    'function_alias_arn': '${module.artifact_extractor_lambda.function_alias_arn}',
                     'glue_catalog_db_name': 'unit-test_streamalert',
                     'glue_catalog_table_name': 'artifacts',
                     's3_bucket_name': 'unit-test-streamalert-data',
@@ -90,10 +90,7 @@ class TestTerraformArtifactExtractor:
                     'environment_variables': {
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info',
-                        'DESTINATION_FIREHOSE_ARN': (
-                            'arn:aws:firehose:us-west-1:12345678910:deliverystream/'
-                            'unit_test_streamalert_artifacts'
-                        )
+                        'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_streamalert_artifacts'
                     },
                     'tags': {}
                 }

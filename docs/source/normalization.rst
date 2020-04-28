@@ -20,15 +20,194 @@ An artifact is any field or subset of data within a record that bears meaning be
 
 ``Artifact Extractor`` Lambda function will build an artifacts inventory based on S3 and Athena services. It enables users to search for all artifacts across whole infrastructure from a single Athena table.
 
+Architecture
+============
+
+.. figure:: ../images/normalization-arch.png
+  :alt: Normalization V2 Architecture
+  :align: center
+  :target: _images/normalization-arch.png
+
+  (click to enlarge)
+
 Configuration
 =============
+In Normalization v1, the normalized types are based on log source (e.g. ``osquery``, ``cloudwatch``, etc) and defined in ``conf/normalized_types.json`` file.
 
-Coming soon.
+In Normalization v2, the normalized types will be based on log type (e.g. ``osquery:differential``, ``cloudwatch:cloudtrail``, ``cloudwatch:events``, etc) and defined in ``conf/schemas/*.json``. Please note, ``conf/normalized_types.json`` will is deprecated.
+
+Below are some example configurations for normalization v2. All normalized types are arbitrary, but only lower case alphabetic characters and underscores should be used for names in order to be compatible with Athena.
+
+* Normalize all ip addresses (``ip_address``) and user identities (``user_identity``) for ``cloudwatch:events`` logs
+
+  ``conf/schemas/cloudwatch.json``
+
+  .. code-block::
+
+    "cloudwatch:events": {
+      "schema": {
+        "account": "string",
+        "detail": {},
+        "detail-type": "string",
+        "id": "string",
+        "region": "string",
+        "resources": [],
+        "source": "string",
+        "time": "string",
+        "version": "string"
+      },
+      "parser": "json",
+      "configuration": {
+        "normalization": {
+          "ip_address": [
+            {
+              "path": [
+                "detail",
+                "sourceIPAddress"
+              ],
+              "function": "Source IP addresses"
+            }
+          ],
+          "user_identity": [
+            {
+              "path": ["detail", "userIdentity", "type"],
+              "function": "User identity type"
+            },
+            {
+              "path": ["detail", "userIdentity", "arn"],
+              "function": "User identity arn"
+            },
+            {
+              "path": ["detail", "userIdentity", "userName"],
+              "function": "User identity username"
+            }
+          ]
+        }
+      }
+    }
+
+* Normalize all commands (``command``) and file paths (``file_path``) for ``osquery:differential`` logs
+
+  ``conf/schemas/osquery.json``
+
+  .. code-block::
+
+    "osquery:differential": {
+      "schema": {
+        "action": "string",
+        "calendarTime": "string",
+        "columns": {},
+        "counter": "integer",
+        "decorations": {},
+        "epoch": "integer",
+        "hostIdentifier": "string",
+        "log_type": "string",
+        "name": "string",
+        "unixTime": "integer",
+        "logNumericsAsNumbers": "string",
+        "numerics": "string"
+      },
+      "parser": "json",
+      "configuration": {
+        "optional_top_level_keys": [
+          "counter",
+          "decorations",
+          "epoch",
+          "log_type",
+          "logNumericsAsNumbers",
+          "numerics"
+        ],
+        "normalization": {
+          "command": [
+            {
+              "path": ["columns", "command"],
+              "function": "Command line from shell history"
+            }
+          ],
+          "file_path": [
+            {
+              "path": ["columns", "history_file"],
+              "function": "Shell history file path"
+            }
+          ]
+        }
+      }
+    },
 
 Deployment
 ==========
 
-Stay tuned.
+* Artifact Extractor will only work if Firehose and Historical Search are enabled in ``conf/global.json``
+
+  .. code-block::
+
+    "infrastructure": {
+      ...
+      "firehose": {
+        "use_prefix": true,
+        "buffer_interval": 60,
+        "buffer_size": 128,
+        "enabled": true,
+        "enabled_logs": {
+          "cloudwatch": {},
+          "osquery": {}
+        }
+      }
+      ...
+    }
+
+* Enable Artifact Extractor feature in ``conf/lambda.json``
+
+  .. code-block::
+
+    "artifact_extractor_config": {
+      "concurrency_limit": 10,
+      "enabled": true,
+      ...
+    },
+
+* Use StreamAlert cli to deploy Artifact Extractor Lambda function and new resources
+
+  The deployment will add following resources.
+
+  * A new Lambda function
+  * A new Glue catalog table ``artifacts`` for Historical Search via Athena
+  * A new Firehose to deliver artifacts to S3 bucket
+  * Update existing Firehose delivery streams to allow to invoke Artifact Extractor Lambda if it is enabled on the Firehose delivery streams
+  * New permissions, metrics and alarms.
+
+  .. code-block:: bash
+
+    python manage.py deploy --function artifact_extractor
+
+* If the normalization configuration has changed in ``conf/schemas/*.json``, make sure to deploy the classifier Lambda function as well
+
+  .. code-block:: bash
+
+    python manage.py deploy --function classifier
+
+Artifacts
+=========
+
+Artifacts will be searchable within the Athena ``artifacts`` table while original logs are still searchable within dedicated table.
+
+Search ``cloudwatch:events`` logs:
+
+.. figure:: ../images/cloudwatch_events.png
+  :alt: Testing Results from cloudwatch_events Table
+  :align: center
+  :target: _images/cloudwatch_events.png
+
+  (click to enlarge)
+
+All artifacts, including artifacts extracted from ``cloudwatch:events``, will live in ``artifacts`` table.
+
+.. figure:: ../images/artifacts.png
+  :alt: Artifacts from artifacts Table
+  :align: center
+  :target: _images/artifacts.png
+
+  (click to enlarge)
 
 **************
 Considerations

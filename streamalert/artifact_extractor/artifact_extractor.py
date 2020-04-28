@@ -26,27 +26,24 @@ LOGGER = get_logger(__name__)
 class Artifact:
     """Encapsulation of a single Artifact that is extracted from an input record."""
 
-    RESERVED = 'RESERVED'
-
-    def __init__(self, source_type, normalized_type, value, **kwargs):
+    def __init__(self, function, record_id, source_type, normalized_type, value):
         """Create a new Artifact based on normalized information
 
         Args:
+            function (str): Describes how this field is used in the record, or what it means.
+            record_id (str): Currently it is reserved for future support. It will come from the
+                record processed by classifier. This field is very useful for cross reference back
+                to the original record in the future. It will be "None" if no "record_id"
+                information when searching artifacts in Athena.
             source_type (str): The original source of the artifact(s) extracted from a record.
                 e.g. osquery_differential, cloudwatch_cloudtrail
             normalized_type (str): Normalized types in a record processed by classifier.
             value (str): This is the true value of the type. E.g, a record of type “ip_address”
                 could have a value of “50.50.50.50”
-
-        Kwargs (optional):
-            function (str): Describes how this field is used in the record, or what it means.
-            record_id (str): Currently it is reserved for future support. It will come from the
-                record processed by classifier. This field is very useful for cross reference back
-                to the original record in the future.
         """
         # Enforce all fields are strings in a Artifact to prevent type corruption in Parquet format
-        self._function = str(kwargs.get('function', 'not_specified'))
-        self._record_id = str(kwargs.get('record_id', self.RESERVED))
+        self._function = str(function)
+        self._record_id = str(record_id)
         self._source_type = str(source_type)
         self._type = str(normalized_type)
         self._value = str(value)
@@ -112,14 +109,39 @@ class FirehoseRecord:
             # Return immediately if can not identify source_type. a.k.a do not extract artifacts.
             return artifacts
 
-        for normalized_type, values in self._decoded_record[Normalizer.NORMALIZATION_KEY].items():
+        #
+        # normalized information in the record will be similar to
+        # {
+        #     'record': {
+        #         'region': 'us-east-1',
+        #         'detail': {
+        #             'awsRegion': 'us-west-2'
+        #         }
+        #     },
+        #     'streamalert:normalization': {
+        #         'region': [
+        #             {
+        #                 'values': ['region_name'],
+        #                 'function': 'AWS region'
+        #             },
+        #             {
+        #                 'values': ['region_name'],
+        #                 'function': 'AWS region'
+        #             }
+        #         ]
+        #     }
+        # }
+        #
+        for key, values in self._decoded_record[Normalizer.NORMALIZATION_KEY].items():
             for value in values:
-                artifacts.append(Artifact(
-                    record_id=self._decoded_record.get('record_id', 'RESERVED'),
-                    source_type=self._source_type,
-                    normalized_type=normalized_type,
-                    value=value
-                ))
+                for val in value.get('values', []):
+                    artifacts.append(Artifact(
+                        function=value.get('function'),
+                        record_id=self._decoded_record.get('record_id'),
+                        source_type=self._source_type,
+                        normalized_type=key,
+                        value=val
+                    ))
 
         return artifacts
 
@@ -175,18 +197,16 @@ class ArtifactExtractor:
     def __init__(self, region, src_firehose_arn):
         self._region = region
         self._src_firehose_arn = src_firehose_arn
-        self._dst_firehose_arn = env.get('DESTINATION_FIREHOSE_ARN')
+        self._dst_firehose_arn = env.get('DESTINATION_FIREHOSE_STREAM_NAME')
         self._artifacts = list()
         self._source_type = self._get_source_type()
 
         ArtifactExtractor._config = ArtifactExtractor._config or config.load_config(validate=True)
-        # FIXME: we don't need firehose_config and log_sources here.
+
         ArtifactExtractor._firehose_client = (
             ArtifactExtractor._firehose_client or FirehoseClient.get_client(
                 prefix=self.config['global']['account']['prefix'],
-                artifact_extractor_config=self.config['lambda'].get(
-                    'artifact_extractor_config', {}
-                ).get('enabled', {})
+                artifact_extractor_config=self.config['lambda'].get('artifact_extractor_config', {})
             )
         )
 

@@ -10,14 +10,12 @@ data "aws_iam_policy_document" "put_artifacts_firehose_policy" {
     effect = "Allow"
 
     actions = [
-      "firehose:DeleteDeliveryStream",
-      "firehose:PutRecord",
       "firehose:PutRecordBatch",
-      "firehose:UpdateDestination"
+      "firehose:DescribeDeliveryStream",
     ]
 
     resources = [
-      var.function_alias_arn
+      aws_kinesis_firehose_delivery_stream.streamalert_artifacts.arn
     ]
   }
 }

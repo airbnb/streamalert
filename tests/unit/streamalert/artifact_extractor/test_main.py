@@ -33,7 +33,7 @@ class TestArtifactExtractorHandler:
     """Test Artifact Extractor lambda function handler"""
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
 
-    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_ARN': 'unit_test_dst_fh_arn'})
+    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     def setup(self):
         """Setup before each method"""
         with patch('boto3.client'):
@@ -47,7 +47,7 @@ class TestArtifactExtractorHandler:
         """Teardown after each method"""
         ArtifactExtractor._firehose_client = None
 
-    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_ARN': 'unit_test_dst_fh_arn'})
+    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     @patch('streamalert.artifact_extractor.artifact_extractor.LOGGER')
     def test_handler_zero_artifact(self, logger_mock):
         """ArtifactExtractor - Test handler extracts zero artifact"""
@@ -69,7 +69,7 @@ class TestArtifactExtractorHandler:
         expected_result = transformed_firehose_records()
         assert_equal(result, expected_result)
 
-    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_ARN': 'unit_test_dst_fh_arn'})
+    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     @patch.object(FirehoseClient, '_send_batch')
     @patch('streamalert.artifact_extractor.artifact_extractor.LOGGER')
     def test_handler(self, logger_mock, send_batch_mock):
@@ -97,7 +97,7 @@ class TestArtifactExtractorHandler:
         expected_result = transformed_firehose_records(normalized=True)
         assert_equal(result, expected_result)
 
-    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_ARN': 'unit_test_dst_fh_arn'})
+    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     @patch('streamalert.artifact_extractor.artifact_extractor.LOGGER')
     def test_handler_invalid_source_type(self, logger_mock):
         """ArtifactExtractor - Test handler with invalid source type from firehose arn"""
