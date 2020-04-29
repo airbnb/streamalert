@@ -12,6 +12,12 @@ variable "runtime" {
   description = "Function runtime environment"
 }
 
+variable "layers" {
+  type        = list(string)
+  default     = []
+  description = "List of Lambda Layer ARNs to use with this function"
+}
+
 variable "handler" {
   description = "Entry point for the function"
 }
