@@ -74,8 +74,8 @@ class TestTerraformArtifactExtractor:
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'schema': [
                         ['function', 'string'],
-                        ['record_id', 'string'],
                         ['source_type', 'string'],
+                        ['streamalert_record_id', 'string'],
                         ['type', 'string'],
                         ['value', 'string']
                     ]

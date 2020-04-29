@@ -157,8 +157,8 @@ def test_generate_artifact_table_schema():
 
     expected_result = [
         ('function', 'string'),
-        ('record_id', 'string'),
         ('source_type', 'string'),
+        ('streamalert_record_id', 'string'),
         ('type', 'string'),
         ('value', 'string')
     ]
