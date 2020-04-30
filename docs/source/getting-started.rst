@@ -38,7 +38,7 @@ Download StreamAlert
 
 .. code-block:: bash
 
-  git clone --branch stable https://github.com/airbnb/streamalert.git
+  git clone --branch master https://github.com/airbnb/streamalert.git
 
 2. Create and activate a virtual environment:
 
