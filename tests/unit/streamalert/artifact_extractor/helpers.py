@@ -18,6 +18,8 @@ import base64
 
 from streamalert.shared.normalize import Normalizer
 
+MOCK_RECORD_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+
 def native_firehose_records(normalized=False, count=2):
     """Generate sample firehose records for unit tests"""
     json_data = [
@@ -44,7 +46,9 @@ def native_firehose_records(normalized=False, count=2):
     return [
         {
             'recordId': 'record_id_{}'.format(cnt),
-            'data': base64.b64encode(json.dumps(json_data[cnt]).encode('utf-8')),
+            'data': base64.b64encode(
+                (json.dumps(json_data[cnt], separators=(',', ':')) + '\n').encode('utf-8')
+            ).decode('utf-8'),
             'approximateArrivalTimestamp': 1583275630000+int(cnt)
         } for cnt in range(count)
     ]
@@ -69,14 +73,17 @@ def transformed_firehose_records(normalized=False, count=2):
                         'values': ['value2', 'value3'],
                         'function': None
                     }
-                ]
+                ],
+                'streamalert_record_id': MOCK_RECORD_ID
             }
 
     return {
         'records': [
             {
                 'result': 'Ok',
-                'data': base64.b64encode(json.dumps(json_data[cnt]).encode('utf-8')),
+                'data': base64.b64encode(
+                    (json.dumps(json_data[cnt], separators=(',', ':')) + '\n').encode('utf-8')
+                ).decode('utf-8'),
                 'recordId': 'record_id_{}'.format(cnt)
             } for cnt in range(count)
         ]
@@ -97,10 +104,10 @@ def generate_artifacts():
     artifacts = [
         {
             'function': 'None',
-            'record_id': 'None',
+            'streamalert_record_id': MOCK_RECORD_ID,
             'source_type': 'unit_test',
             'type': type,
-            'value': value,
+            'value': value
         } for type, value in normalized_values
     ]
 

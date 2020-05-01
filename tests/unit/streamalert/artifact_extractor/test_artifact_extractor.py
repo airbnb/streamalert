@@ -27,6 +27,7 @@ from tests.unit.streamalert.artifact_extractor.helpers import (
     native_firehose_records,
     transformed_firehose_records,
     generate_artifacts,
+    MOCK_RECORD_ID,
 )
 
 
@@ -44,7 +45,7 @@ class TestArtifact:
         )
         expected_result = {
             'function': 'None',
-            'record_id': 'test_record_id',
+            'streamalert_record_id': 'test_record_id',
             'source_type': 'test_source_type',
             'type': 'test_normalized_type',
             'value': 'test_value'
@@ -83,10 +84,12 @@ class TestArtifactExtractor:
         expected_result = transformed_firehose_records()
         assert_equal(result, expected_result)
 
+    @patch('uuid.uuid4')
     @patch.object(FirehoseClient, '_send_batch')
     @patch('streamalert.artifact_extractor.artifact_extractor.LOGGER')
-    def test_run(self, logger_mock, send_batch_mock):
+    def test_run(self, logger_mock, send_batch_mock, uuid_mock):
         """ArtifactExtractor - Test run method extract artifacts"""
+        uuid_mock.return_value = MOCK_RECORD_ID
         result = self._artifact_extractor.run(native_firehose_records(normalized=True))
 
         logger_mock.assert_has_calls([

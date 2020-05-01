@@ -25,7 +25,8 @@ from streamalert.shared.firehose import FirehoseClient
 from tests.unit.streamalert.artifact_extractor.helpers import (
     native_firehose_records,
     transformed_firehose_records,
-    generate_artifacts
+    generate_artifacts,
+    MOCK_RECORD_ID,
 )
 
 
@@ -69,11 +70,13 @@ class TestArtifactExtractorHandler:
         expected_result = transformed_firehose_records()
         assert_equal(result, expected_result)
 
+    @patch('uuid.uuid4')
     @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     @patch.object(FirehoseClient, '_send_batch')
     @patch('streamalert.artifact_extractor.artifact_extractor.LOGGER')
-    def test_handler(self, logger_mock, send_batch_mock):
+    def test_handler(self, logger_mock, send_batch_mock, uuid_mock):
         """ArtifactExtractor - Test handler"""
+        uuid_mock.return_value = MOCK_RECORD_ID
         event = {
             'records': native_firehose_records(normalized=True),
             'region': 'us-east-1',

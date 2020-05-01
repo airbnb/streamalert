@@ -14,6 +14,7 @@ import base64
 import json
 import re
 from os import environ as env
+import uuid
 
 from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared import config
@@ -22,6 +23,8 @@ from streamalert.shared.logger import get_logger
 
 
 LOGGER = get_logger(__name__)
+
+RECORD_ID_KEY = 'streamalert_record_id'
 
 class Artifact:
     """Encapsulation of a single Artifact that is extracted from an input record."""
@@ -57,7 +60,7 @@ class Artifact:
         """
         return {
             'function': self._function,
-            'record_id': self._record_id,
+            RECORD_ID_KEY: self._record_id,
             'source_type': self._source_type,
             'type': self._type,
             'value': self._value,
@@ -70,9 +73,10 @@ class FirehoseRecord:
     def __init__(self, firehose_record, source_type):
         """Create a new Firehose record contains original data and may extract multiple artifacts if
         original data was normalized in the classifier.
-        The original data which will be returned back to source firehose for historical search. And
-        the artifacts, if any, will be sent to a dedicated firehose with simplified schema and land
-        in streamalert data bucket for historical search as well.
+        The transformed data (insert a record_id only) which will be returned back to source
+        firehose for historical search. And the artifacts, if any, will be sent to a dedicated
+        firehose with simplified schema and land in streamalert data bucket for historical search
+        as well.
 
         Args:
             firehose_record (dict): the record passed to lambda from source firehose. It has
@@ -118,7 +122,7 @@ class FirehoseRecord:
         #             'awsRegion': 'us-west-2'
         #         }
         #     },
-        #     'streamalert:normalization': {
+        #     'streamalert_normalization': {
         #         'region': [
         #             {
         #                 'values': ['region_name'],
@@ -132,16 +136,21 @@ class FirehoseRecord:
         #     }
         # }
         #
+        record_id = self._decoded_record.get(RECORD_ID_KEY) or str(uuid.uuid4())
         for key, values in self._decoded_record[Normalizer.NORMALIZATION_KEY].items():
             for value in values:
                 for val in value.get('values', []):
                     artifacts.append(Artifact(
                         function=value.get('function'),
-                        record_id=self._decoded_record.get('record_id'),
+                        record_id=record_id,
                         source_type=self._source_type,
                         normalized_type=key,
                         value=val
                     ))
+
+        # Add a new key "streamalert_record_id" to "streamalert_normalization" field. This new key
+        # will behelpful tracing back to the original record when searching in "artifacts" table.
+        self._decoded_record[Normalizer.NORMALIZATION_KEY][RECORD_ID_KEY] = record_id
 
         return artifacts
 
@@ -162,9 +171,8 @@ class FirehoseRecord:
             Dropped, and ProcessingFailed. The purpose of ArtifactExtractor lambda is to extract
             artifacts and it should not change the data. So the result will alway be 'Ok'.
 
-        data: The transformed data payload, base64-encoded. The purpose of ArtifactExtract lambda
-            function is to extract artifacts and it should not change the original data. Thus, it
-            encapsulates original base64-encoded data.
+        data: The transformed data payload, base64-encoded. The transformed data payload includes a
+            new key "streamalert_record_id" and it's the only difference from original data payload.
 
         Returns:
             dict: A dictionary with required fields 'result', 'data' and 'recordId'.
@@ -172,8 +180,16 @@ class FirehoseRecord:
         return {
             'recordId': self._firehose_record_id,
             'result': 'Ok',
-            'data': self._firehose_data
+            'data': base64.b64encode(self._json_serializer()).decode('utf-8')
         }
+
+    def _json_serializer(self):
+        """Serialize a transformed record to a JSON formatted string
+
+        Returns:
+            str: a JSON formatted string with a newline appened.
+        """
+        return (json.dumps(self._decoded_record, separators=(',', ':')) + '\n').encode('utf-8')
 
 class ArtifactExtractor:
     """ArtifactExtractor class will extract normalized artifacts from batch of records from source

@@ -171,7 +171,7 @@ class NormalizedType:
 class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
-    NORMALIZATION_KEY = 'streamalert:normalization'
+    NORMALIZATION_KEY = 'streamalert_normalization'
 
     # Store the normalized types mapping to original keys from the records
     _types_config = dict()

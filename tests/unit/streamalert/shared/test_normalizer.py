@@ -211,7 +211,7 @@ class TestNormalizer:
                 }
             },
             'sourceIPAddress': '1.1.1.3',
-            'streamalert:normalization': {
+            'streamalert_normalization': {
                 'region': [
                     {
                         'values': ['region_name'],
@@ -263,7 +263,7 @@ class TestNormalizer:
             'original_key': {
                 'original_key': 'fizzbuzz',
             },
-            'streamalert:normalization': {
+            'streamalert_normalization': {
                 'normalized_key': [
                     {
                         'values': ['fizzbuzz'],
@@ -343,7 +343,7 @@ class TestNormalizer:
         expected_result = {'1.1.1.3'}
         record = {
             'sourceIPAddress': '1.1.1.3',
-            'streamalert:normalization': {
+            'streamalert_normalization': {
                 'ip_v4': [
                     {
                         'values': expected_result,
@@ -359,7 +359,7 @@ class TestNormalizer:
         """Normalizer - Get Values for Normalized Type, None"""
         record = {
             'sourceIPAddress': '1.1.1.3',
-            'streamalert:normalization': {}
+            'streamalert_normalization': {}
         }
 
         assert_equal(Normalizer.get_values_for_normalized_type(record, 'ip_v4'), None)
