@@ -246,7 +246,7 @@ class Normalizer:
                 }
         """
         for param in paths_to_normalize.parsed_params:
-            if param.get('condition') and not cls._match_condition(record, param['condition']):
+            if param.get(CONST_CONDITION) and not cls._match_condition(record, param['condition']):
                 # If optional 'condition' block is configured, it will only extract values if
                 # condition is matched.
                 continue
