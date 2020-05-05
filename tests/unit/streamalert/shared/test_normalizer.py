@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from mock import patch
-from nose.tools import assert_equal, assert_raises
+from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.normalize import Normalizer, NormalizedType
@@ -569,3 +569,143 @@ class TestNormalizer:
             }
         }
         assert_raises(ConfigError, Normalizer.load_from_config, config)
+
+    def test_normalize_condition(self):
+        """Normalizer - Test normalization when condition applied"""
+        log_type = 'cloudtrail'
+
+        region = NormalizedType(
+            'test_log_type',
+            'region',
+            [
+                {
+                    'path': ['region'],
+                    'function': 'AWS region'
+                },
+                {
+                    'path': ['detail', 'awsRegion'],
+                    'function': 'AWS region',
+                    'condition': {
+                        'path': ['detail', 'userIdentity', 'userName'],
+                        'not_in': ['alice', 'bob']
+                    }
+                }
+            ]
+        )
+
+        ipv4 = NormalizedType(
+            'test_log_type',
+            'ip_address',
+            [
+                {
+                    'path': ['sourceIPAddress'],
+                    'function': 'source ip address',
+                    'condition': {
+                        'path': ['account'],
+                        'is': '123456'
+                    }
+                },
+                {
+                    'path': ['detail', 'source'],
+                    'function': 'source ip address',
+                    'condition': {
+                        'path': ['account'],
+                        'is_not': '123456'
+                    }
+                }
+            ]
+        )
+
+        Normalizer._types_config = {
+            log_type: {
+                'region': region,
+                'ipv4': ipv4
+            }
+        }
+        record = self._test_record()
+        Normalizer.normalize(record, log_type)
+
+        expected_record = {
+            'account': 123456,
+            'region': 'region_name',
+            'detail': {
+                'awsRegion': 'region_name',
+                'source': '1.1.1.2',
+                'userIdentity': {
+                    "userName": "Alice",
+                    "invokedBy": "signin.amazonaws.com"
+                }
+            },
+            'sourceIPAddress': '1.1.1.3',
+            'streamalert_normalization': {
+                'region': [
+                    {
+                        'values': ['region_name'],
+                        'function': 'AWS region'
+                    }
+                ],
+                'ipv4': [
+                    {
+                        'values': ['1.1.1.3'],
+                        'function': 'source ip address'
+                    }
+                ]
+            }
+        }
+        assert_equal(record, expected_record)
+
+    def test_match_condition(self):
+        """Normalizer - Test match condition with different conditions"""
+        record = self._test_record()
+
+        condition = {
+            'path': ['account'],
+            'is': '123456'
+        }
+        assert_true(Normalizer._match_condition(record, condition))
+
+        condition = {
+            'path': ['account'],
+            'is_not': '123456'
+        }
+        assert_false(Normalizer._match_condition(record, condition))
+
+        condition = {
+            'path': ['detail', 'awsRegion'],
+            'contains': 'region'
+        }
+        assert_true(Normalizer._match_condition(record, condition))
+
+        condition = {
+            'path': ['detail', 'awsRegion'],
+            'contains': 'not_region'
+        }
+        assert_false(Normalizer._match_condition(record, condition))
+
+        condition = {
+            'path': ['detail', 'userIdentity', 'userName'],
+            'not_contains': 'alice'
+        }
+        assert_false(Normalizer._match_condition(record, condition))
+
+        condition = {
+            'path': ['sourceIPAddress'],
+            'in': ['1.1.1.2', '1.1.1.3']
+        }
+        assert_true(Normalizer._match_condition(record, condition))
+
+        condition = {
+            'path': ['sourceIPAddress'],
+            'not_in': ['1.1.1.2', '1.1.1.3']
+        }
+        assert_false(Normalizer._match_condition(record, condition))
+
+        # Only support extract one condition. The result is not quaranteed if multiple conditions
+        # configured. In this test case, it is because 'not_in' condition is checked before
+        # 'contains'
+        condition = {
+            'path': ['detail', 'userIdentity', 'invokedBy'],
+            'contains': 'amazonaws.com',
+            'not_in': ['signin.amazonaws.com', 's3.amazonaws.com']
+        }
+        assert_false(Normalizer._match_condition(record, condition))
