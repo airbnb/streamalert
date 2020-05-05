@@ -36,7 +36,60 @@ In Normalization v1, the normalized types are based on log source (e.g. ``osquer
 
 In Normalization v2, the normalized types will be based on log type (e.g. ``osquery:differential``, ``cloudwatch:cloudtrail``, ``cloudwatch:events``, etc) and defined in ``conf/schemas/*.json``. Please note, ``conf/normalized_types.json`` will is deprecated.
 
-Below are some example configurations for normalization v2. All normalized types are arbitrary, but only lower case alphabetic characters and underscores should be used for names in order to be compatible with Athena.
+All normalized types are arbitrary, but only lower case alphabetic characters and underscores should be used for names in order to be compatible with Athena.
+
+Supported normalization configure syntax:
+
+  .. code-block::
+
+    "cloudwatch:events": {
+      "schema": {
+        "field1": "string",
+        "field2": "string",
+        "field3": "string"
+      },
+      "parser": "json",
+      "configuration": {
+        "normalization": {
+          "normalized_key_name1": [
+            {
+              "path": ["path", "to", "original", "key"],
+              "function": "The purpose of normalized_key_name1",
+              "condition": {
+                "path": ["path", "to", "other", "key"],
+                "is|is_not|in|not_in|contains|not_contains": "string or a list"
+              }
+            }
+          ]
+        }
+      }
+    }
+
+* ``normalized_key_name1``: An arbitrary string to name the normalized key, e.g. ``ip_address``, ``hostname``, ``command`` etc.
+* ``path``: A list contains a json path to the original key which will be normalized.
+* ``function``: Describe the purpose of the normalizer.
+* ``condition``: An optional block that is executed first. If the condition is not met, then this normalizer is skipped.
+
+  * ``path``: A list contains a json path to the condition key.
+  * ``is|is_not|in|not_in|contains|not_contains``: Exactly one of these fields must be provided. This is the value that the conditional field that is compared against. E.g
+
+    .. code-block::
+
+      "condition": {
+        "path": ["account"],
+        "is": "123456"
+      }
+
+      "condition": {
+        "path": ["detail", "userIdentity", "userName"],
+        "in": ["root", "test_username"]
+      }
+
+    .. note::
+
+      Use all lowercases string a list of strings in the conditional field. The value from the record will be converted to all lowercases.
+
+Below are some example configurations for normalization v2.
 
 * Normalize all ip addresses (``ip_address``) and user identities (``user_identity``) for ``cloudwatch:events`` logs
 
@@ -132,7 +185,42 @@ Below are some example configurations for normalization v2. All normalized types
           ]
         }
       }
-    },
+    }
+
+* Normalize username (``user_identity``) for ``cloudwatch:events`` logs when certain condition is met. In the following example, it will only normalize username related to AWS accounts ``11111111`` and ``22222222``.
+
+  ``conf/schemas/cloudwatch.json``
+
+  .. code-block::
+
+    "cloudwatch:events": {
+      "schema": {
+        "account": "string",
+        "detail": {},
+        "detail-type": "string",
+        "id": "string",
+        "region": "string",
+        "resources": [],
+        "source": "string",
+        "time": "string",
+        "version": "string"
+      },
+      "parser": "json",
+      "configuration": {
+        "normalization": {
+          "user_identity": [
+            {
+              "path": ["detail", "userIdentity", "userName"],
+              "function": "User identity username",
+              "condition": {
+                "path": ["account"],
+                "in": ["11111111", "22222222"]
+              }
+            }
+          ]
+        }
+      }
+    }
 
 Deployment
 ==========
