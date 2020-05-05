@@ -78,7 +78,9 @@ class QueryPack:
 
         if isinstance(self._configuration.query_parameters, dict):
             self._query_parameters = {
-                param: self._execution_context.parameter_generator.generate_advanced(configuration)
+                param: self._execution_context.parameter_generator.generate_advanced(
+                    param, configuration
+                )
                 for param, configuration in self._configuration.query_parameters.items()
             }
         elif isinstance(self._configuration.query_parameters, list):
