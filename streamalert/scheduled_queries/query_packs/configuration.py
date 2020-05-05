@@ -52,7 +52,6 @@ Error:
 '''.strip().format(name=self.name, error=e, kwargs=kwargs)
             raise KeyError(msg)
 
-
     @property
     def query_template(self):
         return self._query_template
