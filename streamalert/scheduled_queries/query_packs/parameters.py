@@ -60,7 +60,17 @@ class QueryParameterGenerator:
         if parameter == 'utctimestamp':
             return str(round(self._clock.now.timestamp()))
 
+        if parameter == 'utcisotime':
+            return str(round(self._clock.now.timestamp()))
+
         self._logger.error(
             'Parameter generator does not know how to handle "{}"'.format(parameter)
         )
         return None
+
+    def generate_advanced(self, key, configuration):
+        if callable(configuration):
+            return configuration(self._clock.now)
+
+        # else, default to whatever generate returns
+        return self.generate(key)

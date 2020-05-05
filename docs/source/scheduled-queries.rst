@@ -129,8 +129,42 @@ All scheduled queries are located in the ``scheduled_queries/`` directory, locat
 * ``name`` - (str) The name of this query. This name is published in the final result, and is useful when writing rules.
 * ``description`` - (str) Description of this query. This is published in the final result.
 * ``query`` - (str) A template SQL statement sent to Athena, with query parameters identified ``{like_this}``.
-* ``params`` - (list[str]) A list of query parameters to pass to the query string. These have special values that are calculated at runtime, and are interpolated into the template SQL string.
+* ``params`` - (list[str]|dict[str,callable]) Read on below...
 * ``tags`` - (list[str]) Tags required by this query to be run. The simplest way to use this is to put the **Query pack name** into this array.
+
+params
+``````
+The "params" option specifies how to calculate special query parameters. It supports two formats.
+
+The first format is a list of strings from a predefined set of strings. These have special values that are calculated at runtime,
+and are interpolated into the template SQL string. Here is a list of the supported strings:
+
+
+
+The second format is a dictionary mapping parameter names to functions, like so:
+
+.. code-block:: python
+
+    def func1(date):
+        return date.timestamp()
+
+    def func2(date):
+        return LookupTables.get('aaaa', 'bbbb')
+
+    QueryPackConfiguration(
+        ...
+        query="""
+    SELECT *
+    FROM stuff
+    WHERE
+      dt = '{my_param_1}'
+      AND p2 = '{my_param_2}'
+    """,
+        params={
+            'my_param_1': func1,
+            'my_param_2': func2,
+        }
+    )
 
 
 
