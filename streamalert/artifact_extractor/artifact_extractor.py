@@ -105,7 +105,7 @@ class FirehoseRecord:
         """
         artifacts = []
 
-        if Normalizer.NORMALIZATION_KEY not in self._decoded_record:
+        if not self._decoded_record.get(Normalizer.NORMALIZATION_KEY):
             # Return an empty list if the record doesn't have normalization information.
             return artifacts
 
@@ -149,7 +149,7 @@ class FirehoseRecord:
                     ))
 
         # Add a new key "streamalert_record_id" to "streamalert_normalization" field. This new key
-        # will behelpful tracing back to the original record when searching in "artifacts" table.
+        # will be helpful tracing back to the original record when searching in "artifacts" table.
         self._decoded_record[Normalizer.NORMALIZATION_KEY][RECORD_ID_KEY] = record_id
 
         return artifacts

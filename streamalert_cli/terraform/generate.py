@@ -64,7 +64,7 @@ from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSION = '~> 0.12.9'
-TERRAFORM_PROVIDER_VERSION = '~> 2.28.1'
+TERRAFORM_PROVIDER_VERSION = '~> 2.48.0'
 
 LOGGER = get_logger(__name__)
 

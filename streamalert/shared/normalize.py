@@ -27,12 +27,13 @@ LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 CONST_FUNCTION = 'function'
 CONST_PATH = 'path'
+CONST_CONDITION = 'condition'
 CONST_VALUES = 'values'
 
 class NormalizedType:
     """The class encapsulates normalization information for each normalized type"""
 
-    VALID_KEYS = {CONST_PATH, CONST_FUNCTION}
+    VALID_KEYS = {CONST_PATH, CONST_FUNCTION, CONST_CONDITION}
     CONST_STR = 'str'
     CONST_DICT = 'dict'
 
@@ -156,7 +157,7 @@ class NormalizedType:
         if all(isinstance(param, str) for param in params):
             return self.CONST_STR
 
-        if all(isinstance(param, dict) and set(param.keys()) == self.VALID_KEYS
+        if all(isinstance(param, dict) and set(param.keys()).issubset(self.VALID_KEYS)
                for param in params
               ):
             return self.CONST_DICT
@@ -211,6 +212,22 @@ class Normalizer:
 
         return results
 
+    @classmethod
+    def _find_value(cls, record, path):
+        """Retrieve value from a record based on a json path"""
+        found_value = False
+        value = record
+        for key in path:
+            value = value.get(key)
+            if not value:
+                found_value = False
+                break
+            found_value = True
+
+        if not found_value:
+            return False, None
+
+        return True, value
 
     @classmethod
     def _extract_values(cls, record, paths_to_normalize):
@@ -229,14 +246,12 @@ class Normalizer:
                 }
         """
         for param in paths_to_normalize.parsed_params:
-            found_value = False
-            value = record
-            for key in param.get(CONST_PATH):
-                value = value.get(key)
-                if not value:
-                    found_value = False
-                    break
-                found_value = True
+            if param.get(CONST_CONDITION) and not cls._match_condition(record, param['condition']):
+                # If optional 'condition' block is configured, it will only extract values if
+                # condition is matched.
+                continue
+
+            found_value, value = cls._find_value(record, param.get(CONST_PATH))
 
             if found_value:
                 yield {
@@ -245,6 +260,47 @@ class Normalizer:
                     # types
                     CONST_VALUES: value if isinstance(value, list) else [str(value)]
                 }
+
+    @classmethod
+    def _match_condition(cls, record, condition):
+        """Apply condition to a record before normalization kicked in.
+
+        Returns:
+            bool: Return True if the value of the condition path matches to the condition, otherwise
+                return False. It is False if the path doesn't exist.
+        """
+        if not condition.get('path'):
+            return False
+
+        found_value, value = cls._find_value(record, condition['path'])
+        if not found_value:
+            return False
+
+        # cast value to a str in all lowercases
+        value = str(value).lower()
+
+        # Only support extract one condition. The result is not quaranteed if multiple conditions
+        # configured.
+        # FIXME: log a warning if more than one condition configured.
+        if condition.get('is'):
+            return value == condition['is']
+
+        if condition.get('is_not'):
+            return value != condition['is_not']
+
+        if condition.get('in'):
+            return value in condition['in']
+
+        if condition.get('not_in'):
+            return value not in condition['not_in']
+
+        if condition.get('contains'):
+            return condition['contains'] in value
+
+        if condition.get('not_contains'):
+            return condition['not_contains'] not in value
+
+        return False
 
     @classmethod
     def normalize(cls, record, log_type):
