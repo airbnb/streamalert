@@ -17,7 +17,8 @@ from os import environ as env
 import uuid
 
 from streamalert.shared.firehose import FirehoseClient
-from streamalert.shared import config
+from streamalert.shared import ARTIFACT_EXTRACTOR_NAME, config
+from streamalert.shared.metrics import MetricLogger
 from streamalert.shared.normalize import Normalizer
 from streamalert.shared.logger import get_logger
 
@@ -248,6 +249,12 @@ class ArtifactExtractor:
             transformed_records.append(firehose_record.transformed_record)
 
         LOGGER.debug('Extracted %d artifact(s)', len(self._artifacts))
+
+        MetricLogger.log_metric(
+            ARTIFACT_EXTRACTOR_NAME,
+            MetricLogger.EXTRACTED_ARTIFACTS,
+            len(self._artifacts)
+        )
 
         self.firehose.send_artifacts(self._artifacts, self._dst_firehose_arn)
 

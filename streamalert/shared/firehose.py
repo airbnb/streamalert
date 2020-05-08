@@ -23,7 +23,7 @@ import boto3
 from botocore.exceptions import ClientError, HTTPClientError
 from botocore.exceptions import ConnectionError as BotocoreConnectionError
 
-from streamalert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
+from streamalert.shared import ARTIFACT_EXTRACTOR_NAME, CLASSIFIER_FUNCTION_NAME
 import streamalert.shared.helpers.boto as boto_helpers
 from streamalert.shared.logger import get_logger
 from streamalert.shared.metrics import MetricLogger
@@ -89,7 +89,7 @@ class FirehoseClient:
         ]
 
     @classmethod
-    def _record_batches(cls, records):
+    def _record_batches(cls, records, function_name):
         """Segment the records into batches that conform to Firehose restrictions
 
         This will log any single record that is too large to send, and skip it.
@@ -116,7 +116,7 @@ class FirehoseClient:
 
             if line_len > cls.MAX_RECORD_SIZE:
                 LOGGER.error('Record too large (%d) to send to Firehose:\n%s', line_len, record)
-                cls._log_failed(1)
+                cls._log_failed(1, function_name)
                 continue
 
             # Add the record to the batch
@@ -206,7 +206,7 @@ class FirehoseClient:
         return categorized_records
 
     @classmethod
-    def _finalize(cls, response, stream_name, size):
+    def _finalize(cls, response, stream_name, size, function_name):
         """Perform any final operations for this response, such as metric logging, etc
 
         Args:
@@ -223,7 +223,7 @@ class FirehoseClient:
                 failed for failed in response['RequestResponses']
                 if failed.get('ErrorCode')
             ]
-            cls._log_failed(response['FailedPutCount'])
+            cls._log_failed(response['FailedPutCount'], function_name)
 
             # Only print the first 100 failed records to Cloudwatch logs
             LOGGER.error(
@@ -233,7 +233,7 @@ class FirehoseClient:
             )
             return
 
-        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FIREHOSE_RECORDS_SENT, size)
+        MetricLogger.log_metric(function_name, MetricLogger.FIREHOSE_RECORDS_SENT, size)
         LOGGER.info(
             'Successfully sent %d message(s) to firehose %s with RequestId \'%s\'',
             size,
@@ -242,15 +242,15 @@ class FirehoseClient:
         )
 
     @classmethod
-    def _log_failed(cls, count):
+    def _log_failed(cls, count, function_name):
         """Helper to log the failed Firehose records metric
 
         Args:
             count (int): Number of failed records
         """
-        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FIREHOSE_FAILED_RECORDS, count)
+        MetricLogger.log_metric(function_name, MetricLogger.FIREHOSE_FAILED_RECORDS, count)
 
-    def _send_batch(self, stream_name, record_batch):
+    def _send_batch(self, stream_name, record_batch, function_name):
         """Send record batches to Firehose
 
         Args:
@@ -299,7 +299,7 @@ class FirehoseClient:
             LOGGER.exception('Firehose request failed')
             # Use the current length of the records_data in case some records were
             # successful but others were not
-            self._log_failed(len(records_data))
+            self._log_failed(len(records_data), function_name)
 
     @classmethod
     def generate_firehose_name(cls, prefix, log_stream_name):
@@ -470,10 +470,20 @@ class FirehoseClient:
             formatted_stream_name = self.generate_firehose_name(self._prefix, log_type)
 
             # Process each record batch in the categorized payload set
-            for record_batch in self._record_batches(records):
+            for record_batch in self._record_batches(records, CLASSIFIER_FUNCTION_NAME):
                 batch_size = len(record_batch)
-                response = self._send_batch(formatted_stream_name, record_batch)
-                self._finalize(response, formatted_stream_name, batch_size)
+                response = self._send_batch(
+                    formatted_stream_name,
+                    record_batch,
+                    CLASSIFIER_FUNCTION_NAME
+                )
+
+                self._finalize(
+                    response,
+                    formatted_stream_name,
+                    batch_size,
+                    CLASSIFIER_FUNCTION_NAME
+                )
 
     def send_artifacts(self, artifacts, stream_name):
         """Send artifacts to artifacts Firehose delievery stream
@@ -481,7 +491,12 @@ class FirehoseClient:
             artifacts (list(dict)): A list of artifacts extracted from normalized records.
             stream_name (str): Stream name of destination Firehose.
         """
-        for artifact_batch in self._record_batches(artifacts):
+        for artifact_batch in self._record_batches(artifacts, ARTIFACT_EXTRACTOR_NAME):
             batch_size = len(artifact_batch)
-            response = self._send_batch(stream_name, artifact_batch)
-            self._finalize(response, stream_name, batch_size)
+            response = self._send_batch(stream_name, artifact_batch, ARTIFACT_EXTRACTOR_NAME)
+            self._finalize(
+                response,
+                stream_name,
+                batch_size,
+                ARTIFACT_EXTRACTOR_NAME
+            )

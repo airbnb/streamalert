@@ -94,7 +94,8 @@ class TestArtifactExtractorHandler:
 
         send_batch_mock.assert_called_with(
             'unit_test_dst_fh_arn',
-            generate_artifacts()
+            generate_artifacts(),
+            'artifact_extractor'
         )
 
         expected_result = transformed_firehose_records(normalized=True)

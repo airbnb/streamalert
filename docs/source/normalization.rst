@@ -274,6 +274,32 @@ Deployment
 
     python manage.py deploy --function classifier
 
+Custom Metrics
+==============
+
+Artifact Exactor comes with three custom metrics.
+
+#. ``ArtifactExtractor-ExtractedArtifacts``: Log the number of artifacts extracted from the records
+#. ``ArtifactExtractor-FirehoseFailedRecords``: Log the number of records (artifacts) failed sent to Firehose
+#. ``ArtifactExtractor-FirehoseRecordsSent``: Log the number of records (artifacts) sent to Firehose
+
+By default, the custom metrics is disabled. Enable custom metrics and follow by a ``build`` to create new ``aws_cloudwatch_log_metric_filter`` resources.
+
+  .. code-block::
+
+    # conf/lambda.json
+    "artifact_extractor_config": {
+      "concurrency_limit": 10,
+      "enabled": true,
+      "enable_custom_metrics": true,
+      ...
+    }
+
+  .. code-block::
+
+    python manage.py build --target "metric_filters_ArtifactExtractor_*"
+
+
 Artifacts
 =========
 
