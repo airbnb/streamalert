@@ -18,6 +18,7 @@ import os
 from streamalert.shared import (
     ALERT_MERGER_NAME,
     ALERT_PROCESSOR_NAME,
+    ARTIFACT_EXTRACTOR_NAME,
     ATHENA_PARTITIONER_NAME,
     CLASSIFIER_FUNCTION_NAME,
     RULES_ENGINE_FUNCTION_NAME
@@ -33,6 +34,7 @@ CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 # below when metrics are supported there
 FUNC_PREFIXES = {
     ALERT_MERGER_NAME: 'AlertMerger',
+    ARTIFACT_EXTRACTOR_NAME: 'ArtifactExtractor',
     CLASSIFIER_FUNCTION_NAME: 'Classifier',
     RULES_ENGINE_FUNCTION_NAME: 'RulesEngine'
 }
@@ -75,6 +77,9 @@ class MetricLogger:
     # Alert Merger metric names
     ALERT_ATTEMPTS = 'AlertAttempts'
 
+    # Artifact Extractor metric names
+    EXTRACTED_ARTIFACTS = 'ExtractedArtifacts'
+
     _default_filter = '{{ $.metric_name = "{}" }}'
     _default_value_lookup = '$.metric_value'
 
@@ -89,6 +94,14 @@ class MetricLogger:
             ALERT_ATTEMPTS: (_default_filter.format(ALERT_ATTEMPTS), _default_value_lookup)
         },
         ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
+        ARTIFACT_EXTRACTOR_NAME: {
+            EXTRACTED_ARTIFACTS: (_default_filter.format(EXTRACTED_ARTIFACTS),
+                                  _default_value_lookup),
+            FIREHOSE_FAILED_RECORDS: (_default_filter.format(FIREHOSE_FAILED_RECORDS),
+                                      _default_value_lookup),
+            FIREHOSE_RECORDS_SENT: (_default_filter.format(FIREHOSE_RECORDS_SENT),
+                                    _default_value_lookup)
+        },
         ATHENA_PARTITIONER_NAME: {},  # Placeholder for future athena processor metrics
         CLASSIFIER_FUNCTION_NAME: {
             FAILED_PARSES: (_default_filter.format(FAILED_PARSES),
