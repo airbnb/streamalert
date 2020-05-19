@@ -60,8 +60,8 @@ class AliyunApp(AppIntegration):
         self.request.set_MaxResults(self._MAX_RESULTS)
         self.request.set_StartTime(self._config.last_timestamp)
 
-        # Source code can be found here https://github.com/aliyun/aliyun-openapi-python-sdk/blob/
-        # master/aliyun-python-sdk-actiontrail/aliyunsdkactiontrail/request/v20171204/
+        # Source code can be found here https://github.com/aliyun/aliyun-openapi-python-sdk/
+        # blob/master/aliyun-python-sdk-actiontrail/aliyunsdkactiontrail/request/v20171204/
         # LookupEventsRequest.py
         self.request.set_EndTime(datetime.utcnow().strftime(self.date_formatter()))
 
