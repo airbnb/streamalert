@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from datetime import datetime
 import json
 import re
 
@@ -58,6 +59,11 @@ class AliyunApp(AppIntegration):
         self.request = LookupEventsRequest.LookupEventsRequest()
         self.request.set_MaxResults(self._MAX_RESULTS)
         self.request.set_StartTime(self._config.last_timestamp)
+
+        # Source code can be found here https://github.com/aliyun/aliyun-openapi-python-sdk/blob/
+        # master/aliyun-python-sdk-actiontrail/aliyunsdkactiontrail/request/v20171204/
+        # LookupEventsRequest.py
+        self.request.set_EndTime(datetime.utcnow().strftime(self.date_formatter()))
 
     @classmethod
     def _type(cls):
