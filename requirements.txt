@@ -54,7 +54,7 @@ gitdb2==2.0.6
 GitPython==3.0.4
 google-auth==1.6.3
 google-auth-httplib2==0.0.3
-httplib2==0.14.0
+httplib2==0.18.0
 idna==2.8
 imagesize==1.1.0
 importlib-metadata==0.23
