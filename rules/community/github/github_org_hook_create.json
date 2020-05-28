@@ -1,0 +1,33 @@
+[
+  {
+    "action": "hook.create",
+    "created_at": 1590685471482,
+    "data": {
+      "@timestamp": 1590685471482,
+      "_document_id": "...",
+      "areas_of_responsibility": [
+        "api",
+        "webhook"
+      ],
+      "controller": "Api::OrganizationHooks",
+      "current_user": "myuser",
+      "events": [
+        "pull_request",
+        "pull_request_review",
+        "pull_request_review_comment",
+        "issues",
+        "issue_comment",
+        "meta"
+      ],
+      "hook_id": 1234,
+      "hook_type": "org",
+      "name": "webhook",
+      "request_category": "api",
+      "version": "v3",
+      "webhook": true
+    },
+    "from": "Api::OrganizationHooks#POST",
+    "org": "myorg",
+    "org_id": 1234
+  }
+]
