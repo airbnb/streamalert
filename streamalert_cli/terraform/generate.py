@@ -557,6 +557,7 @@ def _generate_lookup_tables_settings(config):
         '${module.alert_processor_lambda.role_id}',
         '${module.alert_merger_lambda.role_id}',
         '${module.rules_engine_lambda.role_id}',
+        '${module.scheduled_queries.lambda_function_role_id}',
     }
 
     for cluster in config.clusters():
