@@ -28,6 +28,6 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_policy" {
 // Attach VPC policy (if applicable)
 resource "aws_iam_role_policy_attachment" "vpc_access" {
   count      = local.vpc_enabled ? 1 : 0
-  role       = aws_iam_role.role.id
+  role       = aws_iam_role.role[count.index].id
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
