@@ -134,9 +134,8 @@ class TestCommand(CLICommand):
             '-f',
             '--test-files',
             dest='files',
-            metavar='FILENAMES',
             nargs='+',
-            help='One or more file to test, separated by spaces',
+            help='Full path to one or more file(s) to test, separated by spaces',
             action=UniqueSortedFileListAction,
             type=argparse.FileType('r'),
             default=[]
