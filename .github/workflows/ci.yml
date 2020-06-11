@@ -41,7 +41,7 @@ jobs:
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.command }}
       - name: Submit Coverage
-        run: ([ ! -z "$COVERALLS_REPO_TOKEN" ] && coveralls)
+        run: ([ -z "$COVERALLS_REPO_TOKEN" ] && echo "coveralls is skipped in forked repo tests" || coveralls)
         if: matrix.task.name == 'Test'
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
