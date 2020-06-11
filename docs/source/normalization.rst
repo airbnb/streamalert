@@ -268,6 +268,20 @@ Deployment
 
     python manage.py deploy --function artifact_extractor
 
+* Add other permissions to allow the Firehose delivery streams which have normalization configured to invoke Artifact Extractor lambda.
+
+  We can just run a ``build`` to apply all the changes.
+
+  .. code-block:: bash
+
+    python manage.py build
+
+  Or we can targeted apply the changes if  we know which Firehose delivery streams having normalization configured. By default
+
+  .. code-block:: bash
+
+    python manage.py build --target kinesis_firehose_cloudwatch_events kinesis_firehose_osquery_differential kinesis_firehose_setup
+
 * If the normalization configuration has changed in ``conf/schemas/*.json``, make sure to deploy the classifier Lambda function as well
 
   .. code-block:: bash
