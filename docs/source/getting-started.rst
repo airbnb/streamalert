@@ -217,7 +217,7 @@ Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look
 If you look at ``conf/outputs.json``, you'll notice that the SNS topic was automatically added.
 
 7. Configure a rule to send to the alerts topic.
-We will use ``rules/community/cloudtrail/cloudtrail_root_account_usage.py`` as an example, which
+We will use ``rules/community/cloudwatch_events/cloudtrail_root_account_usage.py`` as an example, which
 alerts on any usage of the root AWS account. Change the rule decorator to:
 
 .. code-block:: python
