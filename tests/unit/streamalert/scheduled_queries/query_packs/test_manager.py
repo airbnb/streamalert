@@ -261,6 +261,16 @@ class TestQueryParameterGenerator:
             'Parameter generator does not know how to handle "unsupported"'
         )
 
+    def test_generate_advanced_function(self):
+        """StreamQuery - QueryParameterGenerator - generate_advanced - Function"""
+        def thing(date):
+            return date.strftime('%Y-%m-%d-%H-%I-%S')
+        assert_equals(self._generator.generate_advanced('thing', thing), '2019-01-01-01-01-01')
+
+    def test_generate_advanced_nothing(self):
+        """StreamQuery - QueryParameterGenerator - generate_advanced - Nothing"""
+        assert_equals(self._generator.generate_advanced('utctimestamp', None), '1546304461')
+
 
 @patch('streamalert.scheduled_queries.query_packs.manager.QueryPacksManager')
 def test_new_manager(constructor_spy):
