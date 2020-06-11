@@ -26,7 +26,7 @@ LOGGER = get_logger(__name__)
 
 class LambdaPackage:
     """Build the deployment package for StreamAlert Lambdas"""
-    # The name of the directory to pacakge and basename of the generated .zip file
+    # The name of the directory to package and basename of the generated .zip file
     PACKAGE_NAME = 'streamalert'
 
     # The configurable items for user specified files
