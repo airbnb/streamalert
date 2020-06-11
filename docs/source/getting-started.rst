@@ -208,7 +208,7 @@ Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look
 
 .. code-block:: bash
 
-  python manage.py output aws-sns
+  python manage.py output set aws-sns
 
   Please supply a short and unique descriptor for this SNS topic: test-email
 
