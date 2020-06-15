@@ -137,6 +137,7 @@ class DemistoApiIntegration:
             'type': request.incident_type,
             'name': request.incident_name,
             'owner': request.owner,
+            'playbook': request.playbook,
             'severity': request.severity,
             'labels': request.labels,
             'customFields': request.custom_fields,
@@ -173,6 +174,7 @@ class DemistoCreateIncidentRequest:
     def __init__(self,
                  incident_name='Unnamed StreamAlert Alert',
                  incident_type='Unclassified',
+                 playbook='',
                  severity=SEVERITY_UNKNOWN,
                  owner='StreamAlert',
                  details='Details not specified.',
@@ -185,6 +187,9 @@ class DemistoCreateIncidentRequest:
         # exactly match one in the configured set, it will appear on the Demisto UI as
         # "Unclassified".
         self._incident_type = str(incident_type)
+
+        # The playbook to assign to the case.
+        self._playbook = playbook
 
         # Severity is an integer. Use the constants above.
         self._severity = severity
@@ -221,6 +226,10 @@ class DemistoCreateIncidentRequest:
     @property
     def incident_type(self):
         return self._incident_type
+
+    @property
+    def playbook(self):
+        return self._playbook
 
     @property
     def severity(self):
@@ -282,6 +291,7 @@ class DemistoRequestAssembler:
         # Default presentation values
         default_incident_name = alert.rule_name
         default_incident_type = 'Unclassified'
+        default_playbook = 'Unknown'
         default_severity = 'unknown'
         default_owner = 'StreamAlert'
         default_details = alert.rule_description
@@ -289,6 +299,7 @@ class DemistoRequestAssembler:
 
         # Special keys that publishers can use to modify default presentation
         incident_type = alert_publication.get('@demisto.incident_type', default_incident_type)
+        playbook = alert_publication.get('@demisto.playbook', default_playbook)
         severity = DemistoCreateIncidentRequest.map_severity_string_to_severity_value(
             alert_publication.get('@demisto.severity', default_severity)
         )
@@ -303,6 +314,7 @@ class DemistoRequestAssembler:
             severity=severity,
             owner=owner,
             details=details,
+            playbook=playbook,
             create_investigation=True  # Important: Trigger workbooks automatically
         )
 

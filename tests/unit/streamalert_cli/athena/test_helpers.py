@@ -18,7 +18,7 @@ from nose.tools import assert_equal, assert_true
 
 from streamalert_cli.athena import helpers
 from streamalert_cli.config import CLIConfig
-from streamalert.classifier.clients import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
@@ -150,3 +150,17 @@ def test_generate_data_table_schema_2():
 
     assert_true(helpers.generate_data_table_schema(config, 'cloudwatch:test_match_types'))
     FirehoseClient._ENABLED_LOGS.clear()
+
+def test_generate_artifact_table_schema():
+    """CLI - Athena test generate_artifact_table_schema helper"""
+    result = helpers.generate_artifacts_table_schema()
+
+    expected_result = [
+        ('function', 'string'),
+        ('source_type', 'string'),
+        ('streamalert_record_id', 'string'),
+        ('type', 'string'),
+        ('value', 'string')
+    ]
+
+    assert_equal(result, expected_result)

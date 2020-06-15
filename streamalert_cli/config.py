@@ -24,8 +24,9 @@ from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import continue_prompt
 from streamalert_cli.apps.helpers import save_app_auth_info
 
-LOGGER = get_logger(__name__)
 DEFAULT_CONFIG_PATH = 'conf'
+
+LOGGER = get_logger(__name__)
 
 
 class CLIConfig:

@@ -183,6 +183,13 @@ def _lambda_terraform_targets(config, functions, clusters):
             },
             'enabled': True  # required function
         },
+        'artifact_extractor': {
+            'targets': {
+                'module.artifact_extractor',
+                'module.artifact_extractor_lambda'
+            },
+            'enabled': config['lambda'].get('artifact_extractor_config', {}).get('enabled', False)
+        },
         'athena': {
             'targets': {
                 'module.athena_partitioner_iam',

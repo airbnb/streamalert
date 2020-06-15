@@ -76,10 +76,22 @@ class QueryPack:
         self._query_execution_id = None
         self._query_result = None
 
-        self._query_parameters = {
-            param: self._execution_context.parameter_generator.generate(param)
-            for param in self._configuration.query_parameters
-        }
+        if isinstance(self._configuration.query_parameters, dict):
+            self._query_parameters = {
+                param: self._execution_context.parameter_generator.generate_advanced(
+                    param, configuration
+                )
+                for param, configuration in self._configuration.query_parameters.items()
+            }
+        elif isinstance(self._configuration.query_parameters, list):
+            self._query_parameters = {
+                param: self._execution_context.parameter_generator.generate(param)
+                for param in self._configuration.query_parameters
+            }
+        else:
+            # not intended to be reached
+            self._query_parameters = {}
+
         self._query_string = None
 
     @property

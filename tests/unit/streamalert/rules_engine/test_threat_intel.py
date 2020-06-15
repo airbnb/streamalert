@@ -85,7 +85,7 @@ class TestThreatIntel:
                     'recipientAccountId': '12345'
                 },
                 'source': '1.1.1.2',
-                'streamalert:normalization': {
+                'streamalert_normalization': {
                     'sourceAddress': {'1.1.1.2'},
                     'userName': {'alice'}
                 }
@@ -118,7 +118,7 @@ class TestThreatIntel:
                 'recipientAccountId': '12345'
             },
             'source': '1.1.1.2',
-            'streamalert:normalization': {
+            'streamalert_normalization': {
                 'sourceAddress': {'1.1.1.2'},
                 'userName': {'alice'}
             },
@@ -149,7 +149,7 @@ class TestThreatIntel:
                 'recipientAccountId': '12345'
             },
             'source': '1.1.1.2',
-            'streamalert:normalization': {
+            'streamalert_normalization': {
                 'sourceAddress': {'1.1.1.2'},
                 'userName': {'alice'}
             }
