@@ -362,7 +362,7 @@ class TestNormalizer:
             'streamalert_normalization': {}
         }
 
-        assert_equal(Normalizer.get_values_for_normalized_type(record, 'ip_v4'), None)
+        assert_equal(Normalizer.get_values_for_normalized_type(record, 'ip_v4'), set())
 
     def test_load_from_config_exist_types_config(self):
         """Normalizer - Load normalized_types from conf when it was loaded previously"""
