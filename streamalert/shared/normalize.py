@@ -310,7 +310,7 @@ class Normalizer:
             record (dict): The parsed log without data normalization
             log_type (str): Type of log for which to apply normalizaiton
         """
-        log_normalized_types = cls._types_config.get(log_type)
+        log_normalized_types = cls._types_config.get(log_type) if cls._types_config else None
         if not log_normalized_types:
             LOGGER.debug('No normalized types defined for log type: %s', log_type)
             return
@@ -331,7 +331,9 @@ class Normalizer:
         """
         normalization_results = record.get(cls.NORMALIZATION_KEY, {}).get(datatype)
         if not normalization_results:
-            return
+            # Return an empty set to be compatible existing rules calling this method which doesn't
+            # check if the return value is None or empty set.
+            return set()
         return set(itertools.chain(*[result.get(CONST_VALUES) for result in normalization_results]))
 
     @classmethod
