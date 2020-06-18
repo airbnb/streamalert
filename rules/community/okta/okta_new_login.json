@@ -102,7 +102,7 @@
     "description": "An Okta user logging in from a new device triggers an alert.",
     "log": "okta:logevents",
     "service": "streamalert_app",
-    "source": "prefix_cluster_okta_app",
+    "source": "prefix_cluster_okta_logevents-app-name_app",
     "trigger_rules": [
     ]
   }
