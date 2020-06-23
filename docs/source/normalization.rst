@@ -317,25 +317,116 @@ By default, the custom metrics is disabled. Enable custom metrics and follow by 
 Artifacts
 =========
 
-Artifacts will be searchable within the Athena ``artifacts`` table while original logs are still searchable within dedicated table.
+1. Artifacts will be searchable within the Athena ``artifacts`` table while original logs are still searchable within dedicated table.
 
-Search ``cloudwatch:events`` logs:
+  Search ``cloudwatch:events`` logs:
 
-.. figure:: ../images/cloudwatch_events.png
-  :alt: Testing Results from cloudwatch_events Table
-  :align: center
-  :target: _images/cloudwatch_events.png
+  .. code-block::
 
-  (click to enlarge)
+    SELECT *
+    FROM PREFIX_streamalert.cloudwatch_events
+    WHERE dt='2020-06-22-23'
 
-All artifacts, including artifacts extracted from ``cloudwatch:events``, will live in ``artifacts`` table.
+  .. figure:: ../images/cloudwatch_events.png
+    :alt: Testing Results from cloudwatch_events Table
+    :align: center
+    :target: _images/cloudwatch_events.png
 
-.. figure:: ../images/artifacts.png
-  :alt: Artifacts from artifacts Table
-  :align: center
-  :target: _images/artifacts.png
+    (click to enlarge)
 
-  (click to enlarge)
+2. All artifacts, including artifacts extracted from ``cloudwatch:events``, will live in ``artifacts`` table.
+
+  .. code-block::
+
+    SELECT *
+    FROM PREFIX_streamalert.artifacts
+    WHERE dt='2020-06-22-23'
+
+  .. figure:: ../images/artifacts.png
+    :alt: Artifacts from artifacts Table
+    :align: center
+    :target: _images/artifacts.png
+
+    (click to enlarge)
+
+3. (Advanced) Use join search to find original record associated to the artifacts by ``streamalert_record_id``
+
+  .. code-block::
+
+    SELECT artifacts.*,
+             cloudwatch.*
+    FROM
+        (SELECT streamalert_record_id AS record_id,
+             type,
+             value
+        FROM PREFIX_streamalert.artifacts
+        WHERE dt ='2020-06-22-23'
+                AND type='user_identity'
+                AND LOWER(value)='root' LIMIT 10) AS artifacts
+    LEFT JOIN
+        (SELECT streamalert_normalization['streamalert_record_id'] AS record_id, detail
+        FROM PREFIX_streamalert.cloudwatch_events
+        WHERE dt ='2020-06-22-23' LIMIT 10) AS cloudwatch
+        ON artifacts.record_id = cloudwatch.record_id
+
+  .. figure:: ../images/join_search.png
+    :alt: JOIN Search Result
+    :align: center
+    :target: _images/join_search.png
+
+    (click to enlarge)
+
+  .. note::
+
+    Instead issue two searches, we can use JOIN statement to search once across two tables to find the original record(s) associated with the interesting artifacts. This requires ``streamalert_normalization`` field where contains ``streamalert_record_id`` searchable in the original table. Current process is add ``streamalert_normalization`` field as a top level optional key to the schema.
+
+  * Update schema ``conf/schemas/cloudwatch.json``
+
+    .. code-block::
+
+      "cloudwatch:events": {
+        "schema": {
+          "account": "string",
+          "detail": {},
+          "detail-type": "string",
+          "id": "string",
+          "region": "string",
+          "resources": [],
+          "source": "string",
+          "streamalert_normalization": {},
+          "time": "string",
+          "version": "string"
+        },
+        "parser": "json",
+        "configuration": {
+          "optional_top_level_keys": [
+            "streamalert_normalization"
+          ],
+          "normalization": {
+            "user_identity": [
+              {
+                "path": ["detail", "userIdentity", "type"],
+                "function": "User identity type"
+              },
+              {
+                "path": ["detail", "userIdentity", "arn"],
+                "function": "User identity arn"
+              },
+              {
+                "path": ["detail", "userIdentity", "userName"],
+                "function": "User identity username"
+              }
+            ]
+          }
+        }
+      }
+
+  * Apply the change by running
+
+    .. code-block::
+
+      python manage.py build --target "kinesis_firehose_*"
+
 
 **************
 Considerations
