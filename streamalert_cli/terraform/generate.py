@@ -30,6 +30,7 @@ from streamalert_cli.terraform.common import (
     s3_access_logging_bucket,
     terraform_state_bucket,
 )
+from streamalert_cli.terraform.artifact_extractor import generate_artifact_extractor
 from streamalert_cli.terraform.alert_merger import generate_alert_merger
 from streamalert_cli.terraform.alert_processor import generate_alert_processor
 from streamalert_cli.terraform.apps import generate_apps
@@ -63,7 +64,7 @@ from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSION = '~> 0.12.9'
-TERRAFORM_PROVIDER_VERSION = '~> 2.28.1'
+TERRAFORM_PROVIDER_VERSION = '~> 2.48.0'
 
 LOGGER = get_logger(__name__)
 
@@ -418,6 +419,16 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     _create_terraform_module_file(
         generate_main(config, init=init),
         os.path.join(TERRAFORM_FILES_PATH, 'main.tf.json')
+    )
+
+    # Setup Artifact Extractor if it is enabled.
+    # artifact_extractor module is referenced in main.tf.json, so we need to generate it is tf file
+    # right after generating main.tf.json file for "manage.py destroy" command.
+    generate_global_lambda_settings(
+        config,
+        conf_name='artifact_extractor_config',
+        generate_func=generate_artifact_extractor,
+        tf_tmp_file_name='artifact_extractor'
     )
 
     # Return early during the init process, clusters are not needed yet

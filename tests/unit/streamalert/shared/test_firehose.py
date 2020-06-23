@@ -17,7 +17,7 @@ from botocore.exceptions import ClientError
 from mock import Mock, patch
 from nose.tools import assert_equal
 
-from streamalert.classifier.clients.firehose import FirehoseClient
+from streamalert.shared.firehose import FirehoseClient
 
 
 class TestFirehoseClient:
@@ -97,7 +97,7 @@ class TestFirehoseClient:
             ]
         ]
 
-        result = list(FirehoseClient._record_batches(records))
+        result = list(FirehoseClient._record_batches(records, 'test_function_name'))
         assert_equal(result, expected_result)
 
     @patch.object(FirehoseClient, '_log_failed')
@@ -107,15 +107,15 @@ class TestFirehoseClient:
             {'key': 'test' * 1000 * 1000}
         ]
 
-        result = list(FirehoseClient._record_batches(records))
+        result = list(FirehoseClient._record_batches(records, 'test_function_name'))
         assert_equal(result, [])
-        failure_mock.assert_called_with(1)
+        failure_mock.assert_called_with(1, 'test_function_name')
 
     def test_record_batches_max_batch_count(self):
         """FirehoseClient - Record Batches, Max Batch Count"""
         records = self._sample_raw_records(count=501)
 
-        result = list(FirehoseClient._record_batches(records))
+        result = list(FirehoseClient._record_batches(records, 'test_function_name'))
         assert_equal(len(result), 2)
         assert_equal(len(result[0]), 500)
         assert_equal(len(result[1]), 1)
@@ -126,7 +126,7 @@ class TestFirehoseClient:
             {'key_{}'.format(i): 'test' * 100000}
             for i in range(10)
         ]
-        result = list(FirehoseClient._record_batches(records))
+        result = list(FirehoseClient._record_batches(records, 'test_function_name'))
         assert_equal(len(result), 2)
         assert_equal(len(result[0]), 9)
         assert_equal(len(result[1]), 1)
@@ -229,8 +229,8 @@ class TestFirehoseClient:
             ]
         }
 
-        FirehoseClient._finalize(response, 'stream_name', 3)
-        failure_mock.assert_called_with(1)
+        FirehoseClient._finalize(response, 'stream_name', 3, 'test_function_name')
+        failure_mock.assert_called_with(1, 'test_function_name')
 
     @patch('logging.Logger.info')
     def test_finalize_success(self, log_mock):
@@ -244,7 +244,7 @@ class TestFirehoseClient:
             }
         }
 
-        FirehoseClient._finalize(response, stream_name, count)
+        FirehoseClient._finalize(response, stream_name, count, 'test_function_name')
         log_mock.assert_called_with(
             'Successfully sent %d message(s) to firehose %s with RequestId \'%s\'',
             count,
@@ -280,7 +280,7 @@ class TestFirehoseClient:
                 }
             ]
 
-            self._client._send_batch(stream_name, records)
+            self._client._send_batch(stream_name, records, 'test_function_name')
 
             boto_mock.put_record_batch.assert_called_with(
                 DeliveryStreamName=stream_name,
@@ -296,7 +296,7 @@ class TestFirehoseClient:
             error = ClientError({'Error': {'Code': 10}}, 'InvalidRequestException')
             boto_mock.put_record_batch.side_effect = error
 
-            self._client._send_batch(stream_name, ['data'])
+            self._client._send_batch(stream_name, ['data'], 'test_function_name')
 
             log_mock.assert_called_with('Firehose request failed')
 
@@ -412,7 +412,7 @@ class TestFirehoseClient:
         ]
         self._client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
-            'unit_test_streamalert_log_type_01_sub_type_01', expected_batch
+            'unit_test_streamalert_log_type_01_sub_type_01', expected_batch, 'classifier'
         )
 
     @patch.object(FirehoseClient, '_send_batch')
@@ -434,7 +434,7 @@ class TestFirehoseClient:
 
         client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
-            'streamalert_log_type_01_sub_type_01', expected_batch
+            'streamalert_log_type_01_sub_type_01', expected_batch, 'classifier'
         )
 
     @property
@@ -476,7 +476,9 @@ class TestFirehoseClient:
 
         client.send(self._sample_payloads_long_log_name)
         send_batch_mock.assert_called_with(
-            'streamalert_very_very_very_long_log_stream_name_abcdefg_7c88167b', expected_batch
+            'streamalert_very_very_very_long_log_stream_name_abcdefg_7c88167b',
+            expected_batch,
+            'classifier'
         )
 
     def test_generate_firehose_name(self):
@@ -522,3 +524,30 @@ class TestFirehoseClient:
         ]
 
         assert_equal(expected_results, results)
+
+    def test_artifacts_firehose_stream_name(self):
+        """FirehoseClient - Test generate artifacts firehose stream name"""
+        config_data = {
+            'global': {
+                'account': {
+                    'prefix': 'unittest'
+                }
+            },
+            'lambda': {
+                'artifact_extractor_config': {}
+            }
+        }
+
+        assert_equal(
+            self._client.artifacts_firehose_stream_name(config_data),
+            'unittest_streamalert_artifacts'
+        )
+
+        config_data['lambda']['artifact_extractor_config']['firehose_stream_name'] = (
+            'test_artifacts_fh_name'
+        )
+
+        assert_equal(
+            self._client.artifacts_firehose_stream_name(config_data),
+            'test_artifacts_fh_name'
+        )

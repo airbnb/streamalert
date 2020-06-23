@@ -13,22 +13,168 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import defaultdict
 import logging
+import itertools
 
 from streamalert.shared.config import TopLevelConfigKeys
+from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 
 
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
+CONST_FUNCTION = 'function'
+CONST_PATH = 'path'
+CONST_CONDITION = 'condition'
+CONST_VALUES = 'values'
+
+class NormalizedType:
+    """The class encapsulates normalization information for each normalized type"""
+
+    VALID_KEYS = {CONST_PATH, CONST_FUNCTION, CONST_CONDITION}
+    CONST_STR = 'str'
+    CONST_DICT = 'dict'
+
+    def __init__(self, log_type, normalized_type, params):
+        """Init NormalizatedType
+        Args:
+            log_type (str): log type name, e.g. osquery:differential
+            normalized_type (str): Normalized type name defined in conf/, e.g. 'sourceAddress',
+                'destination_ip' may be normalized to 'ip_address'.
+            params (list): a list of str or dict contains normalization configuration read from
+                conf/schemas/*.json. The params can be a list of str or a list of dict to specify
+                the path to the keys which will be normalized.
+                e.g.
+                    ['path', 'to', 'the', 'key']
+                or
+                    [
+                        {
+                            'path': ['detail', 'sourceIPAddress'],
+                            'function': 'source ip address'
+                        },
+                        {
+                            'path': ['path', 'to', 'the', 'key'],
+                            'function': 'destination ip address'
+                        }
+                    ]
+        """
+        self._log_type = log_type
+        self._log_source = log_type.split(':')[0]
+        self._normalized_type = normalized_type
+        self._parsed_params = self._parse_params(params)
+
+    def __eq__(self, other):
+        """Compare two NormalizedType instances and it is very helpful in unit test when use
+        assert_equal
+        """
+        if not (self._log_type == other.log_type
+                and self._log_source == other.log_source
+                and self._normalized_type == other.normalized_type):
+            return False
+
+        if len(self._parsed_params) != len(other.parsed_params):
+            return False
+
+        for idx in range(len(self._parsed_params)):
+            if self._parsed_params[idx][CONST_PATH] == other.parsed_params[idx][CONST_PATH]:
+                continue
+
+            return False
+
+        return True
+
+    @property
+    def log_type(self):
+        """Return the log type name, e.g. 'osquery:differential'"""
+        return self._log_type
+
+    @property
+    def log_source(self):
+        """Return the log source name, e.g. 'osquery'"""
+        return self._log_source
+
+    @property
+    def normalized_type(self):
+        """Return the normalized type, e.g. 'ip_address'"""
+        return self._normalized_type
+
+    @property
+    def parsed_params(self):
+        """Return the normalization configuration which is a list of dict, e.g.
+            [
+                {
+                    'path': ['path', 'to', 'the', 'key'],
+                    'function': None
+                }
+            ]
+
+            or
+            [
+                {
+                    'path': ['detail', 'sourceIPAddress'],
+                    'function': 'source ip address'
+                },
+                {
+                    'path': ['path', 'to', 'the', 'destination', 'ip'],
+                    'function': 'destination ip address'
+                }
+            ]
+        """
+        return self._parsed_params
+
+    def _parse_params(self, params):
+        """Extract path and function information from params argument
+
+        Args:
+            params (list): a list of str or dict contains normalization configuration.
+        """
+        param_type = self._parse_param_type(params)
+
+        if param_type == self.CONST_STR:
+            # Format params to include 'function' field which is set to None.
+            return [
+                {
+                    CONST_PATH: params,
+                    CONST_FUNCTION: None
+                }
+            ]
+
+        return params
+
+    def _parse_param_type(self, params):
+        """Parse all param type in params
+
+        Args:
+            params (list): a list of str or dict contains normalization configuration.
+        """
+        if not isinstance(params, list):
+            raise ConfigError(
+                'Unsupported params {} for normalization. Convert params to a list'.format(params)
+            )
+
+        if all(isinstance(param, str) for param in params):
+            return self.CONST_STR
+
+        if all(isinstance(param, dict) and set(param.keys()).issubset(self.VALID_KEYS)
+               for param in params
+              ):
+            return self.CONST_DICT
+
+        # FIXME: should we raise exception here? Or may just return False and log a warming message
+        raise ConfigError(
+            ('Unsupported type(s) used in {} or missing keys. Valid types are str or dict and '
+             'valid keys are {}').format(params, self.VALID_KEYS)
+        )
+
 
 class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
-    NORMALIZATION_KEY = 'streamalert:normalization'
+    NORMALIZATION_KEY = 'streamalert_normalization'
 
-    # Store the normalized CEF types mapping to original keys from the records
+    # Store the normalized types mapping to original keys from the records
     _types_config = dict()
 
     @classmethod
@@ -43,64 +189,118 @@ class Normalizer:
             dict: A dict of normalized keys with a list of values
 
         Example:
-            record={
-                'region': 'us-east-1',
-                'detail': {
-                    'awsRegion': 'us-west-2'
-                }
-            }
-            normalized_types={
-                'region': ['region', 'awsRegion']
-            }
-
-            return={
-                'region': ['us-east-1', 'us-west-2']
+            return
+            {
+                'region': [
+                    {
+                        'values': ['us-east-1']
+                        'function': 'AWS region'
+                    },
+                    {
+                        'values': ['us-west-2']
+                        'function': 'AWS region'
+                    }
+                ]
             }
         """
-        result = {}
-        for key, keys_to_normalize in normalized_types.items():
-            values = set()
-            for value in cls._extract_values(record, set(keys_to_normalize)):
-                # Skip emtpy values
-                if value is None or value == '':
-                    continue
+        results = {}
+        for type_name, type_info in normalized_types.items():
+            result = list(cls._extract_values(record, type_info))
 
-                values.add(value)
+            if result:
+                results[type_name] = result
 
-            if not values:
-                continue
-
-            result[key] = sorted(values, key=str)
-
-        return result
+        return results
 
     @classmethod
-    def _extract_values(cls, record, keys_to_normalize):
+    def _find_value(cls, record, path):
+        """Retrieve value from a record based on a json path"""
+        found_value = False
+        value = record
+        for key in path:
+            value = value.get(key)
+            if not value:
+                found_value = False
+                break
+            found_value = True
+
+        if not found_value:
+            return False, None
+
+        return True, value
+
+    @classmethod
+    def _extract_values(cls, record, paths_to_normalize):
         """Recursively extract lists of path parts from a dictionary
 
         Args:
             record (dict): Parsed payload of log
-            keys_to_normalize (set): Normalized keys for which to extract paths
+            paths_to_normalize (set): Normalized keys for which to extract paths
             path (list=None): Parts of current path for which keys are being extracted
 
         Yields:
-            list: Parts of path in dictionary that contain normalized keys
+            dict: A dict contians the values of normalized types. For example,
+                {
+                    'values': ['1.1.1.2']
+                    'function': 'Source ip address'
+                }
         """
-        for key, value in record.items():
-            if isinstance(value, dict):  # If this is a dict, look for nested
-                for nested_value in cls._extract_values(value, keys_to_normalize):
-                    yield nested_value
+        for param in paths_to_normalize.parsed_params:
+            if param.get(CONST_CONDITION) and not cls._match_condition(record, param['condition']):
+                # If optional 'condition' block is configured, it will only extract values if
+                # condition is matched.
                 continue
 
-            if key not in keys_to_normalize:
-                continue
+            found_value, value = cls._find_value(record, param.get(CONST_PATH))
 
-            if isinstance(value, list):  # If this is a list of values, return all of them
-                for item in value:
-                    yield item
-                continue
+            if found_value:
+                yield {
+                    CONST_FUNCTION: param.get(CONST_FUNCTION) or None,
+                    # if value not a list, it will be cast to a str even it is a dict or other
+                    # types
+                    CONST_VALUES: value if isinstance(value, list) else [str(value)]
+                }
 
-            yield value
+    @classmethod
+    def _match_condition(cls, record, condition):
+        """Apply condition to a record before normalization kicked in.
+
+        Returns:
+            bool: Return True if the value of the condition path matches to the condition, otherwise
+                return False. It is False if the path doesn't exist.
+        """
+        if not condition.get('path'):
+            return False
+
+        found_value, value = cls._find_value(record, condition['path'])
+        if not found_value:
+            return False
+
+        # cast value to a str in all lowercases
+        value = str(value).lower()
+
+        # Only support extract one condition. The result is not quaranteed if multiple conditions
+        # configured.
+        # FIXME: log a warning if more than one condition configured.
+        if condition.get('is'):
+            return value == condition['is']
+
+        if condition.get('is_not'):
+            return value != condition['is_not']
+
+        if condition.get('in'):
+            return value in condition['in']
+
+        if condition.get('not_in'):
+            return value not in condition['not_in']
+
+        if condition.get('contains'):
+            return condition['contains'] in value
+
+        if condition.get('not_contains'):
+            return condition['not_contains'] not in value
+
+        return False
 
     @classmethod
     def normalize(cls, record, log_type):
@@ -129,7 +329,10 @@ class Normalizer:
         Returns:
             set: The values for the normalized type specified
         """
-        return set(record.get(cls.NORMALIZATION_KEY, {}).get(datatype, set()))
+        normalization_results = record.get(cls.NORMALIZATION_KEY, {}).get(datatype)
+        if not normalization_results:
+            return
+        return set(itertools.chain(*[result.get(CONST_VALUES) for result in normalization_results]))
 
     @classmethod
     def load_from_config(cls, config):
@@ -144,9 +347,63 @@ class Normalizer:
         if cls._types_config:
             return cls  # config is already populated
 
-        if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
-            return cls  # nothing to do
-
-        cls._types_config = config[TopLevelConfigKeys.NORMALIZED_TYPES]
+        cls._types_config = cls._parse_normalization(config)
 
         return cls  # there are no instance methods, so just return the class
+
+    @classmethod
+    def _parse_normalization(cls, config):
+        """Load and parse normalization config from conf/schemas/*.json. Normalization will be
+        configured along with log schema and a path will be provided to find the original key.
+
+        For example: conf/schemas/cloudwatch.json looks like
+            'cloudwatch:events': {
+                'schema': {
+                    'account': 'string',
+                    'source': 'string',
+                    'other_key': 'string'
+                },
+                'configuration': {
+                    'normalization': {
+                        'region': ['path', 'to', 'original', 'key'],
+                        'ip_address': [
+                            {
+                                'path': ['detail', 'sourceIPAddress'],
+                                'function': 'source ip address'
+                            },
+                            {
+                                'path': ['path', 'to', 'original', 'key'],
+                                'function': 'destination ip address'
+                            }
+                        ]
+                    }
+                }
+            }
+
+        Args:
+            config (dict): Config read from 'conf/' directory
+
+        Returns:
+            dict: return a dict contains normalization information per log type basis.
+                {
+                    'cloudwatch:events': {
+                        'region': NormalizedType(),
+                        'ip_address': NormalizedType()
+                    }
+                }
+        """
+        normalized_config = defaultdict(dict)
+        for log_type, val in config.get(TopLevelConfigKeys.LOGS, {}).items():
+            result = defaultdict(dict)
+
+            log_type_normalization = val.get('configuration', {}).get('normalization', {})
+
+            for normalized_type, params in log_type_normalization.items():
+                # add normalization info if it is defined in log type configuration field
+                result[normalized_type] = NormalizedType(log_type, normalized_type, params)
+
+            if result:
+                normalized_config[log_type] = result
+
+        # return None is normalized_config is an empty defaultdict.
+        return normalized_config or None

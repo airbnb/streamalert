@@ -93,7 +93,7 @@ class TestTerraformGenerate:
         tf_main_expected = {
             'provider': {
                 'aws': {
-                    'version': '~> 2.28.1',  # Changes to this should require unit test update
+                    'version': '~> 2.48.0',  # Changes to this should require unit test update
                     'region': 'us-west-1'
                 }
             },

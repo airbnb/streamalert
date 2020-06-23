@@ -1,6 +1,28 @@
-// IAM Role: Firehose Delivery Stream
+// Allow the Artifact Extractor to write to the Firehose delivering Artifacts to S3
+resource "aws_iam_role_policy" "put_artifacts_firehose" {
+  name   = "PutRecordsToArtifactsFirehose"
+  role   = var.function_role_id
+  policy = data.aws_iam_policy_document.put_artifacts_firehose_policy.json
+}
+
+data "aws_iam_policy_document" "put_artifacts_firehose_policy" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "firehose:PutRecordBatch",
+      "firehose:DescribeDeliveryStream",
+    ]
+
+    resources = [
+      aws_kinesis_firehose_delivery_stream.streamalert_artifacts.arn
+    ]
+  }
+}
+
+// IAM Role: Artifacts Firehose Delivery Stream permissions
 resource "aws_iam_role" "streamalert_kinesis_firehose" {
-  name               = "${var.prefix}_firehose_data_delivery"
+  name               = "${var.prefix}_firehose_artifacts_delivery"
   path               = "/streamalert/"
   assume_role_policy = data.aws_iam_policy_document.firehose_assume_role_policy.json
 
@@ -24,7 +46,7 @@ data "aws_iam_policy_document" "firehose_assume_role_policy" {
 
 // IAM Policy: Write data to S3
 resource "aws_iam_role_policy" "streamalert_firehose_s3" {
-  name   = "WriteDataToS3"
+  name   = "WriteArtifactsToS3"
   role   = aws_iam_role.streamalert_kinesis_firehose.id
   policy = data.aws_iam_policy_document.firehose_s3.json
 }
@@ -59,35 +81,13 @@ data "aws_iam_policy_document" "firehose_s3" {
       "kms:GenerateDataKey*",
     ]
 
-    resources = ["arn:aws:kms:${var.region}:${var.account_id}:key/${var.kms_key_id}"]
-  }
-}
-
-// IAM Policy: Write logs to CloudWatch
-resource "aws_iam_role_policy" "streamalert_firehose_cloudwatch" {
-  name   = "WriteDataToCloudWatch"
-  role   = aws_iam_role.streamalert_kinesis_firehose.id
-  policy = data.aws_iam_policy_document.firehose_cloudwatch.json
-}
-
-// IAM Policy Document: Write logs to CloudWatch
-data "aws_iam_policy_document" "firehose_cloudwatch" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "logs:PutLogEvents",
-    ]
-
-    resources = [
-      "arn:aws:logs:${var.region}:${var.account_id}:log-group:${var.cloudwatch_log_group}:log-stream:*",
-    ]
+    resources = [var.kms_key_arn]
   }
 }
 
 // IAM Policy: Interact with the Glue Catalog
 resource "aws_iam_role_policy" "streamalert_firehose_glue" {
-  name = "streamalert_firehose_read_glue_catalog"
+  name = "FirehoseReadGlueCatalog"
   role = "${aws_iam_role.streamalert_kinesis_firehose.id}"
 
   policy = "${data.aws_iam_policy_document.firehose_glue_catalog.json}"
@@ -103,32 +103,5 @@ data "aws_iam_policy_document" "firehose_glue_catalog" {
     ]
 
     resources = ["*"]
-  }
-}
-
-// IAM Policy: Invoke lambda function
-resource "aws_iam_role_policy" "streamalert_firehose_lambda" {
-  count = var.artifact_extractor_enabled ? 1 : 0
-  name  = "streamalert_firehose_invoke_lambda"
-  role  = "${aws_iam_role.streamalert_kinesis_firehose.id}"
-
-  policy = "${data.aws_iam_policy_document.firehose_lambda[0].json}"
-}
-
-// IAM Policy Document: Allow firehose to invoke artifact extractor lambda function
-data "aws_iam_policy_document" "firehose_lambda" {
-  count = var.artifact_extractor_enabled ? 1 : 0
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "lambda:InvokeFunction",
-      "lambda:GetFunctionConfiguration"
-    ]
-
-    resources = [
-      "${var.function_alias_arn}*"
-    ]
   }
 }

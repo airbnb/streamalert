@@ -82,6 +82,7 @@ Table of Contents
    rule-promotion
    historical-search
    scheduled-queries
+   normalization
    conf-schemas-examples
    troubleshooting
    faq

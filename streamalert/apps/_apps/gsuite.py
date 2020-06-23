@@ -276,6 +276,13 @@ class GSuiteDriveReports(GSuiteReportsApp):
     def _type(cls):
         return 'drive'
 
+@StreamAlertApp
+class GSuiteUserGCPReports(GSuiteReportsApp):
+    """G Suite GCP Accounts Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'gcp'
 
 @StreamAlertApp
 class GSuiteGroupReports(GSuiteReportsApp):
@@ -312,6 +319,13 @@ class GSuiteLoginReports(GSuiteReportsApp):
     def _type(cls):
         return 'login'
 
+@StreamAlertApp
+class GSuiteMeetGCPReports(GSuiteReportsApp):
+    """G Suite meet Accounts Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'meet'
 
 @StreamAlertApp
 class GSuiteMobileReports(GSuiteReportsApp):
@@ -329,6 +343,14 @@ class GSuiteRulesReports(GSuiteReportsApp):
     @classmethod
     def _type(cls):
         return 'rules'
+
+@StreamAlertApp
+class GSuiteSAMLGCPReports(GSuiteReportsApp):
+    """G Suite SAML Accounts Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'saml'
 
 
 @StreamAlertApp
