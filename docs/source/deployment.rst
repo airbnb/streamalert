@@ -100,3 +100,12 @@ to point to the previous version:
   python manage.py rollback
 
 This is helpful to quickly revert changes to Lambda functions, e.g. if a bad rule was deployed.
+
+********
+Removing StreamAlert
+********
+If you decide you no longer want your deployed StreamAlert resources, you can remove and destroy them:
+
+.. code-block:: bash
+
+  python manage.py destroy
