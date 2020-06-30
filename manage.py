@@ -23,13 +23,13 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd>
 """
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from argparse import ArgumentParser, FileType, RawDescriptionHelpFormatter
 import sys
 
 from streamalert import __version__ as version
 from streamalert_cli.config import DEFAULT_CONFIG_PATH
 from streamalert_cli.runner import cli_runner, StreamAlertCLICommandRepository
-from streamalert_cli.utils import DirectoryType, generate_subparser
+from streamalert_cli.utils import DirectoryType, generate_subparser, UniqueSortedFileListAction
 
 
 def build_parser():
@@ -77,6 +77,19 @@ For additional help with any command above, try:
         default=DEFAULT_CONFIG_PATH,
         help='Path to directory containing configuration files',
         type=DirectoryType()
+    )
+
+    parser.add_argument(
+        '-t',
+        '--terraform-files',
+        nargs='+',
+        help=(
+            'Path to one or more additional Terraform configuration '
+            'files to include in this deployment'
+        ),
+        action=UniqueSortedFileListAction,
+        type=FileType('r'),
+        default=[]
     )
 
     # Dynamically generate subparsers, and create a 'commands' block for the prog description
