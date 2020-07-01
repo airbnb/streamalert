@@ -267,48 +267,6 @@ class TerraformDestroyCommand(CLICommand):
             return False
 
         # Destroy all of the infrastructure
-
-class TerraformCleanCommand(CLICommand):
-    description = 'Remove current Terraform files'
-
-    @classmethod
-    def setup_subparser(cls, subparser):
-        """Manage.py clean takes no arguments"""
-
-    @classmethod
-    def handler(cls, options, config):
-        """Remove leftover Terraform statefiles and main/cluster files
-
-        Args:
-            config (CLIConfig): Loaded StreamAlert config
-
-        Returns:
-            bool: False if errors occurred, True otherwise
-        """
-        LOGGER.info('Cleaning Terraform files')
-
-        def _rm_file(path):
-            if not os.path.isfile(path):
-                return
-            print('Removing terraform file: {}'.format(path))
-            os.remove(path)
-
-        for root, _, files in os.walk(TERRAFORM_FILES_PATH):
-            for file_name in files:
-                path = os.path.join(root, file_name)
-                if path.endswith('.tf.json'):
-                    _rm_file(path)
-
-        for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
-            path = os.path.join(TERRAFORM_FILES_PATH, tf_file)
-            _rm_file(path)
-
-        # Finally, delete the Terraform directory
-        tf_path = os.path.join(TERRAFORM_FILES_PATH, '.terraform')
-        if os.path.isdir(tf_path):
-            shutil.rmtree(tf_path)
-
-        return True
         return tf_runner(config, action='destroy', auto_approve=True)
 
 

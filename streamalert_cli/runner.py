@@ -34,7 +34,6 @@ from streamalert_cli.status.handler import StatusCommand
 from streamalert_cli.terraform.generate import TerraformGenerateCommand
 from streamalert_cli.terraform.handlers import (
     TerraformBuildCommand,
-    TerraformCleanCommand,
     TerraformDestroyCommand,
     TerraformInitCommand,
     TerraformListTargetsCommand,
@@ -93,7 +92,6 @@ class StreamAlertCLICommandRepository:
             'app': AppCommand,
             'athena': AthenaCommand,
             'build': TerraformBuildCommand,
-            'clean': TerraformCleanCommand,
             'configure': ConfigureCommand,
             'create-alarm': CreateMetricAlarmCommand,
             'create-cluster-alarm': CreateClusterMetricAlarmCommand,
