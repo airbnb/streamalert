@@ -24,7 +24,7 @@ To run terraform by hand, change to the terraform directory and run:
 terraform <cmd>
 """
 from abc import abstractmethod
-from argparse import Action, ArgumentTypeError, RawDescriptionHelpFormatter
+from argparse import _AppendAction, Action, ArgumentTypeError, RawDescriptionHelpFormatter
 import os
 import textwrap
 from streamalert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
@@ -90,6 +90,18 @@ class UniqueSortedFileListAction(Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = {value.name for value in values}
+        setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
+
+
+class UniqueSortedFileListAppendAction(_AppendAction):
+    """Subclass of argparse._AppendAction to avoid multiple of the same choice from a list of files
+
+    This is meant to augment the 'append' argparse action
+    """
+
+    def __call__(self, parser, namespace, value, option_string=None):
+        unique_items = set(getattr(namespace, self.dest, set()))
+        unique_items.add(value.name)
         setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
 
 

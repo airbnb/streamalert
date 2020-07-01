@@ -17,6 +17,7 @@ import json
 import os
 import re
 import string
+import tempfile
 
 from streamalert.apps import StreamAlertApp
 from streamalert.shared import CLUSTERED_FUNCTIONS, config, metrics
@@ -32,9 +33,18 @@ LOGGER = get_logger(__name__)
 class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
 
-    def __init__(self, config_path):
+    def __init__(self, config_path, extra_terraform_files):
         self.config_path = config_path
         self.config = config.load_config(config_path)
+        self.terraform_files = extra_terraform_files
+        temp_dir = tempfile.TemporaryDirectory(prefix='streamalert_terraform-')
+        self.terraform_temp_path = temp_dir.name
+        # Store the name, but remove the directory since shutil.copytree will complain
+        # about a directory existing
+        # TODO: Python 3.8 has added the 'dir_exists_ok' option to shutil.copytree,
+        # so this can be removed when we update to 3.8
+        # See: https://docs.python.org/3.8/library/shutil.html#shutil.copytree
+        temp_dir.cleanup()
 
     def __repr__(self):
         return str(self.config)

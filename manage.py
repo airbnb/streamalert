@@ -29,7 +29,11 @@ import sys
 from streamalert import __version__ as version
 from streamalert_cli.config import DEFAULT_CONFIG_PATH
 from streamalert_cli.runner import cli_runner, StreamAlertCLICommandRepository
-from streamalert_cli.utils import DirectoryType, generate_subparser, UniqueSortedFileListAction
+from streamalert_cli.utils import (
+    DirectoryType,
+    generate_subparser,
+    UniqueSortedFileListAppendAction,
+)
 
 
 def build_parser():
@@ -81,13 +85,13 @@ For additional help with any command above, try:
 
     parser.add_argument(
         '-t',
-        '--terraform-files',
-        nargs='+',
+        '--terraform-file',
+        dest='terraform_files',
         help=(
             'Path to one or more additional Terraform configuration '
             'files to include in this deployment'
         ),
-        action=UniqueSortedFileListAction,
+        action=UniqueSortedFileListAppendAction,
         type=FileType('r'),
         default=[]
     )
