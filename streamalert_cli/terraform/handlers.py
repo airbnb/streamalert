@@ -16,7 +16,6 @@ limitations under the License.
 from fnmatch import fnmatch
 import json
 import os
-import shutil
 
 from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger

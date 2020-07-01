@@ -33,10 +33,10 @@ LOGGER = get_logger(__name__)
 class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
 
-    def __init__(self, config_path, extra_terraform_files):
+    def __init__(self, config_path, extra_terraform_files=None):
         self.config_path = config_path
         self.config = config.load_config(config_path)
-        self.terraform_files = extra_terraform_files
+        self.terraform_files = extra_terraform_files or []
         temp_dir = tempfile.TemporaryDirectory(prefix='streamalert_terraform-')
         self.terraform_temp_path = temp_dir.name
         # Store the name, but remove the directory since shutil.copytree will complain

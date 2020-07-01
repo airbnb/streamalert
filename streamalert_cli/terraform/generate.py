@@ -458,7 +458,8 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Return early during the init process, clusters are not needed yet
     if init:
         return True
-    elif not _terraform_init_backend(config):
+
+    if not _terraform_init_backend(config):
         return False
 
     # Setup cluster files
