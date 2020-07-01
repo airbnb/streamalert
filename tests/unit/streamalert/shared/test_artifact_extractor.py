@@ -13,20 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import os
-
 from mock import call, patch
 from nose.tools import assert_equal
 
-from streamalert.artifact_extractor.artifact_extractor import (
+from streamalert.shared.artifact_extractor import (
     Artifact,
     ArtifactExtractor
 )
 from streamalert.shared.firehose import FirehoseClient
-from tests.unit.streamalert.artifact_extractor.helpers import (
-    native_firehose_records,
-    transformed_firehose_records,
+from tests.unit.streamalert.shared.test_utils import (
     generate_artifacts,
+    generate_categorized_records,
     MOCK_RECORD_ID,
 )
 
@@ -51,57 +48,52 @@ class TestArtifact:
             'value': 'test_value'
         }
 
-        assert_equal(artifact.record, expected_result)
+        assert_equal(artifact.artifact, expected_result)
 
 
 class TestArtifactExtractor:
     """Test ArtifactExtractor class """
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
 
-    @patch.dict(os.environ, {'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_dst_fh_arn'})
     def setup(self):
         """Setup before each method"""
         with patch('boto3.client'):
             ArtifactExtractor._firehose_client = FirehoseClient(prefix='unit-test')
 
-        self._artifact_extractor = ArtifactExtractor(
-            'us-east-1', 'prefix_streamalert_unit_test'
-        )
+        self._artifact_extractor = ArtifactExtractor('unit_test_dst_fh_arn')
 
     def teardown(self):
         """Teardown after each method"""
         ArtifactExtractor._firehose_client = None
 
-    @patch('streamalert.artifact_extractor.artifact_extractor.LOGGER')
+    @patch('streamalert.shared.artifact_extractor.LOGGER')
     def test_run_zero_artifact(self, logger_mock):
         """ArtifactExtractor - Test run method extract zero artifact"""
-        result = self._artifact_extractor.run(native_firehose_records())
+        self._artifact_extractor.run(generate_categorized_records())
         logger_mock.assert_has_calls([
-            call.debug('Extracting artifacts from %d %s logs', 2, 'unit_test'),
+            call.debug('Extracting artifacts from %d %s logs', 2, 'log_type_01_sub_type_01'),
             call.debug('Extracted %d artifact(s)', 0)
         ])
 
-        expected_result = transformed_firehose_records()
-        assert_equal(result, expected_result)
+        assert_equal(self._artifact_extractor._artifacts, list())
 
     @patch('uuid.uuid4')
     @patch.object(FirehoseClient, '_send_batch')
-    @patch('streamalert.artifact_extractor.artifact_extractor.LOGGER')
+    @patch('streamalert.shared.artifact_extractor.LOGGER')
     def test_run(self, logger_mock, send_batch_mock, uuid_mock):
         """ArtifactExtractor - Test run method extract artifacts"""
         uuid_mock.return_value = MOCK_RECORD_ID
-        result = self._artifact_extractor.run(native_firehose_records(normalized=True))
+        self._artifact_extractor.run(generate_categorized_records(normalized=True))
 
         logger_mock.assert_has_calls([
-            call.debug('Extracting artifacts from %d %s logs', 2, 'unit_test'),
+            call.debug('Extracting artifacts from %d %s logs', 2, 'log_type_01_sub_type_01'),
             call.debug('Extracted %d artifact(s)', 6)
         ])
 
         send_batch_mock.assert_called_with(
             'unit_test_dst_fh_arn',
-            generate_artifacts(),
-            'artifact_extractor'
+            generate_artifacts(firehose_records=True),
+            'artifacts'
         )
 
-        expected_result = transformed_firehose_records(normalized=True)
-        assert_equal(result, expected_result)
+        assert_equal(self._artifact_extractor._artifacts, generate_artifacts())

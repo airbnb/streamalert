@@ -15,7 +15,7 @@ limitations under the License.
 """
 import re
 
-from streamalert.artifact_extractor.artifact_extractor import Artifact
+from streamalert.shared.artifact_extractor import Artifact
 from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.logger import get_logger
 from streamalert.shared.alert import Alert
@@ -262,7 +262,7 @@ def generate_artifacts_table_schema():
         record_id='test_record_id',
         function=None
     )
-    schema = record_to_schema(artifact.record)
+    schema = record_to_schema(artifact.artifact)
     athena_schema = logs_schema_to_athena_schema(schema, False)
 
     return format_schema_tf(athena_schema)

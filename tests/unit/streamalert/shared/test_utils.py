@@ -1,8 +1,12 @@
 """Tests for streamalert/shared/utils.py"""
+import json
+
 from nose.tools import assert_equal, assert_false
 
 from streamalert.shared import utils
+from streamalert.shared.normalize import Normalizer
 
+MOCK_RECORD_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
 def test_valid_ip():
     """Utils - Valid IP"""
@@ -87,3 +91,58 @@ def test_get_keys():
     assert_equal({'ABC', 'DEF', 'GHI'}, set(utils.get_keys(data, 'path')))
     assert_equal(2, len(utils.get_keys(data, 'path', max_matches=2)))
     assert_equal([], utils.get_keys({}, 'path'))
+
+def generate_categorized_records(normalized=False, count=2):
+    """Generate categorized records by source types"""
+    json_data = [
+        {'key_{}'.format(cnt): 'value_{}'.format(cnt)} for cnt in range(count)
+    ]
+
+    if normalized:
+        for data in json_data:
+            data[Normalizer.NORMALIZATION_KEY] = {
+                'normalized_type1': [
+                    {
+                        'values': ['value1'],
+                        'function': None
+                    }
+                ],
+                'normalized_type2': [
+                    {
+                        'values': ['value2', 'value3'],
+                        'function': None
+                    }
+                ]
+            }
+
+    return {
+        'log_type_01_sub_type_01': json_data
+    }
+
+def generate_artifacts(firehose_records=False):
+    """Generate sample artifacts for unit tests"""
+
+    normalized_values = [
+        ('normalized_type1', 'value1'),
+        ('normalized_type2', 'value2'),
+        ('normalized_type2', 'value3'),
+        ('normalized_type1', 'value1'),
+        ('normalized_type2', 'value2'),
+        ('normalized_type2', 'value3')
+    ]
+    artifacts = [
+        {
+            'function': 'None',
+            'streamalert_record_id': MOCK_RECORD_ID,
+            'source_type': 'log_type_01_sub_type_01',
+            'type': type,
+            'value': value
+        } for type, value in normalized_values
+    ]
+
+    if firehose_records:
+        return [
+            json.dumps(artifact, separators=(',', ':')) + '\n' for artifact in artifacts
+        ]
+
+    return artifacts

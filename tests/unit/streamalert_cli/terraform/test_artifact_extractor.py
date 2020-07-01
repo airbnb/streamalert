@@ -32,10 +32,10 @@ class TestTerraformArtifactExtractor:
         result = artifact_extractor.generate_artifact_extractor(self.config)
         assert_is_none(result)
 
-        self.config['lambda']['artifact_extractor_config'] = {
+        self.config['global']['infrastructure']['artifact_extractor'] = {
             'enabled': True,
-            'memory': 128,
-            'timeout': 300
+            'firehose_buffer_size': 128,
+            'firehose_buffer_interval': 900
         }
 
         self.config['global']['infrastructure']['firehose']['enabled_logs'] = {
@@ -63,8 +63,6 @@ class TestTerraformArtifactExtractor:
                     'account_id': '12345678910',
                     'prefix': 'unit-test',
                     'region': 'us-west-1',
-                    'function_role_id': '${module.artifact_extractor_lambda.role_id}',
-                    'function_alias_arn': '${module.artifact_extractor_lambda.function_alias_arn}',
                     'glue_catalog_db_name': 'unit-test_streamalert',
                     'glue_catalog_table_name': 'artifacts',
                     's3_bucket_name': 'unit-test-streamalert-data',
@@ -79,25 +77,10 @@ class TestTerraformArtifactExtractor:
                         ['type', 'string'],
                         ['value', 'string']
                     ]
-                },
-                'artifact_extractor_lambda': {
-                    'source': './modules/tf_lambda',
-                    'function_name': 'unit-test_streamalert_artifact_extractor',
-                    'description': 'Unit-Test Streamalert Artifact Extractor',
-                    'handler': 'streamalert.artifact_extractor.main.handler',
-                    'memory_size_mb': 128,
-                    'timeout_sec': 300,
-                    'environment_variables': {
-                        'ENABLE_METRICS': '0',
-                        'LOGGER_LEVEL': 'info',
-                        'DESTINATION_FIREHOSE_STREAM_NAME': 'unit_test_streamalert_artifacts'
-                    },
-                    'tags': {}
                 }
             }
         }
 
         # FIMME: not sure why assert_equal between result (defaultdict) and expected_result (dict)
         # fails.
-        # assert_equal(result, expected_result)
         assert_equal(json.dumps(result), json.dumps(expected_result))

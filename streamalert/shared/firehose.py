@@ -23,7 +23,7 @@ import boto3
 from botocore.exceptions import ClientError, HTTPClientError
 from botocore.exceptions import ConnectionError as BotocoreConnectionError
 
-from streamalert.shared import ARTIFACT_EXTRACTOR_NAME, CLASSIFIER_FUNCTION_NAME
+from streamalert.shared import ARTIFACTS_METRIC_NAME, CLASSIFIER_FUNCTION_NAME
 import streamalert.shared.helpers.boto as boto_helpers
 from streamalert.shared.logger import get_logger
 from streamalert.shared.metrics import MetricLogger
@@ -485,18 +485,21 @@ class FirehoseClient:
                     CLASSIFIER_FUNCTION_NAME
                 )
 
+        # return categorized records for extracting artifacts if the feature is enabled
+        return records
+
     def send_artifacts(self, artifacts, stream_name):
         """Send artifacts to artifacts Firehose delievery stream
         Args:
             artifacts (list(dict)): A list of artifacts extracted from normalized records.
             stream_name (str): Stream name of destination Firehose.
         """
-        for artifact_batch in self._record_batches(artifacts, ARTIFACT_EXTRACTOR_NAME):
+        for artifact_batch in self._record_batches(artifacts, ARTIFACTS_METRIC_NAME):
             batch_size = len(artifact_batch)
-            response = self._send_batch(stream_name, artifact_batch, ARTIFACT_EXTRACTOR_NAME)
+            response = self._send_batch(stream_name, artifact_batch, ARTIFACTS_METRIC_NAME)
             self._finalize(
                 response,
                 stream_name,
                 batch_size,
-                ARTIFACT_EXTRACTOR_NAME
+                ARTIFACTS_METRIC_NAME
             )

@@ -325,3 +325,31 @@ class TestClassifier:
             load_mock.return_value = False
             self._classifier.run([Mock()])
             classifiy_mock.assert_not_called()
+
+    @patch('streamalert.shared.artifact_extractor.ArtifactExtractor.run')
+    @patch.object(Classifier, '_classify_payload')
+    def test_run_artifact_extractor_disabled(self, classifiy_mock, artifact_extractor_mock):
+        """Classifier - Test run method when artifact_extractor disabled"""
+        with patch.object(classifier_module.StreamPayload, 'load_from_raw_record') as load_mock:
+            payload = self._mock_payload([self._mock_payload_record()])
+            load_mock.return_value = payload
+            self._classifier.run([Mock()])
+            classifiy_mock.assert_called_with(payload)
+            artifact_extractor_mock.assert_not_called()
+
+    @patch('streamalert.shared.artifact_extractor.ArtifactExtractor.run')
+    @patch.object(Classifier, '_classify_payload')
+    def test_run_artifact_extractor_enabled(self, classifiy_mock, artifact_extractor_mock):
+        """Classifier - Test run method when artifact_extractor enabled"""
+        Classifier._config['global']['infrastructure']['artifact_extractor'] = {
+            'enabled': True,
+            'firehose_buffer_size': 128,
+            'firehose_buffer_interval': 900
+        }
+
+        with patch.object(classifier_module.StreamPayload, 'load_from_raw_record') as load_mock:
+            payload = self._mock_payload([self._mock_payload_record()])
+            load_mock.return_value = payload
+            self._classifier.run([Mock()])
+            classifiy_mock.assert_called_with(payload)
+            artifact_extractor_mock.assert_called_once()

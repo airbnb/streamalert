@@ -46,7 +46,6 @@ def function_map():
         'alert': 'alert_processor',
         'alert_merger': 'alert_merger',
         'apps': None,  # needs special handling
-        'artifact_extractor': 'artifact_extractor',
         'athena': 'athena_partitioner',
         'classifier': None,  # needs special handling
         'rule': 'rules_engine',

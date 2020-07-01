@@ -444,67 +444,20 @@ def _validate_sources(cluster_name, data_sources, existing_sources):
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
 
-def _artifact_extractor_enabled_helper(config, log_name):
-    """Validate if Artifactor Extractor enabled.
-    There are two cases need validate if Artifact Extractor enabled.
-    1. For deploy Artifact Extractor Lambda function.
-    2. To enable firehoses to invoke Artifact Extractor Lambda function.
-
-    For case 1, Artifact Extractor Lambda function will be created and deployed if both
-    "artifact_extractor_config" in conf/lambda.json and "firehose" in conf/global.json both enabled.
-
-    For case 2, in addition to above two conditions, a firehose will be setup to
-    "processing_configure" invoke Artifact Extractor lambda function if "normalization" is
-    configured in its schema configuration.
-    For example, the mapped firehose for following log type will setup:
-        {
-            "some_log_type": {
-                "schema": {
-                    "key1": "string",
-                    "key2": "string"
-                },
-                "parser": "json",
-                "configuration": {
-                    "normalization": {
-                        "command": [
-                            "cmdline",
-                            "command"
-                        ]
-                    }
-                }
-            }
-        }
-
+def artifact_extractor_enabled(config):
+    """Check if Artifactor Extractor enabled.
     Args:
         config (dict): The loaded config from the 'conf/' directory
-        log_name (string): expect to be original log names, e.g. 'aliyun', 'osquery:differential'
 
     Returns:
-        bool: For case 1, return True if both "artifact_extractor_config" in conf/lambda.json and
-            "firehose" in conf/global.json both enabled.
-            For case 2, return True in addition to have "normalization" configured in the log schema
-            configuration.
+        bool: return True is "artifact_extract" is enabled in conf/global.json
     """
-    if not config['lambda'].get('artifact_extractor_config', {}).get('enabled', False):
+    if not config['global']['infrastructure'].get('artifact_extractor', {}).get('enabled', False):
         return False
 
-    # Artifact extractor lambda is based on StreamAlert data Firehoses. Consider Artifact Extractor
-    # is enabled once when firehose is enabled
+    # Artifact Extractor is enabled once when firehose is enabled.
     if not config['global']['infrastructure'].get('firehose', {}).get('enabled', False):
         return False
 
-    # if log_name is empty, it means caller only want to know if artifact extractor lambda
-    # function enabled or not, so return early.
-    if not log_name:
-        return True
-
-    log_config = config.get('logs', {}).get(log_name, {})
-    return 'normalization' in log_config.get('configuration', {})
-
-def artifact_extractor_enabled_for_log(config, log_name):
-    """Validate if Artifact Extractor enabled for a log"""
-    return _artifact_extractor_enabled_helper(config, log_name=log_name)
-
-def artifact_extractor_enabled(config):
-    """Validate if Artifact Extractor enabled"""
-    return _artifact_extractor_enabled_helper(config, log_name=None)
+    return True
+    
