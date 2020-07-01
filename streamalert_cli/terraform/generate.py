@@ -373,14 +373,6 @@ def generate_cluster(config, cluster_name):
     return cluster_dict
 
 
-def cleanup_old_tf_files():
-    """
-    Cleanup old *.tf.json files
-    """
-    for terraform_file in os.listdir(TERRAFORM_FILES_PATH):
-        if fnmatch(terraform_file, '*.tf.json'):
-            os.remove(os.path.join(TERRAFORM_FILES_PATH, terraform_file))
-
 
 class TerraformGenerateCommand(CLICommand):
     description = 'Generate Terraform files from JSON cluster files'
@@ -411,8 +403,6 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Verify terraform is installed
     if check_tf and not terraform_check():
         return False
-
-    cleanup_old_tf_files()
 
     # Setup the main.tf.json file
     LOGGER.debug('Generating cluster file: main.tf.json')
