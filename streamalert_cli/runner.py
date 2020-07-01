@@ -59,7 +59,7 @@ def cli_runner(args):
     Returns:
         bool: False if errors occurred, True otherwise
     """
-    config = CLIConfig(args.config_dir)
+    config = CLIConfig(args.config_dir, args.terraform_files)
 
     set_logger_levels(args.debug)
 

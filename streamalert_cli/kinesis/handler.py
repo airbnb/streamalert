@@ -83,6 +83,7 @@ class KinesisCommand(CLICommand):
             return False
 
         return tf_runner(
+            config,
             action='apply',
             targets=[
                 'module.{}_{}'.format('kinesis_events', cluster) for cluster in config.clusters()
