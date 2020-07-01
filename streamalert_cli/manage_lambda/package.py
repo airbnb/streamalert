@@ -19,7 +19,6 @@ import tempfile
 
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 
 LOGGER = get_logger(__name__)
 
@@ -86,7 +85,7 @@ class LambdaPackage:
         # Zip it all up
         # Build these in the top-level of the terraform directory as streamalert.zip
         result = shutil.make_archive(
-            os.path.join(TERRAFORM_FILES_PATH, self.PACKAGE_NAME),
+            os.path.join(self.config.terraform_temp_path, self.PACKAGE_NAME),
             'zip',
             self.temp_package_path
         )
