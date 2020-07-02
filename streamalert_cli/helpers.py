@@ -111,6 +111,10 @@ def tf_runner(config, action='apply', refresh=True, auto_approve=False, targets=
     Returns:
         bool: True if the terraform command was successful
     """
+    LOGGER.info('Initializing StreamAlert')
+    if not run_command(['terraform', 'init'], cwd=config.terraform_temp_path):
+        return False
+
     LOGGER.debug('Resolving Terraform modules')
     if not run_command(['terraform', 'get'], cwd=config.terraform_temp_path, quiet=True):
         return False

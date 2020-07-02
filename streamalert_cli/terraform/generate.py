@@ -21,7 +21,7 @@ from streamalert.shared.config import ConfigError, firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_alerts_table_schema
-from streamalert_cli.helpers import check_credentials, run_command
+from streamalert_cli.helpers import check_credentials
 from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
@@ -386,16 +386,6 @@ class TerraformGenerateCommand(CLICommand):
         return terraform_generate_handler(config, check_creds=False)
 
 
-def _terraform_init_backend(config):
-    """Initialize the infrastructure backend (S3) using Terraform
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    LOGGER.info('Initializing StreamAlert backend')
-    return run_command(['terraform', 'init'], cwd=config.terraform_temp_path)
-
-
 def _copy_terraform_files(config):
     """Copy all packaged terraform files and terraform files provided by the user to temp
 
@@ -458,9 +448,6 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Return early during the init process, clusters are not needed yet
     if init:
         return True
-
-    if not _terraform_init_backend(config):
-        return False
 
     # Setup cluster files
     for cluster in config.clusters():
