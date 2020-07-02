@@ -51,6 +51,11 @@ def basic_streamalert_config():
                 'prefix': 'unit-test',
                 'region': 'us-west-2'
             },
+            'general': {
+                'terraform_files': [
+                    '/test/terraform/file.tf'
+                ]
+            },
             'infrastructure': {
                 'monitoring': {},
                 's3_access_logging': {
