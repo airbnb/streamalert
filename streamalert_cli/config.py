@@ -68,6 +68,7 @@ class CLIConfig:
         """Return list of cluster configuration keys"""
         return list(self.config['clusters'].keys())
 
+    @property
     def terraform_files(self):
         """Return set of terraform files to include with this deployment"""
         return set(self._terraform_files).union(
