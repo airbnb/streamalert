@@ -397,15 +397,15 @@ def _copy_terraform_files(config):
     # exist in current deployments. This can be removed in a future release.
     shutil.copytree(
         TERRAFORM_FILES_PATH,
-        config.terraform_temp_path,
+        config.build_directory,
         ignore=shutil.ignore_patterns('*.tf.json', '*.zip')  # TODO: remove this eventually
     )
 
     # Copy any additional user provided terraform files to temp
     for item in config.terraform_files:
-        shutil.copy2(item, config.terraform_temp_path)
+        shutil.copy2(item, config.build_directory)
 
-    LOGGER.info('Copied Terraform configuration to \'%s\'', config.terraform_temp_path)
+    LOGGER.info('Copied Terraform configuration to \'%s\'', config.build_directory)
 
 
 def terraform_generate_handler(config, init=False, check_tf=True, check_creds=True):
@@ -432,7 +432,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     LOGGER.debug('Generating cluster file: main.tf.json')
     _create_terraform_module_file(
         generate_main(config, init=init),
-        os.path.join(config.terraform_temp_path, 'main.tf.json')
+        os.path.join(config.build_directory, 'main.tf.json')
     )
 
     # Setup Artifact Extractor if it is enabled.
@@ -465,21 +465,21 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         file_name = '{}.tf.json'.format(cluster)
         _create_terraform_module_file(
             cluster_dict,
-            os.path.join(config.terraform_temp_path, file_name),
+            os.path.join(config.build_directory, file_name),
         )
 
     metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
     if metric_filters:
         _create_terraform_module_file(
             metric_filters,
-            os.path.join(config.terraform_temp_path, 'metric_filters.tf.json')
+            os.path.join(config.build_directory, 'metric_filters.tf.json')
         )
 
     metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
     if metric_alarms:
         _create_terraform_module_file(
             metric_alarms,
-            os.path.join(config.terraform_temp_path, 'metric_alarms.tf.json')
+            os.path.join(config.build_directory, 'metric_alarms.tf.json')
         )
 
     # Setup Threat Intel Downloader Lambda function if it is enabled
@@ -545,7 +545,7 @@ def _generate_lookup_tables_settings(config):
     """
     Generates .tf.json file for LookupTables
     """
-    tf_file_name = os.path.join(config.terraform_temp_path, 'lookup_tables.tf.json')
+    tf_file_name = os.path.join(config.build_directory, 'lookup_tables.tf.json')
 
     if not config['lookup_tables'].get('enabled', False):
         remove_temp_terraform_file(tf_file_name)
@@ -608,7 +608,7 @@ def _generate_streamquery_module(config):
     """
     Generates .tf.json file for scheduled queries
     """
-    tf_file_name = os.path.join(config.terraform_temp_path, 'scheduled_queries.tf.json')
+    tf_file_name = os.path.join(config.build_directory, 'scheduled_queries.tf.json')
     if not config.get('scheduled_queries', {}).get('enabled', False):
         remove_temp_terraform_file(tf_file_name)
         return
@@ -651,7 +651,7 @@ def generate_global_lambda_settings(
             )
             raise ConfigError(message)
 
-    tf_tmp_file = os.path.join(config.terraform_temp_path, '{}.tf.json'.format(tf_tmp_file_name))
+    tf_tmp_file = os.path.join(config.build_directory, '{}.tf.json'.format(tf_tmp_file_name))
 
     if required and conf_name not in config['lambda']:
         message = 'Required configuration missing in lambda.json: {}'.format(conf_name)

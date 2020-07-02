@@ -29,7 +29,7 @@ class TestTerraformHandlers(fake_filesystem_unittest.TestCase):
     def setUp(self):
         """Setup before each method"""
         self.setUpPyfakefs()
-        self._terraform_temp_path = 'unit_test_terraform_path'
+        self._build_directory = 'unit_test_terraform_path'
 
         mock_main_tf_json = {
             'module': {
@@ -52,18 +52,18 @@ class TestTerraformHandlers(fake_filesystem_unittest.TestCase):
         }
         # fake *.tf.json files
         self.fs.create_file(
-            os.path.join(self._terraform_temp_path, 'main.tf.json'),
+            os.path.join(self._build_directory, 'main.tf.json'),
             contents=json.dumps(mock_main_tf_json)
         )
         self.fs.create_file(
-            os.path.join(self._terraform_temp_path, 'prod.tf.json'),
+            os.path.join(self._build_directory, 'prod.tf.json'),
             contents=json.dumps(mock_prod_tf_json)
         )
 
     @patch('streamalert_cli.terraform.handlers.terraform_generate_handler', Mock(return_value=True))
     def test_get_tf_modules_read_tf_json_files(self):
         """CLI - Terraform handler function get tf modules read all *.tf.json files"""
-        config = Mock(return_value={}, terraform_temp_path=self._terraform_temp_path)
+        config = Mock(return_value={}, build_directory=self._build_directory)
         result = get_tf_modules(config)
 
         expected_result = {
@@ -78,5 +78,5 @@ class TestTerraformHandlers(fake_filesystem_unittest.TestCase):
     )
     def test_get_tf_modules_early_return(self):
         """CLI - Terraform handler function get tf modules return early"""
-        config = Mock(return_value={}, terraform_temp_path=self._terraform_temp_path)
+        config = Mock(return_value={}, build_directory=self._build_directory)
         assert_false(get_tf_modules(config, generate=True))

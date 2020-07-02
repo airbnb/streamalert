@@ -85,7 +85,7 @@ class LambdaPackage:
         # Zip it all up
         # Build these in the top-level of the terraform directory as streamalert.zip
         result = shutil.make_archive(
-            os.path.join(self.config.terraform_temp_path, self.PACKAGE_NAME),
+            os.path.join(self.config.build_directory, self.PACKAGE_NAME),
             'zip',
             self.temp_package_path
         )

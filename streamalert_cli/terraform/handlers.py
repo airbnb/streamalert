@@ -59,7 +59,7 @@ class TerraformInitCommand(CLICommand):
             return False
 
         LOGGER.info('Initializing Terraform')
-        if not run_command(['terraform', 'init'], cwd=config.terraform_temp_path):
+        if not run_command(['terraform', 'init'], cwd=config.build_directory):
             return False
 
         # build init infrastructure
@@ -88,7 +88,7 @@ class TerraformInitCommand(CLICommand):
         if not terraform_generate_handler(config=config, check_tf=False, check_creds=False):
             return False
 
-        if not run_command(['terraform', 'init'], cwd=config.terraform_temp_path):
+        if not run_command(['terraform', 'init'], cwd=config.build_directory):
             return False
 
         LOGGER.info('Deploying Lambda Functions')
@@ -225,7 +225,7 @@ class TerraformDestroyCommand(CLICommand):
                                           check_creds=False):
             return False
 
-        if not run_command(['terraform', 'init'], cwd=config.terraform_temp_path):
+        if not run_command(['terraform', 'init'], cwd=config.build_directory):
             return False
 
         # Destroy all of the infrastructure
@@ -325,7 +325,7 @@ def get_tf_modules(config, generate=False):
 
     modules = set()
     resources = set()
-    for root, _, files in os.walk(config.terraform_temp_path):
+    for root, _, files in os.walk(config.build_directory):
         for file_name in files:
             path = os.path.join(root, file_name)
             if path.endswith('.tf.json'):

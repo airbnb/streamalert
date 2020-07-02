@@ -96,6 +96,16 @@ For additional help with any command above, try:
         default=[]
     )
 
+    parser.add_argument(
+        '-b',
+        '--build-directory',
+        help=(
+            'Path to directory to use for building StreamAlert and its infrastructure. '
+            'If no path is provided, a temporary directory will be used.'
+        ),
+        type=str
+    )
+
     # Dynamically generate subparsers, and create a 'commands' block for the prog description
     command_block = []
     subparsers = parser.add_subparsers(dest='command', required=True)

@@ -112,11 +112,11 @@ def tf_runner(config, action='apply', refresh=True, auto_approve=False, targets=
         bool: True if the terraform command was successful
     """
     LOGGER.info('Initializing StreamAlert')
-    if not run_command(['terraform', 'init'], cwd=config.terraform_temp_path):
+    if not run_command(['terraform', 'init'], cwd=config.build_directory):
         return False
 
     LOGGER.debug('Resolving Terraform modules')
-    if not run_command(['terraform', 'get'], cwd=config.terraform_temp_path, quiet=True):
+    if not run_command(['terraform', 'get'], cwd=config.build_directory, quiet=True):
         return False
 
     tf_command = ['terraform', action, '-refresh={}'.format(str(refresh).lower())]
@@ -132,7 +132,7 @@ def tf_runner(config, action='apply', refresh=True, auto_approve=False, targets=
     if targets:
         tf_command.extend('-target={}'.format(x) for x in targets)
 
-    return run_command(tf_command, cwd=config.terraform_temp_path)
+    return run_command(tf_command, cwd=config.build_directory)
 
 
 def check_credentials():
