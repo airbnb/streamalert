@@ -20,7 +20,6 @@ from mock import patch, Mock
 from nose.tools import assert_equal, assert_false
 from pyfakefs import fake_filesystem_unittest
 
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.handlers import get_tf_modules
 
 class TestTerraformHandlers(fake_filesystem_unittest.TestCase):
@@ -30,6 +29,7 @@ class TestTerraformHandlers(fake_filesystem_unittest.TestCase):
     def setUp(self):
         """Setup before each method"""
         self.setUpPyfakefs()
+        self._terraform_temp_path = 'unit_test_terraform_path'
 
         mock_main_tf_json = {
             'module': {
@@ -52,18 +52,18 @@ class TestTerraformHandlers(fake_filesystem_unittest.TestCase):
         }
         # fake *.tf.json files
         self.fs.create_file(
-            os.path.join(TERRAFORM_FILES_PATH, 'main.tf.json'),
+            os.path.join(self._terraform_temp_path, 'main.tf.json'),
             contents=json.dumps(mock_main_tf_json)
         )
         self.fs.create_file(
-            os.path.join(TERRAFORM_FILES_PATH, 'prod.tf.json'),
+            os.path.join(self._terraform_temp_path, 'prod.tf.json'),
             contents=json.dumps(mock_prod_tf_json)
         )
 
     @patch('streamalert_cli.terraform.handlers.terraform_generate_handler', Mock(return_value=True))
     def test_get_tf_modules_read_tf_json_files(self):
         """CLI - Terraform handler function get tf modules read all *.tf.json files"""
-        config = {}
+        config = Mock(return_value={}, terraform_temp_path=self._terraform_temp_path)
         result = get_tf_modules(config)
 
         expected_result = {
@@ -78,4 +78,5 @@ class TestTerraformHandlers(fake_filesystem_unittest.TestCase):
     )
     def test_get_tf_modules_early_return(self):
         """CLI - Terraform handler function get tf modules return early"""
-        assert_false(get_tf_modules(config={}, generate=True))
+        config = Mock(return_value={}, terraform_temp_path=self._terraform_temp_path)
+        assert_false(get_tf_modules(config, generate=True))

@@ -21,6 +21,7 @@ class MockCLIConfig:
 
     def __init__(self, config):
         self.config = config
+        self.terraform_temp_path = 'streamalert_terraform_unit_test'
 
     def __repr__(self):
         return json.dumps(self.config)
