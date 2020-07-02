@@ -32,9 +32,11 @@ class PackageTest(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
         self.fs.add_real_directory(self.TEST_CONFIG_PATH)
 
+        config = CLIConfig(self.TEST_CONFIG_PATH)
+
         with patch('tempfile.gettempdir') as temp_dir_mock:
             temp_dir_mock.return_value = self.MOCK_TEMP_PATH
-            self.packager = package.LambdaPackage(CLIConfig(self.TEST_CONFIG_PATH))
+            self.packager = package.LambdaPackage(config)
 
     def test_copy_directory_destination(self):
         """CLI - LambdaPackage copy directory using destination"""

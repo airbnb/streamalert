@@ -19,7 +19,6 @@ import tempfile
 
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 
 LOGGER = get_logger(__name__)
 
@@ -29,7 +28,7 @@ class LambdaPackage:
     # The name of the directory to package and basename of the generated .zip file
     PACKAGE_NAME = 'streamalert'
 
-    # The configurable items for user specified files
+    # The configurable items for user specified files to include in deployment pacakge
     CONFIG_EXTRAS = {
         'matcher_locations',
         'rule_locations',
@@ -86,7 +85,7 @@ class LambdaPackage:
         # Zip it all up
         # Build these in the top-level of the terraform directory as streamalert.zip
         result = shutil.make_archive(
-            os.path.join(TERRAFORM_FILES_PATH, self.PACKAGE_NAME),
+            os.path.join(self.config.build_directory, self.PACKAGE_NAME),
             'zip',
             self.temp_package_path
         )

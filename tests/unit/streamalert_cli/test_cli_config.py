@@ -61,6 +61,10 @@ class TestCLIConfig:
         """CLI - Load config"""
         assert_equal(self.config['global']['account']['prefix'], 'unit-test')
 
+    def test_terraform_files(self):
+        """CLI - Terraform Files"""
+        assert_equal(self.config.terraform_files, {'/test/terraform/file.tf'})
+
     def test_toggle_metric(self):
         """CLI - Metric toggling"""
         self.config.toggle_metrics('athena_partitioner', enabled=True)
