@@ -570,6 +570,69 @@ class TestNormalizer:
         }
         assert_raises(ConfigError, Normalizer.load_from_config, config)
 
+    def test_load_from_config_with_flag(self):
+        """Normalizer - Load From Config with send_to_artifacts flag"""
+        config = {
+            'logs': {
+                'cloudwatch:flow_logs': {
+                    'schema': {
+                        'source': 'string',
+                        'destination': 'string',
+                        'destport': 'string'
+                    },
+                    'configuration': {
+                        'normalization': {
+                            'ip_address': [
+                                {
+                                    'path': ['destination'],
+                                    'function': 'Destination IP addresses'
+                                }
+                            ],
+                            'port': [
+                                {
+                                    'path': ['destport'],
+                                    'function': 'Destination port number',
+                                    'send_to_artifacts': False
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+        normalizer = Normalizer.load_from_config(config)
+
+        record = {
+            'source': '1.1.1.2',
+            'destination': '2.2.2.2',
+            'destport': '54321'
+        }
+
+        normalizer.normalize(record, 'cloudwatch:flow_logs')
+
+        expect_result = {
+            'source': '1.1.1.2',
+            'destination': '2.2.2.2',
+            'destport': '54321',
+            'streamalert_normalization': {
+                'ip_address': [
+                    {
+                        'values': ['2.2.2.2'],
+                        'function': 'Destination IP addresses'
+                    }
+                ],
+                'port': [
+                    {
+                        'values': ['54321'],
+                        'function': 'Destination port number',
+                        'send_to_artifacts': False
+                    }
+                ]
+            }
+        }
+
+        assert_equal(record, expect_result)
+
     def test_normalize_condition(self):
         """Normalizer - Test normalization when condition applied"""
         log_type = 'cloudtrail'

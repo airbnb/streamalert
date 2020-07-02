@@ -16,7 +16,7 @@ import uuid
 from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared import ARTIFACTS_METRIC_NAME, config
 from streamalert.shared.metrics import MetricLogger
-from streamalert.shared.normalize import Normalizer
+from streamalert.shared.normalize import Normalizer, CONST_ARTIFACTS_FLAG
 from streamalert.shared.logger import get_logger
 
 
@@ -136,6 +136,11 @@ class ArtifactExtractor:
             record_id = record.get(RECORD_ID_KEY) or str(uuid.uuid4())
             for key, values in record[Normalizer.NORMALIZATION_KEY].items():
                 for value in values:
+                    # Skip the normalized value is SNED_TO_ARTIFACTS_FLAG set to "false", which is
+                    # default to "true".
+                    if not value.get(CONST_ARTIFACTS_FLAG, True):
+                        continue
+
                     for val in value.get('values', []):
                         artifacts.append(Artifact(
                             function=value.get('function'),

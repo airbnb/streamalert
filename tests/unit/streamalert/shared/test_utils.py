@@ -110,7 +110,15 @@ def generate_categorized_records(normalized=False, count=2):
                 'normalized_type2': [
                     {
                         'values': ['value2', 'value3'],
-                        'function': None
+                        'function': None,
+                        'send_to_artifacts': True
+                    }
+                ],
+                'normalized_type3': [
+                    {
+                        'values': ['value2', 'value3'],
+                        'function': None,
+                        'send_to_artifacts': False
                     }
                 ]
             }
