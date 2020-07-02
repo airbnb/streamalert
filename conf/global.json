@@ -5,6 +5,7 @@
     "region": "us-east-1"
   },
   "general": {
+    "terraform_files": [],
     "matcher_locations": [
       "matchers"
     ],

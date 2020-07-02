@@ -28,7 +28,7 @@ class LambdaPackage:
     # The name of the directory to package and basename of the generated .zip file
     PACKAGE_NAME = 'streamalert'
 
-    # The configurable items for user specified files
+    # The configurable items for user specified files to include in deployment pacakge
     CONFIG_EXTRAS = {
         'matcher_locations',
         'rule_locations',

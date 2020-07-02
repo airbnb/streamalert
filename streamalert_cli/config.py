@@ -36,7 +36,7 @@ class CLIConfig:
     def __init__(self, config_path, extra_terraform_files=None):
         self.config_path = config_path
         self.config = config.load_config(config_path)
-        self.terraform_files = extra_terraform_files or []
+        self._terraform_files = extra_terraform_files or []
         temp_dir = tempfile.TemporaryDirectory(prefix='streamalert_terraform-')
         self.terraform_temp_path = temp_dir.name
         # Store the name, but remove the directory since shutil.copytree will complain
@@ -67,6 +67,12 @@ class CLIConfig:
     def clusters(self):
         """Return list of cluster configuration keys"""
         return list(self.config['clusters'].keys())
+
+    def terraform_files(self):
+        """Return set of terraform files to include with this deployment"""
+        return set(self._terraform_files).union(
+            self.config['global']['general'].get('terraform_files', [])
+        )
 
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
