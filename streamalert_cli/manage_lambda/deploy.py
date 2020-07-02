@@ -15,9 +15,8 @@ limitations under the License.
 """
 from streamalert.shared import rule_table
 from streamalert.shared.logger import get_logger
-from streamalert_cli import helpers
-from streamalert_cli.manage_lambda import package
 from streamalert_cli.terraform.generate import terraform_generate_handler
+from streamalert_cli.terraform.helpers import terraform_runner
 from streamalert_cli.utils import (
     add_default_lambda_args,
     CLICommand,
@@ -111,11 +110,6 @@ def deploy(config, functions, clusters=None):
     """
     LOGGER.info('Deploying: %s', ', '.join(sorted(functions)))
 
-    deployment_package = package.LambdaPackage(config)
-    package_path = deployment_package.create()
-    if not package_path:
-        return False
-
     # Terraform apply only to the module which contains our lambda functions
     clusters = clusters or config.clusters()
 
@@ -124,7 +118,7 @@ def deploy(config, functions, clusters=None):
     LOGGER.debug('Applying terraform targets: %s', ', '.join(sorted(deploy_targets)))
 
     # Terraform applies the new package and publishes a new version
-    return helpers.tf_runner(config, targets=deploy_targets)
+    return terraform_runner(config, targets=deploy_targets, build_pkg=True)
 
 
 def _update_rule_table(options, config):

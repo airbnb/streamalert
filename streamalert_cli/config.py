@@ -82,6 +82,9 @@ class CLIConfig:
         if not directory:
             temp_dir = tempfile.TemporaryDirectory(prefix='streamalert_build-')
             directory = temp_dir.name
+            # Calling cleanup here to remove this directory so shutil can recreate it
+            # Without calling this here, an exception is raised when tempfile garbage collects
+            temp_dir.cleanup()
 
         if os.path.exists(directory):
             shutil.rmtree(directory)

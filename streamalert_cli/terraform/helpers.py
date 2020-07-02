@@ -14,8 +14,67 @@ limitations under the License.
 """
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
+from streamalert_cli.manage_lambda import package
 
 LOGGER = get_logger(__name__)
+
+
+def terraform_runner(
+        config,
+        refresh=True,
+        auto_approve=False,
+        targets=None,
+        destroy=False,
+        build_pkg=False):
+    """Terraform wrapper to build StreamAlert infrastructure.
+
+    Resolves modules with `terraform get` before continuing.
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+        action (str): Terraform action ('apply' or 'destroy').
+        refresh (bool): If True, Terraform will refresh its state before applying the change.
+        auto_approve (bool): If True, Terraform will *not* prompt the user for approval.
+        targets (list): Optional list of affected targets.
+            If not specified, Terraform will run against all of its resources.
+
+    Returns:
+        bool: True if the terraform command was successful
+    """
+    LOGGER.info('Initializing StreamAlert')
+    if not run_command(['terraform', 'init'], cwd=config.build_directory):
+        return False
+
+    LOGGER.debug('Resolving Terraform modules')
+    if not run_command(['terraform', 'get'], cwd=config.build_directory, quiet=True):
+        return False
+
+    tf_command = ['terraform']
+
+    if destroy:
+        tf_command.append('destroy')
+        # Terraform destroy has a '-force' flag instead of '-auto-approve'
+        LOGGER.info('Destroying infrastructure')
+        tf_command.append('-force={}'.format(str(auto_approve).lower()))
+    else:
+        tf_command.append('apply')
+        LOGGER.info('%s changes', 'Applying' if auto_approve else 'Planning')
+        tf_command.append('-auto-approve={}'.format(str(auto_approve).lower()))
+
+    tf_command.append('-refresh={}'.format(str(refresh).lower()))
+
+    if targets:
+        tf_command.extend('-target={}'.format(x) for x in targets)
+
+    # Building of the deployment package should happen if Lambda is
+    # an explict target or there are no targets at all
+    if build_pkg or not targets:
+        deployment_package = package.LambdaPackage(config)
+        package_path = deployment_package.create()
+        if not package_path:
+            return False
+
+    return run_command(tf_command, cwd=config.build_directory)
 
 
 def terraform_check():
