@@ -1,25 +1,3 @@
-// Allow the Artifact Extractor to write to the Firehose delivering Artifacts to S3
-resource "aws_iam_role_policy" "put_artifacts_firehose" {
-  name   = "PutRecordsToArtifactsFirehose"
-  role   = var.function_role_id
-  policy = data.aws_iam_policy_document.put_artifacts_firehose_policy.json
-}
-
-data "aws_iam_policy_document" "put_artifacts_firehose_policy" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "firehose:PutRecordBatch",
-      "firehose:DescribeDeliveryStream",
-    ]
-
-    resources = [
-      aws_kinesis_firehose_delivery_stream.streamalert_artifacts.arn
-    ]
-  }
-}
-
 // IAM Role: Artifacts Firehose Delivery Stream permissions
 resource "aws_iam_role" "streamalert_kinesis_firehose" {
   name               = "${var.prefix}_firehose_artifacts_delivery"
