@@ -344,9 +344,8 @@ class TestClassifier:
         Classifier._config['global']['infrastructure']['artifact_extractor'] = {
             'enabled': True,
             'firehose_buffer_size': 128,
-            'firehose_buffer_interval': 900
+            'firehose_buffer_interval': 60
         }
-
         with patch.object(classifier_module.StreamPayload, 'load_from_raw_record') as load_mock:
             payload = self._mock_payload([self._mock_payload_record()])
             load_mock.return_value = payload
