@@ -14,7 +14,7 @@ import re
 import uuid
 
 from streamalert.shared.firehose import FirehoseClient
-from streamalert.shared import ARTIFACTS_METRIC_NAME, config
+from streamalert.shared import CLASSIFIER_FUNCTION_NAME, config
 from streamalert.shared.metrics import MetricLogger
 from streamalert.shared.normalize import Normalizer, CONST_ARTIFACTS_FLAG
 from streamalert.shared.logger import get_logger
@@ -22,7 +22,6 @@ from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
 
-RECORD_ID_KEY = 'streamalert_record_id'
 
 class Artifact:
     """Encapsulation of a single Artifact that is extracted from an input record."""
@@ -58,7 +57,7 @@ class Artifact:
         """
         return {
             'function': self._function,
-            RECORD_ID_KEY: self._record_id,
+            Normalizer.RECORD_ID_KEY: self._record_id,
             'source_type': self._source_type,
             'type': self._type,
             'value': self._value,
@@ -85,7 +84,9 @@ class ArtifactExtractor:
         ArtifactExtractor._firehose_client = (
             ArtifactExtractor._firehose_client or FirehoseClient.get_client(
                 prefix=self.config['global']['account']['prefix'],
-                artifact_extractor_config=self.config['lambda'].get('artifact_extractor_config', {})
+                artifact_extractor_config=self.config['global'].get(
+                    'infrastructure', {}
+                ).get('artifact_extractor', {})
             )
         )
 
@@ -133,8 +134,12 @@ class ArtifactExtractor:
             if not record.get(Normalizer.NORMALIZATION_KEY):
                 continue
 
-            record_id = record.get(RECORD_ID_KEY) or str(uuid.uuid4())
+            record_id = (record[Normalizer.NORMALIZATION_KEY].get(Normalizer.RECORD_ID_KEY)
+                         or str(uuid.uuid4()))
             for key, values in record[Normalizer.NORMALIZATION_KEY].items():
+                if key == Normalizer.RECORD_ID_KEY:
+                    continue
+
                 for value in values:
                     # Skip the normalized value is SNED_TO_ARTIFACTS_FLAG set to "false", which is
                     # default to "true".
@@ -150,7 +155,6 @@ class ArtifactExtractor:
                             normalized_type=key,
                             value=val
                         ))
-            record[Normalizer.NORMALIZATION_KEY][RECORD_ID_KEY] = record_id
 
         return artifacts
 
@@ -176,7 +180,7 @@ class ArtifactExtractor:
         LOGGER.debug('Extracted %d artifact(s)', len(self._artifacts))
 
         MetricLogger.log_metric(
-            ARTIFACTS_METRIC_NAME,
+            CLASSIFIER_FUNCTION_NAME,
             MetricLogger.EXTRACTED_ARTIFACTS,
             len(self._artifacts)
         )

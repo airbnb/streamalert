@@ -18,7 +18,6 @@ import os
 from streamalert.shared import (
     ALERT_MERGER_NAME,
     ALERT_PROCESSOR_NAME,
-    ARTIFACTS_METRIC_NAME,
     ATHENA_PARTITIONER_NAME,
     CLASSIFIER_FUNCTION_NAME,
     RULES_ENGINE_FUNCTION_NAME
@@ -78,6 +77,8 @@ class MetricLogger:
 
     # Artifact Extractor metric names
     EXTRACTED_ARTIFACTS = 'ExtractedArtifacts'
+    FIREHOSE_FAILED_ARTIFACTS = 'FirehoseFailedArtifacts'
+    FIREHOSE_ARTIFACTS_SENT = 'FirehoseArtifactsSent'
 
     _default_filter = '{{ $.metric_name = "{}" }}'
     _default_value_lookup = '$.metric_value'
@@ -93,16 +94,14 @@ class MetricLogger:
             ALERT_ATTEMPTS: (_default_filter.format(ALERT_ATTEMPTS), _default_value_lookup)
         },
         ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
-        ARTIFACTS_METRIC_NAME: {
-            EXTRACTED_ARTIFACTS: (_default_filter.format(EXTRACTED_ARTIFACTS),
-                                  _default_value_lookup),
-            FIREHOSE_FAILED_RECORDS: (_default_filter.format(FIREHOSE_FAILED_RECORDS),
-                                      _default_value_lookup),
-            FIREHOSE_RECORDS_SENT: (_default_filter.format(FIREHOSE_RECORDS_SENT),
-                                    _default_value_lookup)
-        },
         ATHENA_PARTITIONER_NAME: {},  # Placeholder for future athena processor metrics
         CLASSIFIER_FUNCTION_NAME: {
+            EXTRACTED_ARTIFACTS: (_default_filter.format(EXTRACTED_ARTIFACTS),
+                                  _default_value_lookup),
+            FIREHOSE_FAILED_ARTIFACTS: (_default_filter.format(FIREHOSE_FAILED_ARTIFACTS),
+                                        _default_value_lookup),
+            FIREHOSE_ARTIFACTS_SENT: (_default_filter.format(FIREHOSE_ARTIFACTS_SENT),
+                                      _default_value_lookup),
             FAILED_PARSES: (_default_filter.format(FAILED_PARSES),
                             _default_value_lookup),
             FIREHOSE_FAILED_RECORDS: (_default_filter.format(FIREHOSE_FAILED_RECORDS),

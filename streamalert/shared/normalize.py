@@ -16,6 +16,7 @@ limitations under the License.
 from collections import defaultdict
 import logging
 import itertools
+import uuid
 
 from streamalert.shared.config import TopLevelConfigKeys
 from streamalert.shared.exceptions import ConfigError
@@ -175,6 +176,7 @@ class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
     NORMALIZATION_KEY = 'streamalert_normalization'
+    RECORD_ID_KEY = 'streamalert_record_id'
 
     # Store the normalized types mapping to original keys from the records
     _types_config = dict()
@@ -212,6 +214,8 @@ class Normalizer:
             if result:
                 results[type_name] = result
 
+        if results:
+            results[cls.RECORD_ID_KEY] = str(uuid.uuid4())
         return results
 
     @classmethod

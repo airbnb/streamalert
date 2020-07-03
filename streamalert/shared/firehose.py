@@ -23,7 +23,7 @@ import boto3
 from botocore.exceptions import ClientError, HTTPClientError
 from botocore.exceptions import ConnectionError as BotocoreConnectionError
 
-from streamalert.shared import ARTIFACTS_METRIC_NAME, CLASSIFIER_FUNCTION_NAME
+from streamalert.shared import CLASSIFIER_FUNCTION_NAME
 import streamalert.shared.helpers.boto as boto_helpers
 from streamalert.shared.logger import get_logger
 from streamalert.shared.metrics import MetricLogger
@@ -460,12 +460,12 @@ class FirehoseClient:
         Args:
             payloads (list): List of PayloadRecord items that include parsed records
         """
-        records = self._categorize_records(payloads)
+        categorized_records = self._categorize_records(payloads)
 
         # Iterate through each set of categorized payloads.
         # Each batch will be processed to their specific Firehose, which lands the data
         # in a specific prefix in S3.
-        for log_type, records in records.items():
+        for log_type, records in categorized_records.items():
             # firehose stream name has the length limit, no longer than 64 characters
             formatted_stream_name = self.generate_firehose_name(self._prefix, log_type)
 
@@ -486,7 +486,7 @@ class FirehoseClient:
                 )
 
         # return categorized records for extracting artifacts if the feature is enabled
-        return records
+        return categorized_records
 
     def send_artifacts(self, artifacts, stream_name):
         """Send artifacts to artifacts Firehose delievery stream
@@ -494,12 +494,12 @@ class FirehoseClient:
             artifacts (list(dict)): A list of artifacts extracted from normalized records.
             stream_name (str): Stream name of destination Firehose.
         """
-        for artifact_batch in self._record_batches(artifacts, ARTIFACTS_METRIC_NAME):
+        for artifact_batch in self._record_batches(artifacts, CLASSIFIER_FUNCTION_NAME):
             batch_size = len(artifact_batch)
-            response = self._send_batch(stream_name, artifact_batch, ARTIFACTS_METRIC_NAME)
+            response = self._send_batch(stream_name, artifact_batch, CLASSIFIER_FUNCTION_NAME)
             self._finalize(
                 response,
                 stream_name,
                 batch_size,
-                ARTIFACTS_METRIC_NAME
+                CLASSIFIER_FUNCTION_NAME
             )
