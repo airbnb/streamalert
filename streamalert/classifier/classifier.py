@@ -22,6 +22,7 @@ from streamalert.shared.firehose import FirehoseClient
 from streamalert.classifier.parsers import get_parser
 from streamalert.classifier.payload.payload_base import StreamPayload
 from streamalert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
+from streamalert.shared.artifact_extractor import ArtifactExtractor
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 from streamalert.shared.metrics import MetricLogger
@@ -263,6 +264,12 @@ class Classifier:
 
         # Send the data to firehose for historical retention
         if self.data_retention_enabled:
-            self.firehose.send(self._payloads)
+            categorized_records = self.firehose.send(self._payloads)
+
+            # Extract artifacts if it is enabled
+            if config.artifact_extractor_enabled(self._config):
+                ArtifactExtractor(
+                    self.firehose.artifacts_firehose_stream_name(self._config)
+                ).run(categorized_records)
 
         return self._payloads

@@ -13,11 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from mock import patch
+from mock import Mock, patch
 from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.normalize import Normalizer, NormalizedType
+from tests.unit.streamalert.shared.test_utils import MOCK_RECORD_ID
 
 
 class TestNormalizer:
@@ -98,6 +99,7 @@ class TestNormalizer:
             ]
         )
 
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
     def test_match_types(self):
         """Normalizer - Match Types"""
         normalized_types = {
@@ -106,6 +108,7 @@ class TestNormalizer:
             'ipv4': self._normalized_type_ip()
         }
         expected_results = {
+            'streamalert_record_id': MOCK_RECORD_ID,
             'account': [
                 {
                     'values': ['123456'],
@@ -137,6 +140,7 @@ class TestNormalizer:
         results = Normalizer.match_types(self._test_record(), normalized_types)
         assert_equal(results, expected_results)
 
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
     def test_match_types_multiple(self):
         """Normalizer - Match Types, Mutiple Sub-keys"""
         normalized_types = {
@@ -146,6 +150,7 @@ class TestNormalizer:
             'user_identity': self._normalized_type_user_identity()
         }
         expected_results = {
+            'streamalert_record_id': MOCK_RECORD_ID,
             'account': [
                 {
                     'values': ['123456'],
@@ -187,6 +192,7 @@ class TestNormalizer:
         results = Normalizer.match_types(self._test_record(), normalized_types)
         assert_equal(results, expected_results)
 
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
     def test_normalize(self):
         """Normalizer - Normalize"""
         log_type = 'cloudtrail'
@@ -212,6 +218,7 @@ class TestNormalizer:
             },
             'sourceIPAddress': '1.1.1.3',
             'streamalert_normalization': {
+                'streamalert_record_id': MOCK_RECORD_ID,
                 'region': [
                     {
                         'values': ['region_name'],
@@ -237,6 +244,7 @@ class TestNormalizer:
 
         assert_equal(record, expected_record)
 
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
     def test_normalize_corner_case(self):
         """Normalizer - Normalize - Corner Case"""
         log_type = 'cloudtrail'
@@ -264,6 +272,7 @@ class TestNormalizer:
                 'original_key': 'fizzbuzz',
             },
             'streamalert_normalization': {
+                'streamalert_record_id': MOCK_RECORD_ID,
                 'normalized_key': [
                     {
                         'values': ['fizzbuzz'],
@@ -283,6 +292,7 @@ class TestNormalizer:
         Normalizer.normalize(self._test_record(), log_type)
         log_mock.assert_called_with('No normalized types defined for log type: %s', log_type)
 
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
     def test_key_does_not_exist(self):
         """Normalizer - Normalize, Key Does Not Exist"""
         test_record = {
@@ -297,6 +307,7 @@ class TestNormalizer:
             'ipv4': self._normalized_type_ip()
         }
         expected_results = {
+            'streamalert_record_id': MOCK_RECORD_ID,
             'account': [
                 {
                     'values': ['123456'],
@@ -314,6 +325,7 @@ class TestNormalizer:
         results = Normalizer.match_types(test_record, normalized_types)
         assert_equal(results, expected_results)
 
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
     def test_empty_value(self):
         """Normalizer - Normalize, Empty Value"""
         test_record = {
@@ -327,6 +339,7 @@ class TestNormalizer:
             'ipv4': self._normalized_type_ip()
         }
         expected_results = {
+            'streamalert_record_id': MOCK_RECORD_ID,
             'account': [
                 {
                     'values': ['123456'],
@@ -570,6 +583,72 @@ class TestNormalizer:
         }
         assert_raises(ConfigError, Normalizer.load_from_config, config)
 
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
+    def test_load_from_config_with_flag(self):
+        """Normalizer - Load From Config with send_to_artifacts flag"""
+        config = {
+            'logs': {
+                'cloudwatch:flow_logs': {
+                    'schema': {
+                        'source': 'string',
+                        'destination': 'string',
+                        'destport': 'string'
+                    },
+                    'configuration': {
+                        'normalization': {
+                            'ip_address': [
+                                {
+                                    'path': ['destination'],
+                                    'function': 'Destination IP addresses'
+                                }
+                            ],
+                            'port': [
+                                {
+                                    'path': ['destport'],
+                                    'function': 'Destination port number',
+                                    'send_to_artifacts': False
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+        normalizer = Normalizer.load_from_config(config)
+
+        record = {
+            'source': '1.1.1.2',
+            'destination': '2.2.2.2',
+            'destport': '54321'
+        }
+
+        normalizer.normalize(record, 'cloudwatch:flow_logs')
+
+        expect_result = {
+            'source': '1.1.1.2',
+            'destination': '2.2.2.2',
+            'destport': '54321',
+            'streamalert_normalization': {
+                'streamalert_record_id': MOCK_RECORD_ID,
+                'ip_address': [
+                    {
+                        'values': ['2.2.2.2'],
+                        'function': 'Destination IP addresses'
+                    }
+                ],
+                'port': [
+                    {
+                        'values': ['54321'],
+                        'function': 'Destination port number',
+                        'send_to_artifacts': False
+                    }
+                ]
+            }
+        }
+
+        assert_equal(record, expect_result)
+
+    @patch('uuid.uuid4', Mock(return_value=MOCK_RECORD_ID))
     def test_normalize_condition(self):
         """Normalizer - Test normalization when condition applied"""
         log_type = 'cloudtrail'
@@ -638,6 +717,7 @@ class TestNormalizer:
             },
             'sourceIPAddress': '1.1.1.3',
             'streamalert_normalization': {
+                'streamalert_record_id': MOCK_RECORD_ID,
                 'region': [
                     {
                         'values': ['region_name'],

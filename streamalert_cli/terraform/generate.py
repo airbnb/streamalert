@@ -435,16 +435,6 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         os.path.join(config.build_directory, 'main.tf.json')
     )
 
-    # Setup Artifact Extractor if it is enabled.
-    # artifact_extractor module is referenced in main.tf.json, so we need to generate it is tf file
-    # right after generating main.tf.json file for "manage.py destroy" command.
-    generate_global_lambda_settings(
-        config,
-        conf_name='artifact_extractor_config',
-        generate_func=generate_artifact_extractor,
-        tf_tmp_file_name='artifact_extractor'
-    )
-
     # Return early during the init process, clusters are not needed yet
     if init:
         return True
@@ -538,6 +528,10 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Setup StreamQuery
     _generate_streamquery_module(config)
 
+    # FIXME: make sure test 'python manage.py destroy' artifact_extractor case
+    # Setup artifact_extractor
+    _generate_artifact_extractor_module(config)
+
     return True
 
 
@@ -618,6 +612,14 @@ def _generate_streamquery_module(config):
         tf_file_name
     )
 
+def _generate_artifact_extractor_module(config):
+    tf_file_name = os.path.join(config.build_directory, 'artifact_extractor.tf.json')
+    if 'artifact_extractor' in config['global']['infrastructure']:
+        if config['global']['infrastructure']['artifact_extractor'].get('enabled'):
+            _create_terraform_module_file(generate_artifact_extractor(config), tf_file_name)
+            return
+
+        remove_temp_terraform_file(tf_file_name)
 
 def generate_global_lambda_settings(
         config,

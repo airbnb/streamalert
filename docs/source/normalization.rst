@@ -58,7 +58,8 @@ Supported normalization configure syntax:
               "condition": {
                 "path": ["path", "to", "other", "key"],
                 "is|is_not|in|not_in|contains|not_contains": "string or a list"
-              }
+              },
+              "send_to_artifacts": true|false
             }
           ]
         }
@@ -88,6 +89,8 @@ Supported normalization configure syntax:
     .. note::
 
       Use all lowercases string a list of strings in the conditional field. The value from the record will be converted to all lowercases.
+
+* ``send_to_artifacts``: A boolean flag indicates should normalized information sent to ``artifacts`` table. This field is optional and it is default to ``true``. It thinks all normalized information are artifacts unless set this flag to ``false`` explicitly.
 
 Below are some example configurations for normalization v2.
 
@@ -124,7 +127,8 @@ Below are some example configurations for normalization v2.
           "user_identity": [
             {
               "path": ["detail", "userIdentity", "type"],
-              "function": "User identity type"
+              "function": "User identity type",
+              "send_to_artifacts": false
             },
             {
               "path": ["detail", "userIdentity", "arn"],
@@ -244,74 +248,75 @@ Deployment
       ...
     }
 
-* Enable Artifact Extractor feature in ``conf/lambda.json``
+* Enable Artifact Extractor feature in ``conf/global.json``
 
   .. code-block::
 
-    "artifact_extractor_config": {
-      "concurrency_limit": 10,
-      "enabled": true,
+    "infrastructure": {
+      "artifact_extractor": {
+        "enabled": true,
+        "firehose_buffer_size": 128,
+        "firehose_buffer_interval": 900
+      },
+      "firehose": {
+        "use_prefix": true,
+        "buffer_interval": 60,
+        "buffer_size": 128,
+        "enabled": true,
+        "enabled_logs": {
+          "cloudwatch": {},
+          "osquery": {}
+        }
+      }
       ...
-    },
+    }
 
-* Use StreamAlert cli to deploy Artifact Extractor Lambda function and new resources
+* Artifact Extractor feature will add few more resources by running ``build`` CLI
 
-  The deployment will add following resources.
+  It will add following resources.
 
-  * A new Lambda function
   * A new Glue catalog table ``artifacts`` for Historical Search via Athena
   * A new Firehose to deliver artifacts to S3 bucket
-  * Update existing Firehose delivery streams to allow to invoke Artifact Extractor Lambda if it is enabled on the Firehose delivery streams
-  * New permissions, metrics and alarms.
+  * New permissions
 
   .. code-block:: bash
 
-    python manage.py deploy --function artifact_extractor
+    python manage.py build --target artifact_extractor
 
-* Add other permissions to allow the Firehose delivery streams which have normalization configured to invoke Artifact Extractor lambda.
-
-  We can just run a ``build`` to apply all the changes.
-
-  .. code-block:: bash
-
-    python manage.py build
-
-  Or we can targeted apply the changes if  we know which Firehose delivery streams having normalization configured. By default
-
-  .. code-block:: bash
-
-    python manage.py build --target kinesis_firehose_cloudwatch_events kinesis_firehose_osquery_differential kinesis_firehose_setup
-
-* If the normalization configuration has changed in ``conf/schemas/*.json``, make sure to deploy the classifier Lambda function as well
+* Then we can deploy ``classifier`` to enable Artifact Extractor feature.
 
   .. code-block:: bash
 
     python manage.py deploy --function classifier
 
+  .. note::
+
+        If the normalization configuration has changed in ``conf/schemas/*.json``, make sure to deploy the classifier Lambda function to take effect.
+
 Custom Metrics
 ==============
 
-Artifact Exactor comes with three custom metrics.
+Add additional three custom metrics to Classifier for artifacts statistics.
 
-#. ``ArtifactExtractor-ExtractedArtifacts``: Log the number of artifacts extracted from the records
-#. ``ArtifactExtractor-FirehoseFailedRecords``: Log the number of records (artifacts) failed sent to Firehose
-#. ``ArtifactExtractor-FirehoseRecordsSent``: Log the number of records (artifacts) sent to Firehose
+#. ``ExtractedArtifacts``: Log the number of artifacts extracted from the records
+#. ``FirehoseFailedArtifats``: Log the number of records (artifacts) failed sent to Firehose
+#. ``FirehoseArtifactsSent``: Log the number of records (artifacts) sent to Firehose
 
-By default, the custom metrics is disabled. Enable custom metrics and follow by a ``build`` to create new ``aws_cloudwatch_log_metric_filter`` resources.
-
-  .. code-block::
-
-    # conf/lambda.json
-    "artifact_extractor_config": {
-      "concurrency_limit": 10,
-      "enabled": true,
-      "enable_custom_metrics": true,
-      ...
-    }
+By default, the custom metrics should be enabled in the Classifier, for example in ``conf/clusters/prod.json``
 
   .. code-block::
 
-    python manage.py build --target "metric_filters_ArtifactExtractor_*"
+    {
+      "id": "prod",
+      "classifier_config": {
+        "enable_custom_metrics": true,
+        ...
+      }
+    } 
+
+  .. code-block::
+
+    python manage.py build --target "metric_filters_*"
 
 
 Artifacts

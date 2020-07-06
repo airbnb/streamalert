@@ -16,6 +16,7 @@ limitations under the License.
 from collections import defaultdict
 import logging
 import itertools
+import uuid
 
 from streamalert.shared.config import TopLevelConfigKeys
 from streamalert.shared.exceptions import ConfigError
@@ -29,11 +30,12 @@ CONST_FUNCTION = 'function'
 CONST_PATH = 'path'
 CONST_CONDITION = 'condition'
 CONST_VALUES = 'values'
+CONST_ARTIFACTS_FLAG = 'send_to_artifacts'
 
 class NormalizedType:
     """The class encapsulates normalization information for each normalized type"""
 
-    VALID_KEYS = {CONST_PATH, CONST_FUNCTION, CONST_CONDITION}
+    VALID_KEYS = {CONST_PATH, CONST_FUNCTION, CONST_CONDITION, CONST_ARTIFACTS_FLAG}
     CONST_STR = 'str'
     CONST_DICT = 'dict'
 
@@ -114,7 +116,8 @@ class NormalizedType:
             [
                 {
                     'path': ['detail', 'sourceIPAddress'],
-                    'function': 'source ip address'
+                    'function': 'source ip address',
+                    'send_to_artifacts': False
                 },
                 {
                     'path': ['path', 'to', 'the', 'destination', 'ip'],
@@ -173,6 +176,7 @@ class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
     NORMALIZATION_KEY = 'streamalert_normalization'
+    RECORD_ID_KEY = 'streamalert_record_id'
 
     # Store the normalized types mapping to original keys from the records
     _types_config = dict()
@@ -210,6 +214,8 @@ class Normalizer:
             if result:
                 results[type_name] = result
 
+        if results:
+            results[cls.RECORD_ID_KEY] = str(uuid.uuid4())
         return results
 
     @classmethod
@@ -246,7 +252,9 @@ class Normalizer:
                 }
         """
         for param in paths_to_normalize.parsed_params:
-            if param.get(CONST_CONDITION) and not cls._match_condition(record, param['condition']):
+            if param.get(CONST_CONDITION) and not cls._match_condition(
+                    record, param[CONST_CONDITION]
+                ):
                 # If optional 'condition' block is configured, it will only extract values if
                 # condition is matched.
                 continue
@@ -254,12 +262,19 @@ class Normalizer:
             found_value, value = cls._find_value(record, param.get(CONST_PATH))
 
             if found_value:
-                yield {
+                result = {
                     CONST_FUNCTION: param.get(CONST_FUNCTION) or None,
                     # if value not a list, it will be cast to a str even it is a dict or other
                     # types
                     CONST_VALUES: value if isinstance(value, list) else [str(value)]
                 }
+
+                # Add "send_to_artifacts" flag to the normalized field when it explicitly sets the
+                # flag to "false" in the normalizer in conf/schemas/*.json
+                if not param.get(CONST_ARTIFACTS_FLAG, True):
+                    result[CONST_ARTIFACTS_FLAG] = False
+
+                yield result
 
     @classmethod
     def _match_condition(cls, record, condition):
@@ -269,10 +284,10 @@ class Normalizer:
             bool: Return True if the value of the condition path matches to the condition, otherwise
                 return False. It is False if the path doesn't exist.
         """
-        if not condition.get('path'):
+        if not condition.get(CONST_PATH):
             return False
 
-        found_value, value = cls._find_value(record, condition['path'])
+        found_value, value = cls._find_value(record, condition[CONST_PATH])
         if not found_value:
             return False
 

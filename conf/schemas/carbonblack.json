@@ -1058,11 +1058,13 @@
           },
           {
             "path": ["parent_path"],
-            "function": "Process parent path"
+            "function": "Process parent path",
+            "send_to_artifacts": false
           },
           {
             "path": ["process_path"],
-            "function": "Process parent path"
+            "function": "Process parent path",
+            "send_to_artifacts": false
           }
         ]
       }

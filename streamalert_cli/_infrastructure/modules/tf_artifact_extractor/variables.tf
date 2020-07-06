@@ -10,15 +10,6 @@ variable "prefix" {
   type = string
 }
 
-variable "function_role_id" {
-  description = "Artifact Extractor function IAM Role ID, exported from the tf_lambda module"
-}
-
-variable "function_alias_arn" {
-  type        = string
-  description = "Fully qualified function arn of alias of Artifact extractor lambda"
-}
-
 variable "glue_catalog_db_name" {
   type        = string
   description = "Athena Database name"

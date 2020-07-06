@@ -78,26 +78,6 @@ resource "aws_kinesis_firehose_delivery_stream" "streamalert_data" {
           table_name    = var.glue_catalog_table_name
         }
       }
-
-
-      processing_configuration {
-        # only enabled when function_alias_arn (Artifact Extractor Lambda function) is not empty
-        enabled = var.function_alias_arn == "" ? false : true
-
-        # processor block will only present if function_alias_arn is not empty
-        dynamic "processors" {
-          for_each = var.function_alias_arn == "" ? [] : [var.function_alias_arn]
-
-          content {
-            type = "Lambda"
-
-            parameters {
-              parameter_name  = "LambdaArn"
-              parameter_value = var.function_alias_arn
-            }
-          }
-        }
-      }
     }
   }
 
