@@ -613,7 +613,7 @@ def _generate_streamquery_module(config):
     )
 
 def _generate_artifact_extractor_module(config):
-    tf_file_name = os.path.join(TERRAFORM_FILES_PATH, 'artifact_extractor.tf.json')
+    tf_file_name = os.path.join(config.build_directory, 'artifact_extractor.tf.json')
     if 'artifact_extractor' in config['global']['infrastructure']:
         if config['global']['infrastructure']['artifact_extractor'].get('enabled'):
             _create_terraform_module_file(generate_artifact_extractor(config), tf_file_name)
