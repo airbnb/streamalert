@@ -161,13 +161,7 @@ class TerraformBuildCommand(CLICommand):
         if not valid:
             return False
 
-        build_pkg = any('lambda' in target for target in target_modules)
-
-        return terraform_runner(
-            config,
-            targets=target_modules if target_modules else None,
-            build_pkg=build_pkg,
-        )
+        return terraform_runner(config, targets=target_modules if target_modules else None)
 
 
 class TerraformDestroyCommand(CLICommand):
