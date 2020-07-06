@@ -21,10 +21,10 @@ from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert.shared.utils import get_data_file_format
 from streamalert_cli.athena.handler import create_table, create_log_tables
-from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
+from streamalert_cli.helpers import check_credentials, continue_prompt, run_command
 from streamalert_cli.manage_lambda.deploy import deploy
 from streamalert_cli.terraform.generate import terraform_generate_handler
-from streamalert_cli.terraform.helpers import terraform_check
+from streamalert_cli.terraform.helpers import terraform_check, terraform_runner
 from streamalert_cli.utils import (
     add_clusters_arg,
     CLICommand,
@@ -79,7 +79,7 @@ class TerraformInitCommand(CLICommand):
         if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
             init_targets.append('aws_s3_bucket.streamalert_data')
 
-        if not tf_runner(config, targets=init_targets):
+        if not terraform_runner(config, targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')
             return False
 
@@ -115,7 +115,7 @@ class TerraformInitCommand(CLICommand):
                 return
 
         LOGGER.info('Building remaining infrastructure')
-        return tf_runner(config, refresh=False)
+        return terraform_runner(config, refresh=False)
 
 
 class TerraformBuildCommand(CLICommand):
@@ -161,7 +161,13 @@ class TerraformBuildCommand(CLICommand):
         if not valid:
             return False
 
-        return tf_runner(config, targets=target_modules if target_modules else None)
+        build_pkg = any('lambda' in target for target in target_modules)
+
+        return terraform_runner(
+            config,
+            targets=target_modules if target_modules else None,
+            build_pkg=build_pkg,
+        )
 
 
 class TerraformDestroyCommand(CLICommand):
@@ -211,9 +217,9 @@ class TerraformDestroyCommand(CLICommand):
             if not valid:
                 return False
 
-            return tf_runner(
+            return terraform_runner(
                 config,
-                action='destroy',
+                destroy=True,
                 auto_approve=True,
                 targets=target_modules if target_modules else None
             )
@@ -229,7 +235,7 @@ class TerraformDestroyCommand(CLICommand):
             return False
 
         # Destroy all of the infrastructure
-        return tf_runner(config, action='destroy', auto_approve=True)
+        return terraform_runner(config, destroy=True, auto_approve=True)
 
 
 class TerraformListTargetsCommand(CLICommand):

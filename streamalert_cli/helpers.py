@@ -95,46 +95,6 @@ def continue_prompt(message=None):
     return response == 'yes'
 
 
-def tf_runner(config, action='apply', refresh=True, auto_approve=False, targets=None):
-    """Terraform wrapper to build StreamAlert infrastructure.
-
-    Resolves modules with `terraform get` before continuing.
-
-    Args:
-        config (CLIConfig): Loaded StreamAlert config
-        action (str): Terraform action ('apply' or 'destroy').
-        refresh (bool): If True, Terraform will refresh its state before applying the change.
-        auto_approve (bool): If True, Terraform will *not* prompt the user for approval.
-        targets (list): Optional list of affected targets.
-            If not specified, Terraform will run against all of its resources.
-
-    Returns:
-        bool: True if the terraform command was successful
-    """
-    LOGGER.info('Initializing StreamAlert')
-    if not run_command(['terraform', 'init'], cwd=config.build_directory):
-        return False
-
-    LOGGER.debug('Resolving Terraform modules')
-    if not run_command(['terraform', 'get'], cwd=config.build_directory, quiet=True):
-        return False
-
-    tf_command = ['terraform', action, '-refresh={}'.format(str(refresh).lower())]
-
-    if action == 'destroy':
-        # Terraform destroy has a '-force' flag instead of '-auto-approve'
-        LOGGER.info('Destroying infrastructure')
-        tf_command.append('-force={}'.format(str(auto_approve).lower()))
-    else:
-        LOGGER.info('%s changes', 'Applying' if auto_approve else 'Planning')
-        tf_command.append('-auto-approve={}'.format(str(auto_approve).lower()))
-
-    if targets:
-        tf_command.extend('-target={}'.format(x) for x in targets)
-
-    return run_command(tf_command, cwd=config.build_directory)
-
-
 def check_credentials():
     """Check for valid AWS credentials in environment variables
 
