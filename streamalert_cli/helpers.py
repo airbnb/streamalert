@@ -24,8 +24,6 @@ from botocore.exceptions import ClientError, NoCredentialsError
 
 from streamalert.shared.logger import get_logger
 
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
-
 
 LOGGER = get_logger(__name__)
 
@@ -39,7 +37,7 @@ SCHEMA_TYPE_LOOKUP = {
 }
 
 
-def run_command(runner_args, **kwargs):
+def run_command(runner_args, cwd='./', **kwargs):
     """Helper function to run commands with error handling.
 
     Args:
@@ -52,7 +50,6 @@ def run_command(runner_args, **kwargs):
     """
     default_error_message = "An error occurred while running: {}".format(' '.join(runner_args))
     error_message = kwargs.get('error_message', default_error_message)
-    cwd = kwargs.get('cwd', TERRAFORM_FILES_PATH)
 
     # Add the -force-copy flag for s3 state copying to suppress dialogs that
     # the user must type 'yes' into.
@@ -98,12 +95,13 @@ def continue_prompt(message=None):
     return response == 'yes'
 
 
-def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
+def tf_runner(config, action='apply', refresh=True, auto_approve=False, targets=None):
     """Terraform wrapper to build StreamAlert infrastructure.
 
     Resolves modules with `terraform get` before continuing.
 
     Args:
+        config (CLIConfig): Loaded StreamAlert config
         action (str): Terraform action ('apply' or 'destroy').
         refresh (bool): If True, Terraform will refresh its state before applying the change.
         auto_approve (bool): If True, Terraform will *not* prompt the user for approval.
@@ -113,8 +111,12 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
     Returns:
         bool: True if the terraform command was successful
     """
+    LOGGER.info('Initializing StreamAlert')
+    if not run_command(['terraform', 'init'], cwd=config.build_directory):
+        return False
+
     LOGGER.debug('Resolving Terraform modules')
-    if not run_command(['terraform', 'get'], quiet=True):
+    if not run_command(['terraform', 'get'], cwd=config.build_directory, quiet=True):
         return False
 
     tf_command = ['terraform', action, '-refresh={}'.format(str(refresh).lower())]
@@ -130,7 +132,7 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
     if targets:
         tf_command.extend('-target={}'.format(x) for x in targets)
 
-    return run_command(tf_command)
+    return run_command(tf_command, cwd=config.build_directory)
 
 
 def check_credentials():

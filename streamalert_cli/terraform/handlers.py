@@ -16,7 +16,6 @@ limitations under the License.
 from fnmatch import fnmatch
 import json
 import os
-import shutil
 
 from streamalert.shared.config import firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
@@ -24,7 +23,6 @@ from streamalert.shared.utils import get_data_file_format
 from streamalert_cli.athena.handler import create_table, create_log_tables
 from streamalert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from streamalert_cli.manage_lambda.deploy import deploy
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.terraform.helpers import terraform_check
 from streamalert_cli.utils import (
@@ -42,16 +40,7 @@ class TerraformInitCommand(CLICommand):
 
     @classmethod
     def setup_subparser(cls, subparser):
-        """Add init subparser: manage.py init [options]"""
-        subparser.add_argument(
-            '-b',
-            '--backend',
-            action='store_true',
-            help=(
-                'Initialize the Terraform backend (S3). '
-                'Useful for refreshing a pre-existing deployment'
-            )
-        )
+        """Manage.py init takes no arguments"""
 
     @classmethod
     def handler(cls, options, config):
@@ -63,11 +52,6 @@ class TerraformInitCommand(CLICommand):
         Returns:
             bool: False if errors occurred, True otherwise
         """
-
-        # Stop here if only initializing the backend
-        if options.backend:
-            return cls._terraform_init_backend(config)
-
         LOGGER.info('Initializing StreamAlert')
 
         # generate init Terraform files
@@ -75,7 +59,7 @@ class TerraformInitCommand(CLICommand):
             return False
 
         LOGGER.info('Initializing Terraform')
-        if not run_command(['terraform', 'init']):
+        if not run_command(['terraform', 'init'], cwd=config.build_directory):
             return False
 
         # build init infrastructure
@@ -95,7 +79,7 @@ class TerraformInitCommand(CLICommand):
         if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
             init_targets.append('aws_s3_bucket.streamalert_data')
 
-        if not tf_runner(targets=init_targets):
+        if not tf_runner(config, targets=init_targets):
             LOGGER.error('An error occurred while running StreamAlert init')
             return False
 
@@ -104,7 +88,7 @@ class TerraformInitCommand(CLICommand):
         if not terraform_generate_handler(config=config, check_tf=False, check_creds=False):
             return False
 
-        if not run_command(['terraform', 'init']):
+        if not run_command(['terraform', 'init'], cwd=config.build_directory):
             return False
 
         LOGGER.info('Deploying Lambda Functions')
@@ -131,29 +115,7 @@ class TerraformInitCommand(CLICommand):
                 return
 
         LOGGER.info('Building remaining infrastructure')
-        return tf_runner(refresh=False)
-
-    @staticmethod
-    def _terraform_init_backend(config):
-        """Initialize the infrastructure backend (S3) using Terraform
-
-        Returns:
-            bool: False if errors occurred, True otherwise
-        """
-        # Check for valid credentials
-        if not check_credentials():
-            return False
-
-        # Verify terraform is installed
-        if not terraform_check():
-            return False
-
-        # See generate_main() for how it uses the `init` kwarg for the local/remote backend
-        if not terraform_generate_handler(config=config, init=False):
-            return False
-
-        LOGGER.info('Initializing StreamAlert backend')
-        return run_command(['terraform', 'init'])
+        return tf_runner(config, refresh=False)
 
 
 class TerraformBuildCommand(CLICommand):
@@ -199,7 +161,7 @@ class TerraformBuildCommand(CLICommand):
         if not valid:
             return False
 
-        return tf_runner(targets=target_modules if target_modules else None)
+        return tf_runner(config, targets=target_modules if target_modules else None)
 
 
 class TerraformDestroyCommand(CLICommand):
@@ -250,6 +212,7 @@ class TerraformDestroyCommand(CLICommand):
                 return False
 
             return tf_runner(
+                config,
                 action='destroy',
                 auto_approve=True,
                 targets=target_modules if target_modules else None
@@ -262,58 +225,11 @@ class TerraformDestroyCommand(CLICommand):
                                           check_creds=False):
             return False
 
-        if not run_command(['terraform', 'init']):
+        if not run_command(['terraform', 'init'], cwd=config.build_directory):
             return False
 
         # Destroy all of the infrastructure
-        if not tf_runner(action='destroy', auto_approve=True):
-            return False
-
-        # Remove old Terraform files
-        return TerraformCleanCommand.handler(options, config)
-
-
-class TerraformCleanCommand(CLICommand):
-    description = 'Remove current Terraform files'
-
-    @classmethod
-    def setup_subparser(cls, subparser):
-        """Manage.py clean takes no arguments"""
-
-    @classmethod
-    def handler(cls, options, config):
-        """Remove leftover Terraform statefiles and main/cluster files
-
-        Args:
-            config (CLIConfig): Loaded StreamAlert config
-
-        Returns:
-            bool: False if errors occurred, True otherwise
-        """
-        LOGGER.info('Cleaning Terraform files')
-
-        def _rm_file(path):
-            if not os.path.isfile(path):
-                return
-            print('Removing terraform file: {}'.format(path))
-            os.remove(path)
-
-        for root, _, files in os.walk(TERRAFORM_FILES_PATH):
-            for file_name in files:
-                path = os.path.join(root, file_name)
-                if path.endswith('.tf.json'):
-                    _rm_file(path)
-
-        for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
-            path = os.path.join(TERRAFORM_FILES_PATH, tf_file)
-            _rm_file(path)
-
-        # Finally, delete the Terraform directory
-        tf_path = os.path.join(TERRAFORM_FILES_PATH, '.terraform')
-        if os.path.isdir(tf_path):
-            shutil.rmtree(tf_path)
-
-        return True
+        return tf_runner(config, action='destroy', auto_approve=True)
 
 
 class TerraformListTargetsCommand(CLICommand):
@@ -409,7 +325,7 @@ def get_tf_modules(config, generate=False):
 
     modules = set()
     resources = set()
-    for root, _, files in os.walk(TERRAFORM_FILES_PATH):
+    for root, _, files in os.walk(config.build_directory):
         for file_name in files:
             path = os.path.join(root, file_name)
             if path.endswith('.tf.json'):

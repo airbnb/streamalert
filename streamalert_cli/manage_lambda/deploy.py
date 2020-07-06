@@ -124,7 +124,7 @@ def deploy(config, functions, clusters=None):
     LOGGER.debug('Applying terraform targets: %s', ', '.join(sorted(deploy_targets)))
 
     # Terraform applies the new package and publishes a new version
-    return helpers.tf_runner(targets=deploy_targets)
+    return helpers.tf_runner(config, targets=deploy_targets)
 
 
 def _update_rule_table(options, config):

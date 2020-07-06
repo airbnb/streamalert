@@ -22,8 +22,14 @@ def terraform_check():
     """Verify that Terraform is configured correctly
 
     Returns:
-        bool: Success or failure of the command ran"""
-    prereqs_message = ('Terraform not found! Please install and add to '
-                       'your $PATH:\n'
-                       '\t$ export PATH=$PATH:/usr/local/terraform/bin')
-    return run_command(['terraform', 'version'], error_message=prereqs_message, quiet=True)
+        bool: Success or failure of the command ran
+    """
+    error_message = (
+        'Terraform not found! Please install and add to your $PATH:\n'
+        '\texport PATH=$PATH:/usr/local/terraform/bin'
+    )
+    return run_command(
+        ['terraform', 'version'],
+        error_message=error_message,
+        quiet=True,
+    )

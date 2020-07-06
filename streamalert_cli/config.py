@@ -16,7 +16,9 @@ limitations under the License.
 import json
 import os
 import re
+import shutil
 import string
+import tempfile
 
 from streamalert.apps import StreamAlertApp
 from streamalert.shared import CLUSTERED_FUNCTIONS, config, metrics
@@ -32,9 +34,11 @@ LOGGER = get_logger(__name__)
 class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
 
-    def __init__(self, config_path):
+    def __init__(self, config_path, extra_terraform_files=None, build_directory=None):
         self.config_path = config_path
         self.config = config.load_config(config_path)
+        self._terraform_files = extra_terraform_files or []
+        self.build_directory = self._setup_build_directory(build_directory)
 
     def __repr__(self):
         return str(self.config)
@@ -57,6 +61,32 @@ class CLIConfig:
     def clusters(self):
         """Return list of cluster configuration keys"""
         return list(self.config['clusters'].keys())
+
+    @property
+    def terraform_files(self):
+        """Return set of terraform files to include with this deployment"""
+        return set(self._terraform_files).union(
+            self.config['global']['general'].get('terraform_files', [])
+        )
+
+    @staticmethod
+    def _setup_build_directory(directory):
+        """Create the directory to be used for building infrastructure
+
+        Args:
+            directory (str): Optional path to directory to create
+
+        Returns:
+            str: Path to directory that will be used
+        """
+        if not directory:
+            temp_dir = tempfile.TemporaryDirectory(prefix='streamalert_build-')
+            directory = temp_dir.name
+
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+
+        return directory
 
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
