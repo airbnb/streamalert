@@ -19,13 +19,7 @@ from streamalert_cli.manage_lambda import package
 LOGGER = get_logger(__name__)
 
 
-def terraform_runner(
-        config,
-        refresh=True,
-        auto_approve=False,
-        targets=None,
-        destroy=False,
-        build_pkg=False):
+def terraform_runner(config, refresh=True, auto_approve=False, targets=None, destroy=False):
     """Terraform wrapper to build StreamAlert infrastructure.
 
     Resolves modules with `terraform get` before continuing.
@@ -66,13 +60,12 @@ def terraform_runner(
     if targets:
         tf_command.extend('-target={}'.format(x) for x in targets)
 
-    # Building of the deployment package should happen if Lambda is
-    # an explict target or there are no targets at all
-    if build_pkg or not targets:
-        deployment_package = package.LambdaPackage(config)
-        package_path = deployment_package.create()
-        if not package_path:
-            return False
+    # Build the deployment package so the Lambda does not produce an error
+    # TODO: maybe remove this as packaging improvements progress
+    deployment_package = package.LambdaPackage(config)
+    package_path = deployment_package.create()
+    if not package_path:
+        return False
 
     return run_command(tf_command, cwd=config.build_directory)
 
