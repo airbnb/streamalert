@@ -97,9 +97,9 @@ class CLIConfig:
             LOGGER.error('Invalid prefix type, must be string')
             return False
 
-        acceptable_chars = set([*string.digits, *string.ascii_letters])
+        acceptable_chars = set([*string.digits, *string.ascii_lowercase])
         if not set(prefix).issubset(acceptable_chars):
-            LOGGER.error('Prefix must contain only letters and numbers')
+            LOGGER.error('Prefix must contain only lowercase letters and numbers')
             return False
 
         self.config['global']['account']['prefix'] = prefix
