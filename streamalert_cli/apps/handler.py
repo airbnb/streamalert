@@ -142,9 +142,9 @@ class AppCommand(CLICommand):
         # Validate the name being used to make sure it does not contain specific characters
         def _validate_name(val):
             """Validate acceptable inputs for the name of the function"""
-            acceptable_chars = ''.join([string.digits, string.ascii_letters, '_-'])
+            acceptable_chars = ''.join([string.digits, string.ascii_lowercase, '_-'])
             if not set(str(val)).issubset(acceptable_chars):
-                raise app_parser.error('Name must contain only letters, numbers, '
+                raise app_parser.error('Name must contain only lowercase letters, numbers, '
                                        'hyphens, or underscores.')
 
             return val
