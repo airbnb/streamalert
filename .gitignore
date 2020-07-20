@@ -27,3 +27,6 @@ ubuntu*.log
 
 # Coverage artifacts
 /htmlcov
+
+# User Setup
+.vscode
