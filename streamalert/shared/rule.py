@@ -60,6 +60,7 @@ class Rule:
         self.merge_window_mins = kwargs.get('merge_window_mins') or 0
         self.outputs = kwargs.get('outputs')
         self.dynamic_outputs = kwargs.get('dynamic_outputs')
+        self.severity = kwargs.get('severity')
         self.publishers = kwargs.get('publishers')
         self.req_subkeys = kwargs.get('req_subkeys')
         self.initial_context = kwargs.get('context')

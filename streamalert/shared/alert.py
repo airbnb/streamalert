@@ -30,7 +30,7 @@ class Alert:
     _EXPECTED_INIT_KWARGS = {
         'alert_id', 'attempts', 'cluster', 'context', 'created', 'dispatched', 'log_source',
         'log_type', 'merge_by_keys', 'merge_window', 'outputs_sent', 'publishers',
-        'rule_description', 'source_entity', 'source_service', 'staged'
+        'rule_description', 'severity', 'source_entity', 'source_service', 'staged'
     }
     DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
@@ -66,6 +66,7 @@ class Alert:
                     in order, for only that specific output service.
 
             rule_description (str): Description associated with the triggering rule.
+            severity (str): The severity of the rule being triggered to an Alert (default: low)
             source_entity (str): Name of location from which the record originated. E.g. "mychannel"
             source_service (str): Input type from which the record originated. E.g. "slack"
             staged (bool): Whether this rule is currently in the staging process. Defaults to False
@@ -104,6 +105,7 @@ class Alert:
         self.merge_window = kwargs.get('merge_window') or timedelta(minutes=0)
         self.outputs_sent = kwargs.get('outputs_sent') or set()
         self.rule_description = kwargs.get('rule_description') or None
+        self.severity = kwargs.get('severity') or 'low'
         self.source_entity = kwargs.get('source_entity') or None
         self.source_service = kwargs.get('source_service') or None
         self.staged = kwargs.get('staged') or False
@@ -165,6 +167,7 @@ class Alert:
             # (instead of just passing the dict) because Dynamo does not allow empty string values.
             'Record': json.dumps(self.record, separators=(',', ':'), default=list),
             'RuleDescription': self.rule_description,
+            'Severity': self.severity,
             'SourceEntity': self.source_entity,
             'SourceService': self.source_service,
             'Staged': self.staged
@@ -202,6 +205,7 @@ class Alert:
                 outputs_sent=set(record.get('OutputsSent') or []),
                 publishers=record.get('Publishers'),
                 rule_description=record.get('RuleDescription'),
+                severity=record.get('severity'),
                 source_entity=record.get('SourceEntity'),
                 source_service=record.get('SourceService'),
                 staged=record.get('Staged')
@@ -236,6 +240,7 @@ class Alert:
             'record': self.record,
             'rule_description': self.rule_description or '',
             'rule_name': self.rule_name or '',
+            'severity': self.severity,
             'source_entity': self.source_entity or '',
             'source_service': self.source_service or '',
             'staged': self.staged,
@@ -427,6 +432,7 @@ class Alert:
             log_type=alerts[0].log_type,
             publishers=alerts[0].publishers,
             rule_description=alerts[0].rule_description,
+            severity=alerts[0].severity,
             source_entity=alerts[0].source_entity,
             source_service=alerts[0].source_service,
             staged=any(alert.staged for alert in alerts)
