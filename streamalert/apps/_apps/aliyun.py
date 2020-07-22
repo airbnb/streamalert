@@ -51,6 +51,13 @@ class AliyunApp(AppIntegration):
     # The maximum number of results to be returned. Valid values: 0 to 50.
     _MAX_RESULTS = 50
 
+    # In aliyun sdk PR https://github.com/aliyun/aliyun-openapi-python-sdk/pull/216, it separates
+    # timeout to connection and read timeout and also lower the default connection timeout time
+    # from 10 to 5 seconds. We notice the connection to server gets timed out more often recently,
+    # increase default timeout will be helpful.
+    _CONNECT_TIMEOUT = 15
+    _READ_TIMEOUT = 15
+
     def __init__(self, event, context):
         super(AliyunApp, self).__init__(event, context)
         auth = self._config.auth
@@ -64,6 +71,9 @@ class AliyunApp(AppIntegration):
         # blob/master/aliyun-python-sdk-actiontrail/aliyunsdkactiontrail/request/v20171204/
         # LookupEventsRequest.py
         self.request.set_EndTime(datetime.utcnow().strftime(self.date_formatter()))
+
+        self.request.set_connect_timeout(self._CONNECT_TIMEOUT)
+        self.request.set_read_timeout(self._READ_TIMEOUT)
 
     @classmethod
     def _type(cls):
@@ -141,12 +151,11 @@ class AliyunApp(AppIntegration):
                 self.request.set_NextToken(json_response['NextToken'])
             else:
                 self._more_to_poll = False
-
             return json_response['Events']
 
         except (ServerException, ClientException) as e:
             LOGGER.exception("%s error occurred", e.get_error_type())
-            return False
+            raise
 
     @classmethod
     def _required_auth_info(cls):
