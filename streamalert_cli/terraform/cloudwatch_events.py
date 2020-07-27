@@ -119,7 +119,7 @@ def _map_regions(settings):
     """
     region_map = defaultdict(dict)
     for scope in ['accounts', 'organizations']:
-        for aws_id, regions in settings[scope].items():
+        for aws_id, regions in settings.get(scope, {}).items():
             for region in regions:
                 region_map[region] = region_map.get(region, defaultdict(list))
                 region_map[region][scope].append(aws_id)
