@@ -752,13 +752,19 @@ class TestTerraformGenerate:
                 'source': './modules/tf_cloudwatch_events/cross_account',
                 'region': 'us-east-1',
                 'accounts': ['123456789012', '234567890123'],
-                'organizations': []
+                'organizations': [],
+                'providers': {
+                    'aws': 'aws.us-east-1'
+                }
             },
             'cloudwatch_events_cross_account_advanced_us-west-1': {
                 'source': './modules/tf_cloudwatch_events/cross_account',
                 'region': 'us-west-1',
                 'accounts': [],
-                'organizations': ['o-aabbccddee']
+                'organizations': ['o-aabbccddee'],
+                'providers': {
+                    'aws': 'aws.us-west-1'
+                }
             },
         }
 

@@ -83,7 +83,11 @@ def generate_cloudwatch_events(cluster_name, cluster_dict, config):
             'source': './modules/tf_cloudwatch_events/cross_account',
             'region': region,
             'accounts': sorted(values.get('accounts', [])),
-            'organizations': sorted(values.get('organizations', []))
+            'organizations': sorted(values.get('organizations', [])),
+            'providers': {
+                # use the aliased provider for this region from providers.tf
+                'aws': 'aws.{}'.format(region)
+            }
         }
 
     return True
