@@ -325,6 +325,18 @@ Example
             "EC2 Instance Terminate Successful",
             "EC2 Instance Terminate Unsuccessful"
           ]
+        },
+        "cross_account": {
+          "accounts": {
+            "123456789012": [
+              "us-east-1"
+            ]
+          },
+          "organizations": {
+            "o-aabbccddee": [
+              "us-east-1"
+            ]
+          }
         }
       },
       "kinesis": {
@@ -341,7 +353,7 @@ Example
   }
 
 This creates a CloudWatch Events Rule that will publish all events that match the provided
-``event_pattern`` to the Kinesis stream for this cluster. Note in the example above that a custom
+``event_pattern`` to the Kinesis Stream for this cluster. Note in the example above that a custom
 ``event_pattern`` is supplied, but may be omitted entirely. To override the default ``event_patten``
 (shown below), a value of ``None`` or ``{}`` may also be supplied to capture all events,
 regardless of which account the logs came from. In this case, rules should be written against
@@ -354,7 +366,19 @@ Options
 **Key**                **Default**                          **Description**
 ---------------------  -----------------------------------  ---------------
 ``event_pattern``      ``{"account": ["<accound_id>"]}``    The `CloudWatch Events pattern <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_ to control what is sent to Kinesis
+``cross_account``      ``None``                             Configuration options to enable cross account access for specific AWS Accounts and Organizations. See the `Cross Account Options`_ section below for details.
 =====================  ===================================  ===============
+
+Cross Account Options
+---------------------
+The ``cross_account`` section of the ``cloudwatch_events`` module has two subsections, outlined here. Usage of these is also shown in the example above.
+
+=====================  ===========  ===============
+**Key**                **Default**  **Description**
+---------------------  -----------  ---------------
+``accounts``           ``None``     A mapping of *account IDs* and regions for which cross account access should be enabled. Example: ``{"123456789012": ["us-east-1"], "234567890123": ["us-west-2"]}``
+``organizations``      ``None``     A mapping of *organization IDs* and regions for which cross account access should be enabled. Example: ``{"o-aabbccddee": ["us-west-2"]}``
+=====================  ===========  ===============
 
 
 .. _cloudwatch_logs:
