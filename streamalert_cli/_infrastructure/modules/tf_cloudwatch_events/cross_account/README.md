@@ -7,10 +7,10 @@ Configure the necessary resources to allow for cross account CloudWatch Events v
 ## Example
 ```hcl
 module "cloudwatch_events_cross_account" {
-  source            = "./modules/tf_cloudwatch_events/cross_account"
-  organization_ids  = ["123456789012"]
-  org_ids           = ["o-aabbccddee"]
-  region            = "us-east-1"
+  source         = "./modules/tf_cloudwatch_events/cross_account"
+  accounts       = ["123456789012"]
+  organizations  = ["o-aabbccddee"]
+  region         = "us-east-1"
 }
 ```
 
@@ -22,12 +22,12 @@ module "cloudwatch_events_cross_account" {
     <th>Default (None=Required)</th>
   </tr>
   <tr>
-    <td>account_ids</td>
+    <td>accounts</td>
     <td>AWS Account IDs for which to enable cross account CloudWatch Events</td>
     <td>None</td>
   </tr>
   <tr>
-    <td>organization_ids</td>
+    <td>organizations</td>
     <td>AWS Organization IDs for which to enable cross account CloudWatch Events</td>
     <td>None</td>
   </tr>
