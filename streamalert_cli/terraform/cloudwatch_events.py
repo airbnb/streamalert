@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import defaultdict
 import json
 
 from streamalert.shared.logger import get_logger
@@ -71,4 +72,56 @@ def generate_cloudwatch_events(cluster_name, cluster_dict, config):
         'event_pattern': json.dumps(event_pattern) if event_pattern is not None else event_pattern
     }
 
+    cross_account_settings = settings.get('cross_account')
+    if not cross_account_settings:
+        return True
+
+    region_map = _map_regions(cross_account_settings)
+    for region, values in region_map.items():
+        tf_module_name = 'cloudwatch_events_cross_account_{}_{}'.format(cluster_name, region)
+        cluster_dict['module'][tf_module_name] = {
+            'source': './modules/tf_cloudwatch_events/cross_account',
+            'region': region,
+            'accounts': sorted(values.get('accounts', [])),
+            'organizations': sorted(values.get('organizations', []))
+        }
+
     return True
+
+
+def _map_regions(settings):
+    """Reverse the mapping of accounts/orgs <> regions to make it nicer for terraform to use
+
+    Args:
+        settings (dict): Mapping or accounts/orgs to regions
+            Example:
+                {
+                    'accounts': {
+                        '123456789012': ['us-east-1'],
+                        '234567890123': ['us-east-1']
+                    },
+                    'organizations': {
+                        'o-aabbccddee': ['us-west-1']
+                    }
+                }
+
+    Returns:
+        dict: An inverse mapping of regions <> accounts/orgs
+            Example:
+                {
+                    'us-east-1': {
+                        'accounts': ['123456789012', '234567890123'],
+                    },
+                    'us-west-1': {
+                        'organizations': ['o-aabbccddee']
+                    }
+                }
+    """
+    region_map = defaultdict(dict)
+    for scope in ['accounts', 'organizations']:
+        for aws_id, regions in settings[scope].items():
+            for region in regions:
+                region_map[region] = region_map.get(region, defaultdict(list))
+                region_map[region][scope].append(aws_id)
+
+    return region_map
