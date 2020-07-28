@@ -393,12 +393,12 @@ def _copy_terraform_files(config):
         config (CLIConfig): Loaded StreamAlert config
     """
     # Copy the packaged terraform files to temp
-    # Currently this ignores *.tf.json and *.zip files, in the instance that these
+    # Currently this ignores *.tf.json, in the instance that these
     # exist in current deployments. This can be removed in a future release.
     shutil.copytree(
         TERRAFORM_FILES_PATH,
         config.build_directory,
-        ignore=shutil.ignore_patterns('*.tf.json', '*.zip')  # TODO: remove this eventually
+        ignore=shutil.ignore_patterns('*.tf.json')  # TODO: remove this eventually
     )
 
     # Copy any additional user provided terraform files to temp
