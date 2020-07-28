@@ -697,7 +697,7 @@ class TestTerraformGenerate:
 
         assert_true(log_mock.called)
 
-    def test_generate_cloudwatch_events_cross_account_map_regions(self):
+    def test_generate_cwe_cross_acct_map_regions(self):
         """CLI - Terraform Generate CloudWatch Events Cross Account Region Map"""
         # pylint: disable=protected-access
         settings = {
