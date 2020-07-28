@@ -697,6 +697,79 @@ class TestTerraformGenerate:
 
         assert_true(log_mock.called)
 
+    def test_generate_cwe_cross_acct_map_regions(self):
+        """CLI - Terraform Generate CloudWatch Events Cross Account Region Map"""
+        # pylint: disable=protected-access
+        settings = {
+            'accounts': {
+                '123456789012': ['us-east-1'],
+                '234567890123': ['us-east-1']
+            },
+            'organizations': {
+                'o-aabbccddee': ['us-west-1']
+            }
+        }
+
+        result = cloudwatch_events._map_regions(settings)
+
+        expected = {
+            'us-east-1': {
+                'accounts': ['123456789012', '234567890123'],
+            },
+            'us-west-1': {
+                'organizations': ['o-aabbccddee']
+            }
+        }
+
+        assert_equal(expected, result)
+
+    def test_generate_cloudwatch_events_cross_account(self):
+        """CLI - Terraform Generate CloudWatch Events Cross Account"""
+        self.config['clusters']['advanced']['modules']['cloudwatch_events']['cross_account'] = {
+            'accounts': {
+                '123456789012': ['us-east-1'],
+                '234567890123': ['us-east-1']
+            },
+            'organizations': {
+                'o-aabbccddee': ['us-west-1']
+            }
+        }
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_events_advanced': {
+                'source': './modules/tf_cloudwatch_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'kinesis_arn': '${module.kinesis_advanced.arn}',
+                'event_pattern': '{"account": ["12345678910"]}',
+            },
+            'cloudwatch_events_cross_account_advanced_us-east-1': {
+                'source': './modules/tf_cloudwatch_events/cross_account',
+                'region': 'us-east-1',
+                'accounts': ['123456789012', '234567890123'],
+                'organizations': [],
+                'providers': {
+                    'aws': 'aws.us-east-1'
+                }
+            },
+            'cloudwatch_events_cross_account_advanced_us-west-1': {
+                'source': './modules/tf_cloudwatch_events/cross_account',
+                'region': 'us-west-1',
+                'accounts': [],
+                'organizations': ['o-aabbccddee'],
+                'providers': {
+                    'aws': 'aws.us-west-1'
+                }
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
 

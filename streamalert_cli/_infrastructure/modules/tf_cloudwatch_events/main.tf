@@ -1,4 +1,4 @@
-// Cloudwatch event to capture Cloudtrail API calls
+// Cloudwatch Event Rule: Capture CloudWatch Events
 resource "aws_cloudwatch_event_rule" "capture_events" {
   name          = "${var.prefix}_${var.cluster}_streamalert_all_events"
   description   = "Capture CloudWatch events"
@@ -13,8 +13,10 @@ resource "aws_cloudwatch_event_rule" "capture_events" {
 
 // The Kinesis destination for Cloudwatch events
 resource "aws_cloudwatch_event_target" "kinesis" {
-  rule = aws_cloudwatch_event_rule.capture_events.name
-  arn  = var.kinesis_arn
+  target_id = "${var.prefix}_${var.cluster}_streamalert_kinesis"
+  rule      = aws_cloudwatch_event_rule.capture_events.name
+  role_arn  = aws_iam_role.cloudwatch_events_role.arn
+  arn       = var.kinesis_arn
 }
 
 // IAM Role: CloudWatch Events
