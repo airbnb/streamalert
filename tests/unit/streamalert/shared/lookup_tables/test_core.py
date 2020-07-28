@@ -74,10 +74,6 @@ class TestLookupTablesCore:
                     {
                         'AttributeName': 'MySortKey',
                         'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'MyValueKey',
-                        'AttributeType': 'S'
                     }
                 ],
                 'KeySchema': [

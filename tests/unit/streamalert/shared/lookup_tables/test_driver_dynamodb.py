@@ -66,10 +66,6 @@ class TestDynamoDBDriver:
                     {
                         'AttributeName': 'MySortKey',
                         'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'MyValueKey',
-                        'AttributeType': 'S'
                     }
                 ],
                 'KeySchema': [
@@ -269,19 +265,7 @@ class TestDynamoDBDriver_MultiTable:
                     {
                         'AttributeName': 'Pkey',
                         'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'IntegerField',
-                        'AttributeType': 'N'
-                    },
-                    {
-                        'AttributeName': 'StringField',
-                        'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'DictField',
-                        'AttributeType': 'M'
-                    },
+                    }
                 ],
                 'KeySchema': [
                     {

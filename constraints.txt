@@ -1,0 +1,2 @@
+# botocore requires a version of docutils < 0.16, but sphinx-rtd-theme's requirement of >=0.12 breaks this
+docutils<0.16

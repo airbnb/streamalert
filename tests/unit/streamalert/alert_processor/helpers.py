@@ -15,6 +15,8 @@ limitations under the License.
 """
 import random
 
+import boto3
+
 from streamalert.alert_processor.outputs.credentials.provider import LocalFileDriver
 from streamalert.shared.alert import Alert
 from streamalert.shared.helpers.aws_api_client import AwsKms, AwsSsm
@@ -79,6 +81,15 @@ def get_alert(context=None):
 def remove_temp_secrets():
     """Remove the local secrets directory that may be left from previous runs"""
     LocalFileDriver.clear()
+
+
+def setup_mock_kms(region, alias):
+    client = boto3.client('kms', region_name=region)
+    response = client.create_key()
+    client.create_alias(
+        AliasName=alias,
+        TargetKeyId=response['KeyMetadata']['KeyId']
+    )
 
 
 def encrypt_with_kms(data, region, alias):

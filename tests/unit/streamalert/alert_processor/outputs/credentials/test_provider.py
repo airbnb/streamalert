@@ -22,12 +22,13 @@ from botocore.exceptions import ClientError
 from mock import patch, MagicMock
 from moto import mock_kms, mock_ssm
 from nose.tools import (
-    assert_true,
     assert_equal,
-    assert_is_instance,
-    assert_is_not_none,
     assert_false,
+    assert_is_instance,
     assert_is_none,
+    assert_is_not_none,
+    assert_not_equal,
+    assert_true,
 )
 
 from streamalert.alert_processor.outputs.output_base import OutputProperty
@@ -45,7 +46,8 @@ from tests.unit.streamalert.alert_processor import (
     MOCK_ENV
 )
 from tests.unit.streamalert.alert_processor.helpers import (
-    encrypt_with_kms
+    encrypt_with_kms,
+    setup_mock_kms
 )
 
 
@@ -55,11 +57,17 @@ from tests.unit.streamalert.alert_processor.helpers import (
 
 
 class TestCredentialsEncrypted:
-    @mock_kms
+
     def setup(self):
+        self.kms_mocker = mock_kms()
+        self.kms_mocker.start()
+        setup_mock_kms(REGION, KMS_ALIAS)
         self._plaintext_payload = 'plaintext credentials'
         self._encrypted_payload = encrypt_with_kms(self._plaintext_payload, REGION, KMS_ALIAS)
         self._credentials = Credentials(self._encrypted_payload, is_encrypted=True, region=REGION)
+
+    def teardown(self):
+        self.kms_mocker.stop()
 
     def test_is_encrypted(self):
         """Credentials - Encrypted Credentials - Is Encrypted"""
@@ -69,7 +77,6 @@ class TestCredentialsEncrypted:
         """Credentials - Encrypted Credentials - Data"""
         assert_equal(self._credentials.data(), self._encrypted_payload)
 
-    @mock_kms
     def test_get_data_kms_decrypted(self):
         """Credentials - Encrypted Credentials - KMS Decrypt"""
         decrypted = self._credentials.get_data_kms_decrypted()
@@ -100,9 +107,16 @@ class TestCredentialsEncrypted:
 
 
 class TestCredentialsUnencrypted:
+
     def setup(self):
+        self.kms_mocker = mock_kms()
+        self.kms_mocker.start()
+        setup_mock_kms(REGION, KMS_ALIAS)
         self._plaintext_payload = 'plaintext credentials'
         self._credentials = Credentials(self._plaintext_payload, is_encrypted=False)
+
+    def teardown(self):
+        self.kms_mocker.stop()
 
     def test_is_encrypted(self):
         """Credentials - Plaintext Credentials - Is Encrypted"""
@@ -118,7 +132,6 @@ class TestCredentialsUnencrypted:
         assert_is_none(self._credentials.get_data_kms_decrypted())
         logging_error.assert_called_with('Cannot decrypt Credentials as they are already decrypted')
 
-    @mock_kms
     def test_encrypt(self):
         """Credentials - Plaintext Credentials - Encrypt
 
@@ -127,7 +140,11 @@ class TestCredentialsUnencrypted:
         self._credentials.encrypt(REGION, KMS_ALIAS)
 
         assert_true(self._credentials.is_encrypted())
-        assert_equal(self._credentials.data(), 'InBsYWludGV4dCBjcmVkZW50aWFscyI='.encode())
+
+        # moto changed from simply base64 encoding data to actually
+        # doing proper encryption/decryption. See here:
+        # https://github.com/earlrob/moto/commit/98581b9196768ad8d5eaa1e02ca744c0c3b2098e
+        assert_not_equal(self._credentials.data(), 'plaintext credentials')
 
 
 class TestCredentialsEmpty:
@@ -362,6 +379,7 @@ class TestLocalFileDriver:
     @mock_kms
     def test_save_and_load_credentials(self):
         """LocalFileDriver - Save and Load Credentials"""
+        setup_mock_kms(REGION, KMS_ALIAS)
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
 
@@ -378,7 +396,9 @@ class TestLocalFileDriver:
 
     @mock_kms
     def test_save_and_load_credentials_persists_statically(self):
-        """LocalFileDriver - Save and Load Credentials"""
+        """LocalFileDriver - Save and Load Credentials, Static"""
+        setup_mock_kms(REGION, KMS_ALIAS)
+
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
 
@@ -447,6 +467,8 @@ class TestSpooledTempfileDriver:
     @mock_kms
     def test_save_and_load_credentials(self):
         """SpooledTempfileDriver - Save and Load Credentials"""
+        setup_mock_kms(REGION, KMS_ALIAS)
+
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
         encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
@@ -462,7 +484,9 @@ class TestSpooledTempfileDriver:
 
     @mock_kms
     def test_save_and_load_credentials_persists_statically(self):
-        """SpooledTempfileDriver - Save and Load Credentials"""
+        """SpooledTempfileDriver - Save and Load Credentials, Static"""
+        setup_mock_kms(REGION, KMS_ALIAS)
+
         raw_credentials_dict = {
             'python': 'is very difficult',
             'someone': 'save meeeee',
@@ -550,7 +574,7 @@ class TestEphemeralUnencryptedDriver:
         assert_equal(loaded_credentials.data(), 'aaaa')
 
     def test_save_and_load_credentials_persists_statically(self):
-        """EphemeralUnencryptedDriver - Save and Load Credentials"""
+        """EphemeralUnencryptedDriver - Save and Load Credentials, Static"""
         descriptor = 'descriptor'
         credentials = Credentials('aaaa', False)
 
@@ -566,6 +590,8 @@ class TestEphemeralUnencryptedDriver:
     @mock_kms
     def test_save_automatically_decrypts(self):
         """EphemeralUnencryptedDriver - Save Automatically Decrypts"""
+        setup_mock_kms(REGION, KMS_ALIAS)
+
         raw_credentials_dict = {
             'python': 'is very difficult',
             'someone': 'save meeeee',
