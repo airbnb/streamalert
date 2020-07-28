@@ -79,7 +79,7 @@ resource "aws_lambda_layer_version" "aliyun_dependencies" {
 }
 
 resource "aws_lambda_layer_version" "box_dependencies" {
-  filename            = "${path.module}/lambda_layers/boxsdk[jwt]==2.6.1_dependencies.zip"
+  filename            = "${path.module}/lambda_layers/boxsdk[jwt]==2.9.0_dependencies.zip"
   layer_name          = "box"
   compatible_runtimes = ["python3.7"]
 }

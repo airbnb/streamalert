@@ -102,14 +102,14 @@ SSH and Build Dependencies
   # make sure you create virtual environment with python3.7
   $ which python3.7
 
-  # Create and source venv
-  $ python3.7 -m venv venv && source venv/bin/activate
+  # Create and use venv
+  $ mkvirtualenv --python=$(which python3.7) venv
 
   # upgrade pip and setuptools if neccessary
   $ pip install --upgrade pip setuptools
 
   $ mkdir -p $HOME/build_temp $HOME/pip_temp/python
-  $ pip install boxsdk[jwt]==2.6.1 --build $HOME/build_temp/ --target $HOME/pip_temp/python
+  $ pip install boxsdk[jwt]==2.9.0 --build $HOME/build_temp/ --target $HOME/pip_temp/python
 
   # Replace the `boxsdk[jwt]==2.6.1` below with the desired package & version
   # For example, the following would update the aliyun dependencies:
