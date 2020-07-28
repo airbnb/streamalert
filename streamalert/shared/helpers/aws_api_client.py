@@ -44,9 +44,10 @@ class AwsKms:
             ClientError
         """
         try:
-            key_id = 'alias/{}'.format(key_alias)
+            if not key_alias.startswith('alias/'):
+                key_alias = 'alias/{}'.format(key_alias)
             client = boto3.client('kms', config=default_config(region=region))
-            response = client.encrypt(KeyId=key_id, Plaintext=plaintext_data)
+            response = client.encrypt(KeyId=key_alias, Plaintext=plaintext_data)
             return response['CiphertextBlob']
         except ClientError:
             LOGGER.error('An error occurred during KMS encryption')

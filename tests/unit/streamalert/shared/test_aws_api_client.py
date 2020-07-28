@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import boto3
 from botocore.exceptions import ClientError
 from mock import patch
 from moto import mock_kms
@@ -29,6 +30,13 @@ class TestAwsKms:
     def test_encrypt_decrypt():
         """AwsApiClient - AwsKms - encrypt/decrypt - Encrypt and push creds, then pull them down"""
         secret = 'shhhhhh'.encode() # nosec
+
+        client = boto3.client('kms', region_name=REGION)
+        response = client.create_key()
+        client.create_alias(
+            AliasName=KMS_ALIAS,
+            TargetKeyId=response['KeyMetadata']['KeyId']
+        )
 
         ciphertext = AwsKms.encrypt(secret, region=REGION, key_alias=KMS_ALIAS)
         response = AwsKms.decrypt(ciphertext, region=REGION)
