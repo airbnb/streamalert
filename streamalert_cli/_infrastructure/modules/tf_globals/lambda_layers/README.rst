@@ -102,8 +102,8 @@ SSH and Build Dependencies
   # make sure you create virtual environment with python3.7
   $ which python3.7
 
-  # Create and use venv
-  $ mkvirtualenv --python=$(which python3.7) venv
+  # Create and source venv
+  $ python3.7 -m venv venv && source venv/bin/activate
 
   # upgrade pip and setuptools if neccessary
   $ pip install --upgrade pip setuptools
