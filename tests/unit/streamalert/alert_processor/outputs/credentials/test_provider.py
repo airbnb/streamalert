@@ -152,7 +152,6 @@ class TestCredentialsEmpty:
         self._plaintext_payload = ''
         self._credentials = Credentials(self._plaintext_payload, is_encrypted=False)
 
-    @mock_kms
     def test_encrypt(self):
         """Credentials - Empty Credentials - Encrypt - Does nothing when payload is empty"""
         self._credentials.encrypt(REGION, KMS_ALIAS)
@@ -360,11 +359,14 @@ def test_get_formatted_output_credentials_name_no_descriptor(): #pylint: disable
 class TestLocalFileDriver:
 
     def setup(self):
+        self.kms_mocker = mock_kms()
+        self.kms_mocker.start()
+        setup_mock_kms(REGION, KMS_ALIAS)
         LocalFileDriver.clear()
         self._fs_driver = LocalFileDriver(REGION, 'service')
 
-    @staticmethod
-    def teardown():
+    def teardown(self):
+        self.kms_mocker.stop()
         LocalFileDriver.clear()
 
     def test_save_and_has_credentials(self):
@@ -376,10 +378,8 @@ class TestLocalFileDriver:
 
         assert_true(self._fs_driver.has_credentials('descriptor'))
 
-    @mock_kms
     def test_save_and_load_credentials(self):
         """LocalFileDriver - Save and Load Credentials"""
-        setup_mock_kms(REGION, KMS_ALIAS)
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
 
@@ -394,11 +394,8 @@ class TestLocalFileDriver:
         assert_true(loaded_credentials.is_encrypted())
         assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
 
-    @mock_kms
     def test_save_and_load_credentials_persists_statically(self):
         """LocalFileDriver - Save and Load Credentials, Static"""
-        setup_mock_kms(REGION, KMS_ALIAS)
-
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
 
@@ -448,11 +445,14 @@ class TestLocalFileDriver:
 class TestSpooledTempfileDriver:
 
     def setup(self):
+        self.kms_mocker = mock_kms()
+        self.kms_mocker.start()
+        setup_mock_kms(REGION, KMS_ALIAS)
         SpooledTempfileDriver.clear()
         self._sp_driver = SpooledTempfileDriver('service', REGION)
 
-    @staticmethod
-    def teardown():
+    def teardown(self):
+        self.kms_mocker.start()
         SpooledTempfileDriver.clear()
 
     def test_save_and_has_credentials(self):
@@ -464,11 +464,8 @@ class TestSpooledTempfileDriver:
 
         assert_true(self._sp_driver.has_credentials('descriptor'))
 
-    @mock_kms
     def test_save_and_load_credentials(self):
         """SpooledTempfileDriver - Save and Load Credentials"""
-        setup_mock_kms(REGION, KMS_ALIAS)
-
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
         encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
@@ -482,11 +479,8 @@ class TestSpooledTempfileDriver:
         assert_true(loaded_credentials.is_encrypted())
         assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
 
-    @mock_kms
     def test_save_and_load_credentials_persists_statically(self):
         """SpooledTempfileDriver - Save and Load Credentials, Static"""
-        setup_mock_kms(REGION, KMS_ALIAS)
-
         raw_credentials_dict = {
             'python': 'is very difficult',
             'someone': 'save meeeee',
@@ -545,11 +539,14 @@ class TestSpooledTempfileDriver:
 class TestEphemeralUnencryptedDriver:
 
     def setup(self):
+        self.kms_mocker = mock_kms()
+        self.kms_mocker.start()
+        setup_mock_kms(REGION, KMS_ALIAS)
         EphemeralUnencryptedDriver.clear()
         self._ep_driver = EphemeralUnencryptedDriver('service')
 
-    @staticmethod
-    def teardown():
+    def teardown(self):
+        self.kms_mocker.stop()
         EphemeralUnencryptedDriver.clear()
 
     def test_save_and_has_credentials(self):
@@ -587,11 +584,8 @@ class TestEphemeralUnencryptedDriver:
         assert_false(loaded_credentials.is_encrypted())
         assert_equal(loaded_credentials.data(), 'aaaa')
 
-    @mock_kms
     def test_save_automatically_decrypts(self):
         """EphemeralUnencryptedDriver - Save Automatically Decrypts"""
-        setup_mock_kms(REGION, KMS_ALIAS)
-
         raw_credentials_dict = {
             'python': 'is very difficult',
             'someone': 'save meeeee',
