@@ -15,6 +15,7 @@ resource "aws_cloudwatch_event_rule" "capture_events" {
 resource "aws_cloudwatch_event_target" "kinesis" {
   target_id = "${var.prefix}_${var.cluster}_streamalert_kinesis"
   rule      = aws_cloudwatch_event_rule.capture_events.name
+  role_arn  = aws_iam_role.cloudwatch_events_role.arn
   arn       = var.kinesis_arn
 }
 
