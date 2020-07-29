@@ -273,12 +273,14 @@ Options
 ==============================  ===================================================  ===============
 **Key**                         **Default**                                          **Description**
 ------------------------------  ---------------------------------------------------  ---------------
+``enabled``                     ``true``                                             Toggle the ``cloudtrail`` module
 ``enable_logging``              ``true``                                             Toggle to ``false`` to pause logging to the CloudTrail
 ``exclude_home_region_events``  ``false``                                            Ignore events from the StreamAlert deployment region. This only has an effect if ``send_to_cloudwatch`` is set to ``true``
 ``is_global_trail``             ``true``                                             If ``true``, the CloudTrail is applied to all regions
 ``send_to_cloudwatch``          ``false``                                            Enable CloudTrail delivery to CloudWatch Logs. Logs sent to CloudWatch Logs are forwarded to this cluster's Kinesis stream for processing. If this is enabled, the ``enable_s3_events`` option should be disabled to avoid duplicative processing.
 ``cloudwatch_destination_arn``  (Computed from CloudWatch Logs Destination module)   CloudWatch Destination ARN used for forwarding data to this cluster's Kinesis stream. This has a default value but can be overriden here with a different CloudWatch Logs Destination ARN
 ``send_to_sns``                 ``false``                                            Create an SNS topic to which notifications should be sent when CloudTrail puts a new object in the S3 bucket. The topic name will be the same as the S3 bucket name
+``s3_settings``                 ``None``                                             Configuration options for CloudTrail related to S3. See the `S3 Options`_ section below for details.
 ==============================  ===================================================  ===============
 
 S3 Options
@@ -469,8 +471,8 @@ Options
 =====================  ===========  ===============
 **Key**                **Default**  **Description**
 ---------------------  -----------  ---------------
+``enabled``            ``true``     Toggle the ``cloudwatch_logs_destination`` module
 ``cross_account_ids``  ``[]``       Authorize StreamAlert to gather logs from these accounts
-``enabled``            ``true``     Toggle the CloudWatch Logs module
 ``excluded_regions``   ``[]``       Do not create CloudWatch Log destinations in these regions
 =====================  ===========  ===============
 
@@ -534,7 +536,7 @@ Options
 ==========================  ===========  ===============
 **Key**                     **Default**  **Description**
 --------------------------  -----------  ---------------
-``enabled``                 ``false``    Toggle the CloudWatch Monitoring module
+``enabled``                 ``false``    Toggle the ``cloudwatch_monitoring`` module
 ``kinesis_alarms_enabled``  ``true``     Toggle the Kinesis-specific metric alarms
 ``lambda_alarms_enabled``   ``true``     Toggle the Lambda-specific metric alarms
 ``settings``                ``{}``       Alarm-specific settings (see below)
@@ -785,7 +787,7 @@ Options
 =====================  =============================================================================================================================================  ===============
 **Key**                **Default**                                                                                                                                    **Description**
 ---------------------  ---------------------------------------------------------------------------------------------------------------------------------------------  ---------------
-``enabled``            ---                                                                                                                                            Toggle flow log creation
+``enabled``            ``true``                                                                                                                                       Toggle the ``flow_logs`` module
 ``flow_log_filter``    ``[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action, flowlogstatus]``   Toggle flow log creation
 ``log_retention``      ``7``                                                                                                                                          Day for which logs should be retained in the log group
 ``enis``               ``[]``                                                                                                                                         Add flow logs for these ENIs
