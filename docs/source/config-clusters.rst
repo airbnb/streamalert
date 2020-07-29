@@ -210,7 +210,9 @@ Example: CloudTrail via S3 Events
     },
     "modules": {
       "cloudtrail": {
-        "enable_s3_events": true
+        "s3_settings": {
+          "enable_events": true
+        }
       }
     }
   }
@@ -242,8 +244,10 @@ Example: CloudTrail via CloudWatch Logs
     },
     "modules": {
       "cloudtrail": {
-        "send_to_cloudwatch": true,
-        "enable_s3_events": false,
+        "s3_settings": {
+          "enable_events": true
+        },
+        "send_to_cloudwatch": true
       },
       "kinesis": {
         "streams": {
@@ -269,18 +273,29 @@ Options
 ==============================  ===================================================  ===============
 **Key**                         **Default**                                          **Description**
 ------------------------------  ---------------------------------------------------  ---------------
-``s3_cross_account_ids``        ``[]``                                               Grant write access to the CloudTrail S3 bucket for these account IDs. The primary, aka deployment account ID, will be added to this list.
+``enabled``                     ``true``                                             Toggle the ``cloudtrail`` module
 ``enable_logging``              ``true``                                             Toggle to ``false`` to pause logging to the CloudTrail
 ``exclude_home_region_events``  ``false``                                            Ignore events from the StreamAlert deployment region. This only has an effect if ``send_to_cloudwatch`` is set to ``true``
 ``is_global_trail``             ``true``                                             If ``true``, the CloudTrail is applied to all regions
 ``send_to_cloudwatch``          ``false``                                            Enable CloudTrail delivery to CloudWatch Logs. Logs sent to CloudWatch Logs are forwarded to this cluster's Kinesis stream for processing. If this is enabled, the ``enable_s3_events`` option should be disabled to avoid duplicative processing.
 ``cloudwatch_destination_arn``  (Computed from CloudWatch Logs Destination module)   CloudWatch Destination ARN used for forwarding data to this cluster's Kinesis stream. This has a default value but can be overriden here with a different CloudWatch Logs Destination ARN
 ``send_to_sns``                 ``false``                                            Create an SNS topic to which notifications should be sent when CloudTrail puts a new object in the S3 bucket. The topic name will be the same as the S3 bucket name
-``enable_s3_events``            ``false``                                            Enable S3 events for the logs sent to the S3 bucket. These will invoke this cluster's classifier for every new object in the CloudTrail S3 bucket
-``s3_bucket_name``              ``prefix-cluster-streamalert-cloudtrail``            Name of the S3 bucket to be used for the CloudTrail logs. This can be overriden, but defaults to ``prefix-cluster-streamalert-cloudtrail``
-``s3_event_selector_type``      ``""``                                               An S3 event selector to enable object level logging for the account's S3 buckets. Choices are: "ReadOnly", "WriteOnly", "All", or "", where "" disables object level logging for S3
+``s3_settings``                 ``None``                                             Configuration options for CloudTrail related to S3. See the `S3 Options`_ section below for details.
 ==============================  ===================================================  ===============
 
+S3 Options
+----------
+The ``cloudtrail`` module has a subsection of ``s3_settings``, which contains options related to S3.
+
+========================  ===================================================  ===============
+**Key**                   **Default**                                          **Description**
+------------------------  ---------------------------------------------------  ---------------
+``cross_account_ids``     ``[]``                                               Grant write access to the CloudTrail S3 bucket for these account IDs. The primary, aka deployment account ID, will be added to this list.
+``enable_events``         ``false``                                            Enable S3 events for the logs sent to the S3 bucket. These will invoke this cluster's classifier for every new object in the CloudTrail S3 bucket
+``ignore_digest``         ``true``                                             If ``enable_events`` is enabled, setting ``ignore_digest`` to ``false`` will also process S3 files that are created within the ``AWSLogs/<account-id>/CloudTrail-Digest``. Defaults to ``true``.
+``bucket_name``           ``prefix-cluster-streamalert-cloudtrail``            Name of the S3 bucket to be used for the CloudTrail logs. This can be overriden, but defaults to ``prefix-cluster-streamalert-cloudtrail``
+``event_selector_type``   ``""``                                               An S3 event selector to enable object level logging for the account's S3 buckets. Choices are: "ReadOnly", "WriteOnly", "All", or "", where "" disables object level logging for S3
+========================  ===================================================  ===============
 
 .. _cloudwatch_events:
 
@@ -365,7 +380,7 @@ Options
 =====================  ===================================  ===============
 **Key**                **Default**                          **Description**
 ---------------------  -----------------------------------  ---------------
-``event_pattern``      ``{"account": ["<accound_id>"]}``    The `CloudWatch Events pattern <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_ to control what is sent to Kinesis
+``event_pattern``      ``{"account": ["<account-id>"]}``    The `CloudWatch Events pattern <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_ to control what is sent to Kinesis
 ``cross_account``      ``None``                             Configuration options to enable cross account access for specific AWS Accounts and Organizations. See the `Cross Account Options`_ section below for details.
 =====================  ===================================  ===============
 
@@ -456,8 +471,8 @@ Options
 =====================  ===========  ===============
 **Key**                **Default**  **Description**
 ---------------------  -----------  ---------------
+``enabled``            ``true``     Toggle the ``cloudwatch_logs_destination`` module
 ``cross_account_ids``  ``[]``       Authorize StreamAlert to gather logs from these accounts
-``enabled``            ``true``     Toggle the CloudWatch Logs module
 ``excluded_regions``   ``[]``       Do not create CloudWatch Log destinations in these regions
 =====================  ===========  ===============
 
@@ -521,7 +536,7 @@ Options
 ==========================  ===========  ===============
 **Key**                     **Default**  **Description**
 --------------------------  -----------  ---------------
-``enabled``                 ``false``    Toggle the CloudWatch Monitoring module
+``enabled``                 ``false``    Toggle the ``cloudwatch_monitoring`` module
 ``kinesis_alarms_enabled``  ``true``     Toggle the Kinesis-specific metric alarms
 ``lambda_alarms_enabled``   ``true``     Toggle the Lambda-specific metric alarms
 ``settings``                ``{}``       Alarm-specific settings (see below)
@@ -772,7 +787,7 @@ Options
 =====================  =============================================================================================================================================  ===============
 **Key**                **Default**                                                                                                                                    **Description**
 ---------------------  ---------------------------------------------------------------------------------------------------------------------------------------------  ---------------
-``enabled``            ---                                                                                                                                            Toggle flow log creation
+``enabled``            ``true``                                                                                                                                       Toggle the ``flow_logs`` module
 ``flow_log_filter``    ``[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action, flowlogstatus]``   Toggle flow log creation
 ``log_retention``      ``7``                                                                                                                                          Day for which logs should be retained in the log group
 ``enis``               ``[]``                                                                                                                                         Add flow logs for these ENIs

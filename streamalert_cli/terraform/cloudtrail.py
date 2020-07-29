@@ -43,15 +43,16 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     region = config['global']['account']['region']
     prefix = config['global']['account']['prefix']
     send_to_cloudwatch = settings.get('send_to_cloudwatch', False)
-    enable_s3_events = settings.get('enable_s3_events', True)
+    s3_settings = settings.get('s3_settings', {})
+    enable_s3_events = s3_settings.get('enable_events', False)
 
-    s3_bucket_name = settings.get(
-        's3_bucket_name',
+    s3_bucket_name = s3_settings.get(
+        'bucket_name',
         '{}-{}-streamalert-cloudtrail'.format(prefix, cluster_name)
     )
 
     primary_account_id = config['global']['account']['aws_account_id']
-    account_ids = set(settings.get('s3_cross_account_ids', []))
+    account_ids = set(s3_settings.get('cross_account_ids', []))
     account_ids.add(primary_account_id)
     account_ids = sorted(account_ids)
 
@@ -72,12 +73,14 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     settings_with_defaults = {
         'enable_logging',
         'is_global_trail',
-        's3_event_selector_type',
         'send_to_sns',
     }
     for value in settings_with_defaults:
         if value in settings:
             module_info[value] = settings[value]
+
+    if 'event_selector_type' in s3_settings:
+        module_info['s3_event_selector_type'] = s3_settings.get('event_selector_type')
 
     if send_to_cloudwatch:
         if not generate_cloudtrail_cloudwatch(
@@ -102,6 +105,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     cluster_dict['module']['cloudtrail_{}'.format(cluster_name)] = module_info
 
     if enable_s3_events:
+        ignore_digest = s3_settings.get('ignore_digest', True)
         s3_event_account_ids = account_ids
         # Omit the primary account ID from the event notifications to avoid duplicative processing
         if send_to_cloudwatch:
@@ -113,7 +117,11 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         bucket_info = {
             s3_bucket_name: [
                 {
-                    'filter_prefix': 'AWSLogs/{}/'.format(account_id)
+                    'filter_prefix': (
+                        'AWSLogs/{}/CloudTrail/'.format(account_id)
+                        if ignore_digest else
+                        'AWSLogs/{}/'.format(account_id)
+                    )
                 } for account_id in s3_event_account_ids
             ]
         }
