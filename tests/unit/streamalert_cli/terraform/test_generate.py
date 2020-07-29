@@ -358,9 +358,11 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, Minimal Settings"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'cross_account_ids': ['456789012345'],
+                'enable_events': False,
+            },
             'send_to_cloudwatch': False,
-            'enable_s3_events': False,
-            's3_cross_account_ids': ['456789012345'],
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -387,10 +389,12 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With S3 Events"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings':{
+                'bucket_name': 'unit-test-bucket',
+                'cross_account_ids': ['456789012345'],
+                'enable_events': True,
+            },
             'send_to_cloudwatch': False,
-            'enable_s3_events': True,
-            's3_cross_account_ids': ['456789012345'],
-            's3_bucket_name': 'unit-test-bucket'
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -420,10 +424,10 @@ class TestTerraformGenerate:
                 'bucket_name': 'unit-test-bucket',
                 'filters': [
                     {
-                        'filter_prefix': 'AWSLogs/12345678910/'
+                        'filter_prefix': 'AWSLogs/12345678910/CloudTrail/'
                     },
                     {
-                        'filter_prefix': 'AWSLogs/456789012345/'
+                        'filter_prefix': 'AWSLogs/456789012345/CloudTrail/'
                     }
                 ]
             }
@@ -435,8 +439,10 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With CloudWatch Logs"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'enable_events': False,
+            },
             'send_to_cloudwatch': True,
-            'enable_s3_events': False,
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -504,9 +510,11 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With S3 and CloudWatch Logs"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'cross_account_ids': ['456789012345'],
+                'enable_events': True,
+            },
             'send_to_cloudwatch': True,
-            's3_cross_account_ids': ['456789012345'],
-            'enable_s3_events': True,
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -577,7 +585,7 @@ class TestTerraformGenerate:
                 'bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
                 'filters': [
                     {
-                        'filter_prefix': 'AWSLogs/456789012345/'
+                        'filter_prefix': 'AWSLogs/456789012345/CloudTrail/'
                     }
                 ]
             },
