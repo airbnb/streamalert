@@ -184,7 +184,7 @@ class S3Payload(StreamPayload):
                 client.download_fileobj(key, download)
             except (IOError, ClientError):
                 LOGGER.exception('Failed to download object from S3')
-                return
+                raise
 
             total_time = time.time() - start_time
             LOGGER.info('Completed download in %s seconds', round(total_time, 2))
