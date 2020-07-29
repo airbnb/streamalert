@@ -19,6 +19,7 @@ import os
 import tempfile
 
 import boto3
+from botocore.exceptions import ClientError
 
 from mock import patch
 from moto import mock_s3
@@ -168,12 +169,12 @@ class TestS3Payload:
         assert_equal(read_lines, [(1, value)])
 
     @mock_s3
-    @patch('logging.Logger.exception')
-    def test_read_file_error(self, log_mock):
+    def test_read_file_error(self):
         """S3Payload - Read File, Exception"""
         boto3.resource('s3').Bucket(self._bucket).create()
-        list(S3Payload(None, self._record)._read_file())
-        log_mock.assert_called_with('Failed to download object from S3')
+        payload = S3Payload(None, self._record)
+        result = payload._read_file()
+        assert_raises(ClientError, list, result)
 
     def test_pre_parse(self):
         """S3Payload - Pre Parse"""
