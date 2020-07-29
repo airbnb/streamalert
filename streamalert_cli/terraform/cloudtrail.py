@@ -44,7 +44,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     prefix = config['global']['account']['prefix']
     send_to_cloudwatch = settings.get('send_to_cloudwatch', False)
     s3_settings = settings.get('s3_settings', {})
-    enable_s3_events = s3_settings.get('enable_events', True)
+    enable_s3_events = s3_settings.get('enable_events', False)
 
     s3_bucket_name = s3_settings.get(
         'bucket_name',

@@ -828,7 +828,6 @@ class TestTerraformGenerate:
             'kinesis_events_advanced',
             'flow_logs_advanced',
             'cloudtrail_advanced',
-            'cloudtrail_s3_events_unit-test_advanced_unit-test-advanced-streamalert-cloudtrail',
             'cloudwatch_events_advanced',
             's3_events_unit-test_advanced_unit-test-bucket_data',
             's3_events_unit-test_advanced_unit-test_cloudtrail_data'
