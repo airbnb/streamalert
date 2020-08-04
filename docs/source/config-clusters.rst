@@ -278,8 +278,9 @@ Options
 ``exclude_home_region_events``  ``false``                                            Ignore events from the StreamAlert deployment region. This only has an effect if ``send_to_cloudwatch`` is set to ``true``
 ``is_global_trail``             ``true``                                             If ``true``, the CloudTrail is applied to all regions
 ``send_to_cloudwatch``          ``false``                                            Enable CloudTrail delivery to CloudWatch Logs. Logs sent to CloudWatch Logs are forwarded to this cluster's Kinesis stream for processing. If this is enabled, the ``enable_s3_events`` option should be disabled to avoid duplicative processing.
-``cloudwatch_destination_arn``  (Computed from CloudWatch Logs Destination module)   CloudWatch Destination ARN used for forwarding data to this cluster's Kinesis stream. This has a default value but can be overriden here with a different CloudWatch Logs Destination ARN
+``cloudwatch_destination_arn``  (Computed from CloudWatch Logs Destination module)   CloudWatch Destination ARN used for forwarding data to this cluster's Kinesis stream. This has a default value but can be overridden here with a different CloudWatch Logs Destination ARN
 ``send_to_sns``                 ``false``                                            Create an SNS topic to which notifications should be sent when CloudTrail puts a new object in the S3 bucket. The topic name will be the same as the S3 bucket name
+``allow_cross_account_sns``     ``false``                                            Allow account IDs specified in the ``cross_account_ids`` array within the ``s3_settings`` (see below) to also send SNS notifications to the created SNS Topic
 ``s3_settings``                 ``None``                                             Configuration options for CloudTrail related to S3. See the `S3 Options`_ section below for details.
 ==============================  ===================================================  ===============
 
@@ -293,7 +294,7 @@ The ``cloudtrail`` module has a subsection of ``s3_settings``, which contains op
 ``cross_account_ids``     ``[]``                                               Grant write access to the CloudTrail S3 bucket for these account IDs. The primary, aka deployment account ID, will be added to this list.
 ``enable_events``         ``false``                                            Enable S3 events for the logs sent to the S3 bucket. These will invoke this cluster's classifier for every new object in the CloudTrail S3 bucket
 ``ignore_digest``         ``true``                                             If ``enable_events`` is enabled, setting ``ignore_digest`` to ``false`` will also process S3 files that are created within the ``AWSLogs/<account-id>/CloudTrail-Digest``. Defaults to ``true``.
-``bucket_name``           ``prefix-cluster-streamalert-cloudtrail``            Name of the S3 bucket to be used for the CloudTrail logs. This can be overriden, but defaults to ``prefix-cluster-streamalert-cloudtrail``
+``bucket_name``           ``prefix-cluster-streamalert-cloudtrail``            Name of the S3 bucket to be used for the CloudTrail logs. This can be overridden, but defaults to ``prefix-cluster-streamalert-cloudtrail``
 ``event_selector_type``   ``""``                                               An S3 event selector to enable object level logging for the account's S3 buckets. Choices are: "ReadOnly", "WriteOnly", "All", or "", where "" disables object level logging for S3
 ========================  ===================================================  ===============
 

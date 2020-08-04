@@ -74,6 +74,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'enable_logging',
         'is_global_trail',
         'send_to_sns',
+        'allow_cross_account_sns',
     }
     for value in settings_with_defaults:
         if value in settings:
