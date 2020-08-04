@@ -262,5 +262,15 @@ data "aws_iam_policy_document" "cloudtrail" {
     resources = [
       aws_sns_topic.cloudtrail[0].arn,
     ]
+
+    dynamic "condition" {
+      for_each = var.allow_cross_account_sns ? [1] : []
+      content {
+        test     = "StringEquals"
+        variable = "aws:SourceAccount"
+
+        values = var.s3_cross_account_ids
+      }
+    }
   }
 }
