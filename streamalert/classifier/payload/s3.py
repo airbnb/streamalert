@@ -50,6 +50,8 @@ class S3PayloadError(Exception):
 class S3Payload(StreamPayload):
     """S3Payload class"""
 
+    MAX_S3_SIZE = 128 * 1024 * 1024
+
     @property
     def bucket(self):
         return self.raw_record['s3']['bucket']['name']
@@ -89,10 +91,17 @@ class S3Payload(StreamPayload):
         Returns:
             bool: True if the file is smaller than 128 MB, False otherwise
         """
-        # size == 0 or greater than 128MB
-        if self.size == 0 or (self.size > 128 * 1024 * 1024):
-            raise S3PayloadError('S3 object {}/{} has an invalid size and cannot be downloaded'
+        # Ignore 0 size files
+        if self.size == 0:
+            LOGGER.warning('S3 file size is 0 bytes, skipping: %s/%s', self.bucket, self.key)
+            return False
+
+        # size greater than 128MB
+        if self.size > self.MAX_S3_SIZE:
+            raise S3PayloadError('S3 object {}/{} is too large and cannot be downloaded '
                                  'from S3: {}'.format(self.bucket, self.key, self.display_size))
+
+        return True
 
     @staticmethod
     def _cleanup():
@@ -209,7 +218,8 @@ class S3Payload(StreamPayload):
         Yields:
             Instances of PayloadRecord back to the caller containing the current log data
         """
-        self._check_size()
+        if not self._check_size():
+            return  # _check_size can raise an exception as well
 
         line_num = 0
         for line_num, data in self._read_file():
