@@ -81,10 +81,10 @@ class TestS3Payload:
         self._payload.raw_record['s3']['object']['size'] = 1024 * 1024 * 129  # 129 MB
         assert_raises(S3PayloadError, self._payload._check_size)
 
-    def test_check_size_exception_zero(self):
-        """S3Payload - Check Size, Zero Raises Exception"""
+    def test_check_size_zero(self):
+        """S3Payload - Check Size, Zero"""
         self._payload.raw_record['s3']['object']['size'] = 0
-        assert_raises(S3PayloadError, self._payload._check_size)
+        assert_equal(self._payload._check_size(), False)
 
     def test_gz_reader(self):
         """S3Payload - GZ Reader"""
