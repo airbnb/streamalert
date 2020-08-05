@@ -21,6 +21,7 @@ class MockCLIConfig:
 
     def __init__(self, config):
         self.config = config
+        self.build_directory = 'streamalert_terraform_unit_test'
 
     def __repr__(self):
         return json.dumps(self.config)
@@ -49,6 +50,11 @@ def basic_streamalert_config():
                 'aws_account_id': '123456789123',
                 'prefix': 'unit-test',
                 'region': 'us-west-2'
+            },
+            'general': {
+                'terraform_files': [
+                    '/test/terraform/file.tf'
+                ]
             },
             'infrastructure': {
                 'monitoring': {},

@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from fnmatch import fnmatch
 import json
 import os
+import shutil
 
 from streamalert.shared.config import ConfigError, firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
@@ -30,6 +30,7 @@ from streamalert_cli.terraform.common import (
     s3_access_logging_bucket,
     terraform_state_bucket,
 )
+from streamalert_cli.terraform.artifact_extractor import generate_artifact_extractor
 from streamalert_cli.terraform.alert_merger import generate_alert_merger
 from streamalert_cli.terraform.alert_processor import generate_alert_processor
 from streamalert_cli.terraform.apps import generate_apps
@@ -63,7 +64,7 @@ from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSION = '~> 0.12.9'
-TERRAFORM_PROVIDER_VERSION = '~> 2.28.1'
+TERRAFORM_PROVIDER_VERSION = '~> 2.48.0'
 
 LOGGER = get_logger(__name__)
 
@@ -372,14 +373,6 @@ def generate_cluster(config, cluster_name):
     return cluster_dict
 
 
-def cleanup_old_tf_files():
-    """
-    Cleanup old *.tf.json files
-    """
-    for terraform_file in os.listdir(TERRAFORM_FILES_PATH):
-        if fnmatch(terraform_file, '*.tf.json'):
-            os.remove(os.path.join(TERRAFORM_FILES_PATH, terraform_file))
-
 
 class TerraformGenerateCommand(CLICommand):
     description = 'Generate Terraform files from JSON cluster files'
@@ -391,6 +384,28 @@ class TerraformGenerateCommand(CLICommand):
     @classmethod
     def handler(cls, options, config):
         return terraform_generate_handler(config, check_creds=False)
+
+
+def _copy_terraform_files(config):
+    """Copy all packaged terraform files and terraform files provided by the user to temp
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+    """
+    # Copy the packaged terraform files to temp
+    # Currently this ignores *.tf.json, in the instance that these
+    # exist in current deployments. This can be removed in a future release.
+    shutil.copytree(
+        TERRAFORM_FILES_PATH,
+        config.build_directory,
+        ignore=shutil.ignore_patterns('*.tf.json')  # TODO: remove this eventually
+    )
+
+    # Copy any additional user provided terraform files to temp
+    for item in config.terraform_files:
+        shutil.copy2(item, config.build_directory)
+
+    LOGGER.info('Copied Terraform configuration to \'%s\'', config.build_directory)
 
 
 def terraform_generate_handler(config, init=False, check_tf=True, check_creds=True):
@@ -411,13 +426,13 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     if check_tf and not terraform_check():
         return False
 
-    cleanup_old_tf_files()
+    _copy_terraform_files(config)
 
     # Setup the main.tf.json file
     LOGGER.debug('Generating cluster file: main.tf.json')
     _create_terraform_module_file(
         generate_main(config, init=init),
-        os.path.join(TERRAFORM_FILES_PATH, 'main.tf.json')
+        os.path.join(config.build_directory, 'main.tf.json')
     )
 
     # Return early during the init process, clusters are not needed yet
@@ -440,21 +455,21 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         file_name = '{}.tf.json'.format(cluster)
         _create_terraform_module_file(
             cluster_dict,
-            os.path.join(TERRAFORM_FILES_PATH, file_name),
+            os.path.join(config.build_directory, file_name),
         )
 
     metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
     if metric_filters:
         _create_terraform_module_file(
             metric_filters,
-            os.path.join(TERRAFORM_FILES_PATH, 'metric_filters.tf.json')
+            os.path.join(config.build_directory, 'metric_filters.tf.json')
         )
 
     metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
     if metric_alarms:
         _create_terraform_module_file(
             metric_alarms,
-            os.path.join(TERRAFORM_FILES_PATH, 'metric_alarms.tf.json')
+            os.path.join(config.build_directory, 'metric_alarms.tf.json')
         )
 
     # Setup Threat Intel Downloader Lambda function if it is enabled
@@ -513,6 +528,10 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Setup StreamQuery
     _generate_streamquery_module(config)
 
+    # FIXME: make sure test 'python manage.py destroy' artifact_extractor case
+    # Setup artifact_extractor
+    _generate_artifact_extractor_module(config)
+
     return True
 
 
@@ -520,7 +539,7 @@ def _generate_lookup_tables_settings(config):
     """
     Generates .tf.json file for LookupTables
     """
-    tf_file_name = os.path.join(TERRAFORM_FILES_PATH, 'lookup_tables.tf.json')
+    tf_file_name = os.path.join(config.build_directory, 'lookup_tables.tf.json')
 
     if not config['lookup_tables'].get('enabled', False):
         remove_temp_terraform_file(tf_file_name)
@@ -548,6 +567,7 @@ def _generate_lookup_tables_settings(config):
         '${module.alert_processor_lambda.role_id}',
         '${module.alert_merger_lambda.role_id}',
         '${module.rules_engine_lambda.role_id}',
+        '${module.scheduled_queries.lambda_function_role_id}',
     }
 
     for cluster in config.clusters():
@@ -582,7 +602,7 @@ def _generate_streamquery_module(config):
     """
     Generates .tf.json file for scheduled queries
     """
-    tf_file_name = os.path.join(TERRAFORM_FILES_PATH, 'scheduled_queries.tf.json')
+    tf_file_name = os.path.join(config.build_directory, 'scheduled_queries.tf.json')
     if not config.get('scheduled_queries', {}).get('enabled', False):
         remove_temp_terraform_file(tf_file_name)
         return
@@ -592,6 +612,14 @@ def _generate_streamquery_module(config):
         tf_file_name
     )
 
+def _generate_artifact_extractor_module(config):
+    tf_file_name = os.path.join(config.build_directory, 'artifact_extractor.tf.json')
+    if 'artifact_extractor' in config['global']['infrastructure']:
+        if config['global']['infrastructure']['artifact_extractor'].get('enabled'):
+            _create_terraform_module_file(generate_artifact_extractor(config), tf_file_name)
+            return
+
+        remove_temp_terraform_file(tf_file_name)
 
 def generate_global_lambda_settings(
         config,
@@ -625,7 +653,7 @@ def generate_global_lambda_settings(
             )
             raise ConfigError(message)
 
-    tf_tmp_file = os.path.join(TERRAFORM_FILES_PATH, '{}.tf.json'.format(tf_tmp_file_name))
+    tf_tmp_file = os.path.join(config.build_directory, '{}.tf.json'.format(tf_tmp_file_name))
 
     if required and conf_name not in config['lambda']:
         message = 'Required configuration missing in lambda.json: {}'.format(conf_name)

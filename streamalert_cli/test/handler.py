@@ -25,6 +25,7 @@ from streamalert.alert_processor.outputs.output_base import OutputDispatcher
 from streamalert.classifier import classifier
 from streamalert.rules_engine import rules_engine
 from streamalert.shared import rule
+from streamalert.shared.config import ConfigError
 from streamalert.shared.logger import get_logger
 from streamalert.shared.stats import RuleStatisticTracker
 from streamalert_cli.helpers import check_credentials
@@ -134,9 +135,8 @@ class TestCommand(CLICommand):
             '-f',
             '--test-files',
             dest='files',
-            metavar='FILENAMES',
             nargs='+',
-            help='One or more file to test, separated by spaces',
+            help='Full path to one or more file(s) to test, separated by spaces',
             action=UniqueSortedFileListAction,
             type=argparse.FileType('r'),
             default=[]
@@ -230,7 +230,6 @@ class TestRunner:
         self._failed = 0
         prefix = self._config['global']['account']['prefix']
         env = {
-            'CLUSTER': 'prod',
             'STREAMALERT_PREFIX': prefix,
             'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
             'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
@@ -239,10 +238,7 @@ class TestRunner:
         if 'stats' in options and options.stats:
             env['STREAMALERT_TRACK_RULE_STATS'] = '1'
 
-        patch.dict(
-            os.environ,
-            env
-        ).start()
+        patch.dict(os.environ, env).start()
 
     @staticmethod
     def _run_classification(record):
@@ -329,13 +325,43 @@ class TestRunner:
         # Iterate over the individual test events in the file
         event_file = TestEventFile(test_file_path)
         for event in event_file.process_file(self._config, self._verbose, self._testing_rules):
-            # Set the cluster in the env since this is used from within the
-            # classifier to load the proper cluster config
+            # Each test event should be tied to a cluster, via the configured data_sources
+            # Reset the CLUSTER env var for each test, since it could differ between each event
+            # This env var is used from within the classifier to load the proper cluster config
+            if 'CLUSTER' in os.environ:
+                del os.environ['CLUSTER']
+
             for cluster_name, cluster_value in self._config['clusters'].items():
-                for service in cluster_value['data_sources'].values():
-                    if event.source in service:
-                        os.environ['CLUSTER'] = cluster_name
-                        break
+                if event.service not in cluster_value['data_sources']:
+                    LOGGER.debug(
+                        'Cluster "%s" does not have service "%s" configured as a data source',
+                        cluster_name,
+                        event.service
+                    )
+                    continue
+
+                sources = set(cluster_value['data_sources'][event.service])
+                if event.source not in sources:
+                    LOGGER.debug(
+                        'Cluster "%s" does not have the source "%s" configured as a data source '
+                        'for service "%s"',
+                        cluster_name,
+                        event.source,
+                        event.service
+                    )
+                    continue
+
+                # If we got here, then this cluster is actually configured for this data source
+                os.environ['CLUSTER'] = cluster_name
+                break
+
+            # A misconfigured test event and/or cluster config can cause this to be unset
+            if 'CLUSTER' not in os.environ:
+                error = (
+                    'Test event\'s "service" ({}) and "source" ({}) are not defined within '
+                    'the "data_sources" of any configured clusters: {}:{}'
+                ).format(event.service, event.source, event_file.path, event.index)
+                raise ConfigError(error)
 
             classifier_result = self._run_classification(event.record)
 

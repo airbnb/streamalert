@@ -107,7 +107,7 @@ def remove_fields(alert, publication):
 
 @Register
 def remove_streamalert_normalization(_, publication):
-    """This publisher removes the super heavyweight 'streamalert:normalization' fields"""
+    """This publisher removes the super heavyweight 'streamalert_normalization' fields"""
     return _delete_dictionary_fields(publication, Normalizer.NORMALIZATION_KEY)
 
 

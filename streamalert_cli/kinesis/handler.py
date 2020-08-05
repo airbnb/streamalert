@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared.logger import get_logger
-from streamalert_cli.helpers import tf_runner
 from streamalert_cli.terraform.generate import terraform_generate_handler
+from streamalert_cli.terraform.helpers import terraform_runner
 from streamalert_cli.utils import CLICommand, set_parser_epilog, add_clusters_arg
 
 LOGGER = get_logger(__name__)
@@ -82,8 +82,8 @@ class KinesisCommand(CLICommand):
         if not terraform_generate_handler(config):
             return False
 
-        return tf_runner(
-            action='apply',
+        return terraform_runner(
+            config,
             targets=[
                 'module.{}_{}'.format('kinesis_events', cluster) for cluster in config.clusters()
             ]

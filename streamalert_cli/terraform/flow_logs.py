@@ -35,7 +35,7 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
         bool: Result of applying the flow_logs module
     """
     modules = config['clusters'][cluster_name]['modules']
-    if not modules['flow_logs']['enabled']:
+    if not modules['flow_logs'].get('enabled', True):
         LOGGER.debug('Flow logs disabled, nothing to do')
         return True  # not an error
 

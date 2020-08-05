@@ -19,21 +19,17 @@ import tempfile
 
 from streamalert.shared.logger import get_logger
 from streamalert_cli.helpers import run_command
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 
 LOGGER = get_logger(__name__)
 
 
 class LambdaPackage:
     """Build the deployment package for StreamAlert Lambdas"""
-    package_name = 'streamalert'       # The basename of the generated .zip file
+    # The name of the directory to package and basename of the generated .zip file
+    PACKAGE_NAME = 'streamalert'
 
-    DEFAULT_PACKAGE_FILES = {          # The default folders to zip into the Lambda package
-        'conf',
-        'streamalert',
-    }
-
-    CONFIG_EXTRAS = {                  # The configurable items for user specified files
+    # The configurable items for user specified files to include in deployment pacakge
+    CONFIG_EXTRAS = {
         'matcher_locations',
         'rule_locations',
         'scheduled_query_locations',
@@ -42,37 +38,42 @@ class LambdaPackage:
 
     # Define a package dict to support pinning versions across all subclasses
     REQUIRED_LIBS = {
-        'backoff==1.8.1',
-        'boto3==1.10.6',
-        'cbapi==1.5.4',
-        'google-api-python-client==1.7.11',
-        'jmespath==0.9.4',
+        'backoff==1.10.0',
+        'boto3==1.14.29',
+        'cbapi==1.7.1',
+        'google-api-python-client==1.10.0',
+        'jmespath==0.10.0',
         'jsonlines==1.2.0',
-        'netaddr==0.7.19',
-        'requests==2.22.0',
-        'pymsteams==0.1.12',
+        'netaddr==0.8.0',
+        'requests==2.24.0',
+        'pymsteams==0.1.13',
     }
 
     def __init__(self, config):
         self.config = config
-        self.temp_package_path = os.path.join(tempfile.gettempdir(), self.package_name)
+        self.temp_package_path = os.path.join(tempfile.gettempdir(), self.PACKAGE_NAME)
 
     def _copy_user_config_files(self):
-        paths = set()
         for location in self.CONFIG_EXTRAS:
-            paths.update(self.config['global']['general'].get(location, set()))
-
-        self._copy_files(paths, ignores={'*.json'})
+            paths = self.config['global']['general'].get(location, set())
+            if not paths:
+                continue
+            for path in paths:
+                self._copy_directory(path, ignores={'*.json'})
 
     def create(self):
         """Create a Lambda deployment package .zip file."""
-        LOGGER.info('Creating package for %s', self.package_name)
+        LOGGER.info('Creating package for %s', self.PACKAGE_NAME)
 
         if os.path.exists(self.temp_package_path):
             shutil.rmtree(self.temp_package_path)
 
-        # Copy all of the default package files
-        self._copy_files(self.DEFAULT_PACKAGE_FILES)
+        # Copy the default package directory
+        self._copy_directory(self.PACKAGE_NAME)
+
+        # Copy the user-specified config directory
+        # Ensure this is copied to the 'conf' destination directory
+        self._copy_directory(self.config.config_path, destination='conf')
 
         # Copy in any user-specified files
         self._copy_user_config_files()
@@ -84,7 +85,7 @@ class LambdaPackage:
         # Zip it all up
         # Build these in the top-level of the terraform directory as streamalert.zip
         result = shutil.make_archive(
-            os.path.join(TERRAFORM_FILES_PATH, self.package_name),
+            os.path.join(self.config.build_directory, self.PACKAGE_NAME),
             'zip',
             self.temp_package_path
         )
@@ -96,17 +97,18 @@ class LambdaPackage:
 
         return result
 
-    def _copy_files(self, paths, ignores=None):
+    def _copy_directory(self, path, ignores=None, destination=None):
         """Copy all files and folders into temporary package path
 
         Args:
-            paths (list): Paths of folders to be copied into the Lambda package
-            ignores (set=None): File globs to be ignored during the copying of files in paths
+            path (str): Path of directory to be copied into the Lambda package
+            ignores (set=None): File globs to be ignored during the copying of the directory
         """
-        for path in paths:
-            # Copy the directory, skipping any files explicitly ignored
-            kwargs = {'ignore': shutil.ignore_patterns(*ignores)} if ignores else dict()
-            shutil.copytree(path, os.path.join(self.temp_package_path, path), **kwargs)
+        # Copy the directory, skipping any files explicitly ignored
+        kwargs = {'ignore': shutil.ignore_patterns(*ignores)} if ignores else dict()
+        destination = destination or path
+        destination = os.path.join(self.temp_package_path, destination)
+        shutil.copytree(path, destination, **kwargs)
 
     def _resolve_libraries(self):
         """Install all libraries into the deployment package folder

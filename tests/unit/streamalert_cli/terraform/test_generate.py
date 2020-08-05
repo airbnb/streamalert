@@ -93,7 +93,7 @@ class TestTerraformGenerate:
         tf_main_expected = {
             'provider': {
                 'aws': {
-                    'version': '~> 2.28.1',  # Changes to this should require unit test update
+                    'version': '~> 2.48.0',  # Changes to this should require unit test update
                     'region': 'us-west-1'
                 }
             },
@@ -358,9 +358,11 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, Minimal Settings"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'cross_account_ids': ['456789012345'],
+                'enable_events': False,
+            },
             'send_to_cloudwatch': False,
-            'enable_s3_events': False,
-            's3_cross_account_ids': ['456789012345'],
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -387,10 +389,12 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With S3 Events"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings':{
+                'bucket_name': 'unit-test-bucket',
+                'cross_account_ids': ['456789012345'],
+                'enable_events': True,
+            },
             'send_to_cloudwatch': False,
-            'enable_s3_events': True,
-            's3_cross_account_ids': ['456789012345'],
-            's3_bucket_name': 'unit-test-bucket'
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -420,10 +424,10 @@ class TestTerraformGenerate:
                 'bucket_name': 'unit-test-bucket',
                 'filters': [
                     {
-                        'filter_prefix': 'AWSLogs/12345678910/'
+                        'filter_prefix': 'AWSLogs/12345678910/CloudTrail/'
                     },
                     {
-                        'filter_prefix': 'AWSLogs/456789012345/'
+                        'filter_prefix': 'AWSLogs/456789012345/CloudTrail/'
                     }
                 ]
             }
@@ -435,8 +439,10 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With CloudWatch Logs"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'enable_events': False,
+            },
             'send_to_cloudwatch': True,
-            'enable_s3_events': False,
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -504,9 +510,11 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With S3 and CloudWatch Logs"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'cross_account_ids': ['456789012345'],
+                'enable_events': True,
+            },
             'send_to_cloudwatch': True,
-            's3_cross_account_ids': ['456789012345'],
-            'enable_s3_events': True,
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -577,7 +585,7 @@ class TestTerraformGenerate:
                 'bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
                 'filters': [
                     {
-                        'filter_prefix': 'AWSLogs/456789012345/'
+                        'filter_prefix': 'AWSLogs/456789012345/CloudTrail/'
                     }
                 ]
             },
@@ -697,6 +705,79 @@ class TestTerraformGenerate:
 
         assert_true(log_mock.called)
 
+    def test_generate_cwe_cross_acct_map_regions(self):
+        """CLI - Terraform Generate CloudWatch Events Cross Account Region Map"""
+        # pylint: disable=protected-access
+        settings = {
+            'accounts': {
+                '123456789012': ['us-east-1'],
+                '234567890123': ['us-east-1']
+            },
+            'organizations': {
+                'o-aabbccddee': ['us-west-1']
+            }
+        }
+
+        result = cloudwatch_events._map_regions(settings)
+
+        expected = {
+            'us-east-1': {
+                'accounts': ['123456789012', '234567890123'],
+            },
+            'us-west-1': {
+                'organizations': ['o-aabbccddee']
+            }
+        }
+
+        assert_equal(expected, result)
+
+    def test_generate_cloudwatch_events_cross_account(self):
+        """CLI - Terraform Generate CloudWatch Events Cross Account"""
+        self.config['clusters']['advanced']['modules']['cloudwatch_events']['cross_account'] = {
+            'accounts': {
+                '123456789012': ['us-east-1'],
+                '234567890123': ['us-east-1']
+            },
+            'organizations': {
+                'o-aabbccddee': ['us-west-1']
+            }
+        }
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_events_advanced': {
+                'source': './modules/tf_cloudwatch_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'kinesis_arn': '${module.kinesis_advanced.arn}',
+                'event_pattern': '{"account": ["12345678910"]}',
+            },
+            'cloudwatch_events_cross_account_advanced_us-east-1': {
+                'source': './modules/tf_cloudwatch_events/cross_account',
+                'region': 'us-east-1',
+                'accounts': ['123456789012', '234567890123'],
+                'organizations': [],
+                'providers': {
+                    'aws': 'aws.us-east-1'
+                }
+            },
+            'cloudwatch_events_cross_account_advanced_us-west-1': {
+                'source': './modules/tf_cloudwatch_events/cross_account',
+                'region': 'us-west-1',
+                'accounts': [],
+                'organizations': ['o-aabbccddee'],
+                'providers': {
+                    'aws': 'aws.us-west-1'
+                }
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
 
@@ -747,7 +828,6 @@ class TestTerraformGenerate:
             'kinesis_events_advanced',
             'flow_logs_advanced',
             'cloudtrail_advanced',
-            'cloudtrail_s3_events_unit-test_advanced_unit-test-advanced-streamalert-cloudtrail',
             'cloudwatch_events_advanced',
             's3_events_unit-test_advanced_unit-test-bucket_data',
             's3_events_unit-test_advanced_unit-test_cloudtrail_data'
