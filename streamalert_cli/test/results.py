@@ -174,6 +174,10 @@ class TestResult(TestEvent):
     __repr__ = __str__
 
     @property
+    def index(self):
+        return self._index
+
+    @property
     def _disabled_rules(self):
         return sorted(set(self.trigger_rules).intersection(
             rule.Rule.disabled_rules()
