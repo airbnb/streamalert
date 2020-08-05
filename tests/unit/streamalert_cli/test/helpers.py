@@ -19,8 +19,8 @@ from nose.tools import nottest
 
 
 @nottest
-def basic_test_file_json():
-    return json.dumps([basic_test_event_data()])
+def basic_test_file_json(**kwargs):
+    return json.dumps([basic_test_event_data(**kwargs)])
 
 
 @nottest
