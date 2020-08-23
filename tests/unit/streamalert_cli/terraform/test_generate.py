@@ -98,7 +98,7 @@ class TestTerraformGenerate:
                 }
             },
             'terraform': {
-                'required_version': '~> 0.12.9', # Changes to this should require unit test update
+                'required_version': '~> 0.13.0', # Changes to this should require unit test update
                 'backend': {
                     's3': {
                         'bucket': 'unit-test-streamalert-terraform-state',

@@ -10,17 +10,17 @@ Install Dependencies
 ********************
 
 1. Install Python 3.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
-2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ >= v0.12.9:
+2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ >= v0.13.0:
 
 .. code-block:: bash
 
   brew install terraform  # MacOS Homebrew
-  terraform --version     # Must be >= v0.12.9
+  terraform --version     # Must be >= v0.13.0
 
 .. note::
 
-  Terraform versions lower than 0.12 are not supported. We recommend installing Terraform
-  version 0.12.9 or greater.
+  Terraform versions lower than 0.13 are not supported. We recommend installing Terraform
+  version 0.13.0 or greater.
 
 
 3. If you are using Linux, you may need to install the Python development libraries:
