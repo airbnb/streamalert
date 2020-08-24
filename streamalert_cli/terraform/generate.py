@@ -63,23 +63,15 @@ from streamalert_cli.terraform.threat_intel_downloader import generate_threat_in
 from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSION = '~> 0.13.0'
-TERRAFORM_PROVIDER_VERSION = '~> 3.3.0'
 
 LOGGER = get_logger(__name__)
 
 
 def _terraform_defaults(region):
     return infinitedict({
-        'terraform': {
-            'required_version': TERRAFORM_VERSION,
-        },
-        'provider': {
-            'aws': {
-                'region': region,
-                'version': TERRAFORM_PROVIDER_VERSION,
-            },
-        },
+        'variable': {
+            'region': region
+        }
     })
 
 

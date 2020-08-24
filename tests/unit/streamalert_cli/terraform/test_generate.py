@@ -91,14 +91,10 @@ class TestTerraformGenerate:
         tf_main = generate.generate_main(config=self.config, init=False)
 
         tf_main_expected = {
-            'provider': {
-                'aws': {
-                    'version': '~> 2.48.0',  # Changes to this should require unit test update
-                    'region': 'us-west-1'
-                }
+            'variable': {
+                'region': 'us-west-1'
             },
             'terraform': {
-                'required_version': '~> 0.13.0', # Changes to this should require unit test update
                 'backend': {
                     's3': {
                         'bucket': 'unit-test-streamalert-terraform-state',
@@ -229,7 +225,6 @@ class TestTerraformGenerate:
             }
         }
 
-        assert_dict_equal(tf_main['provider'], tf_main_expected['provider'])
         assert_dict_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_dict_equal(tf_main['resource'], tf_main_expected['resource'])
 
