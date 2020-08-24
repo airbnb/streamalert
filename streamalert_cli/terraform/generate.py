@@ -67,12 +67,16 @@ RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 LOGGER = get_logger(__name__)
 
 
-def _terraform_defaults(region):
-    return infinitedict({
-        'variable': {
-            'region': region
-        }
-    })
+def write_vars(config, **kwargs):
+    """Write root variables to a terraform.tfvars.json file
+
+    Keyword Args:
+        region (string): AWS region where infrastructure will be built
+    """
+    _create_terraform_module_file(
+        kwargs,
+        os.path.join(config.build_directory, 'terraform.tfvars.json')
+    )
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
@@ -156,7 +160,9 @@ def generate_main(config, init=False):
     Returns:
         dict: main.tf.json Terraform dict
     """
-    main_dict = _terraform_defaults(config['global']['account']['region'])
+    write_vars(config, region=config['global']['account']['region'])
+
+    main_dict = infinitedict()
 
     logging_bucket, create_logging_bucket = s3_access_logging_bucket(config)
 

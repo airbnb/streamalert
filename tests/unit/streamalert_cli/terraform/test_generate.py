@@ -91,9 +91,6 @@ class TestTerraformGenerate:
         tf_main = generate.generate_main(config=self.config, init=False)
 
         tf_main_expected = {
-            'variable': {
-                'region': 'us-west-1'
-            },
             'terraform': {
                 'backend': {
                     's3': {
