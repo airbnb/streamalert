@@ -52,14 +52,14 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
     sid       = "AWSCloudTrailCreateLogStream"
     effect    = "Allow"
     actions   = ["logs:CreateLogStream"]
-    resources = [aws_cloudwatch_log_group.cloudtrail_logging.arn]
+    resources = ["${aws_cloudwatch_log_group.cloudtrail_logging.arn}:log-stream:*"]
   }
 
   statement {
     sid       = "AWSCloudTrailPutLogEvents"
     effect    = "Allow"
     actions   = ["logs:PutLogEvents"]
-    resources = [aws_cloudwatch_log_group.cloudtrail_logging.arn]
+    resources = ["${aws_cloudwatch_log_group.cloudtrail_logging.arn}:log-stream:*"]
   }
 }
 
