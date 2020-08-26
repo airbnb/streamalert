@@ -3,6 +3,14 @@
 // define its own provider block.
 // See here for additional reading:
 //   https://www.terraform.io/docs/configuration/modules.html#providers-within-modules
+
+// Default provider
+//  TODO: this should be updated to use required_providers:
+//    https://www.terraform.io/docs/configuration/provider-requirements.html#requiring-providers
+provider "aws" {
+  region = var.region
+}
+
 provider "aws" {
   alias  = "ap-northeast-1"
   region = "ap-northeast-1"

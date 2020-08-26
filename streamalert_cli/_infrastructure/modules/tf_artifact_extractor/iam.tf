@@ -66,9 +66,9 @@ data "aws_iam_policy_document" "firehose_s3" {
 // IAM Policy: Interact with the Glue Catalog
 resource "aws_iam_role_policy" "streamalert_firehose_glue" {
   name = "FirehoseReadGlueCatalog"
-  role = "${aws_iam_role.streamalert_kinesis_firehose.id}"
+  role = aws_iam_role.streamalert_kinesis_firehose.id
 
-  policy = "${data.aws_iam_policy_document.firehose_glue_catalog.json}"
+  policy = data.aws_iam_policy_document.firehose_glue_catalog.json
 }
 
 // IAM Policy Document: Interact with the Glue Catalog
@@ -77,7 +77,7 @@ data "aws_iam_policy_document" "firehose_glue_catalog" {
     effect = "Allow"
 
     actions = [
-      "glue:GetTableVersions"
+      "glue:GetTable*"
     ]
 
     resources = ["*"]
