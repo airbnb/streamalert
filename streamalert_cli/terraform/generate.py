@@ -63,24 +63,20 @@ from streamalert_cli.terraform.threat_intel_downloader import generate_threat_in
 from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSION = '~> 0.12.9'
-TERRAFORM_PROVIDER_VERSION = '~> 2.48.0'
 
 LOGGER = get_logger(__name__)
 
 
-def _terraform_defaults(region):
-    return infinitedict({
-        'terraform': {
-            'required_version': TERRAFORM_VERSION,
-        },
-        'provider': {
-            'aws': {
-                'region': region,
-                'version': TERRAFORM_PROVIDER_VERSION,
-            },
-        },
-    })
+def write_vars(config, **kwargs):
+    """Write root variables to a terraform.tfvars.json file
+
+    Keyword Args:
+        region (string): AWS region where infrastructure will be built
+    """
+    _create_terraform_module_file(
+        kwargs,
+        os.path.join(config.build_directory, 'terraform.tfvars.json')
+    )
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
@@ -164,7 +160,9 @@ def generate_main(config, init=False):
     Returns:
         dict: main.tf.json Terraform dict
     """
-    main_dict = _terraform_defaults(config['global']['account']['region'])
+    write_vars(config, region=config['global']['account']['region'])
+
+    main_dict = infinitedict()
 
     logging_bucket, create_logging_bucket = s3_access_logging_bucket(config)
 

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from mock import ANY, patch
+from mock import ANY, Mock, patch
 
 from nose.tools import (
     assert_equal,
@@ -35,6 +35,7 @@ from streamalert_cli.terraform import (
 )
 
 
+@patch('streamalert_cli.terraform.generate.write_vars', Mock())
 class TestTerraformGenerate:
     """Test class for the Terraform Cluster Generating"""
     # pylint: disable=no-self-use,attribute-defined-outside-init
@@ -44,8 +45,7 @@ class TestTerraformGenerate:
         self.cluster_dict = common.infinitedict()
         self.config = CLIConfig(config_path='tests/unit/conf')
 
-    @staticmethod
-    def test_generate_s3_bucket():
+    def test_generate_s3_bucket(self):
         """CLI - Terraform Generate S3 Bucket """
         bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
@@ -67,8 +67,7 @@ class TestTerraformGenerate:
         assert_equal(bucket['bucket'], 'unit.test.bucket')
         assert_equal(set(bucket.keys()), required_keys)
 
-    @staticmethod
-    def test_generate_s3_bucket_lifecycle():
+    def test_generate_s3_bucket_lifecycle(self):
         """CLI - Terraform Generate S3 Bucket with Lifecycle"""
         bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
@@ -91,14 +90,7 @@ class TestTerraformGenerate:
         tf_main = generate.generate_main(config=self.config, init=False)
 
         tf_main_expected = {
-            'provider': {
-                'aws': {
-                    'version': '~> 2.48.0',  # Changes to this should require unit test update
-                    'region': 'us-west-1'
-                }
-            },
             'terraform': {
-                'required_version': '~> 0.12.9', # Changes to this should require unit test update
                 'backend': {
                     's3': {
                         'bucket': 'unit-test-streamalert-terraform-state',
@@ -229,7 +221,6 @@ class TestTerraformGenerate:
             }
         }
 
-        assert_dict_equal(tf_main['provider'], tf_main_expected['provider'])
         assert_dict_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_dict_equal(tf_main['resource'], tf_main_expected['resource'])
 
@@ -389,7 +380,7 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With S3 Events"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
-            's3_settings':{
+            's3_settings': {
                 'bucket_name': 'unit-test-bucket',
                 'cross_account_ids': ['456789012345'],
                 'enable_events': True,
