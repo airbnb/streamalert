@@ -15,14 +15,12 @@ limitations under the License.
 """
 import json
 import os
-import shutil
 
 from streamalert.shared.config import ConfigError, firehose_alerts_bucket
 from streamalert.shared.logger import get_logger
 from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_alerts_table_schema
 from streamalert_cli.helpers import check_credentials
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
     infinitedict,
