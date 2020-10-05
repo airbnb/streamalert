@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 import os
 
-from mock import patch
+from mock import patch, Mock
 from pyfakefs import fake_filesystem_unittest
 
 from streamalert_cli.config import CLIConfig
@@ -28,6 +28,7 @@ class PackageTest(fake_filesystem_unittest.TestCase):
     TEST_CONFIG_PATH = 'tests/unit/conf'
     MOCK_TEMP_PATH = '/tmp/test_packaging'
 
+    @patch('streamalert_cli.config.CLIConfig._copy_terraform_files', Mock())
     def setUp(self):
         self.setUpPyfakefs()
         self.fs.add_real_directory(self.TEST_CONFIG_PATH)
