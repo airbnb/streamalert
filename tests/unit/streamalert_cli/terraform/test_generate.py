@@ -854,32 +854,6 @@ class TestTerraformGenerate:
         assert_equal(result['module']['globals']['source'], './modules/tf_globals')
         assert_false(result['module']['globals']['sqs_use_prefix'])
 
-    def test_generate_athena_lambda_format_unspecified(self):
-        "CLI - Terraform Generate Global Lambda Settings, Unspecified Athena file_format"
-        self.config['lambda']['athena_partitioner_config']['file_format'] = None
-
-        assert_raises(
-            ConfigError,
-            generate.generate_global_lambda_settings,
-            config=self.config,
-            conf_name='athena_partitioner_config',
-            generate_func='test_func',
-            tf_tmp_file_name='test_tf_tmp_file_path',
-        )
-
-    def test_generate_athena_lambda_format_invalid(self):
-        "CLI - Terraform Generate Global Lambda Settings, Invalid Athena file_format"
-        self.config['lambda']['athena_partitioner_config']['file_format'] = 'Parquet'
-
-        assert_raises(
-            ConfigError,
-            generate.generate_global_lambda_settings,
-            config=self.config,
-            conf_name='athena_partitioner_config',
-            generate_func='test_func',
-            tf_tmp_file_name='test_tf_tmp_file_path',
-        )
-
     def test_generate_required_lambda_invalid_config(self):
         "CLI - Terraform Generate Global Lambda Settings, Invalid Config"
 

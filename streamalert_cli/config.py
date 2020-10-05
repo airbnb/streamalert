@@ -23,11 +23,12 @@ import tempfile
 from streamalert.apps import StreamAlertApp
 from streamalert.shared import CLUSTERED_FUNCTIONS, config, metrics
 from streamalert.shared.logger import get_logger
-from streamalert_cli.helpers import continue_prompt
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.apps.helpers import save_app_auth_info
+from streamalert_cli.helpers import continue_prompt
+
 
 DEFAULT_CONFIG_PATH = 'conf'
-
 LOGGER = get_logger(__name__)
 
 
@@ -69,8 +70,21 @@ class CLIConfig:
             self.config['global']['general'].get('terraform_files', [])
         )
 
-    @staticmethod
-    def _setup_build_directory(directory):
+    def _copy_terraform_files(self, directory):
+        """Copy all packaged terraform files and terraform files provided by the user to temp
+
+        Args:
+            config (CLIConfig): Loaded StreamAlert config
+        """
+        shutil.copytree(TERRAFORM_FILES_PATH, directory)
+
+        # Copy any additional user provided terraform files to temp
+        for item in self.terraform_files:
+            shutil.copy2(item, directory)
+
+        LOGGER.info('Copied Terraform configuration to \'%s\'', directory)
+
+    def _setup_build_directory(self, directory):
         """Create the directory to be used for building infrastructure
 
         Args:
@@ -87,7 +101,9 @@ class CLIConfig:
             temp_dir.cleanup()
 
         if os.path.exists(directory):
-            shutil.rmtree(directory)
+            shutil.rmtree(directory)  # shutil.copytree in python3.7 cannot handle existing dir
+
+        self._copy_terraform_files(directory)
 
         return directory
 
