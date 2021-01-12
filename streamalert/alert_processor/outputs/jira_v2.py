@@ -71,25 +71,25 @@ class JiraOutput(OutputDispatcher):
                                         'Jira integration')),
             ('api_key',
              OutputProperty(
-                 description='the Jira api key for Jira '
+                 description='the Jira api key'
                  'generated at https://id.atlassian.com/manage/api-tokens',
                  mask_input=True,
                  cred_requirement=True)),
             ('user_name',
              OutputProperty(
-                 description='Please provide the associated usernamefor the api key'
+                 description='The jira username for the api key'
                  'example "username@company.com"',
                  mask_input=False,
                  cred_requirement=True)),
             ('url',
              OutputProperty(
-                 description='Please provide the base URL of your Jira instance'
+                 description='Base URL of your Jira instance'
                  'example https://company.atlassian.net',
                  mask_input=False,
                  input_restrictions={},
                  cred_requirement=True)),
             ('project_key',
-             OutputProperty(description='Please provide Jira project key where issues should be created',
+             OutputProperty(description='Jira project KEY where issues should be created',
                             mask_input=False,
                             cred_requirement=True)),
             ('issue_type',
@@ -326,10 +326,9 @@ class JiraOutput(OutputDispatcher):
                                  issue_id,
                                  comment_id)
                     return True
-                else:
-                    LOGGER.error('Encountered an error when adding alert to existing '
-                                 'Jira issue %s. Attempting to create new Jira issue.',
-                                 issue_id)
+                LOGGER.error('Encountered an error when adding alert to existing '
+                             'Jira issue %s. Attempting to create new Jira issue.',
+                             issue_id)
 
         # Create a new Jira issue
         issue_id = self._create_issue(issue_summary,
