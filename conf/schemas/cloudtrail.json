@@ -22,16 +22,19 @@
   "cloudtrail:events": {
     "schema": {
       "additionalEventData": {},
+      "addendum": {},
       "apiVersion": "string",
       "awsRegion": "string",
       "errorCode": "string",
       "errorMessage": "string",
+      "eventCategory": "string",
       "eventID": "string",
       "eventName": "string",
       "eventSource": "string",
       "eventTime": "string",
       "eventType": "string",
       "eventVersion": "string",
+      "insightDetails": {},
       "managementEvent": "boolean",
       "readOnly": "boolean",
       "recipientAccountId": "string",
@@ -39,9 +42,11 @@
       "requestParameters": {},
       "resources": [],
       "responseElements": {},
+      "sessionCredentialFromConsole": "boolean",
       "serviceEventDetails": {},
       "sharedEventID": "string",
       "sourceIPAddress": "string",
+      "tlsDetails": {},
       "userAgent": "string",
       "userIdentity": {},
       "vpcEndpointId": "string"
@@ -50,10 +55,14 @@
     "configuration": {
       "json_path": "Records[*]",
       "optional_top_level_keys": [
+        "addendum",
         "additionalEventData",
         "apiVersion",
         "errorCode",
         "errorMessage",
+        "edgeDeviceDetails",
+        "eventCategory",
+        "insightDetails",
         "managementEvent",
         "requestID",
         "readOnly",
@@ -61,6 +70,7 @@
         "serviceEventDetails",
         "sharedEventID",
         "sourceIPAddress",
+        "tlsDetails",
         "userAgent",
         "vpcEndpointId"
       ]
