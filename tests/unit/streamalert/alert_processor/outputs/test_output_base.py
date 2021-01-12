@@ -101,6 +101,7 @@ def test_output_loading():
         'demisto',
         'github',
         'jira',
+        'jira-v2',
         'komand',
         'pagerduty',
         'pagerduty-v2',
