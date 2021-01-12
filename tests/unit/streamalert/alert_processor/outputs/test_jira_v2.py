@@ -1,5 +1,5 @@
 """
-Copyright 2017-present Airbnb, Inc.
+Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ class TestJiraOutput:
     DESCRIPTOR = 'unit_test_jira'
     SERVICE = 'jira-v2'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
-    CREDS = {'username': 'jira@foo.bar',
-             'password': 'jirafoobar',
+    CREDS = {'api_key': 'xxxxyyyyyyyzzzzzzz',
+             'user_name': 'user@company.com',
              'url': 'jira.foo.bar',
              'project_key': 'foobar',
              'issue_type': 'Task',
@@ -54,10 +54,8 @@ class TestJiraOutput:
         # setup the request to not find an existing issue
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'issues': []}
-        # setup the auth and successful creation responses
-        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.status_code = 200
-        post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
+        post_mock.return_value.json.side_effect = [{'id': 5000}]
 
         assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
@@ -73,10 +71,7 @@ class TestJiraOutput:
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
         get_mock.return_value.json.return_value = existing_issues
-        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
-        # setup the auth and successful creation responses
         post_mock.return_value.status_code = 200
-        post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
 
         assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
@@ -92,10 +87,8 @@ class TestJiraOutput:
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
         get_mock.return_value.json.return_value = existing_issues
-        # setup the auth and successful creation responses
-        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200])
-        post_mock.return_value.json.side_effect = [auth_resp, {}, {'id': 5000}]
+        post_mock.return_value.json.side_effect = [{}, {'id': 5000}]
 
         assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
@@ -120,7 +113,7 @@ class TestJiraOutput:
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {}
 
-        self._dispatcher._load_creds('jira')
+        self._dispatcher._load_creds('jira_v2')
         assert_equal(self._dispatcher._get_comments('5000'), [])
 
     @patch('requests.get')
@@ -138,7 +131,7 @@ class TestJiraOutput:
         # setup successful search
         get_mock.return_value.status_code = 400
 
-        self._dispatcher._load_creds('jira')
+        self._dispatcher._load_creds('jira_v2')
         assert_equal(self._dispatcher._search_jira('foobar'), [])
 
     @patch('logging.Logger.error')
@@ -174,11 +167,8 @@ class TestJiraOutput:
         # setup the successful search response - no results
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'issues': []}
-        # setup successful auth response and failed issue creation
-        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400])
-        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.content = 'some bad content'
-        post_mock.return_value.json.side_effect = [auth_resp, dict()]
+        post_mock.return_value.json.side_effect = [dict()]
 
         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
@@ -192,11 +182,8 @@ class TestJiraOutput:
         # setup the successful search response - empty response
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {}
-        # setup successful auth response and failed issue creation
-        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400])
-        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.content = 'some bad content'
-        post_mock.return_value.json.side_effect = [auth_resp, dict()]
+        post_mock.return_value.json.side_effect = [dict()]
 
         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
@@ -212,8 +199,7 @@ class TestJiraOutput:
         get_mock.return_value.json.return_value = {'issues': []}
         # setup successful auth response and failed issue creation - empty response
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200])
-        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
-        post_mock.return_value.json.side_effect = [auth_resp, {}]
+        post_mock.return_value.json.side_effect = [{}]
 
         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
@@ -228,10 +214,8 @@ class TestJiraOutput:
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
         get_mock.return_value.json.return_value = existing_issues
-        # setup successful auth, failed comment creation, and successful issue creation
-        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400, 200])
-        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
-        post_mock.return_value.json.side_effect = [auth_resp, {'id': 6000}]
+        type(post_mock.return_value).status_code = PropertyMock(side_effect=[400, 200])
+        post_mock.return_value.json.side_effect = [{'id': 6000}]
 
         assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
+import os
 import json
 import base64
 
@@ -68,27 +69,27 @@ class JiraOutput(OutputDispatcher):
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
                                         'Jira integration')),
-             ('api_key',
-              OutputProperty(
-                  description='the Jira api key for Jira '
-                  'generated at https://id.atlassian.com/manage/api-tokens',
-                  mask_input=True,
-                  cred_requirement=True)),
-             ('user_name',
-              OutputProperty(
-                  description='Please provide the associated usernamefor the api key'
-                  'example "username@company.com"',
-                  mask_input=False,
-                  cred_requirement=True)),
-             ('url',
-              OutputProperty(
-                  description='Please provide the base URL of your Jira instance'
-                  'example https://company.atlassian.net',
-                  mask_input=False,
-                  input_restrictions={},
-                  cred_requirement=True)),
-             ('project_key',
-              OutputProperty(description='Please provide Jira project key where issues should be created',
+            ('api_key',
+             OutputProperty(
+                 description='the Jira api key for Jira '
+                 'generated at https://id.atlassian.com/manage/api-tokens',
+                 mask_input=True,
+                 cred_requirement=True)),
+            ('user_name',
+             OutputProperty(
+                 description='Please provide the associated usernamefor the api key'
+                 'example "username@company.com"',
+                 mask_input=False,
+                 cred_requirement=True)),
+            ('url',
+             OutputProperty(
+                 description='Please provide the base URL of your Jira instance'
+                 'example https://company.atlassian.net',
+                 mask_input=False,
+                 input_restrictions={},
+                 cred_requirement=True)),
+            ('project_key',
+             OutputProperty(description='Please provide Jira project key where issues should be created',
                             mask_input=False,
                             cred_requirement=True)),
             ('issue_type',
@@ -111,7 +112,7 @@ class JiraOutput(OutputDispatcher):
     def _get_headers(self):
         """Instance method used to pass the default headers plus the api key"""
         auth_token = "%s:%s" % (self._user_name, self._api_key)
-        encoded_credentials = base64.b64encode(auth_token)
+        encoded_credentials = base64.b64encode(auth_token.encode())
         return dict(self._get_default_headers(),
                     **{"Authorization": "Basic %s" % encoded_credentials})
 
