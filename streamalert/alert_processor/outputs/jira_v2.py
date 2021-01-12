@@ -1,5 +1,5 @@
 """
-Copyright 2017-present Airbnb, Inc.
+Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 """
 from collections import OrderedDict
 import json
-import os
+import base64
 
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import (
@@ -35,16 +35,16 @@ class JiraOutput(OutputDispatcher):
     """JiraOutput handles all alert dispatching for Jira"""
     __service__ = 'jira-v2'
 
-    DEFAULT_HEADERS = {'Content-Type': 'application/json'}
-    LOGIN_ENDPOINT = 'rest/auth/1/session'
-    SEARCH_ENDPOINT = 'rest/api/2/search'
-    ISSUE_ENDPOINT = 'rest/api/2/issue'
-    COMMENT_ENDPOINT = 'rest/api/2/issue/{}/comment'
+    DEFAULT_HEADERS = {"Accept": "application/json"}
+    SEARCH_ENDPOINT = '/rest/api/2/search'
+    ISSUE_ENDPOINT = '/rest/api/2/issue'
+    COMMENT_ENDPOINT = '/rest/api/2/issue/{}/comment'
 
     def __init__(self, *args, **kwargs):
         OutputDispatcher.__init__(self, *args, **kwargs)
         self._base_url = None
-        self._auth_cookie = None
+        self._api_key = None
+        self._user_name = None
 
     @classmethod
     def get_user_defined_properties(cls):
@@ -55,7 +55,7 @@ class JiraOutput(OutputDispatcher):
         Every output should return a dict that contains a 'descriptor' with a description of the
         integration being configured.
 
-        Jira requires a username, password, URL, project key, and issue type for alert dispatching.
+        Jira requires a api key, URL, project key, and issue type for alert dispatching.
         These values should be masked during input and are credential requirements.
 
         An additional parameter 'aggregate' is used to determine if alerts are aggregated into a
@@ -68,24 +68,32 @@ class JiraOutput(OutputDispatcher):
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
                                         'Jira integration')),
-            ('username',
-             OutputProperty(description='the Jira username',
-                            mask_input=True,
-                            cred_requirement=True)),
-            ('password',
-             OutputProperty(description='the Jira password',
-                            mask_input=True,
-                            cred_requirement=True)),
-            ('url',
-             OutputProperty(description='the Jira url',
-                            mask_input=True,
-                            cred_requirement=True)),
-            ('project_key',
-             OutputProperty(description='the Jira project key',
+             ('api_key',
+              OutputProperty(
+                  description='the Jira api key for Jira '
+                  'generated at https://id.atlassian.com/manage/api-tokens',
+                  mask_input=True,
+                  cred_requirement=True)),
+             ('user_name',
+              OutputProperty(
+                  description='Please provide the associated usernamefor the api key'
+                  'example "username@company.com"',
+                  mask_input=False,
+                  cred_requirement=True)),
+             ('url',
+              OutputProperty(
+                  description='Please provide the base URL of your Jira instance'
+                  'example https://company.atlassian.net',
+                  mask_input=False,
+                  input_restrictions={},
+                  cred_requirement=True)),
+             ('project_key',
+              OutputProperty(description='Please provide Jira project key where issues should be created',
                             mask_input=False,
                             cred_requirement=True)),
             ('issue_type',
-             OutputProperty(description='the Jira issue type',
+             OutputProperty(description='the Jira issue type please note this is case sensitive'
+                            'example ("Task" not "task)"',
                             mask_input=False,
                             cred_requirement=True)),
             ('aggregate',
@@ -101,8 +109,23 @@ class JiraOutput(OutputDispatcher):
         return cls.DEFAULT_HEADERS.copy()
 
     def _get_headers(self):
-        """Instance method used to pass the default headers plus the auth cookie"""
-        return dict(self._get_default_headers(), **{'cookie': self._auth_cookie})
+        """Instance method used to pass the default headers plus the api key"""
+        auth_token = "%s:%s" % (self._user_name, self._api_key)
+        encoded_credentials = base64.b64encode(auth_token)
+        return dict(self._get_default_headers(),
+                    **{"Authorization": "Basic %s" % encoded_credentials})
+
+    def _load_creds(self, descriptor):
+        """Loads a dict of credentials relevant to this output descriptor
+
+        Args:
+            descriptor (str): unique identifier used to look up these credentials
+
+        Returns:
+            dict: the loaded credential info needed for sending alerts to this service
+                or None if nothing gets loaded
+        """
+        return self._credentials_provider.load_credentials(descriptor)
 
     def _search_jira(self, jql, fields=None, max_results=100, validate_query=True):
         """Search Jira for issues using a JQL query
@@ -246,36 +269,6 @@ class JiraOutput(OutputDispatcher):
 
         return response.get('id', False)
 
-    def _establish_session(self, username, password):
-        """Establish a cookie based Jira session via basic user auth.
-
-        Args:
-            username (str): The Jira username used for establishing the session
-            password (str): The Jira password used for establishing the session
-
-        Returns:
-            str: Header value intended to be passed with every subsequent Jira request
-                 or False if unsuccessful
-        """
-        login_url = os.path.join(self._base_url, self.LOGIN_ENDPOINT)
-        auth_info = {'username': username, 'password': password}
-
-        try:
-            resp = self._post_request_retry(login_url,
-                                            data=auth_info,
-                                            headers=self._get_default_headers(),
-                                            verify=False)
-        except OutputRequestFailure:
-            LOGGER.error("Failed to authenticate to Jira")
-            return False
-
-        resp_dict = resp.json()
-        if not resp_dict:
-            return False
-
-        return '{}={}'.format(resp_dict['session']['name'],
-                              resp_dict['session']['value'])
-
     def _dispatch(self, alert, descriptor):
         """Send alert to Jira
 
@@ -318,11 +311,8 @@ class JiraOutput(OutputDispatcher):
         comment_id = None
 
         self._base_url = creds['url']
-        self._auth_cookie = self._establish_session(creds['username'], creds['password'])
-
-        # Validate successful authentication
-        if not self._auth_cookie:
-            return False
+        self._api_key = creds['api_key']
+        self._user_name = creds['user_name']
 
         # If aggregation is enabled, attempt to add alert to an existing issue. If a
         # failure occurs in this block, creation of a new Jira issue will be attempted.
@@ -335,9 +325,10 @@ class JiraOutput(OutputDispatcher):
                                  issue_id,
                                  comment_id)
                     return True
-                LOGGER.error('Encountered an error when adding alert to existing '
-                             'Jira issue %s. Attempting to create new Jira issue.',
-                             issue_id)
+                else:
+                    LOGGER.error('Encountered an error when adding alert to existing '
+                                 'Jira issue %s. Attempting to create new Jira issue.',
+                                 issue_id)
 
         # Create a new Jira issue
         issue_id = self._create_issue(issue_summary,
