@@ -114,7 +114,7 @@ class JiraOutput(OutputDispatcher):
         auth_token = "%s:%s" % (self._user_name, self._api_key)
         encoded_credentials = base64.b64encode(auth_token.encode())
         return dict(self._get_default_headers(),
-                    **{"Authorization": "Basic %s" % encoded_credentials})
+                    **{"Authorization": "Basic %s" % encoded_credentials.decode()})
 
     def _load_creds(self, descriptor):
         """Loads a dict of credentials relevant to this output descriptor
