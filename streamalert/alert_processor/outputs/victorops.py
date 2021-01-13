@@ -62,7 +62,7 @@ class VictorOpsOutput(OutputDispatcher):
             ('url',
              OutputProperty(description='The endpoint url for this VictorOps integration.',
                             mask_input=True,
-                            cred_requirement=True))
+                            cred_requirement=True)),
             ('routing_key',
              OutputProperty(description='The endpoint routing key for this VictorOps integration.',
                             mask_input=True,
