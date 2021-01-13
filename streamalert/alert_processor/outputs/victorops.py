@@ -23,9 +23,6 @@ from streamalert.alert_processor.outputs.output_base import (
 )
 from streamalert.shared.logger import get_logger
 
-import json
-
-
 LOGGER = get_logger(__name__)
 
 
@@ -89,7 +86,7 @@ class VictorOpsOutput(OutputDispatcher):
         creds = self._load_creds(descriptor)
         if not creds:
             return False
-        
+
         publication = compose_alert(alert, self, descriptor)
 
 
@@ -107,7 +104,7 @@ class VictorOpsOutput(OutputDispatcher):
         }
 
         LOGGER.critical('Sending alert to VictorOps')
-        url = creds['url'] + '/' + cred['routing_key']
+        url = creds['url'] + '/' + creds['routing_key']
         resp = self._post_request(
             url,
             data,
