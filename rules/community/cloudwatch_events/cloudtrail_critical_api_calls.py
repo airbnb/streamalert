@@ -11,6 +11,7 @@ _CRITICAL_EVENTS = {
     'DeleteCluster',
     # CloudTrail
     'DeleteTrail',
+    'PutEventSelectors',
     'UpdateTrail',
     'StopLogging',
     # AWS Config
