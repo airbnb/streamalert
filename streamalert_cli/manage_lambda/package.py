@@ -47,6 +47,7 @@ class LambdaPackage:
         'netaddr==0.8.0',
         'requests==2.24.0',
         'pymsteams==0.1.13',
+        'idna==2.8',
     }
 
     def __init__(self, config):
