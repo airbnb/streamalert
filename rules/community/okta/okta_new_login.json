@@ -1,0 +1,109 @@
+[
+  {
+    "data": {
+      "actor": {
+        "id": "...",
+        "type": "User",
+        "alternateId": "user@domain.com",
+        "displayName": "User Name",
+        "detailEntry": null
+      },
+      "client": {
+        "userAgent": {
+          "rawUserAgent": "...",
+          "os": "Mac OS X",
+          "browser": "CHROME"
+        },
+        "zone": "null",
+        "device": "Computer",
+        "id": null,
+        "ipAddress": "192.168.1.1",
+        "geographicalContext": {
+          "city": "San Francisco",
+          "state": "California",
+          "country": "United States",
+          "postalCode": "94103",
+          "geolocation": {
+            "lat": 37.7717748,
+            "lon": -122.4072223
+          }
+        }
+      },
+      "authenticationContext": {
+        "authenticationProvider": null,
+        "credentialProvider": null,
+        "credentialType": null,
+        "issuer": null,
+        "interface": null,
+        "authenticationStep": 0,
+        "externalSessionId": "..."
+      },
+      "displayMessage": "Send user new device notification email",
+      "eventType": "system.email.new_device_notification.sent_message",
+      "outcome": {
+        "result": "SUCCESS",
+        "reason": null
+      },
+      "published": "2020-01-01T00:00:00.000Z",
+      "securityContext": {
+        "asNumber": 1234,
+        "asOrg": "google",
+        "isp": "google llc",
+        "domain": "google.com",
+        "isProxy": false
+      },
+      "severity": "INFO",
+      "debugContext": {
+        "debugData": {
+          "deviceFingerprint": "...",
+          "requestId": "...",
+          "requestUri": "/api/v1/authn",
+          "threatSuspected": "false",
+          "url": "/api/v1/authn?"
+        }
+      },
+      "legacyEventType": "core.user.email.message_sent.new_device_notification",
+      "transaction": {
+        "type": "WEB",
+        "id": "...",
+        "detail": {}
+      },
+      "uuid": "...",
+      "version": "0",
+      "request": {
+        "ipChain": [
+          {
+            "ip": "192.168.1.1",
+            "geographicalContext": {
+              "city": "San Francisco",
+              "state": "California",
+              "country": "United States",
+              "postalCode": "94103",
+              "geolocation": {
+                "lat": 37.7717748,
+                "lon": -122.4072223
+              }
+            },
+            "version": "V4",
+            "source": null
+          }
+        ]
+      },
+      "target": [
+        {
+          "id": "...",
+          "type": "User",
+          "alternateId": "user@domain.com",
+          "displayName": "User Name",
+          "detailEntry": null
+        }
+      ]
+    },
+    "description": "An Okta user logging in from a new device triggers an alert.",
+    "log": "okta:logevents",
+    "service": "streamalert_app",
+    "source": "prefix_cluster_okta_logevents-app-name_app",
+    "trigger_rules": [
+    ]
+  }
+]

@@ -109,7 +109,7 @@ SSH and Build Dependencies
   $ pip install --upgrade pip setuptools
 
   $ mkdir -p $HOME/build_temp $HOME/pip_temp/python
-  $ pip install boxsdk[jwt]==2.6.1 --build $HOME/build_temp/ --target $HOME/pip_temp/python
+  $ pip install boxsdk[jwt]==2.9.0 --build $HOME/build_temp/ --target $HOME/pip_temp/python
 
   # Replace the `boxsdk[jwt]==2.6.1` below with the desired package & version
   # For example, the following would update the aliyun dependencies:

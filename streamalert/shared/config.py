@@ -443,3 +443,21 @@ def _validate_sources(cluster_name, data_sources, existing_sources):
             existing_sources.add(source)
 
 # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
+
+def artifact_extractor_enabled(config):
+    """Check if Artifactor Extractor enabled.
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        bool: return True is "artifact_extract" is enabled in conf/global.json
+    """
+    if not config['global']['infrastructure'].get('artifact_extractor', {}).get('enabled', False):
+        return False
+
+    # Artifact Extractor is enabled once when firehose is enabled.
+    if not config['global']['infrastructure'].get('firehose', {}).get('enabled', False):
+        return False
+
+    return True
+    

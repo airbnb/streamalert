@@ -122,6 +122,7 @@ class TestDemistoOutput:
             'type': 'Unclassified',
             'name': 'cb_binarystore_file_added',
             'owner': 'StreamAlert',
+            'playbook': 'Unknown',
             'severity': 0,
             'labels': EXPECTED_LABELS_FOR_SAMPLE_ALERT,
             'customFields': {},

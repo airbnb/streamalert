@@ -55,6 +55,12 @@ variable "send_to_sns" {
   description = "Whether or not events should be sent to SNS when objects are created in S3. This creates an SNS topic when set to true"
 }
 
+variable "allow_cross_account_sns" {
+  type        = bool
+  default     = false
+  description = "Allow account IDs specified in the s3_cross_account_ids variable to also send SNS notifications to the created SNS Topic"
+}
+
 variable "cloudwatch_logs_role_arn" {
   type        = string
   default     = null

@@ -17,10 +17,12 @@ from collections import OrderedDict
 import os
 import logging
 
-from streamalert.classifier.clients import FirehoseClient, SQSClient
+from streamalert.classifier.clients import SQSClient
+from streamalert.shared.firehose import FirehoseClient
 from streamalert.classifier.parsers import get_parser
 from streamalert.classifier.payload.payload_base import StreamPayload
 from streamalert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
+from streamalert.shared.artifact_extractor import ArtifactExtractor
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
 from streamalert.shared.metrics import MetricLogger
@@ -187,7 +189,13 @@ class Classifier:
             self._log_bad_records(record, len(record.invalid_records))
 
             for parsed_rec in record.parsed_records:
-                Normalizer.normalize(parsed_rec, record.log_type)
+                #
+                # In Normalization v1, the normalized types are defined based on log source
+                # (e.g. osquery, cloudwatch etc) and this will be deprecated.
+                # In Normalization v2, the normalized types are defined based on log type
+                # (e.g. osquery:differential, cloudwatch:cloudtrail, cloudwatch:events etc)
+                #
+                Normalizer.normalize(parsed_rec, record.log_schema_type)
 
             self._payloads.append(record)
 
@@ -256,6 +264,12 @@ class Classifier:
 
         # Send the data to firehose for historical retention
         if self.data_retention_enabled:
-            self.firehose.send(self._payloads)
+            categorized_records = self.firehose.send(self._payloads)
+
+            # Extract artifacts if it is enabled
+            if config.artifact_extractor_enabled(self._config):
+                ArtifactExtractor(
+                    self.firehose.artifacts_firehose_stream_name(self._config)
+                ).run(categorized_records)
 
         return self._payloads

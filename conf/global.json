@@ -5,6 +5,7 @@
     "region": "us-east-1"
   },
   "general": {
+    "terraform_files": [],
     "matcher_locations": [
       "matchers"
     ],
@@ -26,6 +27,11 @@
     "alerts_table": {
       "read_capacity": 5,
       "write_capacity": 5
+    },
+    "artifact_extractor": {
+      "enabled": false,
+      "firehose_buffer_size": 128,
+      "firehose_buffer_interval": 900
     },
     "firehose": {
       "use_prefix": true,

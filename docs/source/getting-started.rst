@@ -10,17 +10,17 @@ Install Dependencies
 ********************
 
 1. Install Python 3.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
-2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ >= v0.12.9:
+2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ >= v0.13.0:
 
 .. code-block:: bash
 
   brew install terraform  # MacOS Homebrew
-  terraform --version     # Must be >= v0.12.9
+  terraform --version     # Must be >= v0.13.0
 
 .. note::
 
-  Terraform versions lower than 0.12 are not supported. We recommend installing Terraform
-  version 0.12.9 or greater.
+  Terraform versions lower than 0.13 are not supported. We recommend installing Terraform
+  version 0.13.0 or greater.
 
 
 3. If you are using Linux, you may need to install the Python development libraries:
@@ -102,10 +102,6 @@ Deploy
 
   python manage.py configure aws_account_id 111111111111  # Replace with your 12-digit AWS account ID
   python manage.py configure prefix <value>               # Choose a unique name prefix (alphanumeric characters only)
-
-.. note::
-
-  * Update the ``file_format`` value in ``conf/lambda.json``. Valid options are ``parquet`` or ``json``. The default value will be parquet in a future release, but this must be manually configured at this time.
 
   .. code-block:: bash
 
@@ -208,7 +204,7 @@ Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look
 
 .. code-block:: bash
 
-  python manage.py output aws-sns
+  python manage.py output set aws-sns
 
   Please supply a short and unique descriptor for this SNS topic: test-email
 
@@ -217,7 +213,7 @@ Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look
 If you look at ``conf/outputs.json``, you'll notice that the SNS topic was automatically added.
 
 7. Configure a rule to send to the alerts topic.
-We will use ``rules/community/cloudtrail/cloudtrail_root_account_usage.py`` as an example, which
+We will use ``rules/community/cloudwatch_events/cloudtrail_root_account_usage.py`` as an example, which
 alerts on any usage of the root AWS account. Change the rule decorator to:
 
 .. code-block:: python

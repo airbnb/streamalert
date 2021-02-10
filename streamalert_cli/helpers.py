@@ -24,8 +24,6 @@ from botocore.exceptions import ClientError, NoCredentialsError
 
 from streamalert.shared.logger import get_logger
 
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
-
 
 LOGGER = get_logger(__name__)
 
@@ -39,7 +37,7 @@ SCHEMA_TYPE_LOOKUP = {
 }
 
 
-def run_command(runner_args, **kwargs):
+def run_command(runner_args, cwd='./', **kwargs):
     """Helper function to run commands with error handling.
 
     Args:
@@ -52,7 +50,6 @@ def run_command(runner_args, **kwargs):
     """
     default_error_message = "An error occurred while running: {}".format(' '.join(runner_args))
     error_message = kwargs.get('error_message', default_error_message)
-    cwd = kwargs.get('cwd', TERRAFORM_FILES_PATH)
 
     # Add the -force-copy flag for s3 state copying to suppress dialogs that
     # the user must type 'yes' into.
@@ -96,41 +93,6 @@ def continue_prompt(message=None):
         response = input('\n{} (yes or no): '.format(message)) # nosec
 
     return response == 'yes'
-
-
-def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
-    """Terraform wrapper to build StreamAlert infrastructure.
-
-    Resolves modules with `terraform get` before continuing.
-
-    Args:
-        action (str): Terraform action ('apply' or 'destroy').
-        refresh (bool): If True, Terraform will refresh its state before applying the change.
-        auto_approve (bool): If True, Terraform will *not* prompt the user for approval.
-        targets (list): Optional list of affected targets.
-            If not specified, Terraform will run against all of its resources.
-
-    Returns:
-        bool: True if the terraform command was successful
-    """
-    LOGGER.debug('Resolving Terraform modules')
-    if not run_command(['terraform', 'get'], quiet=True):
-        return False
-
-    tf_command = ['terraform', action, '-refresh={}'.format(str(refresh).lower())]
-
-    if action == 'destroy':
-        # Terraform destroy has a '-force' flag instead of '-auto-approve'
-        LOGGER.info('Destroying infrastructure')
-        tf_command.append('-force={}'.format(str(auto_approve).lower()))
-    else:
-        LOGGER.info('%s changes', 'Applying' if auto_approve else 'Planning')
-        tf_command.append('-auto-approve={}'.format(str(auto_approve).lower()))
-
-    if targets:
-        tf_command.extend('-target={}'.format(x) for x in targets)
-
-    return run_command(tf_command)
 
 
 def check_credentials():

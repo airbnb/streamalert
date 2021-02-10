@@ -6,6 +6,7 @@
     "region": "us-west-1"
   },
   "general": {
+    "terraform_files": [],
     "matcher_locations": [],
     "rule_locations": [],
     "scheduled_query_locations": [],

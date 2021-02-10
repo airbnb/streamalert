@@ -48,7 +48,21 @@
         "log_type",
         "logNumericsAsNumbers",
         "numerics"
-      ]
+      ],
+      "normalization": {
+        "command": [
+          {
+            "path": ["columns", "command"],
+            "function": "Command line from shell history"
+          }
+        ],
+        "file_path": [
+          {
+            "path": ["columns", "history_file"],
+            "function": "Shell history file path"
+          }
+        ]
+      }
     }
   },
   "osquery:snapshot": {

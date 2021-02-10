@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from mock import ANY, patch
+from mock import ANY, Mock, patch
 
 from nose.tools import (
     assert_equal,
@@ -35,6 +35,7 @@ from streamalert_cli.terraform import (
 )
 
 
+@patch('streamalert_cli.terraform.generate.write_vars', Mock())
 class TestTerraformGenerate:
     """Test class for the Terraform Cluster Generating"""
     # pylint: disable=no-self-use,attribute-defined-outside-init
@@ -44,8 +45,7 @@ class TestTerraformGenerate:
         self.cluster_dict = common.infinitedict()
         self.config = CLIConfig(config_path='tests/unit/conf')
 
-    @staticmethod
-    def test_generate_s3_bucket():
+    def test_generate_s3_bucket(self):
         """CLI - Terraform Generate S3 Bucket """
         bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
@@ -67,8 +67,7 @@ class TestTerraformGenerate:
         assert_equal(bucket['bucket'], 'unit.test.bucket')
         assert_equal(set(bucket.keys()), required_keys)
 
-    @staticmethod
-    def test_generate_s3_bucket_lifecycle():
+    def test_generate_s3_bucket_lifecycle(self):
         """CLI - Terraform Generate S3 Bucket with Lifecycle"""
         bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
@@ -91,14 +90,7 @@ class TestTerraformGenerate:
         tf_main = generate.generate_main(config=self.config, init=False)
 
         tf_main_expected = {
-            'provider': {
-                'aws': {
-                    'version': '~> 2.28.1',  # Changes to this should require unit test update
-                    'region': 'us-west-1'
-                }
-            },
             'terraform': {
-                'required_version': '~> 0.12.9', # Changes to this should require unit test update
                 'backend': {
                     's3': {
                         'bucket': 'unit-test-streamalert-terraform-state',
@@ -229,7 +221,6 @@ class TestTerraformGenerate:
             }
         }
 
-        assert_dict_equal(tf_main['provider'], tf_main_expected['provider'])
         assert_dict_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_dict_equal(tf_main['resource'], tf_main_expected['resource'])
 
@@ -358,9 +349,11 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, Minimal Settings"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'cross_account_ids': ['456789012345'],
+                'enable_events': False,
+            },
             'send_to_cloudwatch': False,
-            'enable_s3_events': False,
-            's3_cross_account_ids': ['456789012345'],
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -387,10 +380,12 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With S3 Events"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'bucket_name': 'unit-test-bucket',
+                'cross_account_ids': ['456789012345'],
+                'enable_events': True,
+            },
             'send_to_cloudwatch': False,
-            'enable_s3_events': True,
-            's3_cross_account_ids': ['456789012345'],
-            's3_bucket_name': 'unit-test-bucket'
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -420,10 +415,10 @@ class TestTerraformGenerate:
                 'bucket_name': 'unit-test-bucket',
                 'filters': [
                     {
-                        'filter_prefix': 'AWSLogs/12345678910/'
+                        'filter_prefix': 'AWSLogs/12345678910/CloudTrail/'
                     },
                     {
-                        'filter_prefix': 'AWSLogs/456789012345/'
+                        'filter_prefix': 'AWSLogs/456789012345/CloudTrail/'
                     }
                 ]
             }
@@ -435,8 +430,10 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With CloudWatch Logs"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'enable_events': False,
+            },
             'send_to_cloudwatch': True,
-            'enable_s3_events': False,
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -504,9 +501,11 @@ class TestTerraformGenerate:
         """CLI - Terraform Generate CloudTrail Module, With S3 and CloudWatch Logs"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            's3_settings': {
+                'cross_account_ids': ['456789012345'],
+                'enable_events': True,
+            },
             'send_to_cloudwatch': True,
-            's3_cross_account_ids': ['456789012345'],
-            'enable_s3_events': True,
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -577,7 +576,7 @@ class TestTerraformGenerate:
                 'bucket_name': 'unit-test-advanced-streamalert-cloudtrail',
                 'filters': [
                     {
-                        'filter_prefix': 'AWSLogs/456789012345/'
+                        'filter_prefix': 'AWSLogs/456789012345/CloudTrail/'
                     }
                 ]
             },
@@ -697,6 +696,79 @@ class TestTerraformGenerate:
 
         assert_true(log_mock.called)
 
+    def test_generate_cwe_cross_acct_map_regions(self):
+        """CLI - Terraform Generate CloudWatch Events Cross Account Region Map"""
+        # pylint: disable=protected-access
+        settings = {
+            'accounts': {
+                '123456789012': ['us-east-1'],
+                '234567890123': ['us-east-1']
+            },
+            'organizations': {
+                'o-aabbccddee': ['us-west-1']
+            }
+        }
+
+        result = cloudwatch_events._map_regions(settings)
+
+        expected = {
+            'us-east-1': {
+                'accounts': ['123456789012', '234567890123'],
+            },
+            'us-west-1': {
+                'organizations': ['o-aabbccddee']
+            }
+        }
+
+        assert_equal(expected, result)
+
+    def test_generate_cloudwatch_events_cross_account(self):
+        """CLI - Terraform Generate CloudWatch Events Cross Account"""
+        self.config['clusters']['advanced']['modules']['cloudwatch_events']['cross_account'] = {
+            'accounts': {
+                '123456789012': ['us-east-1'],
+                '234567890123': ['us-east-1']
+            },
+            'organizations': {
+                'o-aabbccddee': ['us-west-1']
+            }
+        }
+        cloudwatch_events.generate_cloudwatch_events(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected = {
+            'cloudwatch_events_advanced': {
+                'source': './modules/tf_cloudwatch_events',
+                'prefix': 'unit-test',
+                'cluster': 'advanced',
+                'kinesis_arn': '${module.kinesis_advanced.arn}',
+                'event_pattern': '{"account": ["12345678910"]}',
+            },
+            'cloudwatch_events_cross_account_advanced_us-east-1': {
+                'source': './modules/tf_cloudwatch_events/cross_account',
+                'region': 'us-east-1',
+                'accounts': ['123456789012', '234567890123'],
+                'organizations': [],
+                'providers': {
+                    'aws': 'aws.us-east-1'
+                }
+            },
+            'cloudwatch_events_cross_account_advanced_us-west-1': {
+                'source': './modules/tf_cloudwatch_events/cross_account',
+                'region': 'us-west-1',
+                'accounts': [],
+                'organizations': ['o-aabbccddee'],
+                'providers': {
+                    'aws': 'aws.us-west-1'
+                }
+            },
+        }
+
+        assert_equal(expected, self.cluster_dict['module'])
+
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
 
@@ -747,7 +819,6 @@ class TestTerraformGenerate:
             'kinesis_events_advanced',
             'flow_logs_advanced',
             'cloudtrail_advanced',
-            'cloudtrail_s3_events_unit-test_advanced_unit-test-advanced-streamalert-cloudtrail',
             'cloudwatch_events_advanced',
             's3_events_unit-test_advanced_unit-test-bucket_data',
             's3_events_unit-test_advanced_unit-test_cloudtrail_data'
@@ -782,32 +853,6 @@ class TestTerraformGenerate:
 
         assert_equal(result['module']['globals']['source'], './modules/tf_globals')
         assert_false(result['module']['globals']['sqs_use_prefix'])
-
-    def test_generate_athena_lambda_format_unspecified(self):
-        "CLI - Terraform Generate Global Lambda Settings, Unspecified Athena file_format"
-        self.config['lambda']['athena_partitioner_config']['file_format'] = None
-
-        assert_raises(
-            ConfigError,
-            generate.generate_global_lambda_settings,
-            config=self.config,
-            conf_name='athena_partitioner_config',
-            generate_func='test_func',
-            tf_tmp_file_name='test_tf_tmp_file_path',
-        )
-
-    def test_generate_athena_lambda_format_invalid(self):
-        "CLI - Terraform Generate Global Lambda Settings, Invalid Athena file_format"
-        self.config['lambda']['athena_partitioner_config']['file_format'] = 'Parquet'
-
-        assert_raises(
-            ConfigError,
-            generate.generate_global_lambda_settings,
-            config=self.config,
-            conf_name='athena_partitioner_config',
-            generate_func='test_func',
-            tf_tmp_file_name='test_tf_tmp_file_path',
-        )
 
     def test_generate_required_lambda_invalid_config(self):
         "CLI - Terraform Generate Global Lambda Settings, Invalid Config"

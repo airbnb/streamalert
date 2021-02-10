@@ -1,0 +1,35 @@
+{
+  "okta:logevents": {
+    "schema": {
+      "uuid": "string",
+      "published": "string",
+      "eventType": "string",
+      "version": "string",
+      "severity": "string",
+      "legacyEventType": "string",
+      "displayMessage": "string",
+      "actor": {},
+      "client": {},
+      "outcome": {},
+      "target": [],
+      "transaction": {},
+      "debugContext": {},
+      "authenticationContext": {},
+      "securityContext": {},
+      "request": {}
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "legacyEventType",
+        "displayMessage",
+        "client",
+        "outcome",
+        "transaction",
+        "debugContext",
+        "authenticationContext",
+        "request"
+      ]
+    }
+  }
+}

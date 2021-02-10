@@ -18,7 +18,7 @@ import os
 
 from mock import patch
 from moto import mock_ssm
-from nose.tools import assert_count_equal, assert_equal, assert_false, assert_true
+from nose.tools import assert_count_equal, assert_equal, assert_false, assert_true, raises
 
 from aliyunsdkcore.acs_exception.exceptions import ServerException
 
@@ -66,12 +66,13 @@ class TestAliyunApp:
         validation_function = self._app.required_auth_info()['region_id']['format']
         assert_equal(validation_function('ap-northeast'), False)
 
+    @raises(ServerException)
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     @patch('logging.Logger.exception')
     def test_server_exception(self, log_mock, client_mock):
         """AliyunApp - Gather Logs, Exception"""
         client_mock.side_effect = ServerException("error", "bad server response")
-        assert_false(self._app._gather_logs())
+        self._app._gather_logs()
         log_mock.assert_called_with("%s error occurred", "Server")
 
     def test_gather_logs_last_timestamp_set(self):

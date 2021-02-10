@@ -16,24 +16,30 @@ limitations under the License.
 import json
 import os
 import re
+import shutil
 import string
+import tempfile
 
 from streamalert.apps import StreamAlertApp
 from streamalert.shared import CLUSTERED_FUNCTIONS, config, metrics
 from streamalert.shared.logger import get_logger
-from streamalert_cli.helpers import continue_prompt
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.apps.helpers import save_app_auth_info
+from streamalert_cli.helpers import continue_prompt
 
-LOGGER = get_logger(__name__)
+
 DEFAULT_CONFIG_PATH = 'conf'
+LOGGER = get_logger(__name__)
 
 
 class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
 
-    def __init__(self, config_path):
+    def __init__(self, config_path, extra_terraform_files=None, build_directory=None):
         self.config_path = config_path
         self.config = config.load_config(config_path)
+        self._terraform_files = extra_terraform_files or []
+        self.build_directory = self._setup_build_directory(build_directory)
 
     def __repr__(self):
         return str(self.config)
@@ -57,15 +63,59 @@ class CLIConfig:
         """Return list of cluster configuration keys"""
         return list(self.config['clusters'].keys())
 
+    @property
+    def terraform_files(self):
+        """Return set of terraform files to include with this deployment"""
+        return set(self._terraform_files).union(
+            self.config['global']['general'].get('terraform_files', [])
+        )
+
+    def _copy_terraform_files(self, directory):
+        """Copy all packaged terraform files and terraform files provided by the user to temp
+
+        Args:
+            config (CLIConfig): Loaded StreamAlert config
+        """
+        shutil.copytree(TERRAFORM_FILES_PATH, directory)
+
+        # Copy any additional user provided terraform files to temp
+        for item in self.terraform_files:
+            shutil.copy2(item, directory)
+
+        LOGGER.info('Copied Terraform configuration to \'%s\'', directory)
+
+    def _setup_build_directory(self, directory):
+        """Create the directory to be used for building infrastructure
+
+        Args:
+            directory (str): Optional path to directory to create
+
+        Returns:
+            str: Path to directory that will be used
+        """
+        if not directory:
+            temp_dir = tempfile.TemporaryDirectory(prefix='streamalert_build-')
+            directory = temp_dir.name
+            # Calling cleanup here to remove this directory so shutil can recreate it
+            # Without calling this here, an exception is raised when tempfile garbage collects
+            temp_dir.cleanup()
+
+        if os.path.exists(directory):
+            shutil.rmtree(directory)  # shutil.copytree in python3.7 cannot handle existing dir
+
+        self._copy_terraform_files(directory)
+
+        return directory
+
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
         if not isinstance(prefix, str):
             LOGGER.error('Invalid prefix type, must be string')
             return False
 
-        acceptable_chars = set([*string.digits, *string.ascii_letters])
+        acceptable_chars = set([*string.digits, *string.ascii_lowercase])
         if not set(prefix).issubset(acceptable_chars):
-            LOGGER.error('Prefix must contain only letters and numbers')
+            LOGGER.error('Prefix must contain only lowercase letters and numbers')
             return False
 
         self.config['global']['account']['prefix'] = prefix

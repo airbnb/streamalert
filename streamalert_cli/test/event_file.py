@@ -45,6 +45,10 @@ class TestEventFile:
         return '\n'.join(str(item) for item in output)
 
     @property
+    def path(self):
+        return self._full_path
+
+    @property
     def should_print(self):
         return any(not result.suppressed for result in self._results)
 

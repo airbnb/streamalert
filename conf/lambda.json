@@ -54,7 +54,7 @@
     "concurrency_limit": 10,
     "memory": 128,
     "timeout": 300,
-    "file_format": null,
+    "file_format": "parquet",
     "log_level": "info"
   },
   "classifier_config": {},

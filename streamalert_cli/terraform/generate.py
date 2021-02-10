@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from fnmatch import fnmatch
 import json
 import os
 
@@ -22,7 +21,6 @@ from streamalert.shared.logger import get_logger
 from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert_cli.athena.helpers import generate_alerts_table_schema
 from streamalert_cli.helpers import check_credentials
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.terraform.common import (
     InvalidClusterName,
     infinitedict,
@@ -30,6 +28,7 @@ from streamalert_cli.terraform.common import (
     s3_access_logging_bucket,
     terraform_state_bucket,
 )
+from streamalert_cli.terraform.artifact_extractor import generate_artifact_extractor
 from streamalert_cli.terraform.alert_merger import generate_alert_merger
 from streamalert_cli.terraform.alert_processor import generate_alert_processor
 from streamalert_cli.terraform.apps import generate_apps
@@ -62,24 +61,20 @@ from streamalert_cli.terraform.threat_intel_downloader import generate_threat_in
 from streamalert_cli.utils import CLICommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSION = '~> 0.12.9'
-TERRAFORM_PROVIDER_VERSION = '~> 2.28.1'
 
 LOGGER = get_logger(__name__)
 
 
-def _terraform_defaults(region):
-    return infinitedict({
-        'terraform': {
-            'required_version': TERRAFORM_VERSION,
-        },
-        'provider': {
-            'aws': {
-                'region': region,
-                'version': TERRAFORM_PROVIDER_VERSION,
-            },
-        },
-    })
+def write_vars(config, **kwargs):
+    """Write root variables to a terraform.tfvars.json file
+
+    Keyword Args:
+        region (string): AWS region where infrastructure will be built
+    """
+    _create_terraform_module_file(
+        kwargs,
+        os.path.join(config.build_directory, 'terraform.tfvars.json')
+    )
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
@@ -163,7 +158,9 @@ def generate_main(config, init=False):
     Returns:
         dict: main.tf.json Terraform dict
     """
-    main_dict = _terraform_defaults(config['global']['account']['region'])
+    write_vars(config, region=config['global']['account']['region'])
+
+    main_dict = infinitedict()
 
     logging_bucket, create_logging_bucket = s3_access_logging_bucket(config)
 
@@ -372,14 +369,6 @@ def generate_cluster(config, cluster_name):
     return cluster_dict
 
 
-def cleanup_old_tf_files():
-    """
-    Cleanup old *.tf.json files
-    """
-    for terraform_file in os.listdir(TERRAFORM_FILES_PATH):
-        if fnmatch(terraform_file, '*.tf.json'):
-            os.remove(os.path.join(TERRAFORM_FILES_PATH, terraform_file))
-
 
 class TerraformGenerateCommand(CLICommand):
     description = 'Generate Terraform files from JSON cluster files'
@@ -411,13 +400,11 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     if check_tf and not terraform_check():
         return False
 
-    cleanup_old_tf_files()
-
     # Setup the main.tf.json file
     LOGGER.debug('Generating cluster file: main.tf.json')
     _create_terraform_module_file(
         generate_main(config, init=init),
-        os.path.join(TERRAFORM_FILES_PATH, 'main.tf.json')
+        os.path.join(config.build_directory, 'main.tf.json')
     )
 
     # Return early during the init process, clusters are not needed yet
@@ -440,21 +427,21 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         file_name = '{}.tf.json'.format(cluster)
         _create_terraform_module_file(
             cluster_dict,
-            os.path.join(TERRAFORM_FILES_PATH, file_name),
+            os.path.join(config.build_directory, file_name),
         )
 
     metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
     if metric_filters:
         _create_terraform_module_file(
             metric_filters,
-            os.path.join(TERRAFORM_FILES_PATH, 'metric_filters.tf.json')
+            os.path.join(config.build_directory, 'metric_filters.tf.json')
         )
 
     metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
     if metric_alarms:
         _create_terraform_module_file(
             metric_alarms,
-            os.path.join(TERRAFORM_FILES_PATH, 'metric_alarms.tf.json')
+            os.path.join(config.build_directory, 'metric_alarms.tf.json')
         )
 
     # Setup Threat Intel Downloader Lambda function if it is enabled
@@ -513,6 +500,10 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     # Setup StreamQuery
     _generate_streamquery_module(config)
 
+    # FIXME: make sure test 'python manage.py destroy' artifact_extractor case
+    # Setup artifact_extractor
+    _generate_artifact_extractor_module(config)
+
     return True
 
 
@@ -520,7 +511,7 @@ def _generate_lookup_tables_settings(config):
     """
     Generates .tf.json file for LookupTables
     """
-    tf_file_name = os.path.join(TERRAFORM_FILES_PATH, 'lookup_tables.tf.json')
+    tf_file_name = os.path.join(config.build_directory, 'lookup_tables.tf.json')
 
     if not config['lookup_tables'].get('enabled', False):
         remove_temp_terraform_file(tf_file_name)
@@ -548,6 +539,7 @@ def _generate_lookup_tables_settings(config):
         '${module.alert_processor_lambda.role_id}',
         '${module.alert_merger_lambda.role_id}',
         '${module.rules_engine_lambda.role_id}',
+        '${module.scheduled_queries.lambda_function_role_id}',
     }
 
     for cluster in config.clusters():
@@ -582,7 +574,7 @@ def _generate_streamquery_module(config):
     """
     Generates .tf.json file for scheduled queries
     """
-    tf_file_name = os.path.join(TERRAFORM_FILES_PATH, 'scheduled_queries.tf.json')
+    tf_file_name = os.path.join(config.build_directory, 'scheduled_queries.tf.json')
     if not config.get('scheduled_queries', {}).get('enabled', False):
         remove_temp_terraform_file(tf_file_name)
         return
@@ -592,6 +584,14 @@ def _generate_streamquery_module(config):
         tf_file_name
     )
 
+def _generate_artifact_extractor_module(config):
+    tf_file_name = os.path.join(config.build_directory, 'artifact_extractor.tf.json')
+    if 'artifact_extractor' in config['global']['infrastructure']:
+        if config['global']['infrastructure']['artifact_extractor'].get('enabled'):
+            _create_terraform_module_file(generate_artifact_extractor(config), tf_file_name)
+            return
+
+        remove_temp_terraform_file(tf_file_name)
 
 def generate_global_lambda_settings(
         config,
@@ -608,24 +608,7 @@ def generate_global_lambda_settings(
         tf_tmp_file (str): filename of terraform file, generated by CLI.
         message (str): Message will be logged by LOGGER.
     """
-    if conf_name == 'athena_partitioner_config':
-        # Raise ConfigError when user doesn't explicitly set `file_format`
-        # in `athena_partitioner_config` in conf/lambda.json when upgrade to v3.1.0.
-        file_format = get_data_file_format(config)
-
-        if not file_format or file_format not in ('parquet', 'json'):
-            message = (
-                '[WARNING] '
-                'It is required to explicitly set "file_format" for '
-                'athena_partitioner_config in "conf/lambda.json" when upgrading to v3.1.0. '
-                'Available values are "parquet" and "json". For more information, refer to '
-                'https://github.com/airbnb/streamalert/issues/1143. '
-                'In the future release, the default value of "file_format" will '
-                'be changed to "parquet".'
-            )
-            raise ConfigError(message)
-
-    tf_tmp_file = os.path.join(TERRAFORM_FILES_PATH, '{}.tf.json'.format(tf_tmp_file_name))
+    tf_tmp_file = os.path.join(config.build_directory, '{}.tf.json'.format(tf_tmp_file_name))
 
     if required and conf_name not in config['lambda']:
         message = 'Required configuration missing in lambda.json: {}'.format(conf_name)
