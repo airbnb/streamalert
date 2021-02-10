@@ -101,13 +101,15 @@ def test_output_loading():
         'demisto',
         'github',
         'jira',
+        'jira-v2',
         'komand',
         'pagerduty',
         'pagerduty-v2',
         'pagerduty-incident',
         'phantom',
         'slack',
-        'teams'
+        'teams',
+        'victorops'
     }
     assert_count_equal(loaded_outputs, expected_outputs)
 
