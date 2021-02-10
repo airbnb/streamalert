@@ -42,7 +42,7 @@ certifi==2020.6.20
 cffi==1.14.1
 cfn-lint==0.34.0
 chardet==3.0.4
-cryptography==3.0
+cryptography==3.2
 decorator==4.4.2
 docker==4.2.2
 docopt==0.6.2
