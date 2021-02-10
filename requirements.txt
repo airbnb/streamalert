@@ -39,7 +39,7 @@ boto==2.49.0
 botocore==1.17.29
 cachetools==4.1.1
 certifi==2020.6.20
-cffi==1.14.1
+cffi==1.14.4
 cfn-lint==0.34.0
 chardet==3.0.4
 cryptography==3.0
