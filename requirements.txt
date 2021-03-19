@@ -60,7 +60,7 @@ idna==2.8
 imagesize==1.2.0
 importlib-metadata==1.7.0
 isort==4.3.21
-Jinja2==2.11.2
+Jinja2==2.11.3
 jsondiff==1.1.2
 jsonpatch==1.26
 jsonpickle==1.4.1
