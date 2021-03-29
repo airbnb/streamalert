@@ -82,7 +82,7 @@ pycodestyle==2.6.0
 pycparser==2.20
 pycryptodome==3.9.8
 pyflakes==2.2.0
-Pygments==2.6.1
+Pygments==2.7.4
 PyJWT==1.7.1
 pyparsing==2.4.7
 pyrsistent==0.16.0
