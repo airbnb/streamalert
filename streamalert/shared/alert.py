@@ -422,7 +422,10 @@ class Alert:
             new_record,
             alerts[-1].outputs,  # Use the most recent set of outputs
             cluster=alerts[0].cluster,
-            context=alerts[0].context,
+            context={
+                alert.alert_id: alert.context
+                for alert in alerts
+            },
             log_source=alerts[0].log_source,
             log_type=alerts[0].log_type,
             publishers=alerts[0].publishers,
