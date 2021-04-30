@@ -92,7 +92,7 @@ pytz==2020.1
 PyYAML==5.3.1
 requests-toolbelt==0.9.1
 responses==0.10.15
-rsa==4.6
+rsa==4.7
 s3transfer==0.3.3
 six==1.15.0
 smmap==3.0.4
