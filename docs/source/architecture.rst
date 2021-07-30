@@ -14,7 +14,7 @@ StreamAlert consists of multiple AWS components connected together and managed b
 Data Lifecycle
 **************
 1. Log data can come through any of the supported `data sources <datasources.html>`_.
-This includes Kinesis, S3, SNS, or using a `StreamAlert App <app-configuration.html>`_ to periodically
+This includes Kinesis, S3, SNS, or using a `StreamAlert App <apps.html>`_ to periodically
 poll data from a third-party API.
 
 2. Inbound logs are first ingested via the "classifier" Lambda function in one of your
