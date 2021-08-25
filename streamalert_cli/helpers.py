@@ -142,7 +142,7 @@ def user_input(requested_info, mask, input_restrictions):
         while not response:
             response = input(prompt)  # nosec
 
-        valid_response = response_is_valid(response, input_restrictions)
+        valid_response, response = response_is_valid(response, input_restrictions)
 
         if not valid_response:
             return user_input(requested_info, mask, input_restrictions)
@@ -185,7 +185,7 @@ def response_is_valid(response, input_restrictions):
                 '\'{}\''.format(restriction) for restriction in input_restrictions)
             LOGGER.error('The supplied input should not contain any of the following: %s',
                          restrictions)
-    return valid_response
+    return valid_response, response
 
 
 def save_parameter(region, name, value, description, force_overwrite=False):
