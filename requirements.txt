@@ -34,7 +34,7 @@ attrdict==2.0.1
 attrs==19.3.0
 aws-sam-translator==1.25.0
 aws-xray-sdk==2.6.0
-Babel==2.8.0
+Babel==2.9.1
 boto==2.49.0
 botocore==1.17.29
 cachetools==4.1.1
