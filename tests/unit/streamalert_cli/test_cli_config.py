@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=protected-access
 import json
 
-from mock import patch
+from mock import patch, Mock
 from nose.tools import assert_equal, assert_true, assert_false
 from pyfakefs import fake_filesystem_unittest
 
@@ -31,6 +31,7 @@ class TestCLIConfig:
         self.config = None
         self.fs_patcher = None
 
+    @patch('streamalert_cli.config.CLIConfig._copy_terraform_files', Mock())
     def setup(self):
         """Setup before each method"""
         config_data = basic_streamalert_config()

@@ -218,7 +218,6 @@ class TestFirehoseGenerate:
             'json:embedded': {}
         }
 
-        self.config = CLIConfig(config_path='tests/unit/conf_athena')
         firehose.generate_firehose(self._logging_bucket_name, cluster_dict, self.config)
 
         expected_result = {
@@ -228,7 +227,7 @@ class TestFirehoseGenerate:
                     'source': './modules/tf_kinesis_firehose_delivery_stream',
                     'buffer_size': 128,
                     'buffer_interval': 900,
-                    'file_format': 'json',
+                    'file_format': 'parquet',
                     'stream_name': 'unit_test_streamalert_json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
                     's3_bucket_name': 'unit-test-streamalert-data',
