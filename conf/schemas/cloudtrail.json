@@ -91,7 +91,6 @@
     "parser": "json",
     "configuration": {
       "json_path": "Records[*]",
-      "optional_top_level_keys": []
     }
   }
 }
