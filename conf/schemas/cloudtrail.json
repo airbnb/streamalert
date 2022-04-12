@@ -90,7 +90,7 @@
     },
     "parser": "json",
     "configuration": {
-      "json_path": "Records[*]",
+      "json_path": "Records[*]"
     }
   }
 }
