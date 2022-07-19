@@ -17,13 +17,13 @@ limitations under the License.
 from mock import patch, PropertyMock, Mock, MagicMock
 from nose.tools import assert_equal, assert_false, assert_true
 
-from streamalert.alert_processor.outputs.jira_v2 import JiraOutput
+from streamalert.alert_processor.outputs.jira_v2 import JiraSaaSOutput
 from tests.unit.streamalert.alert_processor.helpers import get_alert
 
 
 @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestJiraOutput:
-    """Test class for JiraOutput"""
+class TestJiraSaaSOutput:
+    """Test class for JiraSaaSOutput"""
     DESCRIPTOR = 'unit_test_jira'
     SERVICE = 'jira-v2'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
@@ -43,14 +43,14 @@ class TestJiraOutput:
             side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
         )
         self._provider = provider
-        self._dispatcher = JiraOutput(None)
+        self._dispatcher = JiraSaaSOutput(None)
         self._dispatcher._base_url = self.CREDS['url']
 
     @patch('logging.Logger.info')
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_issue_new(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Dispatch Success, New Issue"""
+        """JiraSaaSOutput - Dispatch Success, New Issue"""
         # setup the request to not find an existing issue
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'issues': []}
@@ -66,7 +66,7 @@ class TestJiraOutput:
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_issue_existing(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Dispatch Success, Existing Issue"""
+        """JiraSaaSOutput - Dispatch Success, Existing Issue"""
         # setup the request to find an existing issue
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
@@ -82,7 +82,7 @@ class TestJiraOutput:
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_issue_empty_comment(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Dispatch Success, Empty Comment"""
+        """JiraSaaSOutput - Dispatch Success, Empty Comment"""
         # setup the request to find an existing issue
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
@@ -97,7 +97,7 @@ class TestJiraOutput:
 
     @patch('requests.get')
     def test_get_comments_success(self, get_mock):
-        """JiraOutput - Get Comments, Success"""
+        """JiraSaaSOutput - Get Comments, Success"""
         # setup successful get comments response
         get_mock.return_value.status_code = 200
         expected_result = [{}, {}]
@@ -108,7 +108,7 @@ class TestJiraOutput:
 
     @patch('requests.get')
     def test_get_comments_empty_success(self, get_mock):
-        """JiraOutput - Get Comments, Success Empty"""
+        """JiraSaaSOutput - Get Comments, Success Empty"""
         # setup successful get comments empty response
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {}
@@ -118,7 +118,7 @@ class TestJiraOutput:
 
     @patch('requests.get')
     def test_get_comments_failure(self, get_mock):
-        """JiraOutput - Get Comments, Failure"""
+        """JiraSaaSOutput - Get Comments, Failure"""
         # setup successful get comments response
         get_mock.return_value.status_code = 400
 
@@ -127,7 +127,7 @@ class TestJiraOutput:
 
     @patch('requests.get')
     def test_search_failure(self, get_mock):
-        """JiraOutput - Search, Failure"""
+        """JiraSaaSOutput - Search, Failure"""
         # setup successful search
         get_mock.return_value.status_code = 400
 
@@ -137,7 +137,7 @@ class TestJiraOutput:
     @patch('logging.Logger.error')
     @patch('requests.post')
     def test_auth_failure(self, post_mock, log_mock):
-        """JiraOutput - Auth, Failure"""
+        """JiraSaaSOutput - Auth, Failure"""
         # setup unsuccesful auth response
         post_mock.return_value.status_code = 400
         post_mock.return_value.content = 'content'
@@ -150,7 +150,7 @@ class TestJiraOutput:
     @patch('logging.Logger.error')
     @patch('requests.post')
     def test_auth_empty_response(self, post_mock, log_mock):
-        """JiraOutput - Auth, Failure Empty Response"""
+        """JiraSaaSOutput - Auth, Failure Empty Response"""
         # setup unsuccesful auth response
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {}
@@ -163,7 +163,7 @@ class TestJiraOutput:
     @patch('requests.get')
     @patch('requests.post')
     def test_issue_creation_failure(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Issue Creation, Failure"""
+        """JiraSaaSOutput - Issue Creation, Failure"""
         # setup the successful search response - no results
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'issues': []}
@@ -178,7 +178,7 @@ class TestJiraOutput:
     @patch('requests.get')
     @patch('requests.post')
     def test_issue_creation_empty_search(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Issue Creation, Failure Empty Search"""
+        """JiraSaaSOutput - Issue Creation, Failure Empty Search"""
         # setup the successful search response - empty response
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {}
@@ -193,7 +193,7 @@ class TestJiraOutput:
     @patch('requests.get')
     @patch('requests.post')
     def test_issue_creation_empty_response(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Issue Creation, Failure Empty Response"""
+        """JiraSaaSOutput - Issue Creation, Failure Empty Response"""
         # setup the successful search response - no results
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'issues': []}
@@ -209,7 +209,7 @@ class TestJiraOutput:
     @patch('requests.get')
     @patch('requests.post')
     def test_comment_creation_failure(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Comment Creation, Failure"""
+        """JiraSaaSOutput - Comment Creation, Failure"""
         # setup successful search response
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
@@ -224,7 +224,7 @@ class TestJiraOutput:
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
-        """JiraOutput - Dispatch Failure, Bad Descriptor"""
+        """JiraSaaSOutput - Dispatch Failure, Bad Descriptor"""
         assert_false(
             self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
 
