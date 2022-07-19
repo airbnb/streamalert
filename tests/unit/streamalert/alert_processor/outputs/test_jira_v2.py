@@ -27,8 +27,8 @@ class TestJiraSaaSOutput:
     DESCRIPTOR = 'unit_test_jira'
     SERVICE = 'jira-v2'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
-    CREDS = {'api_key': 'xxxxyyyyyyyzzzzzzz',
-             'user_name': 'user@company.com',
+    CREDS = {'username': 'jira@foo.bar',
+             'password': 'jirafoobar',
              'url': 'jira.foo.bar',
              'project_key': 'foobar',
              'issue_type': 'Task',
@@ -82,11 +82,13 @@ class TestJiraSaaSOutput:
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_issue_empty_comment(self, post_mock, get_mock, log_mock):
-        """JiraSaaSOutput - Dispatch Success, Empty Comment"""
+        """JiraOutput - Dispatch Success, Empty Comment"""
         # setup the request to find an existing issue
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
         get_mock.return_value.json.return_value = existing_issues
+        # setup the auth and successful creation responses
+        #auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200])
         post_mock.return_value.json.side_effect = [{}, {'id': 5000}]
 
