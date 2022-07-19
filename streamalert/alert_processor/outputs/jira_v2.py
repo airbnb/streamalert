@@ -31,7 +31,7 @@ LOGGER = get_logger(__name__)
 @StreamAlertOutput
 class JiraSaaSOutput(JiraOutput):
     """
-    JiraSaaSOutput handles all alert dispatching for Jira SaaS 
+    JiraSaaSOutput handles all alert dispatching for Jira SaaS.
     and is a subclass of the "JiraOutput" dispatcher which is typically used for on-prem Jira."""
     __service__ = 'jira-v2'
 
