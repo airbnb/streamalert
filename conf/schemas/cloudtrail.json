@@ -75,5 +75,22 @@
         "vpcEndpointId"
       ]
     }
+  },
+  "cloudtrail:insight": {
+    "schema": {
+      "eventVersion": "string",
+      "eventTime": "string",
+      "awsRegion": "string",
+      "eventID": "string",
+      "eventType": "string",
+      "recipientAccountId": "string",
+      "sharedEventID": "string",
+      "eventCategory": "string",
+      "insightDetails": {}
+    },
+    "parser": "json",
+    "configuration": {
+      "json_path": "Records[*]"
+    }
   }
 }
