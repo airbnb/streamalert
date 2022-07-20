@@ -85,7 +85,8 @@ class FirehoseClient:
         """
         # Write the json lines to the object in minimal form
         return [
-            json.dumps(record, separators=(',', ':')) + '\n' for record in records
+            json.dumps(cls.sanitize_keys(record), separators=(',', ':')) + '\n'
+            for record in records
         ]
 
     @classmethod
