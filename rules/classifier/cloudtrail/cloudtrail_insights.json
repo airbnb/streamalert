@@ -1,0 +1,96 @@
+[
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.08",
+          "eventTime": "2022-04-12T16:10:00Z",
+          "awsRegion": "eu-central-1",
+          "eventID": "49dfd327-5991-494b-98bf-6fe1eb3e3732",
+          "eventType": "AwsCloudTrailInsight",
+          "recipientAccountId": "246337027688",
+          "sharedEventID": "26acc406-e3d7-4f74-90bd-aca9d06c5127",
+          "insightDetails": {
+            "state": "Start",
+            "eventSource": "autoscaling.amazonaws.com",
+            "eventName": "CompleteLifecycleAction",
+            "insightType": "ApiCallRateInsight",
+            "insightContext": {
+              "statistics": {
+                "baseline": {
+                  "average": 0.0000882145
+                },
+                "insight": {
+                  "average": 0.6
+                },
+                "insightDuration": 5,
+                "baselineDuration": 11336
+              },
+              "attributions": [
+                {
+                  "attribute": "userIdentityArn",
+                  "insight": [
+                    {
+                      "value": "arn:aws:sts::012345678901:assumed-role/CodeDeployRole1",
+                      "average": 0.2
+                    },
+                    {
+                      "value": "arn:aws:sts::012345678901:assumed-role/CodeDeployRole2",
+                      "average": 0.2
+                    },
+                    {
+                      "value": "arn:aws:sts::012345678901:assumed-role/CodeDeployRole3",
+                      "average": 0.2
+                    }
+                  ],
+                  "baseline": [
+                    {
+                      "value": "arn:aws:sts::012345678901:assumed-role/CodeDeployRole1",
+                      "average": 0.0000882145
+                    }
+                  ]
+                },
+                {
+                  "attribute": "userAgent",
+                  "insight": [
+                    {
+                      "value": "codedeploy.amazonaws.com",
+                      "average": 0.6
+                    }
+                  ],
+                  "baseline": [
+                    {
+                      "value": "codedeploy.amazonaws.com",
+                      "average": 0.0000882145
+                    }
+                  ]
+                },
+                {
+                  "attribute": "errorCode",
+                  "insight": [
+                    {
+                      "value": "null",
+                      "average": 0.6
+                    }
+                  ],
+                  "baseline": [
+                    {
+                      "value": "null",
+                      "average": 0.0000882145
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "eventCategory": "Insight"
+        }
+      ]
+    },
+    "description": "AwsCloudTrailInsight via cloudtrail",
+    "log": "cloudtrail:insight",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "classify_only": true
+  }
+]
