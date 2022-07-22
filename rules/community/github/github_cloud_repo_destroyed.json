@@ -1,0 +1,19 @@
+[
+    {
+        "data": {
+            "_document_id": "Jxyah5FSnqZcMnXyfJL6ew==",
+            "business_id": 1234,
+            "action": "repo.destroy",
+            "@timestamp": 1651453720240,
+            "actor": "GithubUsername",
+            "repo": "github-org/doomed-repo"
+        },
+        "description": "A repo has been deleted.",
+        "log": "ghe:cloud",
+        "service": "s3",
+        "source": "prefix.cluster.sample.bucket",
+        "trigger_rules": [
+            "github_cloud_repo_destroyed"
+        ]
+    }
+]
