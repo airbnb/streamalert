@@ -7,7 +7,7 @@
             "@timestamp": 1651453720240
         },
         "description": "Protected Branch Policy has been overridden",
-        "log": "ghe:cloud",
+        "log": "ghce:cloud",
         "service": "s3",
         "source": "prefix.cluster.sample.bucket",
         "trigger_rules": [

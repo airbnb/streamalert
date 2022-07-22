@@ -2,7 +2,7 @@
 from streamalert.shared.rule import rule
 
 
-@rule(logs=['ghe:cloud'])
+@rule(logs=['ghce:cloud'])
 def github_cloud_branch_policy_override(rec):
     """
     author:       @BenGallagher-RL

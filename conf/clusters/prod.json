@@ -32,8 +32,8 @@
     "kinesis": {
       "prefix_cluster1_streamalert": [
         "cloudwatch",
-        "ghe:general",
-        "ghe:syslog",
+        "ghe",
+        "ghe",
         "osquery"
       ]
     },
@@ -43,7 +43,7 @@
         "carbonblack",
         "fleet",
         "packetbeat",
-        "ghe:cloud"
+        "ghce"
       ]
     },
     "sns": {

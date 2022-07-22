@@ -9,7 +9,7 @@
             "repo": "github-org/doomed-repo"
         },
         "description": "A repo has been deleted.",
-        "log": "ghe:cloud",
+        "log": "ghce:cloud",
         "service": "s3",
         "source": "prefix.cluster.sample.bucket",
         "trigger_rules": [

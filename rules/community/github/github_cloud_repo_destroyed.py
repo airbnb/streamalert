@@ -2,7 +2,7 @@
 from streamalert.shared.rule import rule
 
 
-@rule(logs=['ghe:cloud'])
+@rule(logs=['ghce:cloud'])
 def github_cloud_repo_destroyed(rec):
     """
     author:       @BenGallagher-RL
