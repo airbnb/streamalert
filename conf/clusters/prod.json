@@ -33,6 +33,7 @@
       "prefix_cluster1_streamalert": [
         "cloudwatch",
         "ghe",
+        "ghe",
         "osquery"
       ]
     },
@@ -41,7 +42,8 @@
         "cloudtrail",
         "carbonblack",
         "fleet",
-        "packetbeat"
+        "packetbeat",
+        "ghce"
       ]
     },
     "sns": {

@@ -1,0 +1,17 @@
+[
+    {
+        "data": {
+            "_document_id": "Jxyah5BSnqZcMnXyfJL6ew==",
+            "business_id": 1234,
+            "action": "protected_branch.policy_override",
+            "@timestamp": 1651453720240
+        },
+        "description": "Protected Branch Policy has been overridden",
+        "log": "ghce:cloud",
+        "service": "s3",
+        "source": "prefix.cluster.sample.bucket",
+        "trigger_rules": [
+            "github_cloud_branch_policy_override"
+        ]
+    }
+]
