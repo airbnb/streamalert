@@ -41,8 +41,8 @@ class JiraSaaSOutput(JiraOutput):
     COMMENT_ENDPOINT = '/rest/api/2/issue/{}/comment'
 
     def _get_headers(self):
-        """Instance method used to pass the default headers plus the auth cookie"""
-        return dict(self._get_default_headers(), **{'Basic': self._auth_cookie})
+        """Instance method used to pass the default headers plus auth token to the Jira API."""
+        return dict(self._get_default_headers(), **{'Authorization': self._auth_cookie})
 
     def _establish_session(self, username, password):
         return "Basic %s" % base64.b64encode(f"{username}:{password}".encode()).decode()
