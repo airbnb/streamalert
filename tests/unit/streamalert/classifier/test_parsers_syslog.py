@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal
 
 from streamalert.classifier.parsers import SyslogParser
 
@@ -48,7 +47,7 @@ class TestSyslogParser:
         # get parsed data
         parser = SyslogParser(options)
         result = parser._parse(data)
-        assert_equal(result, [(expected_record, True)])
+        assert result == [(expected_record, True)]
 
     def test_parse_invalid_data(self):
         """Syslog Parser - Parse, Invalid"""
@@ -66,4 +65,4 @@ class TestSyslogParser:
         # get parsed data
         parser = SyslogParser(options)
         result = parser._parse(data)
-        assert_equal(result, [(data, False)])
+        assert result == [(data, False)]

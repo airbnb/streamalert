@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
+from unittest.mock import Mock, patch
 
 from botocore.exceptions import ClientError
-from mock import Mock, patch
 
 from streamalert.rules_engine.alert_forwarder import AlertForwarder
 

@@ -13,17 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import collections
 import json
 import os
+from unittest.mock import Mock, call, mock_open, patch
 
-from boxsdk.exception import BoxException
-from mock import call, Mock, mock_open, patch
-from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_count_equal, assert_true
 import requests
+from boxsdk.exception import BoxException
+from moto import mock_ssm
 
 from streamalert.apps._apps.box import BoxApp
-
 from tests.unit.streamalert.apps.test_helpers import get_event, put_mock_params
 from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 
@@ -46,11 +45,14 @@ class TestBoxApp:
 
     def test_sleep(self):
         """BoxApp - Sleep Seconds"""
-        assert_equal(self._app._sleep_seconds(), 0)
+        assert self._app._sleep_seconds() == 0
 
     def test_required_auth_info(self):
         """BoxApp - Required Auth Info"""
-        assert_count_equal(list(self._app.required_auth_info().keys()), {'keyfile'})
+        assert collections.Counter(
+            list(
+                self._app.required_auth_info().keys())) == collections.Counter(
+            {'keyfile'})
 
     @patch('streamalert.apps._apps.box.JWTAuth.from_settings_dictionary', Mock())
     def test_keyfile_validator(self):
@@ -60,7 +62,7 @@ class TestBoxApp:
         mocker = mock_open(read_data=json.dumps(data))
         with patch('builtins.open', mocker):
             loaded_keydata = validation_function('fakepath')
-            assert_equal(loaded_keydata, data)
+            assert loaded_keydata == data
 
     @patch('streamalert.apps._apps.box.JWTAuth.from_settings_dictionary')
     def test_keyfile_validator_failure(self, cred_mock):
@@ -69,7 +71,7 @@ class TestBoxApp:
         cred_mock.return_value = False
         mocker = mock_open(read_data=json.dumps({'test': 'keydata'}))
         with patch('builtins.open', mocker):
-            assert_false(validation_function('fakepath'))
+            assert not validation_function('fakepath')
             cred_mock.assert_called()
 
     @patch('streamalert.apps._apps.box.JWTAuth.from_settings_dictionary')
@@ -78,45 +80,45 @@ class TestBoxApp:
         validation_function = self._app.required_auth_info()['keyfile']['format']
         mocker = mock_open(read_data='invalid json')
         with patch('builtins.open', mocker):
-            assert_false(validation_function('fakepath'))
+            assert not validation_function('fakepath')
             cred_mock.assert_not_called()
 
     @patch('streamalert.apps._apps.box.JWTAuth.from_settings_dictionary', Mock())
     def test_load_credentials(self):
         """BoxApp - Load Auth, Success"""
-        assert_true(self._app._load_auth('fakedata'))
+        assert self._app._load_auth('fakedata')
 
     @patch('streamalert.apps._apps.box.JWTAuth.from_settings_dictionary')
     def test_load_credentials_bad(self, cred_mock):
         """BoxApp - Load Auth, ValueError"""
         cred_mock.side_effect = ValueError('Bad things happened')
-        assert_false(self._app._load_auth('fakedata'))
+        assert not self._app._load_auth('fakedata')
 
     @patch('streamalert.apps._apps.box.BoxApp._load_auth')
     def test_create_client(self, auth_mock):
         """BoxApp - Create Client, Success"""
-        assert_true(self._app._create_client())
+        assert self._app._create_client()
         auth_mock.assert_called_with(self._app._config.auth['keyfile'])
 
     @patch('logging.Logger.debug')
     def test_create_client_exists(self, log_mock):
         """BoxApp - Create Client, Exists"""
         self._app._client = True
-        assert_true(self._app._create_client())
+        assert self._app._create_client()
         log_mock.assert_called_with('[%s] Client already instantiated', self._app)
 
     @patch('streamalert.apps._apps.box.BoxApp._load_auth', Mock(return_value=False))
     def test_create_client_fail_auth(self):
         """BoxApp - Create Client, Auth Failure"""
-        assert_false(self._app._create_client())
+        assert not self._app._create_client()
 
     def test_gather_logs(self):
         """BoxApp - Gather Logs, Success"""
         with patch.object(self._app, '_client') as client_mock:
             client_mock.make_request.return_value.json.return_value = self._get_sample_payload(10)
 
-            assert_equal(len(self._app._gather_logs()), 10)
-            assert_equal(self._app._last_timestamp, '2017-10-27T12:31:22-07:00')
+            assert len(self._app._gather_logs()) == 10
+            assert self._app._last_timestamp == '2017-10-27T12:31:22-07:00'
 
     @patch('streamalert.apps._apps.box.BoxApp._create_client', Mock())
     @patch('logging.Logger.exception')
@@ -124,7 +126,7 @@ class TestBoxApp:
         """BoxApp - Gather Logs, BoxException"""
         with patch.object(self._app, '_client') as client_mock:
             client_mock.make_request.side_effect = BoxException('bad error')
-            assert_false(self._app._gather_logs())
+            assert not self._app._gather_logs()
             log_mock.assert_called_with('[%s] Failed to get events', self._app)
 
     @patch('streamalert.apps._apps.box.BoxApp._create_client', Mock())
@@ -136,7 +138,7 @@ class TestBoxApp:
             client_mock.make_request.side_effect = requests.exceptions.ConnectionError(
                 response='bad error'
             )
-            assert_false(self._app._gather_logs())
+            assert not self._app._gather_logs()
             log_mock.assert_called_with('Bad response received from host, will retry once')
 
     @patch('streamalert.apps._apps.box.BoxApp._create_client', Mock())
@@ -147,7 +149,7 @@ class TestBoxApp:
             client_mock.make_request.side_effect = requests.exceptions.Timeout(
                 response='request timed out'
             )
-            assert_false(self._app._gather_logs())
+            assert not self._app._gather_logs()
             log_mock.assert_called_with('[%s] Request timed out', '_make_request')
 
     @patch('streamalert.apps._apps.box.BoxApp._create_client', Mock())
@@ -161,7 +163,7 @@ class TestBoxApp:
                 requests.exceptions.Timeout(response='request timed out twice'),
                 Mock(json=Mock(return_value=self._get_sample_payload(1))),
             ]
-            assert_equal(bool(self._app._gather_logs()), True)
+            assert bool(self._app._gather_logs())
             log_mock.assert_has_calls([
                 call('Attempting new request with timeout: %0.2f seconds', 6.10),
                 call('Attempting new request with timeout: %0.2f seconds', 12.20),
@@ -172,7 +174,7 @@ class TestBoxApp:
         """BoxApp - Gather Logs, No Client"""
         with patch.object(self._app, '_client') as client_mock:
             self._app._client = False
-            assert_false(self._app._gather_logs())
+            assert not self._app._gather_logs()
             client_mock.make_request.assert_not_called()
 
     @patch('streamalert.apps._apps.box.BoxApp._create_client', Mock())
@@ -181,7 +183,7 @@ class TestBoxApp:
         """BoxApp - Gather Logs, No Results From API"""
         with patch.object(self._app, '_client') as client_mock:
             client_mock.make_request.return_value.json.return_value = None
-            assert_false(self._app._gather_logs())
+            assert not self._app._gather_logs()
             log_mock.assert_called_with('[%s] No results received in request', self._app)
 
     @patch('streamalert.apps._apps.box.BoxApp._create_client', Mock())
@@ -195,7 +197,7 @@ class TestBoxApp:
                 'entries': []
             }
             client_mock.make_request.return_value.json.return_value = payload
-            assert_false(self._app._gather_logs())
+            assert not self._app._gather_logs()
             log_mock.assert_called_with('[%s] No events found in result', self._app)
 
     def _get_sample_payload(self, count):

@@ -13,17 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import os
 # pylint: disable=attribute-defined-outside-init,no-self-use,protected-access
 from datetime import datetime, timedelta
-import os
+from unittest.mock import ANY, MagicMock, call, patch
 
-from mock import ANY, call, patch, MagicMock
-from moto import mock_dynamodb2, mock_lambda
-from nose.tools import assert_equal, assert_false, assert_true
+from moto import mock_dynamodb, mock_lambda
 
 from streamalert.alert_merger import main
 from streamalert.shared.alert import Alert
-from tests.unit.helpers.aws_mocks import create_lambda_function, setup_mock_alerts_table
+from tests.unit.helpers.aws_mocks import (create_lambda_function,
+                                          setup_mock_alerts_table)
 
 _ALERTS_TABLE = 'PREFIX_streamalert_alerts'
 _ALERT_PROCESSOR = 'PREFIX_streamalert_alert_processor'
@@ -38,8 +38,8 @@ class TestAlertMergeGroup:
         alert = Alert('', {'key': True}, set(),
                       merge_by_keys=['key'], merge_window=timedelta(minutes=5))
         group = main.AlertMergeGroup(alert)
-        assert_true(group.add(alert))  # An alert can always merge with itself
-        assert_equal([alert, alert], group.alerts)
+        assert group.add(alert)  # An alert can always merge with itself
+        assert [alert, alert] == group.alerts
 
     def test_add_not_mergeable(self):
         """Alert Merger - Merge Group - Did Not Add Alert to Group"""
@@ -48,8 +48,8 @@ class TestAlertMergeGroup:
         alert2 = Alert('', {'key': True}, set(),
                        merge_by_keys=['other'], merge_window=timedelta(minutes=5))
         group = main.AlertMergeGroup(alert1)
-        assert_false(group.add(alert2))
-        assert_equal([alert1], group.alerts)
+        assert not group.add(alert2)
+        assert [alert1] == group.alerts
 
 
 class TestAlertMerger:
@@ -63,7 +63,7 @@ class TestAlertMerger:
     })
     def setup(self):
         """Alert Merger - Setup"""
-        self.dynamo_mock = mock_dynamodb2()
+        self.dynamo_mock = mock_dynamodb()
         self.lambda_mock = mock_lambda()
         self.dynamo_mock.start()
         self.lambda_mock.start()
@@ -88,8 +88,8 @@ class TestAlertMerger:
         with patch.object(self.merger.table, 'get_alert_records', return_value=records):
             result = list(self.merger._alert_generator('test_rule'))
             # Valid record is returned
-            assert_equal(1, len(result))
-            assert_equal(records[0]['AlertID'], result[0].alert_id)
+            assert 1 == len(result)
+            assert records[0]['AlertID'] == result[0].alert_id
             # Invalid record logs an exception
             mock_logger.exception.assert_called_once_with('Invalid alert record %s', records[1])
 
@@ -99,7 +99,7 @@ class TestAlertMerger:
             Alert('', {'key': True}, set(),
                   merge_by_keys=['key'], merge_window=timedelta(minutes=10))
         ]
-        assert_equal([], main.AlertMerger._merge_groups(alerts))
+        assert [] == main.AlertMerger._merge_groups(alerts)
 
     def test_merge_groups_single(self):
         """Alert Merger - Alert Collection - Single Merge Group"""
@@ -113,8 +113,8 @@ class TestAlertMerger:
         ]
 
         groups = main.AlertMerger._merge_groups(alerts)
-        assert_equal(1, len(groups))
-        assert_equal(alerts, groups[0].alerts)
+        assert 1 == len(groups)
+        assert alerts == groups[0].alerts
 
     def test_merge_groups_complex(self):
         """Alert Merger - Alert Collection - Complex Merge Groups"""
@@ -157,11 +157,11 @@ class TestAlertMerger:
         ]
 
         groups = main.AlertMerger._merge_groups(alerts)
-        assert_equal(4, len(groups))
-        assert_equal(alerts[0:2], groups[0].alerts)
-        assert_equal(alerts[2:5], groups[1].alerts)
-        assert_equal(alerts[5:7], groups[2].alerts)
-        assert_equal([alerts[7]], groups[3].alerts)
+        assert 4 == len(groups)
+        assert alerts[:2] == groups[0].alerts
+        assert alerts[2:5] == groups[1].alerts
+        assert alerts[5:7] == groups[2].alerts
+        assert [alerts[7]] == groups[3].alerts
 
     @patch.object(main.AlertMergeGroup, 'MAX_ALERTS_PER_GROUP', 2)
     def test_merge_groups_limit_reached(self):
@@ -174,10 +174,10 @@ class TestAlertMerger:
 
         # Since max alerts per group is 2, it should create 3 merged groups.
         groups = main.AlertMerger._merge_groups(alerts)
-        assert_equal(3, len(groups))
-        assert_equal(alerts[0:2], groups[0].alerts)
-        assert_equal(alerts[2:4], groups[1].alerts)
-        assert_equal(alerts[4:], groups[2].alerts)
+        assert 3 == len(groups)
+        assert alerts[:2] == groups[0].alerts
+        assert alerts[2:4] == groups[1].alerts
+        assert alerts[4:] == groups[2].alerts
 
     @patch.object(main, 'LOGGER')
     @patch.object(main.AlertMerger, 'MAX_LAMBDA_PAYLOAD_SIZE', 600)
@@ -193,7 +193,7 @@ class TestAlertMerger:
             Alert('merge_me', {'key': True}, {'output'},
                   created=datetime(year=2000, month=1, day=1),
                   merge_by_keys=['key'], merge_window=timedelta(minutes=5)),
-            Alert('merge_me', {'key': True, 'other': 'abc'*50}, {'output'},
+            Alert('merge_me', {'key': True, 'other': 'abc' * 50}, {'output'},
                   created=datetime(year=2000, month=1, day=1, minute=1),
                   merge_by_keys=['key'], merge_window=timedelta(minutes=5)),
 

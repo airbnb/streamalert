@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+from unittest.mock import patch
 
-from mock import patch
-from nose.tools import assert_equal
-
-from streamalert.classifier.payload.payload_base import RegisterInput, StreamPayload
+from streamalert.classifier.payload.payload_base import (RegisterInput,
+                                                         StreamPayload)
 
 
 class TestRegisterInput:
@@ -50,19 +49,19 @@ class TestRegisterInput:
             'resource',
             'record'
         )
-        assert_equal(isinstance(loaded_input, self._class), True)
+        assert isinstance(loaded_input, self._class)
 
     @patch('logging.Logger.error')
     def test_load_for_service_error(self, log_mock):
         """RegisterInput - Load For Service, Error"""
         service = 'foobarbaz'
-        assert_equal(RegisterInput.load_for_service(service, None, None), False)
+        assert RegisterInput.load_for_service(service, None, None) == False
         log_mock.assert_called_with('Requested payload service [%s] does not exist', service)
 
     def test_get_payload_class(self):
         """RegisterInput - Get Payload Class"""
         class_type = RegisterInput._get_payload_class(self._service)
-        assert_equal(self._class, class_type)
+        assert self._class == class_type
 
 
 class TestStreamPayload:
@@ -80,16 +79,16 @@ class TestStreamPayload:
     def test_non_zero_false(self):
         """StreamPayload - Non Zero/Bool, False"""
         self._payload.fully_classified = False
-        assert_equal(bool(self._payload), False)
+        assert not bool(self._payload)
 
     def test_non_zero_true(self):
         """StreamPayload - Non Zero/Bool, True"""
-        assert_equal(bool(self._payload), True)
+        assert bool(self._payload)
 
     def test_repr(self):
         """StreamPayload - Repr"""
         expected_result = '<StreamPayload valid:True; resource:foobar;>'
-        assert_equal(repr(self._payload), expected_result)
+        assert repr(self._payload) == expected_result
 
     def test_repr_invalid(self):
         """StreamPayload - Repr, Invalid"""
@@ -97,7 +96,7 @@ class TestStreamPayload:
         expected_result = (
             '<StreamPayload valid:False; resource:foobar; raw record:{"key": "value"};>'
         )
-        assert_equal(repr(self._payload), expected_result)
+        assert repr(self._payload) == expected_result
 
     def test_load_from_raw_record_kinesis(self):
         """StreamPayload - Load from Raw Record, Kinesis"""

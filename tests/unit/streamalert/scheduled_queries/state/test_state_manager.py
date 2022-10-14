@@ -14,14 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime
-
-from mock import MagicMock
-from nose.tools import assert_equals, assert_true, assert_false
+from unittest.mock import MagicMock
 
 from streamalert.scheduled_queries.state.state_manager import (
-    StateManager,
-    StepFunctionStateManager,
-)
+    StateManager, StepFunctionStateManager)
 
 
 class TestStateManager:
@@ -36,19 +32,19 @@ class TestStateManager:
     def test_has_set_get(self):
         """StreamQuery - StateManager - has, set, get"""
         key = 'aaa'
-        assert_false(self._state_manager.has(key))
+        assert not self._state_manager.has(key)
 
         self._state_manager.set(key, 'bbbbb')
 
-        assert_true(self._state_manager.has(key))
-        assert_equals(self._state_manager.get(key), 'bbbbb')
+        assert self._state_manager.has(key)
+        assert self._state_manager.get(key) == 'bbbbb'
 
     def test_keys(self):
         """StreamQuery - StateManager - keys"""
         self._state_manager.set('aaa', 'bbbbb')
         self._state_manager.set('ccc', 'ddddd')
 
-        assert_equals(self._state_manager.keys, ['aaa', 'ccc'])
+        assert self._state_manager.keys == ['aaa', 'ccc']
 
     # pylint: disable=protected-access
     def test_data(self):
@@ -56,10 +52,9 @@ class TestStateManager:
         self._state_manager.set('aaa', 'bbbbb')
         self._state_manager.set('ccc', 'ddddd')
 
-        assert_equals(
-            self._state_manager._dangerously_get_all_data(),
-            {'aaa': 'bbbbb', 'ccc': 'ddddd'}
-        )
+        assert (
+            self._state_manager._dangerously_get_all_data() ==
+            {'aaa': 'bbbbb', 'ccc': 'ddddd'})
 
 
 class TestStepFunctionStateManager:
@@ -90,12 +85,12 @@ class TestStepFunctionStateManager:
         }
         self._sfsm.write_to_step_function_response(response)
 
-        assert_equals(response, {
+        assert response == {
             'blah': '?',
             'step_function_state': {
                 'asdf': 'qwerty'
             }
-        })
+        }
 
     def test_first_load_will_properly_set_clock(self):
         """StreamQuery - StepFunctionStateManager - First load sets clock"""
@@ -141,7 +136,6 @@ class TestStepFunctionStateManager:
             }
         })
 
-        assert_equals(
-            self._state_manager.get('streamquery_configuration').get('tags'),
-            ['hourly', 'production']
-        )
+        assert (
+            self._state_manager.get('streamquery_configuration').get('tags') ==
+            ['hourly', 'production'])

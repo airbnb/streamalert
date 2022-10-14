@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal, assert_true
 
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import common, kinesis_streams
@@ -48,19 +47,22 @@ def test_kinesis_streams():
         },
         'output': {
             'kinesis_advanced_access_key_id': {
-                'value': '${module.kinesis_advanced.access_key_id}'
+                'value': '${module.kinesis_advanced.access_key_id}',
+                'sensitive': 'true'
             },
             'kinesis_advanced_secret_key': {
-                'value': '${module.kinesis_advanced.secret_key}'
+                'value': '${module.kinesis_advanced.secret_key}',
+                'sensitive': 'true'
             },
             'kinesis_advanced_user_arn': {
-                'value': '${module.kinesis_advanced.user_arn}'
+                'value': '${module.kinesis_advanced.user_arn}',
+                'sensitive': 'true'
             }
         }
     }
 
-    assert_true(result)
-    assert_equal(cluster_dict, expected_result)
+    assert result
+    assert cluster_dict == expected_result
 
 
 def test_kinesis_streams_with_trusted_account():
@@ -92,19 +94,22 @@ def test_kinesis_streams_with_trusted_account():
         },
         'output': {
             'kinesis_trusted_access_key_id': {
-                'value': '${module.kinesis_trusted.access_key_id}'
+                'value': '${module.kinesis_trusted.access_key_id}',
+                'sensitive': 'true'
             },
             'kinesis_trusted_secret_key': {
-                'value': '${module.kinesis_trusted.secret_key}'
+                'value': '${module.kinesis_trusted.secret_key}',
+                'sensitive': 'true'
             },
             'kinesis_trusted_username': {
-                'value': '${module.kinesis_trusted.username}'
+                'value': '${module.kinesis_trusted.username}',
+                'sensitive': 'true'
             }
         }
     }
 
-    assert_true(result)
-    assert_equal(cluster_dict, expected_result)
+    assert result
+    assert cluster_dict == expected_result
 
 
 def test_kinesis_streams_with_custom_name():
@@ -137,16 +142,19 @@ def test_kinesis_streams_with_custom_name():
         },
         'output': {
             'kinesis_advanced_access_key_id': {
-                'value': '${module.kinesis_advanced.access_key_id}'
+                'value': '${module.kinesis_advanced.access_key_id}',
+                'sensitive': 'true'
             },
             'kinesis_advanced_secret_key': {
-                'value': '${module.kinesis_advanced.secret_key}'
+                'value': '${module.kinesis_advanced.secret_key}',
+                'sensitive': 'true'
             },
             'kinesis_advanced_user_arn': {
-                'value': '${module.kinesis_advanced.user_arn}'
+                'value': '${module.kinesis_advanced.user_arn}',
+                'sensitive': 'true'
             }
         }
     }
 
-    assert_true(result)
-    assert_equal(cluster_dict, expected_result)
+    assert result
+    assert cluster_dict == expected_result

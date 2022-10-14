@@ -14,23 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
-
-from mock import ANY, MagicMock, Mock, patch
-from nose.tools import (
-    assert_equal,
-    assert_is_instance,
-    assert_is_none
-)
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 from streamalert.alert_processor.main import AlertProcessor, handler
 from streamalert.alert_processor.outputs.output_base import OutputDispatcher
 from streamalert.shared.alert import Alert
 from streamalert.shared.config import load_config
 from streamalert.shared.normalize import Normalizer
-from tests.unit.streamalert.alert_processor import (
-    ALERTS_TABLE,
-    MOCK_ENV
-)
+from tests.unit.streamalert.alert_processor import ALERTS_TABLE, MOCK_ENV
 
 MOCK_ENV.update({
     'ALERTS_TABLE': ALERTS_TABLE
@@ -58,18 +49,18 @@ class TestAlertProcessor:
 
     def test_init(self):
         """Alert Processor - Initialization"""
-        assert_is_instance(self.processor.config, dict)
+        assert isinstance(self.processor.config, dict)
 
     @patch('streamalert.alert_processor.main.LOGGER')
     def test_create_dispatcher_invalid(self, mock_logger):
         """Alert Processor - Create Dispatcher - Invalid Output"""
-        assert_is_none(self.processor._create_dispatcher('helloworld'))
+        assert self.processor._create_dispatcher('helloworld') is None
         mock_logger.error.called_once_with(ANY, 'helloworld')
 
     @patch('streamalert.alert_processor.main.LOGGER')
     def test_create_dispatcher_output_doesnt_exist(self, mock_logger):
         """Alert Processor - Create Dispatcher - Output Does Not Exist"""
-        assert_is_none(self.processor._create_dispatcher('slack:no-such-channel'))
+        assert self.processor._create_dispatcher('slack:no-such-channel') is None
         mock_logger.error.called_once_with(
             'The output \'%s\' does not exist!', 'slack:no-such-channel')
 
@@ -77,7 +68,7 @@ class TestAlertProcessor:
     def test_create_dispatcher(self):
         """Alert Processor - Create Dispatcher - Success"""
         dispatcher = self.processor._create_dispatcher('aws-s3:unit_test_bucket')
-        assert_is_instance(dispatcher, OutputDispatcher)
+        assert isinstance(dispatcher, OutputDispatcher)
 
     @patch.object(AlertProcessor, '_create_dispatcher')
     def test_send_alerts_success(self, mock_create_dispatcher):
@@ -86,8 +77,8 @@ class TestAlertProcessor:
         result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
         mock_create_dispatcher.return_value.dispatch.assert_called_once()
-        assert_equal({'slack:unit-test-channel': True}, result)
-        assert_equal(self.alert.outputs, self.alert.outputs_sent)
+        assert {'slack:unit-test-channel': True} == result
+        assert self.alert.outputs == self.alert.outputs_sent
 
     @patch.object(AlertProcessor, '_create_dispatcher')
     def test_send_alerts_failure(self, mock_create_dispatcher):
@@ -96,15 +87,15 @@ class TestAlertProcessor:
         result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
         mock_create_dispatcher.return_value.dispatch.assert_called_once()
-        assert_equal({'slack:unit-test-channel': False}, result)
-        assert_equal(set(), self.alert.outputs_sent)
+        assert {'slack:unit-test-channel': False} == result
+        assert set() == self.alert.outputs_sent
 
     @patch.object(AlertProcessor, '_create_dispatcher', return_value=None)
     def test_send_alerts_skip_invalid_outputs(self, mock_create_dispatcher):
         """Alert Processor - Send Alerts With Invalid Outputs"""
         result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
-        assert_equal({'slack:unit-test-channel': False}, result)
+        assert {'slack:unit-test-channel': False} == result
 
     def test_update_alerts_table_none(self):
         """Alert Processor - Update Alerts Table - Empty Results"""
@@ -131,7 +122,7 @@ class TestAlertProcessor:
     def test_run_full_event(self, mock_send_alerts, mock_update_table):
         """Alert Processor - Run With the Full Alert Record"""
         result = self.processor.run(self.alert.dynamo_record())
-        assert_equal({'slack:unit-test-channel': True}, result)
+        assert {'slack:unit-test-channel': True} == result
         mock_send_alerts.assert_called_once()
         mock_update_table.assert_called_once()
 
@@ -139,7 +130,7 @@ class TestAlertProcessor:
     def test_run_invalid_alert(self, mock_logger):
         """Alert Processor - Run With an Invalid Alert"""
         result = self.processor.run({'Record': 'Nonsense'})
-        assert_equal({}, result)
+        assert {} == result
         mock_logger.exception.called_once_with('Invalid alert %s', {'Record': 'Nonsense'})
 
     @patch.object(AlertProcessor, '_send_to_outputs',
@@ -150,7 +141,7 @@ class TestAlertProcessor:
         self.processor.alerts_table.get_alert_record = MagicMock(
             return_value=self.alert.dynamo_record())
         result = self.processor.run(self.alert.dynamo_key)
-        assert_equal({'slack:unit-test-channel': True}, result)
+        assert {'slack:unit-test-channel': True} == result
 
         self.processor.alerts_table.get_alert_record.assert_called_once_with(
             self.alert.rule_name, self.alert.alert_id)
@@ -171,5 +162,5 @@ class TestAlertProcessor:
         """Alert Processor - Lambda Handler"""
         event = {'AlertID': 'abc', 'RuleName': 'hello_world'}
         result = handler(event, None)
-        assert_equal({'output': True}, result)
+        assert {'output': True} == result
         mock_run.assert_called_once_with(event)

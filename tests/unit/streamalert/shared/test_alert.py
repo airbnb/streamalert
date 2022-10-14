@@ -14,17 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import copy
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 
-from nose.tools import (
-    assert_equal,
-    assert_false,
-    assert_is_instance,
-    assert_not_in,
-    assert_raises,
-    assert_true
-)
+import pytest
 
 from streamalert.shared.alert import Alert, AlertCreationError
 
@@ -62,49 +55,49 @@ class TestAlert:
 
     def test_alert_encoder_invalid_json(self):
         """Alert Class - Alert Encoder - Invalid JSON raises parent exception"""
-        assert_raises(TypeError, json.dumps, RuntimeWarning, default=list)
+        pytest.raises(TypeError, json.dumps, RuntimeWarning, default=list)
 
     def test_init_invalid_kwargs(self):
         """Alert Class - Init With Invalid Kwargs"""
-        assert_raises(AlertCreationError, Alert, '', {}, set(), cluster='test', invalid='nonsense')
+        pytest.raises(AlertCreationError, Alert, '', {}, set(), cluster='test', invalid='nonsense')
 
     def test_ordering(self):
         """Alert Class - Alerts Are Sorted By Creation"""
         alerts = [self._basic_alert() for _ in range(5)]
-        assert_equal(alerts, sorted([alerts[0], alerts[3], alerts[1], alerts[4], alerts[2]]))
+        assert alerts == sorted([alerts[0], alerts[3], alerts[1], alerts[4], alerts[2]])
 
     def test_repr(self):
         """Alert Class - Complete Alert Representation"""
-        assert_is_instance(repr(self._basic_alert()), str)
-        assert_is_instance(repr(self._customized_alert()), str)
+        assert isinstance(repr(self._basic_alert()), str)
+        assert isinstance(repr(self._customized_alert()), str)
 
     def test_str(self):
         """Alert Class - To String"""
         alert = self._customized_alert()
-        assert_equal('<Alert abc-123 triggered from test_rule>', str(alert))
+        assert '<Alert abc-123 triggered from test_rule>' == str(alert)
 
     def test_dynamo_key(self):
         """Alert Class - Dynamo Key"""
         alert = self._customized_alert()
-        assert_equal({'RuleName': 'test_rule', 'AlertID': 'abc-123'}, alert.dynamo_key)
+        assert {'RuleName': 'test_rule', 'AlertID': 'abc-123'} == alert.dynamo_key
 
     def test_remaining_outputs_merge_disabled(self):
         """Alert Class - Remaining Outputs - No Merge Information"""
         alert = self._basic_alert()
-        assert_equal(alert.outputs, alert.remaining_outputs)
+        assert alert.outputs == alert.remaining_outputs
 
         # One output sent successfully
         alert.outputs_sent = {'aws-sns:test-output'}
-        assert_equal({'aws-firehose:alerts'}, alert.remaining_outputs)
+        assert {'aws-firehose:alerts'} == alert.remaining_outputs
 
         # All outputs sent successfully
         alert.outputs_sent = {'aws-firehose:alerts', 'aws-sns:test-output'}
-        assert_equal(set(), alert.remaining_outputs)
+        assert set() == alert.remaining_outputs
 
     def test_remaining_outputs_merge_enabled(self):
         """Alert Class - Remaining Outputs - With Merge Config"""
         # Only the required firehose output shows as remaining
-        assert_equal({'aws-firehose:alerts'}, self._customized_alert().remaining_outputs)
+        assert {'aws-firehose:alerts'} == self._customized_alert().remaining_outputs
 
     def test_dynamo_record(self):
         """Alert Class - Dynamo Record"""
@@ -121,8 +114,8 @@ class TestAlert:
             source_service=''
         )
         record = alert.dynamo_record()
-        assert_not_in('', list(record.values()))
-        assert_not_in(set(), list(record.values()))
+        assert '' not in list(record.values())
+        assert set() not in list(record.values())
 
     def test_create_from_dynamo_record(self):
         """Alert Class - Create Alert from Dynamo Record"""
@@ -130,25 +123,25 @@ class TestAlert:
         # Converting to a Dynamo record and back again should result in the exact same alert
         record = alert.dynamo_record()
         new_alert = Alert.create_from_dynamo_record(record)
-        assert_equal(alert.dynamo_record(), new_alert.dynamo_record())
+        assert alert.dynamo_record() == new_alert.dynamo_record()
 
     def test_create_from_dynamo_record_invalid(self):
         """Alert Class - AlertCreationError raised for an invalid Dynamo Record"""
-        assert_raises(AlertCreationError, Alert.create_from_dynamo_record, {})
+        pytest.raises(AlertCreationError, Alert.create_from_dynamo_record, {})
 
     def test_output_dict(self):
         """Alert Class - Output Dict"""
         alert = self._basic_alert()
         result = alert.output_dict()
         # Ensure result is JSON-serializable (no sets)
-        assert_is_instance(json.dumps(result), str)
+        assert isinstance(json.dumps(result), str)
         # Ensure result is Athena compatible (no None values)
-        assert_not_in(None, list(result.values()))
+        assert None not in list(result.values())
 
     def test_can_merge_no_config(self):
         """Alert Class - Can Merge - False if Either Alert Does Not Have Merge Config"""
-        assert_false(self._basic_alert().can_merge(self._customized_alert()))
-        assert_false(self._customized_alert().can_merge(self._basic_alert()))
+        assert not self._basic_alert().can_merge(self._customized_alert())
+        assert not self._customized_alert().can_merge(self._basic_alert())
 
     def test_can_merge_too_far_apart(self):
         """Alert Class - Can Merge - False if Outside Merge Window"""
@@ -164,8 +157,8 @@ class TestAlert:
             merge_by_keys=['key'],
             merge_window=timedelta(minutes=10)
         )
-        assert_false(alert1.can_merge(alert2))
-        assert_false(alert2.can_merge(alert1))
+        assert not alert1.can_merge(alert2)
+        assert not alert2.can_merge(alert1)
 
     def test_can_merge_different_merge_keys(self):
         """Alert Class - Can Merge - False if Different Merge Keys Defined"""
@@ -179,8 +172,8 @@ class TestAlert:
             merge_by_keys=['other'],
             merge_window=timedelta(minutes=10)
         )
-        assert_false(alert1.can_merge(alert2))
-        assert_false(alert2.can_merge(alert1))
+        assert not alert1.can_merge(alert2)
+        assert not alert2.can_merge(alert1)
 
     def test_can_merge_key_not_common(self):
         """Alert Class - Can Merge - False if Merge Key Not Present in Both Records"""
@@ -194,8 +187,8 @@ class TestAlert:
             merge_by_keys=['key'],
             merge_window=timedelta(minutes=10)
         )
-        assert_false(alert1.can_merge(alert2))
-        assert_false(alert2.can_merge(alert1))
+        assert not alert1.can_merge(alert2)
+        assert not alert2.can_merge(alert1)
 
     def test_can_merge_different_values(self):
         """Alert Class - Can Merge - False if Merge Key has Different Values"""
@@ -209,15 +202,15 @@ class TestAlert:
             merge_by_keys=['key'],
             merge_window=timedelta(minutes=10)
         )
-        assert_false(alert1.can_merge(alert2))
-        assert_false(alert2.can_merge(alert1))
+        assert not alert1.can_merge(alert2)
+        assert not alert2.can_merge(alert1)
 
     def test_can_merge_merge_keys_absent(self):
         """Alert Class - Can Merge - True if Merge Keys Do Not Exist in Either Record"""
         alert1 = Alert('', {}, set(), merge_by_keys=['key'], merge_window=timedelta(minutes=10))
         alert2 = Alert('', {}, set(), merge_by_keys=['key'], merge_window=timedelta(minutes=10))
-        assert_true(alert1.can_merge(alert2))
-        assert_true(alert2.can_merge(alert1))
+        assert alert1.can_merge(alert2)
+        assert alert2.can_merge(alert1)
 
     def test_can_merge_true(self):
         """Alert Class - Can Merge - True Result"""
@@ -233,44 +226,44 @@ class TestAlert:
             merge_by_keys=['key'],
             merge_window=timedelta(minutes=10)
         )
-        assert_true(alert1.can_merge(alert2))
-        assert_true(alert2.can_merge(alert1))
+        assert alert1.can_merge(alert2)
+        assert alert2.can_merge(alert1)
 
     def test_compute_common_empty_record(self):
         """Alert Class - Compute Common - Empty Record List"""
-        assert_equal({}, Alert._compute_common([]))
+        assert {} == Alert._compute_common([])
 
     def test_compute_common_single_record(self):
         """Alert Class - Compute Common - Single Record"""
         # The greatest common subset of a single record is itself
         record = {'a': 1, 'b': 2, 'c': {'d': {'e': 3}}}
-        assert_equal(record, Alert._compute_common([record]))
+        assert record == Alert._compute_common([record])
 
     def test_compute_common_top_level(self):
         """Alert Class - Compute Common - No Nested Dictionaries"""
         record1 = {'a': 1, 'b': 2, 'c': 3}
         record2 = {'b': 2, 'c': 3, 'd': 4}
         record3 = {'c': 3, 'd': 4, 'e': 5}
-        assert_equal({'c': 3}, Alert._compute_common([record1, record2, record3]))
+        assert {'c': 3} == Alert._compute_common([record1, record2, record3])
 
     def test_compute_common_no_similarities(self):
         """Alert Class - Compute Common - Empty Common Set"""
         record1 = {'a': -1, 'b': -2, 'c': -3, 'd': {'e': 0}}
         record2 = {'a': 1, 'b': 2, 'c': 3}
-        assert_equal({}, Alert._compute_common([record1, record2]))
+        assert {} == Alert._compute_common([record1, record2])
 
     def test_compute_common_partial_nested(self):
         """Alert Class - Compute Common - Some Common Features in Nested Dictionary"""
         # This is the example given in the docstring
         record1 = {'abc': 123, 'nested': {'A': 1, 'B': 2}}
         record2 = {'abc': 123, 'def': 456, 'nested': {'A': 1}}
-        assert_equal({'abc': 123, 'nested': {'A': 1}}, Alert._compute_common([record1, record2]))
+        assert {'abc': 123, 'nested': {'A': 1}} == Alert._compute_common([record1, record2])
 
     def test_compute_common_different_types(self):
         """Alert Class - Compute Common - Same Keys, Different Types"""
         record1 = {'a': 1, 'b': None, 'c': {'d': {'e': 5}, 'f': {'g': 6}}}
         record2 = {'a': '1', 'b': 0, 'c': []}
-        assert_equal({}, Alert._compute_common([record1, record2]))
+        assert {} == Alert._compute_common([record1, record2])
 
     def test_compute_common_many_nested(self):
         """Alert Class - Compute Common - Multiple Levels of Nesting"""
@@ -310,42 +303,42 @@ class TestAlert:
                 'j': {}
             }
         }
-        assert_equal(expected, Alert._compute_common([record1, record2]))
+        assert expected == Alert._compute_common([record1, record2])
 
     def test_compute_common_all_identical(self):
         """Alert Class - Compute Common - Identical Records"""
         record = {'a': 1, 'b': 2, 'c': {'d': {'e': 3}}}
-        assert_equal(record, Alert._compute_common([record] * 4))
+        assert record == Alert._compute_common([record] * 4)
 
     def test_compute_diff_no_common(self):
         """Alert Class - Compute Diff - No Common Set"""
         record = {'a': 1, 'b': 2, 'c': {'d': {'e': 3}}}
-        assert_equal(record, Alert._compute_diff({}, record))
+        assert record == Alert._compute_diff({}, record)
 
     def test_compute_diff_no_diff(self):
         """Alert Class - Compute Diff - Record Identical to Common"""
         record = {'a': 1, 'b': 2, 'c': {'d': {'e': 3}}}
         common = record
-        assert_equal({}, Alert._compute_diff(common, record))
+        assert {} == Alert._compute_diff(common, common)
 
     def test_compute_diff_top_level(self):
         """Alert Class - Compute Diff - Top Level Keys"""
         common = {'c': 3}
         record = {'a': 1, 'b': 2, 'c': 3}
-        assert_equal({'a': 1, 'b': 2}, Alert._compute_diff(common, record))
+        assert {'a': 1, 'b': 2} == Alert._compute_diff(common, record)
 
     def test_compute_diff_different_types(self):
         """Alert Class - Compute Diff - Type Mismatch Short-Circuits Recursion"""
         common = {'b': 2}
         record = {'a': 1, 'b': {'nested': 'stuff'}}
-        assert_equal(record, Alert._compute_diff(common, record))
+        assert record == Alert._compute_diff(common, record)
 
     def test_compute_diff_nested(self):
         """Alert Class - Compute Diff - Difference in Nested Dictionary"""
         # This is the example given in the docstring
         common = {'abc': 123, 'nested': {'A': 1}}
         record = {'abc': 123, 'nested': {'A': 1, 'B': 2}}
-        assert_equal({'nested': {'B': 2}}, Alert._compute_diff(common, record))
+        assert {'nested': {'B': 2}} == Alert._compute_diff(common, record)
 
     def test_compute_diff_many_nested(self):
         """Alert Class - Compute Diff - Multiple Levels of Nesting"""
@@ -399,7 +392,7 @@ class TestAlert:
                 }
             }
         }
-        assert_equal(expected_diff1, Alert._compute_diff(common, record1))
+        assert expected_diff1 == Alert._compute_diff(common, record1)
 
         expected_diff2 = {
             'a': {
@@ -411,7 +404,7 @@ class TestAlert:
                 }
             }
         }
-        assert_equal(expected_diff2, Alert._compute_diff(common, record2))
+        assert expected_diff2 == Alert._compute_diff(common, record2)
 
     def test_merge(self):
         """Alert Class - Merge - Create Merged Alert"""
@@ -449,8 +442,8 @@ class TestAlert:
         )
 
         merged = Alert.merge([alert1, alert2])
-        assert_is_instance(merged, Alert)
-        assert_equal({'slack:channel'}, merged.outputs)  # Most recent outputs were used
+        assert isinstance(merged, Alert)
+        assert {'slack:channel'} == merged.outputs  # Most recent outputs were used
 
         expected_record = {
             'AlertCount': 2,
@@ -480,7 +473,7 @@ class TestAlert:
             }
 
         }
-        assert_equal(expected_record, merged.record)
+        assert expected_record == merged.record
 
     def test_merge_nested(self):
         """Alert Class - Merge - Merge with Nested Keys"""
@@ -562,4 +555,4 @@ class TestAlert:
             }
         }
 
-        assert_equal(expected_record, merged.record)
+        assert expected_record == merged.record

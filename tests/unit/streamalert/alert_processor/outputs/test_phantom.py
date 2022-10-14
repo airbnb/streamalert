@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
-from mock import call, patch, PropertyMock, Mock, MagicMock
-from nose.tools import assert_false, assert_true
+from unittest.mock import MagicMock, Mock, PropertyMock, call, patch
+
 from streamalert.alert_processor.outputs.phantom import PhantomOutput
 from tests.unit.streamalert.alert_processor.helpers import get_alert
+
 
 @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPhantomOutput:
@@ -51,7 +52,7 @@ class TestPhantomOutput:
         # dispatch
         post_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -68,7 +69,7 @@ class TestPhantomOutput:
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {'id': 1948}
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -86,7 +87,7 @@ class TestPhantomOutput:
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -103,7 +104,7 @@ class TestPhantomOutput:
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -119,7 +120,7 @@ class TestPhantomOutput:
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {}
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -133,9 +134,9 @@ class TestPhantomOutput:
         get_mock.return_value.json.return_value = {'count': 0, 'data': []}
         # _setup_container
         post_mock.return_value.status_code = 200
-        post_mock.return_value.json.return_value = dict()
+        post_mock.return_value.json.return_value = {}
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -152,15 +153,15 @@ class TestPhantomOutput:
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value.side_effect = [{'id': 1948}, json_error]
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """PhantomOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(
-            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
+        assert not self._dispatcher.dispatch(
+            get_alert(), ':'.join([self.SERVICE, 'bad_descriptor']))
 
         log_error_mock.assert_called_with('Failed to send alert to %s:%s',
                                           self.SERVICE, 'bad_descriptor')
@@ -174,12 +175,12 @@ class TestPhantomOutput:
         # NOTE(bobby): Is this supposed to require failing status codes?
         get_mock.return_value.status_code = 404
         post_mock.return_value.status_code = 404
-        assert_false(PhantomOutput._setup_container('rule_name',
-                                                    rule_description,
-                                                    self.CREDS['url'],
-                                                    headers))
+        assert not PhantomOutput._setup_container('rule_name',
+                                                  rule_description,
+                                                  self.CREDS['url'],
+                                                  headers)
 
-        full_url = '{}/rest/container'.format(self.CREDS['url'])
+        full_url = f"{self.CREDS['url']}/rest/container"
         params = {'_filter_name': '"rule_name"', 'page_size': 1}
         get_mock.assert_has_calls([call(full_url, params, headers, False)])
         ph_container = {'name': 'rule_name', 'description': rule_description}

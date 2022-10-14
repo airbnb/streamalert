@@ -13,15 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
 import os
+from datetime import datetime
+from unittest.mock import ANY, MagicMock, patch
 
+import pytest
 from botocore.exceptions import ClientError
-from mock import ANY, MagicMock, patch
-from moto import mock_dynamodb2
-from nose.tools import assert_equal, assert_raises
+from moto import mock_dynamodb
 
-from streamalert.shared import alert as alert_module, alert_table
+from streamalert.shared import alert as alert_module
+from streamalert.shared import alert_table
 from tests.unit.helpers.aws_mocks import setup_mock_alerts_table
 
 _ALERTS_TABLE = 'PREFIX_streamalert_alerts'
@@ -36,7 +37,7 @@ class TestAlertTable:
     def setup(self):
         """Alert Table - Create mock table and alerts"""
         # pylint: disable=attribute-defined-outside-init
-        self.dynamo_mock = mock_dynamodb2()
+        self.dynamo_mock = mock_dynamodb()
         self.dynamo_mock.start()
 
         setup_mock_alerts_table(_ALERTS_TABLE)
@@ -58,7 +59,7 @@ class TestAlertTable:
 
     def test_name(self):
         """Alert Table - Name Property"""
-        assert_equal(_ALERTS_TABLE, self.alert_table.name)
+        assert _ALERTS_TABLE == self.alert_table.name
 
     def test_paginate_multiple(self):
         """Alert Table - Paginate Traverses Multiple Pages"""
@@ -68,29 +69,29 @@ class TestAlertTable:
                 return {'Items': [2]}
             return {'Items': [1], 'LastEvaluatedKey': 'somewhere'}
         results = list(self.alert_table._paginate(mock_table_op, {}))
-        assert_equal([1, 2], results)
+        assert [1, 2] == results
 
     def test_rule_names_generator(self):
         """Alert Table - Rule Names Generator From Table Scan"""
-        assert_equal({'even', 'odd'}, set(self.alert_table.rule_names_generator()))
+        assert {'even', 'odd'} == set(self.alert_table.rule_names_generator())
 
     def test_get_alert_records(self):
         """Alert Table - Pending Alerts From Table Query"""
         result = list(self.alert_table.get_alert_records('odd', _ALERT_PROCESSOR_TIMEOUT_SEC))
-        assert_equal(1, len(result))
+        assert 1 == len(result)
         # All the properties should be the same between the two alerts
-        assert_equal(self.alerts[1].dynamo_record(), result[0])
+        assert self.alerts[1].dynamo_record() == result[0]
 
     def test_get_alert_record(self):
         """Alert Table - Get a Single Alert"""
         result = self.alert_table.get_alert_record(
             self.alerts[0].rule_name, self.alerts[0].alert_id)
-        assert_equal(self.alerts[0].dynamo_record(), result)
+        assert self.alerts[0].dynamo_record() == result
 
     def test_add_alerts(self):
         """Alert Table - Add Alerts"""
         items = self.alert_table._table.scan()['Items']
-        assert_equal(3, len(items))
+        assert 3 == len(items)
 
     def test_mark_as_dispatched(self):
         """Alert Table - Mark As Dispatched"""
@@ -101,7 +102,7 @@ class TestAlertTable:
 
         # Verify that there is now 1 attempt
         result = self.alert_table.get_alert_record(alert.rule_name, alert.alert_id)
-        assert_equal(1, result['Attempts'])
+        assert 1 == result['Attempts']
 
     def test_mark_as_dispatched_conditional_fail(self):
         """Alert Table - Mark As Dispatched - Alert is Already Deleted"""
@@ -131,7 +132,7 @@ class TestAlertTable:
             raise ClientError({'Error': {'Code': 'TEST'}}, 'UpdateItem')
         self.alert_table._table.update_item.side_effect = mock_update
 
-        assert_raises(ClientError, self.alert_table.mark_as_dispatched, self.alerts[0])
+        pytest.raises(ClientError, self.alert_table.mark_as_dispatched, self.alerts[0])
 
     def test_update_sent_outputs(self):
         """Alert Table - Update Retry Outputs"""
@@ -148,9 +149,9 @@ class TestAlertTable:
             raise ClientError({'Error': {'Code': 'TEST'}}, 'UpdateItem')
         self.alert_table._table.update_item.side_effect = mock_update
 
-        assert_raises(ClientError, self.alert_table.update_sent_outputs, self.alerts[0])
+        pytest.raises(ClientError, self.alert_table.update_sent_outputs, self.alerts[0])
 
     def test_delete_alert(self):
         """Alert Table - Delete Alert"""
         self.alert_table.delete_alerts([(alert.rule_name, alert.alert_id) for alert in self.alerts])
-        assert_equal(0, len(self.alert_table._table.scan()['Items']))
+        assert 0 == len(self.alert_table._table.scan()['Items'])

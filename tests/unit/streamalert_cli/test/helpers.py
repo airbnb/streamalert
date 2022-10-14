@@ -15,15 +15,15 @@ limitations under the License.
 """
 import json
 
-from nose.tools import nottest
+import pytest
 
 
-@nottest
+@pytest.mark.usefixtures('patcher')
 def basic_test_file_json(**kwargs):
     return json.dumps([basic_test_event_data(**kwargs)])
 
 
-@nottest
+@pytest.mark.usefixtures('patcher')
 def basic_test_event_data(
         log='misc_log_type',
         service='unit-test-service',

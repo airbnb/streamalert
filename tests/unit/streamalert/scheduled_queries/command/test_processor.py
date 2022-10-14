@@ -13,8 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from mock import MagicMock
-from nose.tools import assert_true, assert_false
+from unittest.mock import MagicMock
 
 from streamalert.scheduled_queries.command.processor import CommandProcessor
 
@@ -50,7 +49,7 @@ class TestCommandProcessor:
 
         result = self._processor.nonblocking_single_pass()
 
-        assert_false(result)
+        assert not result
 
     def test_nonblocking_single_pass_finished_succeeded(self):
         """StreamQuery - CommandProcessor - nonblocking_single_pass - Finished"""
@@ -67,7 +66,7 @@ class TestCommandProcessor:
 
         result = self._processor.nonblocking_single_pass()
 
-        assert_true(result)
+        assert result
         self._kinesis.send_query_results.assert_called_with(query_pack)
 
     def test_nonblocking_single_pass_finished_failed(self):
@@ -85,7 +84,7 @@ class TestCommandProcessor:
 
         result = self._processor.nonblocking_single_pass()
 
-        assert_true(result)
+        assert result
         self._kinesis.send_query_results.assert_not_called()
 
     # pylint: disable=invalid-name
@@ -104,5 +103,5 @@ class TestCommandProcessor:
 
         result = self._processor.nonblocking_single_pass()
 
-        assert_true(result)
+        assert result
         self._kinesis.send_query_results.assert_not_called()

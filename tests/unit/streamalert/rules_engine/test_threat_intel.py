@@ -13,10 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from unittest.mock import Mock, patch
+
 from botocore.exceptions import ClientError, ParamValidationError
-from mock import Mock, patch
 from netaddr import IPNetwork
-from nose.tools import assert_equal
 
 from streamalert.rules_engine.threat_intel import ThreatIntel
 
@@ -27,6 +27,7 @@ from streamalert.rules_engine.threat_intel import ThreatIntel
 class TestThreatIntel:
     """Tests for ThreatIntel"""
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
+
     def setup(self):
         """ThreatIntel - Setup"""
         with patch('boto3.client'):
@@ -99,7 +100,7 @@ class TestThreatIntel:
         )
 
         result = ThreatIntel._exceptions_to_giveup(err)
-        assert_equal(result, True)
+        assert result
 
     def test_threat_detection(self):
         """ThreatIntel - Threat Detection"""
@@ -130,7 +131,7 @@ class TestThreatIntel:
         with patch.object(self._threat_intel, '_process_ioc_values') as process_mock:
             process_mock.return_value = [{'ioc_value': '1.1.1.2', 'sub_type': 'mal_ip'}]
             self._threat_intel.threat_detection(payloads)
-            assert_equal(payloads[0]['record'], expected_result)
+            assert payloads[0]['record'] == expected_result
 
     def test_threat_detection_no_iocs(self):
         """ThreatIntel - Threat Detection, No IOCs"""
@@ -158,7 +159,7 @@ class TestThreatIntel:
         with patch.object(self._threat_intel, '_process_ioc_values') as process_mock:
             process_mock.return_value = []
             self._threat_intel.threat_detection(payloads)
-            assert_equal(payloads[0]['record'], expected_result)
+            assert payloads[0]['record'] == expected_result
 
     def test_insert_ioc_info(self):
         """ThreatIntel - Insert IOC Info"""
@@ -176,7 +177,7 @@ class TestThreatIntel:
         }
 
         ThreatIntel._insert_ioc_info(record, ioc_type, ioc_value)
-        assert_equal(record, expected_result)
+        assert record == expected_result
 
     def test_insert_ioc_info_existing(self):
         """ThreatIntel - Insert IOC Info, With Existing"""
@@ -199,7 +200,7 @@ class TestThreatIntel:
 
         ThreatIntel._insert_ioc_info(record, ioc_type, new_value)
 
-        assert_equal(record, expected_result)
+        assert record == expected_result
 
     def test_process_ioc_values(self):
         """ThreatIntel - Process IOC Values"""
@@ -211,7 +212,7 @@ class TestThreatIntel:
 
             result = list(self._threat_intel._process_ioc_values(potential_iocs))
             query_mock.assert_called_with(set(potential_iocs))
-            assert_equal(result, expected_result)
+            assert result == expected_result
 
     @patch('logging.Logger.exception')
     def testg_client_error(self, log_mock):
@@ -221,7 +222,7 @@ class TestThreatIntel:
             query_mock.side_effect = ClientError({'Error': {'Code': 10}}, 'BadRequest')
 
             result = list(self._threat_intel._process_ioc_values(potential_iocs))
-            assert_equal(result, [])
+            assert not result
             log_mock.assert_called_with('An error occurred while querying dynamodb table')
 
     @patch('logging.Logger.exception')
@@ -232,7 +233,7 @@ class TestThreatIntel:
             query_mock.side_effect = ParamValidationError(report='BadParams')
 
             result = list(self._threat_intel._process_ioc_values(potential_iocs))
-            assert_equal(result, [])
+            assert not result
             log_mock.assert_called_with('An error occurred while querying dynamodb table')
 
     def test_segment(self):
@@ -243,7 +244,7 @@ class TestThreatIntel:
         ]
 
         result = list(ThreatIntel._segment(list(range(120))))
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_query_client_error(self):
         """ThreatIntel - Query, ClientError"""
@@ -278,9 +279,9 @@ class TestThreatIntel:
         ]
 
         result = self._threat_intel._query(query_values)
-        assert_equal(self._threat_intel._dynamodb.batch_get_item.call_count, 2)
+        assert self._threat_intel._dynamodb.batch_get_item.call_count == 2
 
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_query_unprocessed_keys(self):
         """ThreatIntel - Query, With Unprocessed Keys"""
@@ -357,9 +358,9 @@ class TestThreatIntel:
         ]
 
         result = self._threat_intel._query(query_values)
-        assert_equal(self._threat_intel._dynamodb.batch_get_item.call_count, 2)
+        assert self._threat_intel._dynamodb.batch_get_item.call_count == 2
 
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_remove_processed_keys(self):
         """ThreatIntel - Remove Unprocessed Keys"""
@@ -395,7 +396,7 @@ class TestThreatIntel:
         }
 
         ThreatIntel._remove_processed_keys(query_values, unprocesed_keys)
-        assert_equal(query_values, expected_result)
+        assert query_values == expected_result
 
     def test_deserialize(self):
         """ThreatIntel - Deserialize"""
@@ -418,19 +419,19 @@ class TestThreatIntel:
         ]
 
         result = list(ThreatIntel._deserialize(data))
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_is_excluded_ioc(self):
         """ThreatIntel - Is Excluded IOC"""
-        assert_equal(self._threat_intel._is_excluded_ioc('domain', 'not.evil.com'), True)
+        assert self._threat_intel._is_excluded_ioc('domain', 'not.evil.com')
 
     def test_is_excluded_ioc_ip(self):
         """ThreatIntel - Is Excluded IOC, IP"""
         self._threat_intel._excluded_iocs['ip'] = {
             IPNetwork('1.2.3.0/28')
         }
-        assert_equal(self._threat_intel._is_excluded_ioc('ip', '1.2.3.20'), False)
-        assert_equal(self._threat_intel._is_excluded_ioc('ip', '1.2.3.15'), True)
+        assert self._threat_intel._is_excluded_ioc('ip', '1.2.3.20') == False
+        assert self._threat_intel._is_excluded_ioc('ip', '1.2.3.15')
 
     def test_extract_ioc_values(self):
         """ThreatIntel - Extract IOC Values"""
@@ -444,7 +445,7 @@ class TestThreatIntel:
             ]
         }
         result = self._threat_intel._extract_ioc_values(payloads)
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_extract_ioc_values_excluded(self):
         """ThreatIntel - Extract IOC Values, With Excluded"""
@@ -453,7 +454,7 @@ class TestThreatIntel:
             IPNetwork('1.1.1.2')
         }
         result = self._threat_intel._extract_ioc_values([payload])
-        assert_equal(result, {})
+        assert result == {}
 
     def test_setup_excluded_iocs(self):
         """ThreatIntel - Setup Excluded IOCs"""
@@ -470,7 +471,7 @@ class TestThreatIntel:
             }
         }
         result = ThreatIntel._setup_excluded_iocs(excluded_iocs)
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_setup_excluded_iocs_ip(self):
         """ThreatIntel - Setup Excluded IOCs, With IPs"""
@@ -495,11 +496,11 @@ class TestThreatIntel:
             }
         }
         result = ThreatIntel._setup_excluded_iocs(excluded_iocs)
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_load_from_config_empty(self):
         """ThreatIntel - Load From Config, Empty"""
-        assert_equal(ThreatIntel.load_from_config({}), None)
+        assert ThreatIntel.load_from_config({}) is None
 
     def test_load_from_config_disabled(self):
         """ThreatIntel - Load From Config, Disabled"""
@@ -508,7 +509,7 @@ class TestThreatIntel:
                 'enabled': False
             }
         }
-        assert_equal(ThreatIntel.load_from_config(config), None)
+        assert ThreatIntel.load_from_config(config) is None
 
     def test_load_from_config_no_clusters(self):
         """ThreatIntel - Load From Config, Clusters Disabled"""
@@ -522,20 +523,20 @@ class TestThreatIntel:
                 }
             }
         }
-        assert_equal(ThreatIntel.load_from_config(config), None)
+        assert ThreatIntel.load_from_config(config) is None
 
     def test_load_from_config(self):
         """ThreatIntel - Load From Config"""
         ti_client = ThreatIntel.load_from_config(self._default_config)
 
-        assert_equal(isinstance(ti_client, ThreatIntel), True)
-        assert_equal(ti_client._table, 'table_name')
-        assert_equal(ti_client._enabled_clusters, {'prod'})
+        assert isinstance(ti_client, ThreatIntel)
+        assert ti_client._table == 'table_name'
+        assert ti_client._enabled_clusters == {'prod'}
         expected_config = {
             'destinationDomain': 'domain',
             'sourceAddress': 'ip',
             'destinationAddress': 'ip',
             'fileHash': 'md5'
         }
-        assert_equal(ti_client._ioc_config, expected_config)
-        assert_equal(ti_client._excluded_iocs, {'domain': {'not.evil.com'}})
+        assert ti_client._ioc_config == expected_config
+        assert ti_client._excluded_iocs == {'domain': {'not.evil.com'}}

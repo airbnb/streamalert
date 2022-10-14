@@ -13,13 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import collections
 import os
+from unittest.mock import Mock, patch
 
-from mock import Mock, patch
+import pytest
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_count_equal, raises
 
-from streamalert.apps._apps.slack import SlackApp, SlackAccessApp, SlackIntegrationsApp
+from streamalert.apps._apps.slack import (SlackAccessApp, SlackApp,
+                                          SlackIntegrationsApp)
 from tests.unit.streamalert.apps.test_helpers import get_event, put_mock_params
 from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 
@@ -43,14 +45,17 @@ class TestSlackApp:
 
     def test_required_auth_info(self):
         """SlackApp - Required Auth Info"""
-        assert_count_equal(list(self._app.required_auth_info().keys()), {'auth_token'})
+        assert collections.Counter(
+            list(
+                self._app.required_auth_info().keys())) == collections.Counter(
+            {'auth_token'})
 
     @patch('requests.post')
     @patch('logging.Logger.error')
     def test_error_code_return(self, log_mock, requests_mock):
         """SlackApp - Gather Logs - Bad Response"""
         requests_mock.return_value = Mock(status_code=404)
-        assert_false(self._app._gather_logs())
+        assert not self._app._gather_logs()
         log_mock.assert_called_with('Received bad response from slack')
 
     @patch('requests.post')
@@ -66,7 +71,7 @@ class TestSlackApp:
                 }
             )
         )
-        assert_false(self._app._gather_logs())
+        assert not self._app._gather_logs()
         log_mock.assert_called_with('Received error or warning from slack: %s', 'paid_only')
 
 
@@ -87,7 +92,7 @@ class TestSlackAccessApp:
 
     def test_sleep_seconds(self):
         """SlackAccessApp - Sleep Seconds"""
-        assert_equal(3, self._app._sleep_seconds())
+        assert 3 == self._app._sleep_seconds()
 
     @staticmethod
     def _get_sample_access_logs():
@@ -99,7 +104,7 @@ class TestSlackAccessApp:
                     'user_id': 'U12345',
                     'username': 'bob',
                     'date_first': 1422922864,
-                    'date_last':  1422922864,
+                    'date_last': 1422922864,
                     'count': 1,
                     'ip': '127.0.0.',
                     'user_agent': 'SlackWeb Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) '
@@ -142,7 +147,7 @@ class TestSlackAccessApp:
         )
 
         gathered_logs = self._app._gather_logs()
-        assert_equal(len(gathered_logs), 2)
+        assert len(gathered_logs) == 2
 
     @patch('requests.post')
     def test_gather_access_logs_some_filtered(self, requests_mock):
@@ -155,7 +160,7 @@ class TestSlackAccessApp:
 
         self._app._last_timestamp = 1422922593
         gathered_logs = self._app._gather_logs()
-        assert_equal(len(gathered_logs), 1)
+        assert len(gathered_logs) == 1
 
     @patch('requests.post')
     def test_gather_access_logs_all_filtered(self, requests_mock):
@@ -168,7 +173,7 @@ class TestSlackAccessApp:
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
-        assert_equal(len(gathered_logs), 0)
+        assert len(gathered_logs) == 0
 
     @patch('requests.post')
     def test_gather_logs_no_entries(self, requests_mock):
@@ -183,7 +188,7 @@ class TestSlackAccessApp:
                 }
             )
         )
-        assert_equal(0, len(self._app._gather_logs()))
+        assert 0 == len(self._app._gather_logs())
 
     @patch('requests.post')
     def test_gather_logs_malformed_response(self, requests_mock):
@@ -197,7 +202,7 @@ class TestSlackAccessApp:
                 }
             )
         )
-        assert_false(self._app._gather_logs())
+        assert not self._app._gather_logs()
 
     @patch('requests.post')
     def test_gather_logs_basic_pagination(self, requests_mock):
@@ -211,9 +216,9 @@ class TestSlackAccessApp:
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
-        assert_equal(len(gathered_logs), 0)
-        assert_equal(self._app._next_page, 2)
-        assert_equal(True, self._app._more_to_poll)
+        assert len(gathered_logs) == 0
+        assert self._app._next_page == 2
+        assert True == self._app._more_to_poll
 
     @patch('requests.post')
     def test_gather_logs_before_parameter(self, requests_mock):
@@ -228,14 +233,14 @@ class TestSlackAccessApp:
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
-        assert 'before' not in list(requests_mock.call_args[1]['data'].keys()) # nosec
-        assert_equal(len(gathered_logs), 0)
-        assert_equal(self._app._next_page, 1)
-        assert_equal(True, self._app._more_to_poll)
-        assert_equal(self._app._before_time, logs['logins'][-1]['date_first'])
+        assert 'before' not in list(requests_mock.call_args[1]['data'].keys())  # nosec
+        assert len(gathered_logs) == 0
+        assert self._app._next_page == 1
+        assert True == self._app._more_to_poll
+        assert self._app._before_time == logs['logins'][-1]['date_first']
 
         self._app._gather_logs()
-        assert 'before' in list(requests_mock.call_args[1]['data'].keys()) # nosec
+        assert 'before' in list(requests_mock.call_args[1]['data'].keys())  # nosec
 
 
 @mock_ssm
@@ -255,7 +260,7 @@ class TestSlackIntegrationsApp:
 
     def test_sleep_seconds(self):
         """SlackIntegrationsApp - Sleep Seconds"""
-        assert_equal(3, self._app._sleep_seconds())
+        assert 3 == self._app._sleep_seconds()
 
     @patch('requests.post')
     def test_gather_logs_malformed_response(self, requests_mock):
@@ -269,7 +274,7 @@ class TestSlackIntegrationsApp:
                 }
             )
         )
-        assert_false(self._app._gather_logs())
+        assert not self._app._gather_logs()
 
     @staticmethod
     def _get_sample_integrations_logs():
@@ -326,7 +331,7 @@ class TestSlackIntegrationsApp:
         )
 
         gathered_logs = self._app._gather_logs()
-        assert_equal(len(gathered_logs), 3)
+        assert len(gathered_logs) == 3
 
     @patch('requests.post')
     def test_gather_integration_logs_filtered(self, requests_mock):
@@ -339,7 +344,7 @@ class TestSlackIntegrationsApp:
 
         self._app._last_timestamp = 1392163201
         gathered_logs = self._app._gather_logs()
-        assert_equal(len(gathered_logs), 1)
+        assert len(gathered_logs) == 1
 
     @patch('requests.post')
     def test_gather_logs_basic_pagination(self, requests_mock):
@@ -353,11 +358,12 @@ class TestSlackIntegrationsApp:
 
         self._app._last_timestamp = 1392163204
         gathered_logs = self._app._gather_logs()
-        assert_equal(len(gathered_logs), 0)
-        assert_equal(self._app._next_page, 2)
-        assert_equal(True, self._app._more_to_poll)
+        assert len(gathered_logs) == 0
+        assert self._app._next_page == 2
+        assert True == self._app._more_to_poll
 
-@raises(NotImplementedError)
+
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_type_not_implemented():
     """SlackApp - Subclass Type Not Implemented"""
     # pylint: disable=protected-access,abstract-method
@@ -373,7 +379,8 @@ def test_type_not_implemented():
 
     SlackFakeApp._type()
 
-@raises(NotImplementedError)
+
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_sleep_not_implemented():
     """SlackApp - Subclass Sleep Seconds Not Implemented"""
     # pylint: disable=protected-access,abstract-method
@@ -389,7 +396,8 @@ def test_sleep_not_implemented():
 
     SlackFakeApp._sleep_seconds()
 
-@raises(NotImplementedError)
+
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_endpoint_not_implemented():
     """SlackApp - Subclass Endpoint Not Implemented"""
     # pylint: disable=protected-access,abstract-method
@@ -405,8 +413,9 @@ def test_endpoint_not_implemented():
 
     SlackFakeApp._endpoint()
 
+
 @mock_ssm
-@raises(NotImplementedError)
+@pytest.mark.xfail(raises=NotImplementedError)
 def test_filter_entries_not_implemented():
     """SlackApp - Subclass Filter Entries Not Implemented"""
     # pylint: disable=protected-access,abstract-method

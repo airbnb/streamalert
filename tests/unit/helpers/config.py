@@ -265,6 +265,7 @@ def basic_streamalert_config():
         }
     }
 
+
 def athena_cli_basic_config():
     return {
         'global': {

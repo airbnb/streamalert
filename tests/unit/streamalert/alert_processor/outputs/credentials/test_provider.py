@@ -17,39 +17,20 @@ limitations under the License.
 import json
 import os
 from collections import OrderedDict
+from unittest.mock import MagicMock, patch
 
 from botocore.exceptions import ClientError
-from mock import patch, MagicMock
 from moto import mock_kms, mock_ssm
-from nose.tools import (
-    assert_equal,
-    assert_false,
-    assert_is_instance,
-    assert_is_none,
-    assert_is_not_none,
-    assert_not_equal,
-    assert_true,
-)
 
-from streamalert.alert_processor.outputs.output_base import OutputProperty
 from streamalert.alert_processor.outputs.credentials.provider import (
-    SSMDriver,
-    LocalFileDriver,
-    Credentials,
-    OutputCredentialsProvider,
-    EphemeralUnencryptedDriver, SpooledTempfileDriver, get_formatted_output_credentials_name)
-from tests.unit.streamalert.alert_processor import (
-    PREFIX,
-    CONFIG,
-    KMS_ALIAS,
-    REGION,
-    MOCK_ENV
-)
-from tests.unit.streamalert.alert_processor.helpers import (
-    encrypt_with_kms,
-    setup_mock_kms
-)
-
+    Credentials, EphemeralUnencryptedDriver, LocalFileDriver,
+    OutputCredentialsProvider, SpooledTempfileDriver, SSMDriver,
+    get_formatted_output_credentials_name)
+from streamalert.alert_processor.outputs.output_base import OutputProperty
+from tests.unit.streamalert.alert_processor import (CONFIG, KMS_ALIAS,
+                                                    MOCK_ENV, PREFIX, REGION)
+from tests.unit.streamalert.alert_processor.helpers import (encrypt_with_kms,
+                                                            setup_mock_kms)
 
 #
 # class Credentials Tests
@@ -71,16 +52,16 @@ class TestCredentialsEncrypted:
 
     def test_is_encrypted(self):
         """Credentials - Encrypted Credentials - Is Encrypted"""
-        assert_true(self._credentials.is_encrypted())
+        assert self._credentials.is_encrypted()
 
     def test_is_data(self):
         """Credentials - Encrypted Credentials - Data"""
-        assert_equal(self._credentials.data(), self._encrypted_payload)
+        assert self._credentials.data() == self._encrypted_payload
 
     def test_get_data_kms_decrypted(self):
         """Credentials - Encrypted Credentials - KMS Decrypt"""
         decrypted = self._credentials.get_data_kms_decrypted()
-        assert_equal(decrypted, self._plaintext_payload.encode())
+        assert decrypted == self._plaintext_payload.encode()
 
     def test_encrypt(self):
         """Credentials - Encrypted Credentials - Encrypt
@@ -88,7 +69,7 @@ class TestCredentialsEncrypted:
         Doubly-encrypting the credentials should do nothing.
         """
         self._credentials.encrypt(REGION, KMS_ALIAS)
-        assert_equal(self._credentials.data(), self._encrypted_payload)
+        assert self._credentials.data() == self._encrypted_payload
 
     @patch('boto3.client')
     @patch('logging.Logger.exception')
@@ -102,7 +83,7 @@ class TestCredentialsEncrypted:
         response = MagicMock()
         boto3_client.decrypt.side_effect = ClientError(response, 'kms_decrypt')
 
-        assert_is_none(self._credentials.get_data_kms_decrypted())
+        assert self._credentials.get_data_kms_decrypted() is None
         logging_exception.assert_called_with('an error occurred during credentials decryption')
 
 
@@ -120,16 +101,16 @@ class TestCredentialsUnencrypted:
 
     def test_is_encrypted(self):
         """Credentials - Plaintext Credentials - Is Encrypted"""
-        assert_false(self._credentials.is_encrypted())
+        assert not self._credentials.is_encrypted()
 
     def test_is_data(self):
         """Credentials - Plaintext Credentials - Data"""
-        assert_equal(self._credentials.data(), self._plaintext_payload)
+        assert self._credentials.data() == self._plaintext_payload
 
     @patch('logging.Logger.error')
     def test_get_data_kms_decrypted(self, logging_error):
         """Credentials - Plaintext Credentials - KMS Decrypt"""
-        assert_is_none(self._credentials.get_data_kms_decrypted())
+        assert self._credentials.get_data_kms_decrypted() is None
         logging_error.assert_called_with('Cannot decrypt Credentials as they are already decrypted')
 
     def test_encrypt(self):
@@ -139,12 +120,12 @@ class TestCredentialsUnencrypted:
         """
         self._credentials.encrypt(REGION, KMS_ALIAS)
 
-        assert_true(self._credentials.is_encrypted())
+        assert self._credentials.is_encrypted()
 
         # moto changed from simply base64 encoding data to actually
         # doing proper encryption/decryption. See here:
         # https://github.com/earlrob/moto/commit/98581b9196768ad8d5eaa1e02ca744c0c3b2098e
-        assert_not_equal(self._credentials.data(), 'plaintext credentials')
+        assert self._credentials.data() != 'plaintext credentials'
 
 
 class TestCredentialsEmpty:
@@ -156,8 +137,8 @@ class TestCredentialsEmpty:
         """Credentials - Empty Credentials - Encrypt - Does nothing when payload is empty"""
         self._credentials.encrypt(REGION, KMS_ALIAS)
 
-        assert_true(self._credentials.is_encrypted())
-        assert_equal(self._credentials.data(), '')
+        assert self._credentials.is_encrypted()
+        assert self._credentials.data() == ''
 
 
 #
@@ -172,8 +153,8 @@ def test_constructor_loads_from_os_when_not_provided():
     When not provided, prefix and aws account id are loaded from the OS Environment."""
 
     provider = OutputCredentialsProvider('that_service_name', config=CONFIG, region=REGION)
-    assert_equal(provider._prefix, 'prefix')
-    assert_equal(provider.get_aws_account_id(), '123456789012')
+    assert provider._prefix == 'prefix'
+    assert provider.get_aws_account_id() == '123456789012'
 
 
 @mock_ssm
@@ -222,7 +203,7 @@ class TestOutputCredentialsProvider:
         ])
 
         # Save credential
-        assert_true(self._provider.save_credentials(descriptor, KMS_ALIAS, props))
+        assert self._provider.save_credentials(descriptor, KMS_ALIAS, props)
 
         # Pull it out
         creds_dict = self._provider.load_credentials(descriptor)
@@ -231,7 +212,7 @@ class TestOutputCredentialsProvider:
             'credential1': 'this is a super secret secret, shhhh!',
             'credential2': 'where am i?',
         }
-        assert_equal(creds_dict, expectation)
+        assert creds_dict == expectation
 
     @mock_kms
     def test_load_credentials_multiple(self):
@@ -255,26 +236,26 @@ class TestOutputCredentialsProvider:
         # Pull it out (Normal expected behavior)
         creds_dict = self._provider.load_credentials(descriptor)
         expectation = {'credential1': 'there is no cow level', 'property2': 'abcdef'}
-        assert_equal(creds_dict, expectation)
+        assert creds_dict == expectation
 
         # Now we yank the SSM driver out of the driver pool
         # FIXME (derek.wang): Another way to do this is to install a spy on moto and make assertions
         #                     on the number of times it is called.
-        assert_is_instance(self._provider._drivers[1], SSMDriver)
+        assert isinstance(self._provider._drivers[1], SSMDriver)
         self._provider._drivers[1] = None
         self._provider._core_driver = None
 
         # Load again and see if it still is able to load without SSM
-        assert_equal(self._provider.load_credentials(descriptor), expectation)
+        assert self._provider.load_credentials(descriptor) == expectation
 
         # Double-check; Examine the Driver guts and make sure that the EphemeralDriver has the
         # value cached.
         ep_driver = self._provider._drivers[0]
-        assert_is_instance(ep_driver, EphemeralUnencryptedDriver)
+        assert isinstance(ep_driver, EphemeralUnencryptedDriver)
 
-        assert_true(ep_driver.has_credentials(descriptor))
+        assert ep_driver.has_credentials(descriptor)
         creds = ep_driver.load_credentials(descriptor)
-        assert_equal(json.loads(creds.data())['credential1'], 'there is no cow level')
+        assert json.loads(creds.data())['credential1'] == 'there is no cow level'
 
     @patch('logging.Logger.error')
     # pylint: disable=invalid-name
@@ -287,7 +268,7 @@ class TestOutputCredentialsProvider:
         self._provider._core_driver = None
 
         creds_dict = self._provider.load_credentials(descriptor)
-        assert_is_none(creds_dict)
+        assert creds_dict is None
         logging_error.assert_called_with('All drivers failed to retrieve credentials for [%s.%s]',
                                          'service',
                                          descriptor)
@@ -309,14 +290,14 @@ class TestSSMDriver:
         descriptor = 'unit-test'
 
         # Verify Credentials don't already exist
-        assert_is_none(self._ssm_driver.load_credentials(descriptor))
+        assert self._ssm_driver.load_credentials(descriptor) is None
 
         credentials = Credentials('CREDS', is_encrypted=False)
         self._ssm_driver.save_credentials(descriptor, credentials, KMS_ALIAS)
 
         # Verify they saved correctly
         result = self._ssm_driver.load_credentials(descriptor)
-        assert_is_not_none(result)
+        assert result is not None
 
     @mock_ssm
     def test_save_and_has_credentials_2(self):
@@ -324,7 +305,7 @@ class TestSSMDriver:
         descriptor = 'unit-test'
 
         # Verify Credentials don't already exist
-        assert_is_none(self._ssm_driver.load_credentials(descriptor))
+        assert self._ssm_driver.load_credentials(descriptor) is None
 
 
 #
@@ -338,22 +319,22 @@ def test_get_formatted_output_credentials_name():
         'test_service_name',
         'test_descriptor'
     )
-    assert_equal(name, 'test_service_name/test_descriptor')
+    assert name == 'test_service_name/test_descriptor'
 
 
 def test_get_load_credentials_temp_dir():
     """LocalFileDriver - Get Load Credentials Temp Dir"""
     temp_dir = LocalFileDriver.get_local_credentials_temp_dir()
-    assert_equal(temp_dir.split('/')[-1], 'streamalert_secrets')
+    assert temp_dir.split('/')[-1] == 'streamalert_secrets'
 
 
-def test_get_formatted_output_credentials_name_no_descriptor(): #pylint: disable=invalid-name
+def test_get_formatted_output_credentials_name_no_descriptor():  # pylint: disable=invalid-name
     """LocalFileDriver - Get Formatted Output Credentials Name - No Descriptor"""
     name = get_formatted_output_credentials_name(
         'test_service_name',
         ''
     )
-    assert_equal(name, 'test_service_name')
+    assert name == 'test_service_name'
 
 
 class TestLocalFileDriver:
@@ -371,12 +352,12 @@ class TestLocalFileDriver:
 
     def test_save_and_has_credentials(self):
         """LocalFileDriver - Save and Has Credentials"""
-        assert_false(self._fs_driver.has_credentials('descriptor'))
+        assert not self._fs_driver.has_credentials('descriptor')
 
         credentials = Credentials('aaaa', True)  # pretend it's encrypted
         self._fs_driver.save_credentials('descriptor', credentials)
 
-        assert_true(self._fs_driver.has_credentials('descriptor'))
+        assert self._fs_driver.has_credentials('descriptor')
 
     def test_save_and_load_credentials(self):
         """LocalFileDriver - Save and Load Credentials"""
@@ -386,13 +367,13 @@ class TestLocalFileDriver:
         encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
-        assert_true(self._fs_driver.save_credentials(descriptor, credentials))
+        assert self._fs_driver.save_credentials(descriptor, credentials)
 
         loaded_credentials = self._fs_driver.load_credentials(descriptor)
 
-        assert_is_not_none(loaded_credentials)
-        assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
+        assert loaded_credentials is not None
+        assert loaded_credentials.is_encrypted()
+        assert loaded_credentials.get_data_kms_decrypted() == raw_credentials.encode()
 
     def test_save_and_load_credentials_persists_statically(self):
         """LocalFileDriver - Save and Load Credentials, Static"""
@@ -402,14 +383,14 @@ class TestLocalFileDriver:
         encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
-        assert_true(self._fs_driver.save_credentials(descriptor, credentials))
+        assert self._fs_driver.save_credentials(descriptor, credentials)
 
         driver2 = LocalFileDriver(REGION, 'service')  # Create a separate, identical driver
         loaded_credentials = driver2.load_credentials(descriptor)
 
-        assert_is_not_none(loaded_credentials)
-        assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
+        assert loaded_credentials is not None
+        assert loaded_credentials.is_encrypted()
+        assert loaded_credentials.get_data_kms_decrypted() == raw_credentials.encode()
 
     def test_save_errors_on_unencrypted(self):
         """LocalFileDriver - Save Errors on Unencrypted Credentials"""
@@ -422,8 +403,8 @@ class TestLocalFileDriver:
 
         credentials = Credentials(raw_credentials, False, REGION)
 
-        assert_false(self._fs_driver.save_credentials(descriptor, credentials))
-        assert_false(self._fs_driver.has_credentials(descriptor))
+        assert not self._fs_driver.save_credentials(descriptor, credentials)
+        assert not self._fs_driver.has_credentials(descriptor)
 
     def test_clear(self):
         """LocalFileDriver - Clear Credentials"""
@@ -434,7 +415,7 @@ class TestLocalFileDriver:
 
         LocalFileDriver.clear()
 
-        assert_false(self._fs_driver.has_credentials(descriptor))
+        assert not self._fs_driver.has_credentials(descriptor)
 
 
 #
@@ -457,12 +438,12 @@ class TestSpooledTempfileDriver:
 
     def test_save_and_has_credentials(self):
         """SpooledTempfileDriver - Save and Has Credentials"""
-        assert_false(self._sp_driver.has_credentials('descriptor'))
+        assert not self._sp_driver.has_credentials('descriptor')
 
         credentials = Credentials('aaaa', True)  # let's pretend they're encrypted
-        assert_true(self._sp_driver.save_credentials('descriptor', credentials))
+        assert self._sp_driver.save_credentials('descriptor', credentials)
 
-        assert_true(self._sp_driver.has_credentials('descriptor'))
+        assert self._sp_driver.has_credentials('descriptor')
 
     def test_save_and_load_credentials(self):
         """SpooledTempfileDriver - Save and Load Credentials"""
@@ -471,13 +452,13 @@ class TestSpooledTempfileDriver:
         encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
-        assert_true(self._sp_driver.save_credentials(descriptor, credentials))
+        assert self._sp_driver.save_credentials(descriptor, credentials)
 
         loaded_credentials = self._sp_driver.load_credentials(descriptor)
 
-        assert_is_not_none(loaded_credentials)
-        assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
+        assert loaded_credentials is not None
+        assert loaded_credentials.is_encrypted()
+        assert loaded_credentials.get_data_kms_decrypted() == raw_credentials.encode()
 
     def test_save_and_load_credentials_persists_statically(self):
         """SpooledTempfileDriver - Save and Load Credentials, Static"""
@@ -491,14 +472,14 @@ class TestSpooledTempfileDriver:
         encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True)
-        assert_true(self._sp_driver.save_credentials(descriptor, credentials))
+        assert self._sp_driver.save_credentials(descriptor, credentials)
 
         driver2 = SpooledTempfileDriver('service', REGION)  # Create a separate, identical driver
         loaded_credentials = driver2.load_credentials(descriptor)
 
-        assert_is_not_none(loaded_credentials)
-        assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
+        assert loaded_credentials is not None
+        assert loaded_credentials.is_encrypted()
+        assert loaded_credentials.get_data_kms_decrypted() == raw_credentials.encode()
 
     def test_save_errors_on_unencrypted(self):
         """SpooledTempfileDriver - Save Errors on Unencrypted Credentials"""
@@ -507,14 +488,14 @@ class TestSpooledTempfileDriver:
 
         credentials = Credentials(raw_credentials, False)
 
-        assert_false(self._sp_driver.save_credentials(descriptor, credentials))
-        assert_false(self._sp_driver.has_credentials(descriptor))
+        assert not self._sp_driver.save_credentials(descriptor, credentials)
+        assert not self._sp_driver.has_credentials(descriptor)
 
     @patch('logging.Logger.error')
     def test_load_credentials_nonexistent(self, logging_error):
         """SpooledTempfileDriver - Load Credentials returns None on missing"""
-        assert_false(self._sp_driver.has_credentials('qwertyuiop'))
-        assert_is_none(self._sp_driver.load_credentials('qwertyuiop'))
+        assert not self._sp_driver.has_credentials('qwertyuiop')
+        assert self._sp_driver.load_credentials('qwertyuiop') is None
         logging_error.assert_called_with(
             'SpooledTempfileDriver failed to load_credentials: Spool "%s" does not exist?',
             'service/qwertyuiop'
@@ -525,11 +506,11 @@ class TestSpooledTempfileDriver:
         descriptor = 'descriptor'
         credentials = Credentials('aaaa', True)  # pretend it's encrypted
 
-        assert_true(self._sp_driver.save_credentials(descriptor, credentials))
+        assert self._sp_driver.save_credentials(descriptor, credentials)
 
         SpooledTempfileDriver.clear()
 
-        assert_false(self._sp_driver.has_credentials(descriptor))
+        assert not self._sp_driver.has_credentials(descriptor)
 
 
 #
@@ -551,38 +532,38 @@ class TestEphemeralUnencryptedDriver:
 
     def test_save_and_has_credentials(self):
         """EphemeralUnencryptedDriver - Save and Has Credentials"""
-        assert_false(self._ep_driver.has_credentials('descriptor'))
+        assert not self._ep_driver.has_credentials('descriptor')
 
         credentials = Credentials('aaaa', False)
-        assert_true(self._ep_driver.save_credentials('descriptor', credentials))
+        assert self._ep_driver.save_credentials('descriptor', credentials)
 
-        assert_true(self._ep_driver.has_credentials('descriptor'))
+        assert self._ep_driver.has_credentials('descriptor')
 
     def test_save_and_load_credentials(self):
         """EphemeralUnencryptedDriver - Save and Load Credentials"""
         descriptor = 'descriptor'
         credentials = Credentials('aaaa', False)
-        assert_true(self._ep_driver.save_credentials(descriptor, credentials))
+        assert self._ep_driver.save_credentials(descriptor, credentials)
 
         loaded_credentials = self._ep_driver.load_credentials(descriptor)
 
-        assert_is_not_none(loaded_credentials)
-        assert_false(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.data(), 'aaaa')
+        assert loaded_credentials is not None
+        assert not loaded_credentials.is_encrypted()
+        assert loaded_credentials.data() == 'aaaa'
 
     def test_save_and_load_credentials_persists_statically(self):
         """EphemeralUnencryptedDriver - Save and Load Credentials, Static"""
         descriptor = 'descriptor'
         credentials = Credentials('aaaa', False)
 
-        assert_true(self._ep_driver.save_credentials(descriptor, credentials))
+        assert self._ep_driver.save_credentials(descriptor, credentials)
 
         driver2 = EphemeralUnencryptedDriver('service')  # Create a separate, identical driver
         loaded_credentials = driver2.load_credentials(descriptor)
 
-        assert_is_not_none(loaded_credentials)
-        assert_false(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.data(), 'aaaa')
+        assert loaded_credentials is not None
+        assert not loaded_credentials.is_encrypted()
+        assert loaded_credentials.data() == 'aaaa'
 
     def test_save_automatically_decrypts(self):
         """EphemeralUnencryptedDriver - Save Automatically Decrypts"""
@@ -597,13 +578,13 @@ class TestEphemeralUnencryptedDriver:
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
 
-        assert_true(self._ep_driver.save_credentials(descriptor, credentials))
+        assert self._ep_driver.save_credentials(descriptor, credentials)
 
         loaded_credentials = self._ep_driver.load_credentials(descriptor)
 
-        assert_is_not_none(loaded_credentials)
-        assert_false(loaded_credentials.is_encrypted())
-        assert_equal(json.loads(loaded_credentials.data()), raw_credentials_dict)
+        assert loaded_credentials is not None
+        assert not loaded_credentials.is_encrypted()
+        assert json.loads(loaded_credentials.data()) == raw_credentials_dict
 
     def test_clear(self):
         """EphemeralUnencryptedDriver - Clear Credentials"""
@@ -614,4 +595,4 @@ class TestEphemeralUnencryptedDriver:
 
         EphemeralUnencryptedDriver.clear()
 
-        assert_false(self._ep_driver.has_credentials(descriptor))
+        assert not self._ep_driver.has_credentials(descriptor)

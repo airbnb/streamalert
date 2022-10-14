@@ -121,7 +121,10 @@ resource "aws_glue_catalog_table" "alerts" {
     ser_de_info {
       name                  = "${var.file_format}_ser_de"
       serialization_library = var.file_format == "parquet" ? "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe" : "org.openx.data.jsonserde.JsonSerDe"
-      parameters            = tomap({"${local.ser_de_params_key}" = "${local.ser_de_params_value}"})
+      parameters = {
+        "serialization.format" = 1
+      }
+      #parameters            = tomap({"${local.ser_de_params_key}" = "${local.ser_de_params_value}"})
     }
 
     dynamic "columns" {

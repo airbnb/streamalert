@@ -13,13 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import (
-    assert_equal,
-    assert_false,
-    assert_true
-)
 
-from streamalert.shared.lookup_tables.configuration import LookupTablesConfiguration
+from streamalert.shared.lookup_tables.configuration import \
+    LookupTablesConfiguration
 
 
 class TestLookupTablesConfiguration:
@@ -57,25 +53,24 @@ class TestLookupTablesConfiguration:
     def test_configuration_enabled(self):
         """LookupTablesConfiguration - Basic Configuration - Enabled"""
         config = LookupTablesConfiguration(self._basic_configuration())
-        assert_true(config.is_enabled)
+        assert config.is_enabled
 
     def test_configuration_table_names(self):
         """LookupTablesConfiguration - Basic Configuration - Table Names"""
         config = LookupTablesConfiguration(self._basic_configuration())
-        assert_equal(
-            config.table_names,
-            ['resource_map_prototype', 'resource_map_dynamodb']
-        )
+        assert (
+            config.table_names ==
+            ['resource_map_prototype', 'resource_map_dynamodb'])
 
     def test_configuration_table_configurations(self):
         """LookupTablesConfiguration - Basic Configuration - Table Configurations"""
         config = LookupTablesConfiguration(self._basic_configuration())
-        assert_equal(config.table_configurations['resource_map_dynamodb']['driver'], 'dynamodb')
+        assert config.table_configurations['resource_map_dynamodb']['driver'] == 'dynamodb'
 
     def test_configuration_empty_configuration_not_enabled(self):
         """LookupTablesConfiguration - Empty Configuration - Not Enabled"""
         config = LookupTablesConfiguration({})
-        assert_false(config.is_enabled)
+        assert not config.is_enabled
 
     def test_configuration_disabled_configuration(self):
         """LookupTablesConfiguration - Disabled Configuration - Disabled"""
@@ -93,4 +88,4 @@ class TestLookupTablesConfiguration:
                 }
             }
         })
-        assert_false(config.is_enabled)
+        assert not config.is_enabled

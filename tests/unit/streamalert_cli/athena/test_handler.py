@@ -14,15 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access
-from mock import Mock, patch
-from nose.tools import assert_equal, assert_true
+from unittest.mock import Mock, patch
 
 from streamalert.shared.firehose import FirehoseClient
 from streamalert_cli.athena import handler
 from streamalert_cli.config import CLIConfig
-
 from tests.unit.helpers.aws_mocks import MockAthenaClient
-from tests.unit.helpers.config import athena_cli_basic_config, MockCLIConfig
+from tests.unit.helpers.config import MockCLIConfig, athena_cli_basic_config
 
 
 class TestAthenaCli:
@@ -53,7 +51,7 @@ class TestAthenaCli:
                            'LOCATION \'s3://bucket-name/table-name/\'')
 
         result = handler._construct_create_table_statement(schema, 'table-name', 'bucket-name')
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     @staticmethod
     def test_rebuild_partitions():
@@ -78,7 +76,7 @@ class TestAthenaCli:
 
             table = 'unit_my_test'
             bucket = 'bucket'
-            assert_true(handler.rebuild_partitions(table, bucket, config))
+            assert handler.rebuild_partitions(table, bucket, config)
 
     @staticmethod
     @patch('streamalert.shared.athena.AthenaClient.check_table_exists', Mock(return_value=False))
@@ -90,12 +88,10 @@ class TestAthenaCli:
             'test:log.name.with.dots': {}
         }
 
-        assert_true(
-            handler.create_table(
-                'test:log.name.with.dots',
-                'bucket',
-                config
-            )
+        assert handler.create_table(
+            'test:log.name.with.dots',
+            'bucket',
+            config
         )
 
     @staticmethod
@@ -108,10 +104,8 @@ class TestAthenaCli:
             'cloudwatch:test_match_types': {}
         }
 
-        assert_true(
-            handler.create_table(
-                'cloudwatch:test_match_types',
-                'bucket',
-                config
-            )
+        assert handler.create_table(
+            'cloudwatch:test_match_types',
+            'bucket',
+            config
         )

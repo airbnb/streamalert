@@ -13,23 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
 import json
 import zlib
+from datetime import datetime
+from unittest.mock import ANY, MagicMock, patch
 
 import botocore
+import pytest
 from botocore.exceptions import ReadTimeoutError
-from mock import patch, ANY, MagicMock
 from moto import mock_s3
-from nose.tools import assert_equal, assert_raises
 
 from streamalert.shared.config import load_config
-from streamalert.shared.lookup_tables.driver_s3 import S3Driver, Compression, S3Adapter
-from streamalert.shared.lookup_tables.drivers_factory import construct_persistence_driver
+from streamalert.shared.lookup_tables.driver_s3 import (Compression, S3Adapter,
+                                                        S3Driver)
+from streamalert.shared.lookup_tables.drivers_factory import \
+    construct_persistence_driver
 from streamalert.shared.lookup_tables.errors import (
-    LookupTablesCommitError,
-    LookupTablesInitializationError,
-)
+    LookupTablesCommitError, LookupTablesInitializationError)
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -40,6 +40,7 @@ class TestS3Driver:
     This was largely ported over from test_lookup_tables.py from the old implementation.
     """
     # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
+
     def setup(self):
         """LookupTables - Setup S3 bucket mocking"""
         self.buckets_info = {'bucket_name': ['foo.json', 'bar.json']}
@@ -95,13 +96,13 @@ class TestS3Driver:
     def test_get(self):
         """LookupTables - Drivers - S3 Driver - Get Key"""
         self._foo_driver.initialize()
-        assert_equal(self._foo_driver.get('key_1'), 'foo_1')
+        assert self._foo_driver.get('key_1') == 'foo_1'
 
     @patch('logging.Logger.debug')
     def test_get_decompressed(self, mock_logger):
         """LookupTables - Drivers - S3 Driver - Compressed Get - Get Key"""
         self._bar_driver.initialize()
-        assert_equal(self._bar_driver.get('key_1'), 'compressed_bar_1')
+        assert self._bar_driver.get('key_1') == 'compressed_bar_1'
 
         mock_logger.assert_any_call(
             'LookupTable (%s): Object decompressed to %d byte payload',
@@ -120,7 +121,7 @@ class TestS3Driver:
             })
         )
         self._bar_driver.initialize()
-        assert_equal(self._bar_driver.get('key_1'), 'not_compressed_bar_1')
+        assert self._bar_driver.get('key_1') == 'not_compressed_bar_1'
 
         mock_logger.assert_any_call(
             'LookupTable (%s): Data is not compressed; defaulting to original payload',
@@ -130,12 +131,12 @@ class TestS3Driver:
     def test_non_existent_key(self):
         """LookupTables - Drivers - S3 Driver - Get - Non-existent Key with default"""
         self._foo_driver.initialize()
-        assert_equal(self._foo_driver.get('key_????', 'default?'), 'default?')
+        assert self._foo_driver.get('key_????', 'default?') == 'default?'
 
     @patch('logging.Logger.error')
     def test_non_existent_bucket_key(self, mock_logger):
         """LookupTables - Drivers - S3 Driver - Get - Non-existent Bucket Key"""
-        assert_raises(
+        pytest.raises(
             LookupTablesInitializationError,
             self._bad_driver.initialize
         )
@@ -155,7 +156,7 @@ class TestS3Driver:
             'TestPool', 'Test Read timed out.', endpoint_url='test/url'
         )
 
-        assert_raises(
+        pytest.raises(
             LookupTablesInitializationError,
             self._foo_driver.initialize
         )
@@ -194,7 +195,7 @@ class TestS3Driver:
         )
 
         # Do another fetch and observe that it's still stale
-        assert_equal(self._foo_driver.get('key_1'), 'stale')
+        assert self._foo_driver.get('key_1') == 'stale'
 
         mock_logger.assert_any_call(
             'LookupTable (%s): Does not need refresh. TTL: %s',
@@ -216,7 +217,7 @@ class TestS3Driver:
         )
 
         # Do another fetch and observe our updated results
-        assert_equal(self._foo_driver.get('key_1'), 'foo_1')
+        assert self._foo_driver.get('key_1') == 'foo_1'
 
         mock_logger.assert_any_call(
             'LookupTable (%s): Needs refresh, starting now.',
@@ -229,7 +230,7 @@ class TestS3Driver:
 
         self._foo_driver.set('new_key', 'BazBuzz')
         self._foo_driver.commit()
-        assert_equal(self._foo_driver.get('new_key'), 'BazBuzz')
+        assert self._foo_driver.get('new_key') == 'BazBuzz'
 
     @patch('logging.Logger.warning')
     def test_set_commit_nothing(self, mock_logger):
@@ -256,7 +257,7 @@ class TestCompression:
         compressed_data = Compression.gz_compress(driver, original_data.encode())
         decompressed_data = Compression.gz_decompress(driver, compressed_data)
 
-        assert_equal(original_data, decompressed_data.decode())
+        assert original_data == decompressed_data.decode()
 
 
 class TestS3Adapter:
@@ -279,7 +280,7 @@ class TestS3Adapter:
             'key'
         )
 
-        assert_raises(LookupTablesCommitError, adapter.upload, 'asdf')
+        pytest.raises(LookupTablesCommitError, adapter.upload, 'asdf')
 
     @staticmethod
     def test_upload_with_timeout():
@@ -299,4 +300,4 @@ class TestS3Adapter:
             'key'
         )
 
-        assert_raises(LookupTablesCommitError, adapter.upload, 'asdf')
+        pytest.raises(LookupTablesCommitError, adapter.upload, 'asdf')

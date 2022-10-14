@@ -3,7 +3,7 @@ module "scheduled_queries_lambda" {
 
   function_name = "${var.prefix}_streamalert_scheduled_queries_runner"
   description   = "Lambda function that powers StreamQuery, StreamAlert's scheduled query service"
-  runtime       = "python3.7"
+  runtime       = var.runtime
   handler       = var.lambda_handler
 
   memory_size_mb = var.lambda_memory

@@ -15,15 +15,14 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,attribute-defined-outside-init
 from collections import namedtuple
-
-from mock import Mock, patch
-from nose.tools import assert_equal
+from unittest.mock import Mock, patch
 
 from streamalert.shared import stats
 
 
 class TestRuleStats:
     """TestRuleStats class"""
+
     def setup(self):
         stats.RuleStatisticTracker.STATS.clear()
         self._fake_rule = namedtuple('Rule', ['name', 'process'])('test_rule', lambda r: False)
@@ -32,8 +31,8 @@ class TestRuleStats:
     def test_time_rule(self):
         """RuleStatisticTracker - Time Rule"""
         self._tracker.run_rule(self._fake_rule, {})
-        assert_equal(len(self._tracker.STATS), 1)
-        assert_equal(self._tracker.STATS['test_rule'].calls, 1)
+        assert len(self._tracker.STATS) == 1
+        assert self._tracker.STATS['test_rule'].calls == 1
 
     @patch('time.time')
     def test_tracker_disabled(self, time_mock):
@@ -47,22 +46,22 @@ class TestRuleStats:
         stat = stats.RuleStatistic(10.0)
         stat += stats.RuleStatistic(12.5)
 
-        assert_equal(stat.calls, 1)
-        assert_equal(stat.tracked_time, 22.5)
+        assert stat.calls == 1
+        assert stat.tracked_time == 22.5
 
     def test_rule_stats_compare(self):
         """RuleStatistic - Comparison"""
         stat_01 = stats.RuleStatistic(10.0)
         stat_02 = stats.RuleStatistic(12.0)
 
-        assert_equal(stat_01 < stat_02, True)
-        assert_equal(stat_01 > stat_02, False)
+        assert stat_01 < stat_02
+        assert (stat_01 > stat_02) == False
 
     def test_rule_stats_string(self):
         """RuleStatistic - Stringer"""
         stat = stats.RuleStatistic(10.0)
         stat.calls = 1
-        assert_equal(str(stat), '   10.00000000 ms       1 calls     10.00000000 avg')
+        assert str(stat) == '   10.00000000 ms       1 calls     10.00000000 avg'
 
     @patch('logging.Logger.error')
     def test_get_rule_stats_empty(self, log_mock):
@@ -75,21 +74,20 @@ class TestRuleStats:
         """RuleStatisticTracker - Statistics Info"""
         self._tracker.run_rule(self._fake_rule, {})
         result = stats.RuleStatisticTracker.statistics_info()
-        assert_equal(
-            result,
-            'Rule statistics:\n\ntest_rule       10.00000000 ms       1 calls     10.00000000 avg'
-        )
+        assert (
+            result ==
+            'Rule statistics:\n\ntest_rule       10.00000000 ms       1 calls     10.00000000 avg')
 
     def test_get_rule_stats_retain(self,):
         """RuleStatisticTracker - Statistics Info, Retain Results"""
         self._tracker.run_rule(self._fake_rule, {})
-        assert_equal(len(self._tracker.STATS), 1)
+        assert len(self._tracker.STATS) == 1
         new_tracker = stats.RuleStatisticTracker(True, False)
-        assert_equal(len(new_tracker.STATS), 1)
+        assert len(new_tracker.STATS) == 1
 
     def test_get_rule_stats_reset(self,):
         """RuleStatisticTracker - Statistics Info, Reset"""
         self._tracker.run_rule(self._fake_rule, {})
-        assert_equal(len(self._tracker.STATS), 1)
+        assert len(self._tracker.STATS) == 1
         new_tracker = stats.RuleStatisticTracker(True, True)
-        assert_equal(len(new_tracker.STATS), 0)
+        assert len(new_tracker.STATS) == 0

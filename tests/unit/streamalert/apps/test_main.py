@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
+from unittest.mock import patch
 
-from mock import patch
 from moto import mock_ssm
 
 from streamalert.apps.main import handler

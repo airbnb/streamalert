@@ -16,13 +16,10 @@ limitations under the License.
 # pylint: disable=attribute-defined-outside-init,protected-access
 import json
 import os
-
-from mock import Mock, patch, call
-from nose.tools import assert_equal, assert_true
+from unittest.mock import Mock, call, patch
 
 from streamalert.athena_partitioner.main import AthenaPartitioner
 from streamalert.shared.config import load_config
-
 from tests.unit.helpers.aws_mocks import MockAthenaClient
 
 
@@ -65,14 +62,14 @@ class TestAthenaPartitioner:
         }
         result = self._partitioner._add_partitions()
 
-        assert_true(result)
+        assert result
 
     @patch('logging.Logger.warning')
     def test_add_partitions_none(self, log_mock):
         """AthenaPartitioner - Add Partitions, None to Add"""
         result = self._partitioner._add_partitions()
         log_mock.assert_called_with('No partitions to add')
-        assert_equal(result, False)
+        assert result == False
 
     def test_get_partitions_from_keys_parquet(self):
         """AthenaPartitioner - Get Partitions From Keys in parquet format"""
@@ -125,7 +122,7 @@ class TestAthenaPartitioner:
 
         result = self._partitioner._get_partitions_from_keys()
 
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     @patch('logging.Logger.warning')
     def test_get_partitions_from_keys_error(self, log_mock):
@@ -141,7 +138,7 @@ class TestAthenaPartitioner:
 
         log_mock.assert_called_with('The key %s does not match any regex, skipping',
                                     bad_key.decode('utf-8'))
-        assert_equal(result, dict())
+        assert result == {}
 
     @staticmethod
     def _s3_record(count):
@@ -154,7 +151,7 @@ class TestAthenaPartitioner:
                         },
                         'object': {
                             'key': ('parquet/alerts/dt=2017-08-{:02d}-'
-                                    '14/02/test.json'.format(val+1))
+                                    '14/02/test.json'.format(val + 1))
                         }
                     }
                 } for val in range(count)
@@ -206,7 +203,7 @@ class TestAthenaPartitioner:
         self._partitioner.run(self._create_test_message(1))
         log_mock.assert_called_with(
             'Received notification for object \'%s\' in bucket \'%s\'',
-            'parquet/alerts/dt=2017-08-01-14/02/test.json'.encode(),
+            b'parquet/alerts/dt=2017-08-01-14/02/test.json',
             'unit-test-streamalerts'
         )
 
@@ -239,6 +236,7 @@ class TestAthenaPartitioner:
         log_mock.assert_called_with('\'%s\' not found in \'buckets\' config. Please add this '
                                     'bucket to enable additions of Hive partitions.',
                                     bucket)
+
 
 @patch('time.sleep', Mock())
 class TestAthenaPartitionerJSON:
@@ -304,4 +302,4 @@ class TestAthenaPartitionerJSON:
 
         result = self._partitioner._get_partitions_from_keys()
 
-        assert_equal(result, expected_result)
+        assert result == expected_result

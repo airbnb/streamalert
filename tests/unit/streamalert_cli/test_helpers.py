@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal
 
 from streamalert_cli import helpers
 
@@ -44,7 +43,7 @@ def test_record_to_schema_no_recurse():
 
     result = helpers.record_to_schema(record, recursive=False)
 
-    assert_equal(result, expected_result)
+    assert result == expected_result
 
 
 def test_record_to_schema_recurse():
@@ -76,4 +75,4 @@ def test_record_to_schema_recurse():
 
     result = helpers.record_to_schema(record, recursive=True)
 
-    assert_equal(result, expected_result)
+    assert result == expected_result

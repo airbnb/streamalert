@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
-from mock import patch, Mock, MagicMock
-from nose.tools import assert_false, assert_true
+from unittest.mock import MagicMock, Mock, patch
 
 from streamalert.alert_processor.outputs.komand import KomandOutput
 from tests.unit.streamalert.alert_processor.helpers import get_alert
@@ -47,7 +46,7 @@ class TestKomandutput:
         """KomandOutput - Dispatch Success"""
         post_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -60,15 +59,15 @@ class TestKomandutput:
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """KomandOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(
-            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
+        assert not self._dispatcher.dispatch(
+            get_alert(), ':'.join([self.SERVICE, 'bad_descriptor']))
 
         log_error_mock.assert_called_with('Failed to send alert to %s:%s',
                                           self.SERVICE, 'bad_descriptor')

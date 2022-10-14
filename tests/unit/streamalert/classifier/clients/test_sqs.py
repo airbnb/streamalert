@@ -13,9 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from unittest.mock import Mock, patch
+
+import pytest
 from botocore.exceptions import ClientError
-from mock import Mock, patch
-from nose.tools import assert_equal, assert_raises
 
 import streamalert.classifier.clients.sqs as sqs
 from streamalert.classifier.clients.sqs import SQSClient, SQSClientError
@@ -29,7 +30,7 @@ class TestSQSClient:
         """SQSClient - Setup"""
         # patch to speed up unit tests slightly
         with patch('boto3.resource'), \
-             patch.dict('os.environ', {'SQS_QUEUE_URL': 'test_url'}):
+                patch.dict('os.environ', {'SQS_QUEUE_URL': 'test_url'}):
 
             self._client = SQSClient()
 
@@ -38,28 +39,18 @@ class TestSQSClient:
         SQSClient._queue = None
 
     def _sample_payloads(self, count=1):
-        return [
-            Mock(
-                sqs_messages=[
-                    {
-                        'log_schema_type': 'log_type_{}'.format(i),
-                        'record': {
-                            'key_{}'.format(i): 'value_{}'.format(i)
-                        }
-                    }
-                ]
-            ) for i in range(count)
-        ]
+        return [Mock(sqs_messages=[{'log_schema_type': f'log_type_{i}',
+                                    'record': {f'key_{i}': f'value_{i}'}}]) for i in range(count)]
 
     def test_init_no_queue_url(self):
         """SQSClient - Init, No URL in Environment"""
-        assert_raises(SQSClientError, SQSClient)
+        pytest.raises(SQSClientError, SQSClient)
 
     def test_queue_property(self):
         """SQSClient - Queue Property"""
         queue = 'test_queue'
         SQSClient._queue = queue
-        assert_equal(self._client.queue, queue)
+        assert self._client.queue == queue
 
     @patch('logging.Logger.debug')
     def test_segment_records_no_segmentation(self, log_mock):
@@ -67,7 +58,7 @@ class TestSQSClient:
         records = ['{"key":"value"}']
         result = list(SQSClient._segment_records(records))
         expected_result = [(['{"key":"value"}'], 1)]
-        assert_equal(result, expected_result)
+        assert result == expected_result
         log_mock.assert_not_called()
 
     @patch('logging.Logger.error')
@@ -77,7 +68,7 @@ class TestSQSClient:
         records = ['{{"key":"{}"}}'.format(large_value)]  # a single record that exceeds max size
         recs = records[:]
         result = list(SQSClient._segment_records(records))
-        assert_equal(result, [])
+        assert not result
         log_mock.assert_called_with('Record is too large to send to SQS:\n%s', recs[0])
 
     @patch('logging.Logger.error')
@@ -88,7 +79,7 @@ class TestSQSClient:
         records = ['{{"key":"{}"}}'.format(large_value), '{"key":"value"}']
         result = list(SQSClient._segment_records(records))
         expected_result = [(['{"key":"value"}'], 1)]
-        assert_equal(result, expected_result)
+        assert result == expected_result
         log_mock.assert_called_with('Record is too large to send to SQS:\n%s', records[0])
 
     def test_segment_records_multiple_sets(self):
@@ -105,7 +96,7 @@ class TestSQSClient:
             ([small_rec] * 3, 3)
         ]
 
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_segment_records_last_record(self):
         """SQSClient - Segment Records, Last Record"""
@@ -121,7 +112,7 @@ class TestSQSClient:
             ([small_rec], 1)
         ]
 
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     @patch.object(sqs.MetricLogger, 'log_metric')
     def test_finalize_failures(self, metric_mock):
@@ -176,7 +167,7 @@ class TestSQSClient:
         error = ClientError({'Error': {'Code': 10}}, 'InvalidRequestException')
         SQSClient._queue.send_message.side_effect = error
 
-        assert_equal(self._client._send_message(['data']), False)
+        assert self._client._send_message(['data']) == False
         log_mock.assert_called_with('SQS request failed')
 
     def test_payload_messages(self):
@@ -186,7 +177,7 @@ class TestSQSClient:
             '{"log_schema_type":"log_type_0","record":{"key_0":"value_0"}}'
         ]
         result = SQSClient._payload_messages(payloads)
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     @patch.object(SQSClient, '_send_message')
     def test_send(self, send_message_mock):

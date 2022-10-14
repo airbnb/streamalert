@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
 import uuid
-from io import BytesIO
 import zipfile
+from datetime import datetime
+from io import BytesIO
+from moto import mock_lambda , mock_iam
 
 import boto3
 from botocore.exceptions import ClientError
@@ -45,8 +46,8 @@ class MockLambdaClient:
 
         return {
             'FunctionName': function_name,
-            'FunctionArn': 'arn:aws:lambda:region:account-id:function:{}'.format(function_name),
-            'Runtime': 'python3.7',
+            'FunctionArn': f'arn:aws:lambda:region:account-id:function:{function_name}',
+            'Runtime': 'python3.9',
             'Role': 'string',
             'Handler': 'main.handler',
             'CodeSize': 128,
@@ -55,8 +56,7 @@ class MockLambdaClient:
             'MemorySize': 128,
             'LastModified': 'string',
             'CodeSha256': code_sha_256,
-            'Version': self.current_version + 1
-        }
+            'Version': self.current_version + 1}
 
 
 class MockAthenaClient:
@@ -64,6 +64,7 @@ class MockAthenaClient:
 
     class MockAthenaPaginator:
         """Mock class for paginating athena results"""
+
         def __init__(self, func, pages):
             self._func = func
             self._pages = pages
@@ -123,9 +124,9 @@ class MockAthenaClient:
 
         return query_execution
 
-    def get_query_results(self, **kwargs):  # pylint: disable=unused-argument
+    def get_query_results(self, **kwargs):    # pylint: disable=unused-argument
         """Get the results of a executed query"""
-        return {'ResultSet': {'Rows': self.results if self.results else []}}
+        return {'ResultSet': {'Rows': self.results or []}}
 
     def get_paginator(self, func_name):
         """Return a MockAthenaPaginator to yield results"""
@@ -147,7 +148,19 @@ def handler(event, context):
 
     return package_output.read()
 
+def get_role_name(region):
+    with mock_iam():
+        iam = boto3.client("iam", region_name=region)
+        try:
+            return iam.get_role(RoleName="my-role")["Role"]["Arn"]
+        except ClientError:
+            return iam.create_role(
+                RoleName="my-role",
+                AssumeRolePolicyDocument="some policy",
+                Path="/my-path/",
+            )["Role"]["Arn"]
 
+@mock_lambda
 def create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
     if function_name.find(':') != -1:
@@ -155,9 +168,9 @@ def create_lambda_function(function_name, region):
 
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
-        Runtime='python3.7',
-        Role='test-iam-role',
-        Handler='function.handler',
+        Runtime='python3.9',
+        Role=get_role_name(region),
+        Handler='lambda_function.lambda_handler',
         Description='test lambda function',
         Timeout=3,
         MemorySize=128,

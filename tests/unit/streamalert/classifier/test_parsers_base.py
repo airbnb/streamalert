@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
-
-from mock import patch
-from nose.tools import assert_equal
+from unittest.mock import patch
 
 import streamalert.classifier.parsers as parsers
 from streamalert.classifier.parsers import ParserBase
@@ -61,12 +59,12 @@ class TestParserBaseConfiguration:
             'timestamp': 'string',
             'host': 'string'
         }
-        assert_equal(self._parser._schema, expected_result)
+        assert self._parser._schema == expected_result
 
     def test_optional_top_level_keys_property(self):
         """ParserBase - Optional Top Level Keys Property"""
         expected_result = {'host'}
-        assert_equal(self._parser._optional_top_level_keys, expected_result)
+        assert self._parser._optional_top_level_keys == expected_result
 
     def test_log_patterns_property(self):
         """ParserBase - Log Patterns Property"""
@@ -75,23 +73,23 @@ class TestParserBaseConfiguration:
                 'foo*'
             ]
         }
-        assert_equal(self._parser._log_patterns, expected_result)
+        assert self._parser._log_patterns == expected_result
 
     def test_json_path_property(self):
         """ParserBase - JSON Path Property"""
-        assert_equal(self._parser._json_path, 'logEvents[].message')
+        assert self._parser._json_path == 'logEvents[].message'
 
     def test_envelope_schema_property(self):
         """ParserBase - Envelope Schema Property"""
         expected_result = {
             'env_key_01': 'string'
         }
-        assert_equal(self._parser._envelope_schema, expected_result)
+        assert self._parser._envelope_schema == expected_result
 
     def test_optional_envelope_keys_property(self):
         """ParserBase - Optional Envelope Keys Property"""
         expected_result = {'env_key_01'}
-        assert_equal(self._parser._optional_envelope_keys, expected_result)
+        assert self._parser._optional_envelope_keys == expected_result
 
 
 class TestParserBaseClassMethods:
@@ -100,27 +98,27 @@ class TestParserBaseClassMethods:
 
     def test_default_optional_values_str(self):
         """ParserBase - Default Optional Type, Str"""
-        assert_equal(ParserBase.default_optional_values('string'), '')
+        assert ParserBase.default_optional_values('string') == ''
 
     def test_default_optional_values_int(self):
         """ParserBase - Default Optional Type, Int"""
-        assert_equal(ParserBase.default_optional_values('integer'), 0)
+        assert ParserBase.default_optional_values('integer') == 0
 
     def test_default_optional_values_float(self):
         """ParserBase - Default Optional Type, Float"""
-        assert_equal(ParserBase.default_optional_values('float'), 0.0)
+        assert ParserBase.default_optional_values('float') == 0.0
 
     def test_default_optional_values_boolean(self):
         """ParserBase - Default Optional Type, Boolean"""
-        assert_equal(ParserBase.default_optional_values('boolean'), False)
+        assert ParserBase.default_optional_values('boolean') == False
 
     def test_default_optional_values_list(self):
         """ParserBase - Default Optional Type, List"""
-        assert_equal(ParserBase.default_optional_values(list()), [])
+        assert ParserBase.default_optional_values([]) == []
 
     def test_default_optional_values_dict(self):
         """ParserBase - Default Optional Type, Dictionary"""
-        assert_equal(ParserBase.default_optional_values(dict()), {})
+        assert ParserBase.default_optional_values({}) == {}
 
     def test_apply_envelope(self):
         """ParserBase - Apply Envelope"""
@@ -140,7 +138,7 @@ class TestParserBaseClassMethods:
             }
         }
 
-        assert_equal(record, expected_record)
+        assert record == expected_record
 
     def test_apply_envelope_none(self):
         """ParserBase - Apply Envelope, None"""
@@ -150,7 +148,7 @@ class TestParserBaseClassMethods:
 
         ParserBase._apply_envelope(record, {})
 
-        assert_equal(record, {'key': 'value'})
+        assert record == {'key': 'value'}
 
     def test_add_optional_keys_none(self):
         """ParserBase - Add Optional Keys, None"""
@@ -161,7 +159,7 @@ class TestParserBaseClassMethods:
             'key': 'data'
         }
         ParserBase._add_optional_keys(record, schema, None)
-        assert_equal(record, {'key': 'data'})
+        assert record == {'key': 'data'}
 
     def test_add_optional_keys(self):
         """ParserBase - Add Optional Keys"""
@@ -174,7 +172,7 @@ class TestParserBaseClassMethods:
             'key': 'data'
         }
         ParserBase._add_optional_keys(record, schema, optionals)
-        assert_equal(record, {'key': 'data', 'optional_key': 0})
+        assert record == {'key': 'data', 'optional_key': 0}
 
     @patch('logging.Logger.debug')
     def test_matches_log_patterns_str(self, log_mock):
@@ -185,7 +183,7 @@ class TestParserBaseClassMethods:
         patterns = {
             'key': '*pattern'
         }
-        assert_equal(ParserBase._matches_log_patterns(record, patterns), True)
+        assert ParserBase._matches_log_patterns(record, patterns)
         log_mock.assert_any_call('Transforming flat pattern \'%s\' into list', '*pattern')
 
     def test_matches_log_patterns_list(self):
@@ -198,14 +196,14 @@ class TestParserBaseClassMethods:
                 '*pattern'
             ]
         }
-        assert_equal(ParserBase._matches_log_patterns(record, patterns), True)
+        assert ParserBase._matches_log_patterns(record, patterns)
 
     def test_matches_log_patterns_none(self):
         """ParserBase - Matches Log Patterns, None"""
         record = {
             'key': 'value'
         }
-        assert_equal(ParserBase._matches_log_patterns(record, {}), True)
+        assert ParserBase._matches_log_patterns(record, {})
 
     def test_matches_log_patterns_nested(self):
         """ParserBase - Matches Log Patterns, Nested"""
@@ -225,7 +223,7 @@ class TestParserBaseClassMethods:
                 }
             }
         }
-        assert_equal(ParserBase._matches_log_patterns(record, patterns), True)
+        assert ParserBase._matches_log_patterns(record, patterns)
 
     @patch('logging.Logger.error')
     def test_matches_log_patterns_invalid_key(self, log_mock):
@@ -236,13 +234,13 @@ class TestParserBaseClassMethods:
         patterns = {
             'not_key': '*pattern'
         }
-        assert_equal(ParserBase._matches_log_patterns(record, patterns), False)
+        assert ParserBase._matches_log_patterns(record, patterns) == False
         log_mock.assert_any_call(
             'Declared log pattern key [%s] does exist in record:\n%s', 'not_key', record)
 
     def test_key_check_no_schema(self):
         """ParserBase - Key Check, No Schema"""
-        assert_equal(ParserBase._key_check(None, {}), True)
+        assert ParserBase._key_check(None, {})
 
     @patch('logging.Logger.debug')
     def test_key_check_bad_envelope_subset(self, log_mock):
@@ -253,7 +251,7 @@ class TestParserBaseClassMethods:
         record = {
             'env_key_02': 'test'
         }
-        assert_equal(ParserBase._key_check(record, envelope_schema, is_envelope=True), False)
+        assert ParserBase._key_check(record, envelope_schema, is_envelope=True) == False
         log_mock.assert_called_with('Missing keys in record envelope: %s', {'env_key_01'})
 
     @patch('logging.Logger.debug')
@@ -265,7 +263,7 @@ class TestParserBaseClassMethods:
         record = {
             'not_key': 'test'
         }
-        assert_equal(ParserBase._key_check(record, schema), False)
+        assert ParserBase._key_check(record, schema) == False
         log_mock.assert_called_with('Found keys not expected in record: %s', 'not_key')
 
     @patch('logging.Logger.debug')
@@ -278,7 +276,7 @@ class TestParserBaseClassMethods:
             100: 'test',
             200: 'test'
         }
-        assert_equal(ParserBase._key_check(record, schema), False)
+        assert ParserBase._key_check(record, schema) == False
         log_mock.assert_called_with('Found keys not expected in record: %s', '100, 200')
 
     def test_key_check_nested(self):
@@ -295,7 +293,7 @@ class TestParserBaseClassMethods:
                 'key_01': 'value'
             }
         }
-        assert_equal(ParserBase._key_check(record, schema), True)
+        assert ParserBase._key_check(record, schema)
 
     @patch('logging.Logger.debug')
     def test_key_check_nested_invalid(self, log_mock):
@@ -312,7 +310,7 @@ class TestParserBaseClassMethods:
                 'key_01': 'value'
             }
         }
-        assert_equal(ParserBase._key_check(record, schema), False)
+        assert ParserBase._key_check(record, schema) == False
         log_mock.assert_any_call('Expected keys not found in record: %s', 'key_02')
 
     def test_key_check_nested_loose(self):
@@ -327,7 +325,7 @@ class TestParserBaseClassMethods:
                 'key_01': 100
             }
         }
-        assert_equal(ParserBase._key_check(record, schema), True)
+        assert ParserBase._key_check(record, schema)
 
     @patch('logging.Logger.debug')
     def test_key_check_debug(self, log_mock):
@@ -345,7 +343,7 @@ class TestParserBaseClassMethods:
             }
         }
         with patch.object(parsers, 'LOGGER_DEBUG_ENABLED', True):
-            assert_equal(ParserBase._key_check(record, schema), False)
+            assert ParserBase._key_check(record, schema) == False
             log_mock.assert_called_with(
                 'Nested key check failure. Schema:\n%s\nRecord:\n%s',
                 json.dumps(schema, indent=2, sort_keys=True),
@@ -360,8 +358,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': 100
         }
-        assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': '100'})
+        assert ParserBase._convert_type(record, schema)
+        assert record == {'key': '100'}
 
     def test_convert_type_unicode_str(self):
         """ParserBase - Convert Type, Unicode Str"""
@@ -371,8 +369,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': '\ue82a'
         }
-        assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': '\ue82a'})
+        assert ParserBase._convert_type(record, schema)
+        assert record == {'key': '\ue82a'}
 
     def test_convert_type_int(self):
         """ParserBase - Convert Type, Int"""
@@ -382,8 +380,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': '100'
         }
-        assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': 100})
+        assert ParserBase._convert_type(record, schema)
+        assert record == {'key': 100}
 
     def test_convert_type_int_invalid(self):
         """ParserBase - Convert Type, Invalid Int"""
@@ -393,8 +391,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': 'not an int'
         }
-        assert_equal(ParserBase._convert_type(record, schema), False)
-        assert_equal(record, {'key': 'not an int'})
+        assert ParserBase._convert_type(record, schema) == False
+        assert record == {'key': 'not an int'}
 
     def test_convert_type_float(self):
         """ParserBase - Convert Type, Float"""
@@ -404,8 +402,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': '0.9'
         }
-        assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': 0.9})
+        assert ParserBase._convert_type(record, schema)
+        assert record == {'key': 0.9}
 
     def test_convert_type_float_invalid(self):
         """ParserBase - Convert Type, Invalid Float"""
@@ -415,8 +413,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': 'not a float'
         }
-        assert_equal(ParserBase._convert_type(record, schema), False)
-        assert_equal(record, {'key': 'not a float'})
+        assert ParserBase._convert_type(record, schema) == False
+        assert record == {'key': 'not a float'}
 
     def test_convert_type_bool(self):
         """ParserBase - Convert Type, Boolean"""
@@ -426,8 +424,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': 'True'
         }
-        assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': True})
+        assert ParserBase._convert_type(record, schema)
+        assert record == {'key': True}
 
     def test_convert_type_list(self):
         """ParserBase - Convert Type, Invalid List"""
@@ -437,8 +435,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': 'not a list'
         }
-        assert_equal(ParserBase._convert_type(record, schema), False)
-        assert_equal(record, {'key': 'not a list'})
+        assert ParserBase._convert_type(record, schema) == False
+        assert record == {'key': 'not a list'}
 
     @patch('logging.Logger.error')
     def test_convert_type_unsupported_type(self, log_mock):
@@ -449,8 +447,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': 'foobarbaz'
         }
-        assert_equal(ParserBase._convert_type(record, schema), False)
-        assert_equal(record, {'key': 'foobarbaz'})
+        assert ParserBase._convert_type(record, schema) == False
+        assert record == {'key': 'foobarbaz'}
         log_mock.assert_called_with(
             'Unsupported value type in schema for key \'%s\': %s', 'key', 'foobar'
         )
@@ -466,8 +464,8 @@ class TestParserBaseClassMethods:
         record = {
             'required_key': 'required_value'
         }
-        assert_equal(ParserBase._convert_type(record, schema, optionals), True)
-        assert_equal(record, {'required_key': 'required_value'})
+        assert ParserBase._convert_type(record, schema, optionals)
+        assert record == {'required_key': 'required_value'}
         log_mock.assert_called_with(
             'Skipping optional key not found in record: %s', 'optional_key')
 
@@ -480,8 +478,8 @@ class TestParserBaseClassMethods:
         record = {
             'key': None
         }
-        assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': None})
+        assert ParserBase._convert_type(record, schema)
+        assert record == {'key': None}
         log_mock.assert_called_with('Skipping NoneType value in record for key: %s', 'key')
 
     def test_convert_type_nested(self):
@@ -498,8 +496,8 @@ class TestParserBaseClassMethods:
                 'key': '100'
             }
         }
-        assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': 'foo', 'nested': {'key': 100}})
+        assert ParserBase._convert_type(record, schema)
+        assert record == {'key': 'foo', 'nested': {'key': 100}}
 
 
 @patch.object(ParserBase, '__abstractmethods__', frozenset())
@@ -511,32 +509,32 @@ class TestParserBaseMethods:
         """ParserBase - Log Schema Type Property"""
         log_type = 'foobar'
         parser = ParserBase(None, log_type)
-        assert_equal(parser.log_schema_type, log_type)
+        assert parser.log_schema_type == log_type
 
     def test_valid_property(self):
         """ParserBase - Valid Property"""
         parser = ParserBase(None)
         parser._valid_parses.append('foobar')
-        assert_equal(parser.valid, True)
+        assert parser.valid
 
     def test_valid_property_false(self):
         """ParserBase - Valid Property"""
         parser = ParserBase(None)
-        assert_equal(parser.valid, False)
+        assert parser.valid == False
 
     def test_parses_property(self):
         """ParserBase - Parses Property"""
         item = 'foobar'
         parser = ParserBase(None)
         parser._valid_parses.append(item)
-        assert_equal(parser.parsed_records, [item])
+        assert parser.parsed_records == [item]
 
     def test_invalid_parses_property(self):
         """ParserBase - Invalid Parses Property"""
         item = 'foobar'
         parser = ParserBase(None)
         parser._invalid_parses.append(item)
-        assert_equal(parser.invalid_parses, [item])
+        assert parser.invalid_parses == [item]
 
     def test_validate_schema_all(self):
         """ParserBase - Validate Schema, All Options"""
@@ -562,7 +560,7 @@ class TestParserBaseMethods:
         }
 
         parser = ParserBase(options)
-        assert_equal(parser._validate_schema(), True)
+        assert parser._validate_schema()
 
     def test_validate_schema_top_level(self):
         """ParserBase - Validate Schema, Top Level"""
@@ -581,7 +579,7 @@ class TestParserBaseMethods:
         }
 
         parser = ParserBase(options)
-        assert_equal(parser._validate_schema(), True)
+        assert parser._validate_schema()
 
     def test_validate_schema_invalid(self):
         """ParserBase - Validate Schema, Invalid"""
@@ -600,7 +598,7 @@ class TestParserBaseMethods:
         }
 
         parser = ParserBase(options)
-        assert_equal(parser._validate_schema(), False)
+        assert parser._validate_schema() == False
 
     def test_add_parse_result(self):
         """ParserBase - Add Parse Result, Valid"""
@@ -609,7 +607,7 @@ class TestParserBaseMethods:
             'key': 'value'
         }
         parser._add_parse_result(record, True, None)
-        assert_equal(parser._valid_parses, [record])
+        assert parser._valid_parses == [record]
 
     def test_add_parse_result_invalid(self):
         """ParserBase - Add Parse Result, Valid"""
@@ -618,7 +616,7 @@ class TestParserBaseMethods:
             'key': 'value'
         }
         parser._add_parse_result(record, False, None)
-        assert_equal(parser._invalid_parses, [record])
+        assert parser._invalid_parses == [record]
 
     def test_extract_envelope(self):
         """ParserBase - Extract Envelope"""
@@ -636,7 +634,7 @@ class TestParserBaseMethods:
 
         parser = ParserBase(options)
         envelope = parser._extract_envelope(record)
-        assert_equal(envelope, {'env_key_01': 'foo'})
+        assert envelope == {'env_key_01': 'foo'}
 
     def test_extract_envelope_none(self):
         """ParserBase - Extract Envelope, None"""
@@ -646,7 +644,7 @@ class TestParserBaseMethods:
 
         parser = ParserBase(None)
         envelope = parser._extract_envelope(record)
-        assert_equal(envelope, None)
+        assert envelope is None
 
     def test_json_path_records(self):
         """ParserBase - JSON Path Records"""
@@ -673,7 +671,7 @@ class TestParserBaseMethods:
 
         parser = ParserBase(options)
         records = parser._json_path_records(record)
-        assert_equal(records, expected_records)
+        assert records == expected_records
 
     def test_parse(self):
         """ParserBase - Parse, Invalid Schema"""
@@ -688,4 +686,4 @@ class TestParserBaseMethods:
             }
         }
 
-        assert_equal(ParserBase(options).parse(None), False)
+        assert ParserBase(options).parse(None) == False

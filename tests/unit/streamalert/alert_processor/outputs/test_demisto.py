@@ -16,14 +16,13 @@ limitations under the License.
 # pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init,protected-access
 from collections import OrderedDict
 from datetime import datetime
-
-from mock import patch, Mock, MagicMock
-from nose.tools import assert_is_instance, assert_true, assert_false, assert_equal
+from unittest.mock import MagicMock, Mock, patch
 
 from streamalert.alert_processor.helpers import compose_alert
-from streamalert.alert_processor.outputs.demisto import DemistoOutput, DemistoRequestAssembler
-from streamalert.alert_processor.outputs.output_base import OutputRequestFailure
-
+from streamalert.alert_processor.outputs.demisto import (
+    DemistoOutput, DemistoRequestAssembler)
+from streamalert.alert_processor.outputs.output_base import \
+    OutputRequestFailure
 from tests.unit.streamalert.alert_processor.helpers import get_alert
 
 SAMPLE_CONTEXT = {
@@ -102,7 +101,7 @@ class TestDemistoOutput:
 
     def test_get_user_defined_properties(self):
         """DemistoOutput - User Defined Properties"""
-        assert_is_instance(DemistoOutput.get_user_defined_properties(), OrderedDict)
+        assert isinstance(DemistoOutput.get_user_defined_properties(), OrderedDict)
 
     @patch('requests.post')
     def test_dispatch(self, request_mock):
@@ -116,7 +115,7 @@ class TestDemistoOutput:
 
         success = self._dispatcher.dispatch(alert, self.OUTPUT)
 
-        assert_true(success)
+        assert success
 
         expected_data = {
             'type': 'Unclassified',
@@ -132,16 +131,7 @@ class TestDemistoOutput:
 
         class Matcher:
             def __eq__(self, other):
-                if other == expected_data:
-                    return True
-
-                # If you have trouble debugging the differences of the large JSON dicts like I did,
-                # pretty print the result!
-                #
-                # import pprint
-                # pp = pprint.PrettyPrinter(indent=4)
-                # pp.pprint(other)
-                return False
+                return other == expected_data
 
         request_mock.assert_called_with(
             'https://demisto.awesome-website.io/incident',
@@ -171,7 +161,7 @@ class TestDemistoOutput:
 
         success = self._dispatcher.dispatch(alert, self.OUTPUT)
 
-        assert_false(success)
+        assert not success
 
         class Matcher:
             def __eq__(self, other):
@@ -189,11 +179,11 @@ def test_assemble():
 
     request = DemistoRequestAssembler.assemble(alert, alert_publication)
 
-    assert_equal(request.incident_name, 'cb_binarystore_file_added')
-    assert_equal(request.incident_type, 'Unclassified')
-    assert_equal(request.severity, 0)
-    assert_equal(request.owner, 'StreamAlert')
-    assert_equal(request.labels, EXPECTED_LABELS_FOR_SAMPLE_ALERT)
-    assert_equal(request.details, 'Info about this rule and what actions to take')
-    assert_equal(request.custom_fields, {})
-    assert_equal(request.create_investigation, True)
+    assert request.incident_name == 'cb_binarystore_file_added'
+    assert request.incident_type == 'Unclassified'
+    assert request.severity == 0
+    assert request.owner == 'StreamAlert'
+    assert request.labels == EXPECTED_LABELS_FOR_SAMPLE_ALERT
+    assert request.details == 'Info about this rule and what actions to take'
+    assert request.custom_fields == {}
+    assert request.create_investigation

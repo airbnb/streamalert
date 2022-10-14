@@ -13,21 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from mock import Mock
+from unittest.mock import Mock
 
-from nose.tools import assert_equal, nottest
+import pytest
 from pyfakefs import fake_filesystem_unittest
 
 from streamalert_cli.test.event_file import TestEventFile
 from streamalert_cli.test.results import TestResult
-from tests.unit.streamalert_cli.test.helpers import (
-    basic_test_event_data,
-    basic_test_file_json,
-)
+from tests.unit.streamalert_cli.test.helpers import (basic_test_event_data,
+                                                     basic_test_file_json)
 
-# Keep nose from trying to treat these as tests
-TestEventFile = nottest(TestEventFile)
-TestResult = nottest(TestResult)
+TestEventFile = pytest.mark.usefixtures('patcher')(TestEventFile)
+TestResult = pytest.mark.usefixtures('patcher')(TestResult)
 
 
 class TestTestEventFile(fake_filesystem_unittest.TestCase):
@@ -39,10 +36,7 @@ class TestTestEventFile(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
 
         # Create a single test event file
-        self.fs.create_file(
-            self._DEFAULT_EVENT_PATH,
-            contents=basic_test_file_json()
-        )
+        self.fs.create_file(self._DEFAULT_EVENT_PATH, contents=basic_test_file_json())
 
     @staticmethod
     def _mock_classified_result():
@@ -61,35 +55,31 @@ class TestTestEventFile(fake_filesystem_unittest.TestCase):
         event = TestEventFile(self._DEFAULT_EVENT_PATH)
         event._results.append(self._fake_result(True))
 
-        expected_stringer = (
-            '\033[4m\nFile: rules/community/unit_test/file.json\n\033[0m'
-            '\nTest #01: \033[0;32;1mPass\033[0m'
-        )
+        expected_stringer = ('\033[4m\nFile: rules/community/unit_test/file.json\n\033[0m'
+                             '\nTest #01: \033[0;32;1mPass\033[0m')
 
-        assert_equal(str(event), expected_stringer)
+        assert str(event) == expected_stringer
 
     def test_stringer_with_error(self):
         """StreamAlert CLI - TestEventFile Stringer, Error"""
         event = TestEventFile(self._DEFAULT_EVENT_PATH)
         event.error = 'Bad thing happened'
 
-        expected_stringer = (
-            '\033[4m\nFile: rules/community/unit_test/file.json\n\033[0m'
-            '\n\033[0;31;1mBad thing happened\033[0m'
-        )
+        expected_stringer = ('\033[4m\nFile: rules/community/unit_test/file.json\n\033[0m'
+                             '\n\033[0;31;1mBad thing happened\033[0m')
 
-        assert_equal(str(event), expected_stringer)
+        assert str(event) == expected_stringer
 
     def test_bool(self):
         """StreamAlert CLI - TestEventFile Bool"""
         # pylint: disable=protected-access
         event = TestEventFile(self._DEFAULT_EVENT_PATH)
 
-        assert_equal(bool(event), False)
+        assert not bool(event)
 
         event._results.append(self._fake_result(True))
 
-        assert_equal(bool(event), True)
+        assert bool(event)
 
     def test_passed(self):
         """StreamAlert CLI - TestEventFile Passed"""
@@ -97,7 +87,7 @@ class TestTestEventFile(fake_filesystem_unittest.TestCase):
         event = TestEventFile(self._DEFAULT_EVENT_PATH)
         event._results.append(self._fake_result(True))
 
-        assert_equal(event.passed, True)
+        assert event.passed
 
     def test_failed(self):
         """StreamAlert CLI - TestEventFile Failed"""
@@ -105,15 +95,15 @@ class TestTestEventFile(fake_filesystem_unittest.TestCase):
         event = TestEventFile(self._DEFAULT_EVENT_PATH)
         event._results.append(self._fake_result(False))
 
-        assert_equal(event.failed, True)
+        assert event.failed
 
     def test_load_file_valid(self):
         """StreamAlert CLI - TestEventFile Load File, Valid"""
         event = TestEventFile(self._DEFAULT_EVENT_PATH)
         value = list(event.load_file())
 
-        assert_equal(len(value), 1)
-        assert_equal(event.error, None)
+        assert len(value) == 1
+        assert event.error is None
 
     def test_load_file_invalid_json(self):
         """StreamAlert CLI - TestEventFile Load File, Invalid JSON"""
@@ -123,7 +113,7 @@ class TestTestEventFile(fake_filesystem_unittest.TestCase):
         event = TestEventFile(file_path)
         list(event.load_file())
 
-        assert_equal(event.error, 'Test event file is not valid JSON')
+        assert event.error == 'Test event file is not valid JSON'
 
     def test_load_file_invalid_format(self):
         """StreamAlert CLI - TestEventFile Load File, Invalid Format"""
@@ -133,7 +123,5 @@ class TestTestEventFile(fake_filesystem_unittest.TestCase):
         event = TestEventFile(file_path)
         list(event.load_file())
 
-        assert_equal(
-            event.error,
-            'Test event file is improperly formatted; events should be in a list'
-        )
+        assert (event.error ==
+                'Test event file is improperly formatted; events should be in a list')

@@ -15,14 +15,14 @@ limitations under the License.
 """
 import json
 import zlib
+from unittest.mock import ANY, patch
 
-from mock import ANY, patch
-from moto import mock_s3, mock_dynamodb2
-from nose.tools import assert_equal
+from moto import mock_dynamodb, mock_s3
 
 from streamalert.shared.config import load_config
 from streamalert.shared.lookup_tables.core import LookupTables
-from tests.unit.helpers.aws_mocks import put_mock_s3_object, put_mock_dynamod_data
+from tests.unit.helpers.aws_mocks import (put_mock_dynamod_data,
+                                          put_mock_s3_object)
 
 
 class TestLookupTablesCore:
@@ -30,6 +30,7 @@ class TestLookupTablesCore:
     Tests LookupTablesCore
     """
     # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
+
     def setup(self):
         """LookupTables - Setup S3 bucket mocking"""
         self.config = load_config('tests/unit/conf')
@@ -37,7 +38,7 @@ class TestLookupTablesCore:
         self.s3_mock = mock_s3()
         self.s3_mock.start()
 
-        self.dynamodb_mock = mock_dynamodb2()
+        self.dynamodb_mock = mock_dynamodb()
         self.dynamodb_mock.start()
 
         self._put_mock_data()
@@ -102,23 +103,23 @@ class TestLookupTablesCore:
 
     def test_get(self):
         """LookupTables - Core - get()"""
-        assert_equal(self._lookup_tables.get('foo', 'key_1'), 'foo_1')
+        assert self._lookup_tables.get('foo', 'key_1') == 'foo_1'
 
     def test_get_table_s3(self):
         """LookupTables - Core - table() - S3"""
         table = self._lookup_tables.table('foo')
-        assert_equal(table.get('key_2'), 'foo_2')
+        assert table.get('key_2') == 'foo_2'
 
     def test_get_table_dynamodb(self):
         """LookupTables - Core - table() - DynamoDB"""
         table = self._lookup_tables.table('dinosaur')
-        assert_equal(table.get('aaaa:1'), 'Over 9000!')
+        assert table.get('aaaa:1') == 'Over 9000!'
 
     @patch('logging.Logger.error')
     def test_get_nonexistent_table(self, mock_logger):
         """LookupTables - Core - table()"""
         table = self._lookup_tables.table('does-not-exist')
-        assert_equal(table.get('key_2'), None)
+        assert table.get('key_2') is None
 
         mock_logger.assert_any_call(
             (

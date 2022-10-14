@@ -15,10 +15,9 @@ limitations under the License.
 """
 import json
 
-from nose.tools import assert_equal, assert_is_none
-
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import artifact_extractor
+
 
 class TestTerraformArtifactExtractor:
     """Test class for test generating Artifact Extractor terrform modules"""
@@ -30,7 +29,7 @@ class TestTerraformArtifactExtractor:
     def test_generate_artifact_extractor(self):
         """CLI - Terraform generate artifact extractor"""
         result = artifact_extractor.generate_artifact_extractor(self.config)
-        assert_is_none(result)
+        assert result is None
 
         self.config['global']['infrastructure']['artifact_extractor'] = {
             'enabled': True,
@@ -83,4 +82,4 @@ class TestTerraformArtifactExtractor:
 
         # FIMME: not sure why assert_equal between result (defaultdict) and expected_result (dict)
         # fails.
-        assert_equal(json.dumps(result), json.dumps(expected_result))
+        assert json.dumps(result) == json.dumps(expected_result)

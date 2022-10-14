@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal
 
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import common, s3_events
@@ -58,8 +57,8 @@ def test_generate_s3_events():
         }
     }
 
-    assert_equal(result, True)
-    assert_equal(cluster_dict, expected_config)
+    assert result
+    assert cluster_dict == expected_config
 
 
 def test_generate_s3_events_with_prefix():
@@ -100,4 +99,4 @@ def test_generate_s3_events_with_prefix():
         }
     }
 
-    assert_equal(cluster_dict, expected_config)
+    assert cluster_dict == expected_config

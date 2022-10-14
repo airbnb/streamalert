@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
-from mock import patch, PropertyMock, Mock, MagicMock
-from nose.tools import assert_equal, assert_false, assert_true
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 from streamalert.alert_processor.outputs.jira import JiraOutput
 from tests.unit.streamalert.alert_processor.helpers import get_alert
@@ -59,7 +58,7 @@ class TestJiraOutput:
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -78,7 +77,7 @@ class TestJiraOutput:
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -97,7 +96,7 @@ class TestJiraOutput:
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200])
         post_mock.return_value.json.side_effect = [auth_resp, {}, {'id': 5000}]
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -111,7 +110,7 @@ class TestJiraOutput:
         get_mock.return_value.json.return_value = {'comments': expected_result}
 
         self._dispatcher._load_creds('jira')
-        assert_equal(self._dispatcher._get_comments('5000'), expected_result)
+        assert self._dispatcher._get_comments('5000') == expected_result
 
     @patch('requests.get')
     def test_get_comments_empty_success(self, get_mock):
@@ -121,7 +120,7 @@ class TestJiraOutput:
         get_mock.return_value.json.return_value = {}
 
         self._dispatcher._load_creds('jira')
-        assert_equal(self._dispatcher._get_comments('5000'), [])
+        assert self._dispatcher._get_comments('5000') == []
 
     @patch('requests.get')
     def test_get_comments_failure(self, get_mock):
@@ -130,7 +129,7 @@ class TestJiraOutput:
         get_mock.return_value.status_code = 400
 
         self._dispatcher._load_creds('jira')
-        assert_equal(self._dispatcher._get_comments('5000'), [])
+        assert self._dispatcher._get_comments('5000') == []
 
     @patch('requests.get')
     def test_search_failure(self, get_mock):
@@ -139,7 +138,7 @@ class TestJiraOutput:
         get_mock.return_value.status_code = 400
 
         self._dispatcher._load_creds('jira')
-        assert_equal(self._dispatcher._search_jira('foobar'), [])
+        assert self._dispatcher._search_jira('foobar') == []
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -148,9 +147,9 @@ class TestJiraOutput:
         # setup unsuccesful auth response
         post_mock.return_value.status_code = 400
         post_mock.return_value.content = 'content'
-        post_mock.return_value.json.return_value = dict()
+        post_mock.return_value.json.return_value = {}
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -162,7 +161,7 @@ class TestJiraOutput:
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {}
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -178,9 +177,9 @@ class TestJiraOutput:
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400])
         auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.content = 'some bad content'
-        post_mock.return_value.json.side_effect = [auth_resp, dict()]
+        post_mock.return_value.json.side_effect = [auth_resp, {}]
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -196,9 +195,9 @@ class TestJiraOutput:
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400])
         auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.content = 'some bad content'
-        post_mock.return_value.json.side_effect = [auth_resp, dict()]
+        post_mock.return_value.json.side_effect = [auth_resp, {}]
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -215,7 +214,7 @@ class TestJiraOutput:
         auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.json.side_effect = [auth_resp, {}]
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -233,7 +232,7 @@ class TestJiraOutput:
         auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.json.side_effect = [auth_resp, {'id': 6000}]
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Encountered an error when adding alert to existing Jira '
                                     'issue %s. Attempting to create new Jira issue.', 5000)
@@ -241,8 +240,8 @@ class TestJiraOutput:
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """JiraOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(
-            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
+        assert not self._dispatcher.dispatch(
+            get_alert(), ':'.join([self.SERVICE, 'bad_descriptor']))
 
         log_error_mock.assert_called_with('Failed to send alert to %s:%s',
                                           self.SERVICE, 'bad_descriptor')

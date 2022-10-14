@@ -13,17 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import collections
 import json
 import os
+from unittest.mock import patch
 
-from mock import patch
-from moto import mock_ssm
-from nose.tools import assert_count_equal, assert_equal, assert_false, assert_true, raises
-
+import pytest
 from aliyunsdkcore.acs_exception.exceptions import ServerException
+from moto import mock_ssm
 
 from streamalert.apps._apps.aliyun import AliyunApp
-
 from tests.unit.streamalert.apps.test_helpers import get_event, put_mock_params
 from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 
@@ -45,28 +44,28 @@ class TestAliyunApp:
 
     def test_sleep_seconds(self):
         """AliyunApp - Sleep Seconds"""
-        assert_equal(0, self._app._sleep_seconds())
+        assert 0 == self._app._sleep_seconds()
 
     def test_date_formatter(self):
         """AliyunApp - Date Formatter"""
-        assert_equal(self._app.date_formatter(), '%Y-%m-%dT%H:%M:%SZ')
+        assert self._app.date_formatter() == '%Y-%m-%dT%H:%M:%SZ'
 
     def test_required_auth_info(self):
         """AliyunApp - Required Auth Info"""
-        assert_count_equal(list(self._app.required_auth_info().keys()),
-                           {'access_key_id', 'access_key_secret', 'region_id'})
+        assert collections.Counter(list(self._app.required_auth_info().keys())) == collections.Counter(
+            {'access_key_id', 'access_key_secret', 'region_id'})
 
     def test_region_validator_success(self):
         """AliyunApp - Region Validation, Success"""
         validation_function = self._app.required_auth_info()['region_id']['format']
-        assert_equal(validation_function('ap-northeast-1'), 'ap-northeast-1')
+        assert validation_function('ap-northeast-1') == 'ap-northeast-1'
 
     def test_region_validator_failure(self):
         """AliyunApp - Region Validation, Failure"""
         validation_function = self._app.required_auth_info()['region_id']['format']
-        assert_equal(validation_function('ap-northeast'), False)
+        assert validation_function('ap-northeast') == False
 
-    @raises(ServerException)
+    @pytest.mark.xfail(raises=ServerException)
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     @patch('logging.Logger.exception')
     def test_server_exception(self, log_mock, client_mock):
@@ -77,8 +76,8 @@ class TestAliyunApp:
 
     def test_gather_logs_last_timestamp_set(self):
         """AliyunApp - Request Creation"""
-        assert_equal(self._app.request.get_StartTime(), '2018-07-23T15:42:11Z')
-        assert_equal(self._app.request.get_MaxResults(), AliyunApp._MAX_RESULTS)
+        assert self._app.request.get_StartTime() == '2018-07-23T15:42:11Z'
+        assert self._app.request.get_MaxResults() == AliyunApp._MAX_RESULTS
 
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     def test_gather_logs_no_more_entries(self, client_mock):
@@ -87,9 +86,9 @@ class TestAliyunApp:
                                    '"Events":[],"EndTime":"2018-07-23T19:28:00Z",' \
                                    '"StartTime":"2018-06-23T19:28:30Z"}'
         logs = self._app._gather_logs()
-        assert_equal(0, len(logs))
-        assert_false(self._app._more_to_poll)
-        assert_equal("2018-07-23T19:28:00Z", self._app._last_timestamp)
+        assert 0 == len(logs)
+        assert not self._app._more_to_poll
+        assert "2018-07-23T19:28:00Z" == self._app._last_timestamp
 
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     def test_gather_logs_entries(self, client_mock):
@@ -100,9 +99,9 @@ class TestAliyunApp:
                                    '"EndTime":"2018-07-23T19:28:00Z",' \
                                    '"StartTime":"2018-06-23T19:28:30Z"}'
         logs = self._app._gather_logs()
-        assert_equal(2, len(logs))
-        assert_true(self._app._more_to_poll)
-        assert_equal(self._app.request.get_NextToken(), "20")
+        assert 2 == len(logs)
+        assert self._app._more_to_poll
+        assert self._app.request.get_NextToken() == "20"
 
     @patch('streamalert.apps.app_base.AppIntegration._invoke_successive_app')
     @patch('streamalert.apps.batcher.Batcher._send_logs_to_lambda')
@@ -168,7 +167,7 @@ class TestAliyunApp:
         batcher_mock.side_effect = [True, True, True]
 
         self._app.gather()
-        assert_equal(self._app._poll_count, 3)
-        assert_true(self._app._more_to_poll)
-        assert_equal(self._app.request.get_NextToken(), "150")
-        assert_equal(self._app._last_timestamp, '2018-07-23T19:28:00Z')
+        assert self._app._poll_count == 3
+        assert self._app._more_to_poll
+        assert self._app.request.get_NextToken() == "150"
+        assert self._app._last_timestamp == '2018-07-23T19:28:00Z'

@@ -13,11 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from unittest.mock import patch
+
 import boto3
+import pytest
 from botocore.exceptions import ClientError
-from mock import patch
 from moto import mock_kms
-from nose.tools import assert_equal, raises
 
 from streamalert.shared.helpers.aws_api_client import AwsKms
 from tests.unit.streamalert.alert_processor import KMS_ALIAS, REGION
@@ -29,7 +30,7 @@ class TestAwsKms:
     @mock_kms
     def test_encrypt_decrypt():
         """AwsApiClient - AwsKms - encrypt/decrypt - Encrypt and push creds, then pull them down"""
-        secret = 'shhhhhh'.encode() # nosec
+        secret = b'shhhhhh'  # nosec
 
         client = boto3.client('kms', region_name=REGION)
         response = client.create_key()
@@ -41,10 +42,10 @@ class TestAwsKms:
         ciphertext = AwsKms.encrypt(secret, region=REGION, key_alias=KMS_ALIAS)
         response = AwsKms.decrypt(ciphertext, region=REGION)
 
-        assert_equal(response, secret)
+        assert response == secret
 
     @staticmethod
-    @raises(ClientError)
+    @pytest.mark.xfail(raises=ClientError)
     @patch('boto3.client')
     def test_encrypt_kms_failure(boto_mock):
         """AwsApiClient - AwsKms - Encrypt - KMS Failure"""

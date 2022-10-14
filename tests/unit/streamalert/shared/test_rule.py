@@ -15,9 +15,9 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
 import hashlib
+from unittest.mock import patch
 
-from mock import patch
-from nose.tools import assert_equal, assert_true, raises
+import pytest
 
 from streamalert.shared import rule, rule_table
 
@@ -35,6 +35,7 @@ def _test_checksum_doc(_):
 
 class TestRule:
     """TestRule class"""
+
     def setup(self):
         rule.Rule._rules.clear()
 
@@ -66,15 +67,15 @@ def {}(_):
     def test_rule_valid(self):
         """Rule - Create Valid Rule"""
         self._create_rule_helper('test_rule')
-        assert_equal(list(rule.Rule._rules.keys()), ['test_rule'])
+        assert list(rule.Rule._rules.keys()) == ['test_rule']
 
-    @raises(rule.RuleCreationError)
+    @pytest.mark.xfail(raises=rule.RuleCreationError)
     def test_rule_invalid(self):
         """Rule - Create Rule, Missing Args"""
         # Rules must either have `logs` or `datatypes` defined
         self._create_rule_helper('test_rule', {'outputs': ['fake_output']})
 
-    @raises(rule.RuleCreationError)
+    @pytest.mark.xfail(raises=rule.RuleCreationError)
     def test_rule_exists(self):
         """Rule - Create Rule, Rule Already Exists"""
         # Rules must either have `logs` or `datatypes` defined
@@ -88,15 +89,15 @@ def {}(_):
         def test_rule_disabled(_):  # pylint: disable=unused-variable
             return False
 
-        assert_equal(rule.Rule._rules['test_rule_disabled'].disabled, True)
+        assert rule.Rule._rules['test_rule_disabled'].disabled
 
     def test_rule_to_string(self):
         """Rule - String Representation"""
         def test_rule(_):
             pass
         test_rule = rule.Rule(test_rule, outputs=['foo'], logs=['bar'])
-        assert_equal(str(test_rule), '<Rule: test_rule; outputs: [\'foo\']; disabled: False>')
-        assert_equal(repr(test_rule), '<Rule: test_rule; outputs: [\'foo\']; disabled: False>')
+        assert str(test_rule) == '<Rule: test_rule; outputs: [\'foo\']; disabled: False>'
+        assert repr(test_rule) == '<Rule: test_rule; outputs: [\'foo\']; disabled: False>'
 
     def test_check_matchers(self):
         """Rule - Check Matchers, True"""
@@ -110,7 +111,7 @@ def {}(_):
 
         test_record = {'value': 100}
 
-        assert_equal(test_rule.check_matchers(test_record), True)
+        assert test_rule.check_matchers(test_record)
 
     def test_check_matchers_false(self):
         """Rule - Check Matchers, False"""
@@ -124,7 +125,7 @@ def {}(_):
 
         test_record = {'value': 200}
 
-        assert_equal(test_rule.check_matchers(test_record), False)
+        assert test_rule.check_matchers(test_record) == False
 
     @patch('logging.Logger.exception')
     def test_check_matchers_exception(self, log_mock):
@@ -137,7 +138,7 @@ def {}(_):
 
         test_rule = rule.Rule(test_rule, logs=['bar'], matchers=[test_matcher])
 
-        assert_equal(test_rule.check_matchers(None), False)
+        assert test_rule.check_matchers(None) == False
         log_mock.assert_called_with('Encountered error with matcher: %s', 'test_matcher')
 
     @patch('logging.Logger.exception')
@@ -149,7 +150,7 @@ def {}(_):
         test_rule = rule.Rule(test_rule, logs=['bar'])
         result = test_rule.process(None)
         log_mock.assert_called_with('Encountered error with rule: %s', 'test_rule')
-        assert_equal(result, False)
+        assert result == False
 
     def test_rule_process(self):
         """Rule - Process, Valid"""
@@ -157,7 +158,7 @@ def {}(_):
             return True
         test_rule = rule.Rule(test_rule, logs=['bar'])
         result = test_rule.process(None)
-        assert_equal(result, True)
+        assert result
 
     def test_rule_process_with_context(self):
         """Rule - Process, With Context"""
@@ -171,42 +172,42 @@ def {}(_):
         # Test with data that should be placed into the context and overwritten
         # in subsequent calls
         test_rule.process({'foo': 'bar'})
-        assert_equal(test_rule.context, {'foo': 'bar', 'relevant': 'data'})
+        assert test_rule.context == {'foo': 'bar', 'relevant': 'data'}
 
         # Test with new data that should get placed into the context
         # The previous data should no longer be present
         test_rule.process({'bar': 'foo'})
-        assert_equal(test_rule.context, {'bar': 'foo', 'relevant': 'data'})
+        assert test_rule.context == {'bar': 'foo', 'relevant': 'data'}
 
     def test_get_rule(self):
         """Rule - Get Rule"""
         rule_name = 'test_rule'
         self._create_rule_helper(rule_name)
         result = rule.Rule.get_rule(rule_name)
-        assert_equal(result.name, rule_name)
+        assert result.name == rule_name
 
     def test_rule_names(self):
         """Rule - Get Rule Names"""
         rule_names = ['test_rule_01', 'test_rule_02']
         for name in rule_names:
             self._create_rule_helper(name)
-        assert_equal(rule.Rule.rule_names(), rule_names)
+        assert rule.Rule.rule_names() == rule_names
 
     def test_rule_checksum(self):
         """Rule - Rule Checksum"""
         # The known dumped ast of a function that just returns False is below
-        ast_value = 'Return(value=NameConstant(value=False))'
+        ast_value = 'Return(value=Constant(value=False))'
 
         # The known checksum of the above is # c119f541816c6364ea3e2e884ba18f9c
-        expected_checksum = hashlib.md5(ast_value.encode('utf-8')).hexdigest() # nosec
+        expected_checksum = hashlib.md5(ast_value.encode('utf-8')).hexdigest()  # nosec
 
         # Test rule without a docstring
         rule.Rule(_test_checksum, logs=['log_type'])
-        assert_equal(rule.Rule._rules['_test_checksum'].checksum, expected_checksum)
+        assert rule.Rule._rules['_test_checksum'].checksum == expected_checksum
 
         # Test rule with a docstring
         rule.Rule(_test_checksum_doc, logs=['log_type'])
-        assert_equal(rule.Rule._rules['_test_checksum_doc'].checksum, expected_checksum)
+        assert rule.Rule._rules['_test_checksum_doc'].checksum == expected_checksum
 
     @patch('logging.Logger.exception')
     def test_rule_checksum_bad(self, log_mock):
@@ -216,7 +217,7 @@ def {}(_):
 
         # Test rule that has bad indentation when loading from source
         rule.Rule(test_rule, logs=['log_type'])
-        assert_equal(rule.Rule._rules['test_rule'].checksum, rule.Rule.CHECKSUM_UNKNOWN)
+        assert rule.Rule._rules['test_rule'].checksum == rule.Rule.CHECKSUM_UNKNOWN
         log_mock.assert_called_with('Could not checksum rule function')
 
     @patch.dict('os.environ', {'AWS_DEFAULT_REGION': 'us-east-1'})
@@ -230,8 +231,8 @@ def {}(_):
 
         # Test rule is not staged
         unstaged_rule = test_rule = rule.Rule(test_rule, logs=['bar'])
-        assert_equal(unstaged_rule.is_staged(None), False)
-        assert_equal(unstaged_rule.is_staged(table), False)
+        assert unstaged_rule.is_staged(None) == False
+        assert unstaged_rule.is_staged(table) == False
 
     @patch.dict('os.environ', {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_rule_is_staged(self):
@@ -244,7 +245,7 @@ def {}(_):
 
         # Test rule is not staged
         staged_rule = test_rule = rule.Rule(test_rule, logs=['bar'])
-        assert_equal(staged_rule.is_staged(table), True)
+        assert staged_rule.is_staged(table)
 
     def test_get_rules_with_datatypes(self):
         """Rule - Get Rules, Rule With Datatypes"""
@@ -256,10 +257,10 @@ def {}(_):
 
         result = rule.Rule.rules_with_datatypes()
         # Make sure both rules are there
-        assert_equal(len(rule.Rule.rule_names()), 2)
+        assert len(rule.Rule.rule_names()) == 2
         # Check to see if the one with datatypes is returned
-        assert_equal(len(result), 1)
-        assert_equal(result[0].name, 'with_datatypes')
+        assert len(result) == 1
+        assert result[0].name == 'with_datatypes'
 
     def test_set_description(self):
         """Rule - Set Description"""
@@ -270,7 +271,7 @@ def {}(_):
         description = 'foobar description'
         test_rule.description = description
 
-        assert_equal(test_rule.description, description)
+        assert test_rule.description == description
 
     def test_get_rules_for_log_type(self):
         """Rule - Get Rules, For Log Type"""
@@ -280,16 +281,16 @@ def {}(_):
         self._create_rule_helper('rule_04', {'logs': ['log_type_03']})
 
         # Check for 4 total rules
-        assert_equal(len(rule.Rule._rules), 4)
+        assert len(rule.Rule._rules) == 4
 
         # Two rules should have log_type_01, and two should have log_type_02
-        assert_equal(len(rule.Rule.rules_for_log_type('log_type_01')), 2)
-        assert_equal(len(rule.Rule.rules_for_log_type('log_type_02')), 2)
+        assert len(rule.Rule.rules_for_log_type('log_type_01')) == 2
+        assert len(rule.Rule.rules_for_log_type('log_type_02')) == 2
 
         # Check to make sure the fourth rule has log_type_03
         result = rule.Rule.rules_for_log_type('log_type_03')
-        assert_equal(len(result), 1)
-        assert_equal(result[0].name, 'rule_04')
+        assert len(result) == 1
+        assert result[0].name == 'rule_04'
 
     def test_rule_outputs(self):
         """Rule - outputs is configured"""
@@ -300,7 +301,7 @@ def {}(_):
         result = rule.Rule._rules["test_rule"]
 
         # Verify outputs is configured
-        assert_equal(result.outputs, ['aws-sns:test'])
+        assert result.outputs == ['aws-sns:test']
 
     def test_rule_outputs_set(self):
         """Rule - outputs, check outputs_set"""
@@ -315,9 +316,9 @@ def {}(_):
         result = rule.Rule._rules["test_rule"]
 
         # Verify outputs is configured
-        assert_equal(result.outputs, ['aws-sns:test', 'aws-sns:test'])
-        assert_true(isinstance(result.outputs_set, set))
-        assert_equal(result.outputs_set, {'aws-sns:test'})
+        assert result.outputs == ['aws-sns:test', 'aws-sns:test']
+        assert isinstance(result.outputs_set, set)
+        assert result.outputs_set == {'aws-sns:test'}
 
     def test_rule_dynamic_outputs(self):
         """Rule - dynamic_outputs is configured"""
@@ -332,7 +333,7 @@ def {}(_):
         result = rule.Rule._rules["test_rule"]
 
         # Verify dynamic_outputs is configured
-        assert_equal(result.dynamic_outputs, [dynamic_function])
+        assert result.dynamic_outputs == [dynamic_function]
 
     def test_rule_dynamic_outputs_set(self):
         """Rule - dynamic_outputs, check dynamic_outputs_set"""
@@ -347,6 +348,6 @@ def {}(_):
         result = rule.Rule._rules["test_rule"]
 
         # Verify outputs is configured
-        assert_equal(result.dynamic_outputs, [dynamic_function])
-        assert_true(isinstance(result.dynamic_outputs_set, set))
-        assert_equal(result.dynamic_outputs_set, {dynamic_function})
+        assert result.dynamic_outputs == [dynamic_function]
+        assert isinstance(result.dynamic_outputs_set, set)
+        assert result.dynamic_outputs_set == {dynamic_function}

@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal
 
-from streamalert.shared.lookup_tables.drivers_factory import construct_persistence_driver
+from streamalert.shared.lookup_tables.drivers_factory import \
+    construct_persistence_driver
 from streamalert.shared.lookup_tables.table import LookupTable
 
 
@@ -36,20 +36,20 @@ class TestLookupTable:
 
     def test_table_nonexistent(self):
         """LookupTable - Basic Table - Nonexistent Key None Default"""
-        assert_equal(self._table.get('nonexistent_key'), None)
+        assert self._table.get('nonexistent_key') is None
 
     def test_table_nonexistent_default(self):
         """LookupTable - Basic Table - Nonexistent Key With Default"""
-        assert_equal(self._table.get('nonexistent_key', '1'), '1')
+        assert self._table.get('nonexistent_key', '1') == '1'
 
     def test_table_existent(self):
         """LookupTable - Basic Table - Existent"""
-        assert_equal(self._table.get('this', '?'), 'that')
+        assert self._table.get('this', '?') == 'that'
 
     def test_table_driver_id(self):
         """LookupTable - Basic Table - Driver Id"""
-        assert_equal(self._table.driver_id, 'ephemeral:1')
+        assert self._table.driver_id == 'ephemeral:1'
 
     def test_table_driver_type(self):
         """LookupTable - Basic Table - Driver Type"""
-        assert_equal(self._table.driver_type, 'ephemeral')
+        assert self._table.driver_type == 'ephemeral'

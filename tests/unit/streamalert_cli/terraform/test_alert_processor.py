@@ -15,8 +15,6 @@ limitations under the License.
 """
 import unittest
 
-from nose.tools import assert_equal
-
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import alert_processor
 
@@ -37,10 +35,8 @@ class TestAlertProcessor(unittest.TestCase):
                 'alert_processor_iam': {
                     'account_id': '12345678910',
                     'kms_key_arn': '${aws_kms_key.streamalert_secrets.arn}',
-                    'output_lambda_functions': [
-                        'unit_test_function',
-                        'unit_test_qualified_function'
-                    ],
+                    'output_lambda_functions':
+                    ['unit_test_function', 'unit_test_qualified_function'],
                     'output_s3_buckets': ['unit.test.bucket.name'],
                     'output_sns_topics': ['unit_test_topic_name'],
                     'output_sqs_queues': ['unit_test_queue_name'],
@@ -51,10 +47,10 @@ class TestAlertProcessor(unittest.TestCase):
                     'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'alert_processor_lambda': {
-                    'alarm_actions': [
-                        'arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'
-                    ],
-                    'description': 'Unit-Test Streamalert Alert Processor',
+                    'alarm_actions':
+                    ['arn:aws:sns:us-west-1:12345678910:unit-test_streamalert_monitoring'],
+                    'description':
+                    'Unit-Test Streamalert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-test_streamalert_alerts',
                         'STREAMALERT_PREFIX': 'unit-test',
@@ -63,26 +59,40 @@ class TestAlertProcessor(unittest.TestCase):
                         'LOGGER_LEVEL': 'info'
                     },
                     'tags': {},
-                    'errors_alarm_enabled': True,
-                    'errors_alarm_evaluation_periods': 1,
-                    'errors_alarm_period_secs': 2,
-                    'errors_alarm_threshold': 3,
-                    'function_name': 'unit-test_streamalert_alert_processor',
-                    'handler': 'streamalert.alert_processor.main.handler',
-                    'log_retention_days': 7,
-                    'memory_size_mb': 128,
-                    'source': './modules/tf_lambda',
-                    'throttles_alarm_enabled': True,
-                    'throttles_alarm_evaluation_periods': 4,
-                    'throttles_alarm_period_secs': 5,
-                    'throttles_alarm_threshold': 6,
-                    'timeout_sec': 60,
+                    'errors_alarm_enabled':
+                    True,
+                    'errors_alarm_evaluation_periods':
+                    1,
+                    'errors_alarm_period_secs':
+                    2,
+                    'errors_alarm_threshold':
+                    3,
+                    'function_name':
+                    'unit-test_streamalert_alert_processor',
+                    'handler':
+                    'streamalert.alert_processor.main.handler',
+                    'log_retention_days':
+                    7,
+                    'memory_size_mb':
+                    128,
+                    'source':
+                    './modules/tf_lambda',
+                    'throttles_alarm_enabled':
+                    True,
+                    'throttles_alarm_evaluation_periods':
+                    4,
+                    'throttles_alarm_period_secs':
+                    5,
+                    'throttles_alarm_threshold':
+                    6,
+                    'timeout_sec':
+                    60,
                     'vpc_security_group_ids': ['sg-abc'],
                     'vpc_subnet_ids': ['subnet-123']
                 }
             }
         }
-        assert_equal(expected, result)
+        assert expected == result
 
     def test_generate_minimal_options(self):
         """CLI - Terraform Generate Alert Processor - Minimal Options"""
@@ -128,4 +138,4 @@ class TestAlertProcessor(unittest.TestCase):
                 }
             }
         }
-        assert_equal(expected, result)
+        assert expected == result

@@ -16,15 +16,13 @@ limitations under the License.
 # pylint: disable=protected-access,attribute-defined-outside-init,too-many-lines,invalid-name
 import re
 from collections import OrderedDict
-from mock import patch, Mock, MagicMock, call
-from nose.tools import assert_equal, assert_false, assert_true
+from unittest.mock import MagicMock, Mock, call, patch
 
-from streamalert.alert_processor.outputs.output_base import OutputDispatcher, OutputRequestFailure
+from streamalert.alert_processor.outputs.output_base import (
+    OutputDispatcher, OutputRequestFailure)
 from streamalert.alert_processor.outputs.pagerduty import (
-    PagerDutyOutput,
-    PagerDutyOutputV2,
-    PagerDutyIncidentOutput,
-    WorkContext, PagerDutyRestApiClient, JsonHttpProvider)
+    JsonHttpProvider, PagerDutyIncidentOutput, PagerDutyOutput,
+    PagerDutyOutputV2, PagerDutyRestApiClient, WorkContext)
 from tests.unit.streamalert.alert_processor.helpers import get_alert
 
 
@@ -51,9 +49,9 @@ class TestPagerDutyOutput:
     def test_get_default_properties(self):
         """PagerDutyOutput - Get Default Properties"""
         props = self._dispatcher._get_default_properties()
-        assert_equal(len(props), 1)
-        assert_equal(props['url'],
-                     'https://events.pagerduty.com/generic/2010-04-15/create_event.json')
+        assert len(props) == 1
+        assert (props['url'] ==
+                'https://events.pagerduty.com/generic/2010-04-15/create_event.json')
 
     @patch('logging.Logger.info')
     @patch('requests.post')
@@ -61,7 +59,7 @@ class TestPagerDutyOutput:
         """PagerDutyOutput - Dispatch Success"""
         post_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -100,15 +98,15 @@ class TestPagerDutyOutput:
         """PagerDutyOutput - Dispatch Failure, Bad Request"""
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """PagerDutyOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(
-            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
+        assert not self._dispatcher.dispatch(
+            get_alert(), ':'.join([self.SERVICE, 'bad_descriptor']))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
@@ -133,7 +131,7 @@ class TestPagerDutyOutput:
 
         RequestMocker.setup_mock(post_mock)
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -195,8 +193,8 @@ class TestPagerDutyOutputV2:
     def test_get_default_properties(self):
         """PagerDutyOutputV2 - Get Default Properties"""
         props = self._dispatcher._get_default_properties()
-        assert_equal(len(props), 1)
-        assert_equal(props['url'], 'https://events.pagerduty.com/v2/enqueue')
+        assert len(props) == 1
+        assert props['url'] == 'https://events.pagerduty.com/v2/enqueue'
 
     @patch('requests.post')
     def test_dispatch_sends_correct_request(self, post_mock):
@@ -247,7 +245,7 @@ class TestPagerDutyOutputV2:
         """PagerDutyOutputV2 - Dispatch Success"""
         post_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -260,15 +258,15 @@ class TestPagerDutyOutputV2:
         post_mock.return_value.json.return_value = json_error
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """PagerDutyOutputV2 - Dispatch Failure, Bad Descriptor"""
-        assert_false(
-            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
+        assert not self._dispatcher.dispatch(
+            get_alert(), ':'.join([self.SERVICE, 'bad_descriptor']))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
@@ -306,8 +304,8 @@ class TestPagerDutyIncidentOutput:
     def test_get_default_properties(self):
         """PagerDutyIncidentOutput - Get Default Properties"""
         props = self._dispatcher._get_default_properties()
-        assert_equal(len(props), 1)
-        assert_equal(props['api'], 'https://api.pagerduty.com')
+        assert len(props) == 1
+        assert props['api'] == 'https://api.pagerduty.com'
 
     @patch('requests.put')
     @patch('requests.post')
@@ -490,7 +488,7 @@ class TestPagerDutyIncidentOutput:
         )
 
         ctx = {'pagerduty-incident': {'assigned_user': 'invalid_user'}}
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         put_mock.assert_any_call(
             'https://api.pagerduty.com/incidents/incident_id',
@@ -657,7 +655,7 @@ class TestPagerDutyIncidentOutput:
                 'assigned_policy_id': 'valid_policy_id'
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         put_mock.assert_any_call(
             'https://api.pagerduty.com/incidents/incident_id',
@@ -709,7 +707,7 @@ class TestPagerDutyIncidentOutput:
                 'incident_priority': 'priority_name',
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         put_mock.assert_any_call(
             'https://api.pagerduty.com/incidents/incident_id',
@@ -764,7 +762,7 @@ class TestPagerDutyIncidentOutput:
                 'note': 'This is just a note'
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         post_mock.assert_any_call(
             'https://api.pagerduty.com/incidents/incident_id/notes',
@@ -794,7 +792,7 @@ class TestPagerDutyIncidentOutput:
                 'note': None
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         def notes_api_call(*args, **_):
             return args[0].endswith('/notes')
@@ -814,7 +812,7 @@ class TestPagerDutyIncidentOutput:
         RequestMocker.setup_mock(post_mock)
         RequestMocker.setup_mock(put_mock)
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -837,7 +835,7 @@ class TestPagerDutyIncidentOutput:
             ]
         )
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -857,7 +855,7 @@ class TestPagerDutyIncidentOutput:
             ]
         )
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -880,7 +878,7 @@ class TestPagerDutyIncidentOutput:
             ]
         )
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         log_mock.assert_any_call('[%s] Failed to update container incident for event', self.SERVICE)
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
@@ -905,14 +903,14 @@ class TestPagerDutyIncidentOutput:
             ]
         )
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
         log_mock.assert_any_call('[%s] Incident is missing "id"??', self.SERVICE)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """PagerDutyIncidentOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(
-            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
+        assert not self._dispatcher.dispatch(
+            get_alert(), ':'.join([self.SERVICE, 'bad_descriptor']))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
@@ -935,7 +933,7 @@ class TestPagerDutyIncidentOutput:
                 'responder_message': 'I am tea kettle short and stout',
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         get_mock.assert_any_call(
             'https://api.pagerduty.com/users',
@@ -994,7 +992,7 @@ class TestPagerDutyIncidentOutput:
                 'responders': 'responder1@airbnb.com',
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         get_mock.assert_any_call(
             'https://api.pagerduty.com/users',
@@ -1071,17 +1069,15 @@ class TestPagerDutyIncidentOutput:
                 'responders': ['invalid_responder@airbnb.com'],
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         def responder_request_calls(*args, **_):
             return args[0].endswith('/responder_requests')
 
         RequestMocker.assert_mock_with_no_calls_like(post_mock, responder_request_calls)
         log_error_mock.assert_called_with(
-            (
-                '[pagerduty-incident] Failed to request a responder (invalid_responder@airbnb.com)'
-                ' on incident (incident_id)'
-            )
+            '[pagerduty-incident] Failed to request a responder (invalid_responder@airbnb.com)'
+            ' on incident (incident_id)'
         )
 
         expected_note = (
@@ -1171,8 +1167,8 @@ class TestWorkContext:
         context = {'incident_priority': priority_name}
 
         priority_verified = self._work._get_standardized_priority(context)
-        assert_equal(priority_verified['id'], 'verified_priority_id')
-        assert_equal(priority_verified['type'], 'priority_reference')
+        assert priority_verified['id'] == 'verified_priority_id'
+        assert priority_verified['type'] == 'priority_reference'
 
     @patch('requests.get')
     def test_get_standardized_priority_fail(self, get_mock):
@@ -1183,7 +1179,7 @@ class TestWorkContext:
         context = {'incident_priority': 'priority_name'}
 
         priority_not_verified = self._work._get_standardized_priority(context)
-        assert_false(priority_not_verified)
+        assert not priority_not_verified
 
     @patch('requests.get')
     def test_get_standardized_priority_empty(self, get_mock):
@@ -1196,7 +1192,7 @@ class TestWorkContext:
         context = {'incident_priority': 'priority_name'}
 
         priority_not_verified = self._work._get_standardized_priority(context)
-        assert_false(priority_not_verified)
+        assert not priority_not_verified
 
     @patch('requests.get')
     def test_get_standardized_priority_not_found(self, get_mock):
@@ -1209,7 +1205,7 @@ class TestWorkContext:
         context = {'incident_priority': 'priority_name'}
 
         priority_not_verified = self._work._get_standardized_priority(context)
-        assert_false(priority_not_verified)
+        assert not priority_not_verified
 
     @patch('requests.get')
     def test_get_standardized_priority_invalid(self, get_mock):
@@ -1222,7 +1218,7 @@ class TestWorkContext:
         context = {'incident_priority': 'priority_name'}
 
         priority_not_verified = self._work._get_standardized_priority(context)
-        assert_false(priority_not_verified)
+        assert not priority_not_verified
 
     @patch('requests.get')
     def test_get_incident_assignment_user_sends_correct_rquest(self, get_mock):
@@ -1255,8 +1251,8 @@ class TestWorkContext:
 
         assigned_value = self._work._get_incident_assignments(context)
 
-        assert_equal(assigned_value[0]['assignee']['id'], 'verified_user_id')
-        assert_equal(assigned_value[0]['assignee']['type'], 'user_reference')
+        assert assigned_value[0]['assignee']['id'] == 'verified_user_id'
+        assert assigned_value[0]['assignee']['type'] == 'user_reference'
 
     def test_get_incident_escalation_policy_no_default(self):
         """PagerDutyIncidentOutput - Incident Assignment Policy (No Default)"""
@@ -1264,8 +1260,8 @@ class TestWorkContext:
 
         assigned_value = self._work._get_incident_escalation_policy(context)
 
-        assert_equal(assigned_value['id'], 'policy_id_to_assign')
-        assert_equal(assigned_value['type'], 'escalation_policy_reference')
+        assert assigned_value['id'] == 'policy_id_to_assign'
+        assert assigned_value['type'] == 'escalation_policy_reference'
 
     @patch('requests.get')
     def test_user_verify_success(self, get_mock):
@@ -1275,7 +1271,7 @@ class TestWorkContext:
         get_mock.return_value.json.return_value = json_check
 
         user_verified = self._work._verify_user_exists()
-        assert_true(user_verified)
+        assert user_verified
 
     @patch('requests.get')
     def test_user_verify_fail(self, get_mock):
@@ -1285,7 +1281,7 @@ class TestWorkContext:
         get_mock.return_value.json.return_value = json_check
 
         user_verified = self._work._verify_user_exists()
-        assert_false(user_verified)
+        assert not user_verified
 
 
 @patch('streamalert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
@@ -1377,7 +1373,7 @@ class TestPagerDutyRestApiClient:
 
         note = self._api_client.add_note('incident_id', 'this is the note')
 
-        assert_equal(note.get('id'), 'created_note_id')
+        assert note.get('id') == 'created_note_id'
 
     @patch('requests.post')
     def test_add_note_incident_fail(self, post_mock):
@@ -1388,7 +1384,7 @@ class TestPagerDutyRestApiClient:
 
         note = self._api_client.add_note('incident_id', 'this is the note')
 
-        assert_false(note.get('id'))
+        assert not note.get('id')
 
     @patch('requests.post')
     def test_add_note_incident_bad_request(self, post_mock):
@@ -1399,7 +1395,7 @@ class TestPagerDutyRestApiClient:
 
         note = self._api_client.add_note('incident_id', 'this is the note')
 
-        assert_false(note)
+        assert not note
 
     @patch('requests.post')
     def test_add_note_incident_no_response(self, post_mock):
@@ -1410,7 +1406,7 @@ class TestPagerDutyRestApiClient:
 
         note = self._api_client.add_note('incident_id', 'this is the note')
 
-        assert_false(note)
+        assert not note
 
     @patch('requests.get')
     def test_get_escalation_policy_sends_correct_request(self, get_mock):
@@ -1441,7 +1437,7 @@ class TestPagerDutyRestApiClient:
 
         policy = self._api_client.get_escalation_policy_by_id('PDUDOHF')
 
-        assert_equal(policy.get('id'), 'PDUDOHF')
+        assert policy.get('id') == 'PDUDOHF'
 
 
 class TestJsonHttpProvider:
@@ -1468,7 +1464,7 @@ class TestJsonHttpProvider:
     def test_get_returns_false_on_error(self):
         """JsonHttpProvider - Get - Error"""
         self._dispatcher._get_request_retry.side_effect = OutputRequestFailure('?')
-        assert_false(self._http.get('http://airbnb.com', {'q': 'zz'}))
+        assert not self._http.get('http://airbnb.com', {'q': 'zz'})
 
     def test_post_sends_correct_arguments(self):
         """JsonHttpProvider - Post - Arguments"""
@@ -1488,7 +1484,7 @@ class TestJsonHttpProvider:
     def test_post_returns_false_on_error(self):
         """JsonHttpProvider - Post - Error"""
         self._dispatcher._post_request_retry.side_effect = OutputRequestFailure('?')
-        assert_false(self._http.post('http://airbnb.com', {'q': 'zz'}))
+        assert not self._http.post('http://airbnb.com', {'q': 'zz'})
 
     def test_put_sends_correct_arguments(self):
         """JsonHttpProvider - Post - Arguments"""
@@ -1508,7 +1504,7 @@ class TestJsonHttpProvider:
     def test_put_returns_false_on_error(self):
         """JsonHttpProvider - Put - Error"""
         self._dispatcher._put_request_retry.side_effect = OutputRequestFailure('?')
-        assert_false(self._http.put('http://airbnb.com', {}))
+        assert not self._http.put('http://airbnb.com', {})
 
 
 class TestWorkContextUnit:
@@ -1553,7 +1549,7 @@ class TestWorkContextUnit:
 
         alert = get_alert()
         result = self._work.run(alert, 'descriptor')
-        assert_true(result)
+        assert result
 
         log_error.assert_not_called()
 
@@ -1568,7 +1564,7 @@ class TestWorkContextUnit:
 
         alert = get_alert()
         result = self._work.run(alert, 'descriptor')
-        assert_true(result)
+        assert result
 
         log_error.assert_called_with(StringThatStartsWith("[test] Failed to add note to incident"))
 
@@ -1582,7 +1578,7 @@ class TestWorkContextUnit:
 
         alert = get_alert()
         result = self._work.run(alert, 'descriptor')
-        assert_true(result)
+        assert result
 
         self._work._add_instability_note.assert_called_with(
             'ABCDEFGH', ['[test] Failed to add note to incident (ABCDEFGH)']
@@ -1618,13 +1614,8 @@ class RequestMocker:
             if condition(*args, **kwargs):
                 failed.append(index)
 
-        assert_false(
-            failed,
-            (
-                'Failed to assert that mock was not called.\nOut of {} calls, '
-                'calls {} failed the condition.'
-            ).format(len(calls), ', '.join(['#{}'.format(idx) for idx in failed]))
-        )
+        assert not failed, (f"Failed to assert that mock was not called.\nOut of {len(calls)} calls,"
+        f" calls {', '.join([f'#{idx}' for idx in failed])} failed the condition.")
 
     @classmethod
     def setup_mock(cls, get_mock, conditions=None):

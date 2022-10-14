@@ -13,25 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from mock import call, patch
-from nose.tools import assert_equal
+from unittest.mock import call, patch
 
-from streamalert.shared.artifact_extractor import (
-    Artifact,
-    ArtifactExtractor
-)
+from streamalert.shared.artifact_extractor import Artifact, ArtifactExtractor
 from streamalert.shared.firehose import FirehoseClient
 from tests.unit.streamalert.shared.test_utils import (
-    generate_artifacts,
-    generate_categorized_records,
-    MOCK_RECORD_ID,
-)
+    MOCK_RECORD_ID, generate_artifacts, generate_categorized_records)
 
 
 class TestArtifact:
     """Test Artifact class"""
 
-    def test_record(self): # pylint: disable=no-self-use
+    def test_record(self):  # pylint: disable=no-self-use
         """Artifact - Test record property in the Artifact class"""
         artifact = Artifact(
             normalized_type='test_normalized_type',
@@ -48,7 +41,7 @@ class TestArtifact:
             'value': 'test_value'
         }
 
-        assert_equal(artifact.artifact, expected_result)
+        assert artifact.artifact == expected_result
 
 
 class TestArtifactExtractor:
@@ -75,7 +68,7 @@ class TestArtifactExtractor:
             call.debug('Extracted %d artifact(s)', 0)
         ])
 
-        assert_equal(self._artifact_extractor._artifacts, list())
+        assert self._artifact_extractor._artifacts == []
 
     @patch('uuid.uuid4')
     @patch.object(FirehoseClient, '_send_batch')
@@ -96,4 +89,4 @@ class TestArtifactExtractor:
             'classifier'
         )
 
-        assert_equal(self._artifact_extractor._artifacts, generate_artifacts())
+        assert self._artifact_extractor._artifacts == generate_artifacts()

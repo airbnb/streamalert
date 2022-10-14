@@ -13,12 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import importlib
 # pylint: disable=no-self-use,protected-access
 import os
-import importlib
-
-from mock import patch, ANY
-from nose.tools import assert_equal
+from unittest.mock import ANY, patch
 
 from streamalert import shared
 
@@ -37,10 +35,10 @@ class TestMetrics:
         """Metrics - Invalid Metric Name"""
         shared.metrics.MetricLogger.log_metric('classifier', 'FailedParsed', '')
 
-        assert_equal(log_mock.call_args[0][0], 'Metric name (\'%s\') not defined for '
-                                               '\'%s\' function. Options are: %s')
-        assert_equal(log_mock.call_args[0][1], 'FailedParsed')
-        assert_equal(log_mock.call_args[0][2], 'classifier')
+        assert (log_mock.call_args[0][0] == 'Metric name (\'%s\') not defined for '
+                '\'%s\' function. Options are: %s')
+        assert log_mock.call_args[0][1] == 'FailedParsed'
+        assert log_mock.call_args[0][2] == 'classifier'
 
     @patch('logging.Logger.info')
     def test_valid_metric(self, log_mock):

@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal, assert_true
 
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import common, kinesis_events
@@ -41,5 +40,5 @@ def test_kinesis_events():
         }
     }
 
-    assert_true(result)
-    assert_equal(cluster_dict, expected_result)
+    assert result
+    assert cluster_dict == expected_result

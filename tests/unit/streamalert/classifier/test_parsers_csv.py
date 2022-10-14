@@ -13,10 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import OrderedDict
 import json
-
-from nose.tools import assert_equal
+from collections import OrderedDict
 
 from streamalert.classifier.parsers import CSVParser
 
@@ -42,7 +40,7 @@ class TestCSVParser:
         # get parsed data
         parser = CSVParser(options)
         result = parser.parse(data)
-        assert_equal(result, True)
+        assert result
 
         expected_result = [
             {
@@ -51,7 +49,7 @@ class TestCSVParser:
                 'message': 'test message!!!!'
             }
         ]
-        assert_equal(parser.parsed_records, expected_result)
+        assert parser.parsed_records == expected_result
 
     def test_basic_parsing_bytes(self):
         """CSVParser - Basic CSV data, bytes"""
@@ -66,7 +64,7 @@ class TestCSVParser:
         # get parsed data
         parser = CSVParser(options)
         result = parser.parse(data)
-        assert_equal(result, True)
+        assert result
 
         expected_result = [
             {
@@ -75,7 +73,7 @@ class TestCSVParser:
                 'message': 'test message!!!!'
             }
         ]
-        assert_equal(parser.parsed_records, expected_result)
+        assert parser.parsed_records == expected_result
 
     def test_csv_parsing_space_delimited(self):
         """CSVParser - Space separated data"""
@@ -90,7 +88,7 @@ class TestCSVParser:
         # get parsed data
         parser = CSVParser(options)
         result = parser.parse(data)
-        assert_equal(result, True)
+        assert result
 
         expected_result = [
             {
@@ -99,7 +97,7 @@ class TestCSVParser:
                 'message': 'test message!!!!'
             }
         ]
-        assert_equal(parser.parsed_records, expected_result)
+        assert parser.parsed_records == expected_result
 
     def test_csv_parsing_alt_quoted(self):
         """CSVParser - Single Quoted Field"""
@@ -115,7 +113,7 @@ class TestCSVParser:
         # get parsed data
         parser = CSVParser(options)
         result = parser.parse(data)
-        assert_equal(result, True)
+        assert result
 
         expected_result = [
             {
@@ -125,7 +123,7 @@ class TestCSVParser:
             }
         ]
 
-        assert_equal(parser.parsed_records, expected_result)
+        assert parser.parsed_records == expected_result
 
     def test_csv_parsing_from_json(self):
         """CSVParser - CSV within JSON"""
@@ -158,7 +156,7 @@ class TestCSVParser:
         # get parsed data
         parser = CSVParser(options)
         result = parser.parse(data)
-        assert_equal(result, True)
+        assert result
 
         expected_result = [
             {
@@ -181,7 +179,7 @@ class TestCSVParser:
             }
         ]
 
-        assert_equal(parser.parsed_records, expected_result)
+        assert parser.parsed_records == expected_result
 
     def test_nested_csv(self):
         """CSVParser - Nested CSV"""
@@ -206,7 +204,7 @@ class TestCSVParser:
         # get parsed data
         parser = CSVParser(options)
         result = parser.parse(data)
-        assert_equal(result, True)
+        assert result
 
         expected_result = [
             {
@@ -224,7 +222,7 @@ class TestCSVParser:
             }
         ]
 
-        assert_equal(parser.parsed_records, expected_result)
+        assert parser.parsed_records == expected_result
 
     def test_nested_csv_invalid(self):
         """CSVParser - Nested CSV, Invalid"""
@@ -242,7 +240,7 @@ class TestCSVParser:
         # get parsed data
         parser = CSVParser(options)
         result = parser.parse(data)
-        assert_equal(result, False)
+        assert result == False
 
         expected_result = [
             [
@@ -251,4 +249,4 @@ class TestCSVParser:
             ]
         ]
 
-        assert_equal(parser.invalid_parses, expected_result)
+        assert parser.invalid_parses == expected_result

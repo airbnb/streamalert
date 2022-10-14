@@ -17,7 +17,8 @@ import random
 
 import boto3
 
-from streamalert.alert_processor.outputs.credentials.provider import LocalFileDriver
+from streamalert.alert_processor.outputs.credentials.provider import \
+    LocalFileDriver
 from streamalert.shared.alert import Alert
 from streamalert.shared.helpers.aws_api_client import AwsKms, AwsSsm
 

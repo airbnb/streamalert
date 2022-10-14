@@ -1,9 +1,8 @@
 #! /usr/bin/env python
 """Script to sort conf/logs.json schema file"""
 import json
-import os
 import logging
-
+import os
 from collections import OrderedDict
 
 CONF_LOGS_FILE = os.path.join(os.path.dirname(__file__), '../../conf/logs.json')
@@ -19,9 +18,9 @@ class JsonFileSorter:
         self._logger = logging.getLogger()
 
     def sort_json_file(self, file_path):
-        self._logger.info('Sorting file: {}...'.format(file_path))
+        self._logger.info(f'Sorting file: {file_path}...')
 
-        with open(file_path, 'r') as infile:
+        with open(file_path) as infile:
             original_text = infile.read().strip()
 
         # Load the JSON document using OrderedDict, as it allows us to preserve the ordering

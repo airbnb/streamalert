@@ -16,19 +16,17 @@ limitations under the License.
 import json
 
 import boto3
-
 from botocore.exceptions import ClientError, ParamValidationError
 
 
 def put_mock_params(app_type):
     """Helper function to put mock parameters in parameter store for an app integration"""
     params = {
-        '{}_state'.format(app_type): {
+        f'{app_type}_state': {
             'last_timestamp': _get_formatted_timestamp(app_type),
-            'current_state': 'succeeded'
-        },
-        '{}_auth'.format(app_type): _get_auth_info(app_type)
-    }
+            'current_state': 'succeeded'},
+        f'{app_type}_auth': _get_auth_info(app_type)}
+
     ssm_client = boto3.client('ssm')
     for key, value in params.items():
         ssm_client.put_parameter(
@@ -140,18 +138,17 @@ class MockLambdaClient:
             raise ClientError(err, 'invoke')
 
         req_keywords = {'FunctionName', 'InvocationType', 'Payload'}
-        key_diff = req_keywords.difference(set(kwargs))
-        if key_diff:
-            message = 'required keyword missing: {}'.format(', '.join(key_diff))
+        if key_diff := req_keywords.difference(set(kwargs)):
+            message = f"required keyword missing: {', '.join(key_diff)}"
             err = {'Error': {'Code': 400, 'Message': message}}
             raise ClientError(err, 'invoke')
 
-        if not isinstance(kwargs['Payload'], (str, bytearray)):
-            if not hasattr(kwargs['Payload'], 'read'):
-                err = ('Invalid type for parameter Payload, value: {}, type: {}, '
-                       'valid types: <type \'str\'>, <type \'bytearray\'>, '
-                       'file-like object').format(kwargs['Payload'], type(kwargs['Payload']))
-                raise ParamValidationError(response=err)
+        if not isinstance(
+                kwargs['Payload'], (str, bytearray)) and not hasattr(
+                kwargs['Payload'], 'read'):
+            err = f"Invalid type for parameter Payload, value: {kwargs['Payload']}, type: {type(kwargs['Payload'])}, valid types: <type \'str\'>, <type \'bytearray\'>, file-like object"
+
+            raise ParamValidationError(response=err)
 
         return {'ResponseMetadata': {'RequestId': '9af88643-7b3c-43cd-baae-addb73bb4d27'}}
 
@@ -168,10 +165,7 @@ def _get_formatted_timestamp(app_type):
         return '2017-10-27T12:31:22-07:00'
     if app_type == 'slack':
         return 1422922593
-    if app_type == 'aliyun':
-        return '2018-07-23T15:42:11Z'
-
-    return 1234567890
+    return '2018-07-23T15:42:11Z' if app_type == 'aliyun' else 1234567890
 
 
 def get_event(app_type):

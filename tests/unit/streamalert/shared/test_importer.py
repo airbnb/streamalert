@@ -13,17 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use,protected-access
+# pylint: disable=protected-access
 
-from mock import call, patch
-from nose.tools import assert_equal, assert_raises
+from unittest.mock import call, patch
+
+import pytest
 from pyfakefs import fake_filesystem_unittest
 
-from streamalert.shared.importer import import_folders, _path_to_module, _python_file_paths
+from streamalert.shared.importer import (_path_to_module, _python_file_paths,
+                                         import_folders)
 
 
 class RuleImportTest(fake_filesystem_unittest.TestCase):
     """Test rule import logic with a mocked filesystem."""
+
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -45,25 +48,23 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
         """Rule - Python File Paths"""
         result = set(_python_file_paths('matchers', 'rules'))
         expected = {
-            'matchers/default.py',
-            'rules/example.py',
-            'rules/community/cloudtrail/critical_api.py'
+            'matchers/default.py', 'rules/example.py', 'rules/community/cloudtrail/critical_api.py'
         }
-        assert_equal(expected, result)
+        assert expected == result
 
     @staticmethod
     def test_path_to_module():
         """Rule - Path to Module"""
-        assert_equal('name', _path_to_module('name.py'))
-        assert_equal('a.b.c.name', _path_to_module('a/b/c/name.py'))
+        assert 'name' == _path_to_module('name.py')
+        assert 'a.b.c.name' == _path_to_module('a/b/c/name.py')
 
     @staticmethod
     def test_path_to_module_invalid():
         """Rule - Path to Module, Raises Exception"""
-        with assert_raises(NameError):
+        with pytest.raises(NameError):
             _path_to_module('a.b.py')
 
-        with assert_raises(NameError):
+        with pytest.raises(NameError):
             _path_to_module('a/b/old.name.py')
 
     @staticmethod
@@ -75,4 +76,5 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
             call('matchers.default'),
             call('rules.example'),
             call('rules.community.cloudtrail.critical_api')
-        ], any_order=True)
+        ],
+            any_order=True)

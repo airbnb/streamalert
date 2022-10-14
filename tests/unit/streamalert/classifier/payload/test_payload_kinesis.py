@@ -15,8 +15,6 @@ limitations under the License.
 """
 import json
 
-from nose.tools import assert_equal
-
 from streamalert.classifier.payload.kinesis import KinesisPayload
 
 
@@ -49,7 +47,7 @@ class TestKinesisPayload:
 
         payload = KinesisPayload(None, record)
         result = [rec._record_data for rec in list(payload.pre_parse())]
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_pre_parse_compressed(self):
         """KinesisPayload - Pre Parse, GZIP Compressed"""
@@ -63,4 +61,4 @@ class TestKinesisPayload:
 
         payload = KinesisPayload(None, record)
         result = [rec._record_data for rec in list(payload.pre_parse())]
-        assert_equal(result, expected_result)
+        assert result == expected_result

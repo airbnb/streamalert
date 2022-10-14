@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
+from unittest.mock import patch
 
+import pytest
 from botocore.exceptions import ClientError
-from mock import patch
-from nose.tools import assert_equal, assert_false, assert_true, raises
 
 from streamalert.apps.batcher import Batcher
 from tests.unit.streamalert.apps.test_helpers import MockLambdaClient
@@ -46,12 +46,12 @@ class TestAppBatcher:
 
         result = self.batcher._send_logs_to_lambda(logs)
 
-        assert_true(result)
+        assert result
         log_mock.assert_called_with('Sent %d logs to \'%s\' with Lambda request ID \'%s\'',
                                     log_count, 'destination_func',
                                     '9af88643-7b3c-43cd-baae-addb73bb4d27')
 
-    @raises(ClientError)
+    @pytest.mark.xfail(raises=ClientError)
     def test_send_logs_lambda_exception(self):
         """App Integration Batcher - Send Logs to StreamAlert, Exception"""
         MockLambdaClient._raise_exception = True
@@ -70,13 +70,13 @@ class TestAppBatcher:
                  'host': 'host'} for _ in range(2000)]
         result = self.batcher._send_logs_to_lambda(logs)
 
-        assert_false(result)
+        assert not result
 
     @patch('logging.Logger.error')
     def test_segment_and_send_one_over_max(self, log_mock):
         """App Integration Batcher - Drop One Log Over Max Size"""
         logs = [{'random_data': 'a' * 128000}]
-        assert_true(self.batcher._send_logs_to_lambda(logs))
+        assert self.batcher._send_logs_to_lambda(logs)
 
         log_mock.assert_called_with('Log payload size for single log exceeds input '
                                     'limit and will be dropped (%d > %d max).',
@@ -90,7 +90,7 @@ class TestAppBatcher:
                  'host': 'host'} for _ in range(3000)]
         self.batcher._segment_and_send(logs)
 
-        assert_equal(batcher_mock.call_count, 2)
+        assert batcher_mock.call_count == 2
 
     @patch('streamalert.apps.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send_multi(self, batcher_mock):
@@ -101,7 +101,7 @@ class TestAppBatcher:
                  'host': 'host'} for _ in range(6000)]
         self.batcher._segment_and_send(logs)
 
-        assert_equal(batcher_mock.call_count, 4)
+        assert batcher_mock.call_count == 4
 
     @patch('streamalert.apps.batcher.Batcher._segment_and_send')
     def test_send_logs_one_batch(self, batcher_mock):

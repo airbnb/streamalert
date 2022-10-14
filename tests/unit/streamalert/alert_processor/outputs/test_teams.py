@@ -13,15 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from unittest.mock import MagicMock, Mock, call, patch
+
 # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use,no-member
 import pymsteams
 from pymsteams import TeamsWebhookException
-from mock import MagicMock, Mock, patch, call
-from nose.tools import assert_equal, assert_false, assert_true
 
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.teams import TeamsOutput
-from tests.unit.streamalert.alert_processor.helpers import get_alert, get_random_alert
+from tests.unit.streamalert.alert_processor.helpers import (get_alert,
+                                                            get_random_alert)
 
 
 @patch(
@@ -213,9 +214,7 @@ class TestTeamsOutput:
 
         # Verify title
         loaded_message.title.assert_called()
-        loaded_message.title.assert_called_with(
-            'StreamAlert Rule Triggered: {}'.format(alert.rule_name)
-        )
+        loaded_message.title.assert_called_with(f'StreamAlert Rule Triggered: {alert.rule_name}')
 
         # Verify text/description
         loaded_message.text.assert_called()
@@ -307,9 +306,7 @@ class TestTeamsOutput:
 
         # Verify title
         loaded_message.title.assert_called()
-        loaded_message.title.assert_called_with(
-            'StreamAlert Rule Triggered: {}'.format(alert.rule_name)
-        )
+        loaded_message.title.assert_called_with(f'StreamAlert Rule Triggered: {alert.rule_name}')
 
         # Verify text/description
         loaded_message.text.assert_called()
@@ -355,9 +352,7 @@ class TestTeamsOutput:
 
         # Verify title
         loaded_message.title.assert_called()
-        loaded_message.title.assert_called_with(
-            'StreamAlert Rule Triggered: {}'.format(alert.rule_name)
-        )
+        loaded_message.title.assert_called_with(f'StreamAlert Rule Triggered: {alert.rule_name}')
 
         # Verify text/description
         loaded_message.text.assert_called()
@@ -403,9 +398,7 @@ class TestTeamsOutput:
 
         # Verify title
         loaded_message.title.assert_called()
-        loaded_message.title.assert_called_with(
-            'StreamAlert Rule Triggered: {}'.format(alert.rule_name)
-        )
+        loaded_message.title.assert_called_with(f'StreamAlert Rule Triggered: {alert.rule_name}')
 
         # Verify text/description
         loaded_message.text.assert_called()
@@ -464,9 +457,7 @@ class TestTeamsOutput:
 
         # Verify title
         loaded_message.title.assert_called()
-        loaded_message.title.assert_called_with(
-            'StreamAlert Rule Triggered: {}'.format(alert.rule_name)
-        )
+        loaded_message.title.assert_called_with(f'StreamAlert Rule Triggered: {alert.rule_name}')
 
         # Verify text/description
         loaded_message.text.assert_called()
@@ -482,7 +473,7 @@ class TestTeamsOutput:
         record_section_mock.assert_called()
         record_section_mock.assert_called_with(alert.record)
         add_sections_mock.assert_called()
-        assert_equal(add_sections_mock.call_count, 1)
+        assert add_sections_mock.call_count == 1
         loaded_message.addSection.assert_called()
         loaded_message.addSection.assert_has_calls(
             [
@@ -523,9 +514,7 @@ class TestTeamsOutput:
 
         # Verify title
         loaded_message.title.assert_called()
-        loaded_message.title.assert_called_with(
-            'StreamAlert Rule Triggered: {}'.format(alert.rule_name)
-        )
+        loaded_message.title.assert_called_with(f'StreamAlert Rule Triggered: {alert.rule_name}')
 
         # Verify text/description
         loaded_message.text.assert_called()
@@ -548,7 +537,7 @@ class TestTeamsOutput:
 
         # Verify buttons
         add_buttons_mock.assert_called()
-        assert_equal(add_buttons_mock.call_count, 1)
+        assert add_buttons_mock.call_count == 1
 
     @patch('logging.Logger.info')
     @patch.object(TeamsOutput, '_format_message')
@@ -559,7 +548,7 @@ class TestTeamsOutput:
             send=Mock(return_value='Worked')
         )
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         # Tests
         log_mock.assert_called()
@@ -576,7 +565,7 @@ class TestTeamsOutput:
         message_mock.return_value = Mock(
             send=Mock(side_effect=exception)
         )
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert not self._dispatcher.dispatch(get_alert(), self.OUTPUT)
 
         # Tests
         log_mock.assert_called()
@@ -595,10 +584,8 @@ class TestTeamsOutput:
         descriptor = "bad_descriptor"
 
         # Tests
-        assert_false(
-            self._dispatcher.dispatch(
-                get_alert(), ":".join([self.SERVICE, descriptor])
-            )
+        assert not self._dispatcher.dispatch(
+            get_alert(), ":".join([self.SERVICE, descriptor])
         )
         log_mock.assert_called()
         log_mock.assert_has_calls(

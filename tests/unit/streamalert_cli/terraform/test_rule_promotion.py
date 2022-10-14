@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal
 
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import rule_promotion
@@ -77,9 +76,9 @@ class TestRulePromotion:
             }
         }
 
-        assert_equal(result, expected)
+        assert result == expected
 
     def test_generate_disabled(self):
         """CLI - Terraform Generate Rule Promotion, Staging Disabled"""
         result = rule_promotion.generate_rule_promotion(config=self.config)
-        assert_equal(result, False)
+        assert result == False

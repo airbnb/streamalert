@@ -13,28 +13,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
 import os
+from datetime import datetime
+from unittest.mock import Mock, patch
 
 import boto3
+import pytest
 from botocore.exceptions import ClientError
-from mock import Mock, patch
 from moto import mock_ssm
-from nose.tools import (
-    assert_equal,
-    raises
-)
 
 from streamalert.shared.config import load_config
 from streamalert.threat_intel_downloader.exceptions import (
-    ThreatStreamCredsError,
-    ThreatStreamLambdaInvokeError,
-    ThreatStreamRequestsError
-)
+    ThreatStreamCredsError, ThreatStreamLambdaInvokeError,
+    ThreatStreamRequestsError)
 from streamalert.threat_intel_downloader.main import ThreatStream
 from tests.unit.streamalert.apps.test_helpers import MockLambdaClient
 from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
-from tests.unit.streamalert.threat_intel_downloader.test_helpers import put_mock_params
+from tests.unit.streamalert.threat_intel_downloader.test_helpers import \
+    put_mock_params
 
 
 @patch('time.sleep', Mock())
@@ -116,7 +112,7 @@ class TestThreatStream:
             'memory': '128',
             'timeout': '60'
         }
-        assert_equal(self.threatstream._load_config(arn), expected_config)
+        assert self.threatstream._load_config(arn) == expected_config
 
     def test_process_data(self):
         """ThreatStream - Process Raw IOC Data"""
@@ -144,7 +140,7 @@ class TestThreatStream:
                 'expiration_ts': 1512000062
             }
         ]
-        assert_equal(processed_data, expected_result)
+        assert processed_data == expected_result
 
     @mock_ssm
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
@@ -153,8 +149,8 @@ class TestThreatStream:
         value = {'api_user': 'test_user', 'api_key': 'test_key'}
         put_mock_params(ThreatStream.CRED_PARAMETER_NAME, value)
         self.threatstream._load_api_creds()
-        assert_equal(self.threatstream.api_user, 'test_user')
-        assert_equal(self.threatstream.api_key, 'test_key')
+        assert self.threatstream.api_user == 'test_user'
+        assert self.threatstream.api_key == 'test_key'
 
     @mock_ssm
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
@@ -163,25 +159,25 @@ class TestThreatStream:
         value = {'api_user': 'test_user', 'api_key': 'test_key'}
         put_mock_params(ThreatStream.CRED_PARAMETER_NAME, value)
         self.threatstream._load_api_creds()
-        assert_equal(self.threatstream.api_user, 'test_user')
-        assert_equal(self.threatstream.api_key, 'test_key')
+        assert self.threatstream.api_user == 'test_user'
+        assert self.threatstream.api_key == 'test_key'
         self.threatstream._load_api_creds()
 
     @mock_ssm
-    @raises(ClientError)
+    @pytest.mark.xfail(raises=ClientError)
     def test_load_api_creds_client_errors(self):
         """ThreatStream - Load API creds from SSM, ClientError"""
         self.threatstream._load_api_creds()
 
     @patch('boto3.client')
-    @raises(ThreatStreamCredsError)
+    @pytest.mark.xfail(raises=ThreatStreamCredsError)
     def test_load_api_creds_empty_response(self, boto_mock):
         """ThreatStream - Load API creds from SSM, Empty Response"""
         boto_mock.return_value.get_parameter.return_value = None
         self.threatstream._load_api_creds()
 
     @mock_ssm
-    @raises(ThreatStreamCredsError)
+    @pytest.mark.xfail(raises=ThreatStreamCredsError)
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_load_api_creds_invalid_json(self):
         """ThreatStream - Load API creds from SSM with invalid JSON"""
@@ -194,7 +190,7 @@ class TestThreatStream:
         self.threatstream._load_api_creds()
 
     @mock_ssm
-    @raises(ThreatStreamCredsError)
+    @pytest.mark.xfail(raises=ThreatStreamCredsError)
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_load_api_creds_no_api_key(self):
         """ThreatStream - Load API creds from SSM, No API Key"""
@@ -210,15 +206,15 @@ class TestThreatStream:
         date_mock.utcfromtimestamp = datetime.utcfromtimestamp
         expected_value = datetime(year=2017, month=11, day=30)
         value = self.threatstream._epoch_time(None)
-        assert_equal(datetime.utcfromtimestamp(value), expected_value)
+        assert datetime.utcfromtimestamp(value) == expected_value
 
     def test_epoch_from_time(self):
         """ThreatStream - Epoch, From Timestamp"""
         expected_value = datetime(year=2017, month=11, day=30)
         value = self.threatstream._epoch_time('2017-11-30T00:00:00.000Z')
-        assert_equal(datetime.utcfromtimestamp(value), expected_value)
+        assert datetime.utcfromtimestamp(value) == expected_value
 
-    @raises(ValueError)
+    @pytest.mark.xfail(raises=ValueError)
     def test_epoch_from_bad_time(self):
         """ThreatStream - Epoch, Error"""
         self.threatstream._epoch_time('20171130T00:00:00.000Z')
@@ -226,26 +222,26 @@ class TestThreatStream:
     def test_excluded_sub_types(self):
         """ThreatStream - Excluded Sub Types Property"""
         expected_value = ['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip']
-        assert_equal(self.threatstream.excluded_sub_types, expected_value)
+        assert self.threatstream.excluded_sub_types == expected_value
 
     def test_ioc_keys(self):
         """ThreatStream - IOC Keys Property"""
         expected_value = ['expiration_ts', 'itype', 'source', 'type', 'value']
-        assert_equal(self.threatstream.ioc_keys, expected_value)
+        assert self.threatstream.ioc_keys == expected_value
 
     def test_ioc_sources(self):
         """ThreatStream - IOC Sources Property"""
         expected_value = ['crowdstrike', '@airbnb.com']
-        assert_equal(self.threatstream.ioc_sources, expected_value)
+        assert self.threatstream.ioc_sources == expected_value
 
     def test_ioc_types(self):
         """ThreatStream - IOC Types Property"""
         expected_value = ['domain', 'ip', 'md5']
-        assert_equal(self.threatstream.ioc_types, expected_value)
+        assert self.threatstream.ioc_types == expected_value
 
     def test_threshold(self):
         """ThreatStream - Threshold Property"""
-        assert_equal(self.threatstream.threshold, 499000)
+        assert self.threatstream.threshold == 499000
 
     @patch('streamalert.threat_intel_downloader.main.ThreatStream._finalize')
     @patch('streamalert.threat_intel_downloader.main.requests.get')
@@ -286,7 +282,7 @@ class TestThreatStream:
         ]
         finalize_mock.assert_called_with(expected_intel, next_url)
 
-    @raises(ThreatStreamRequestsError)
+    @pytest.mark.xfail(raises=ThreatStreamRequestsError)
     @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect_with_unauthed(self, get_mock):
         """ThreatStream - Connection to ThreatStream.com, Unauthorized Error"""
@@ -294,14 +290,14 @@ class TestThreatStream:
         get_mock.return_value.status_code = 401
         self.threatstream._connect('previous_url')
 
-    @raises(ThreatStreamRequestsError)
+    @pytest.mark.xfail(raises=ThreatStreamRequestsError)
     @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect_with_retry_error(self, get_mock):
         """ThreatStream - Connection to ThreatStream.com, Retry Error"""
         get_mock.return_value.status_code = 500
         self.threatstream._connect('previous_url')
 
-    @raises(ThreatStreamRequestsError)
+    @pytest.mark.xfail(raises=ThreatStreamRequestsError)
     @patch('streamalert.threat_intel_downloader.main.requests.get')
     def test_connect_with_unknown_error(self, get_mock):
         """ThreatStream - Connection to ThreatStream.com, Unknown Error"""
@@ -355,7 +351,7 @@ class TestThreatStream:
         batch_writer.__enter__.return_value.put_item.assert_called_with(Item=expected_intel)
 
     @patch('boto3.resource')
-    @raises(ClientError)
+    @pytest.mark.xfail(raises=ClientError)
     def test_write_to_dynamodb_table_error(self, boto_mock):
         """ThreatStream - Write Intel to DynamoDB Table, Error"""
         intel = [self._get_fake_intel('malicious_domain.com', 'test_source')]
@@ -373,7 +369,7 @@ class TestThreatStream:
         boto_mock.assert_called_once()
 
     @patch('boto3.client', Mock(return_value=MockLambdaClient()))
-    @raises(ThreatStreamLambdaInvokeError)
+    @pytest.mark.xfail(raises=ThreatStreamLambdaInvokeError)
     def test_invoke_lambda_function_error(self):
         """ThreatStream - Invoke Lambda Function, Error"""
         MockLambdaClient._raise_exception = True

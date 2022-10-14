@@ -15,13 +15,12 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
 import unittest
+from unittest import mock
 
 from botocore.exceptions import ClientError
-import mock
-from nose.tools import assert_equal
 
 from streamalert_cli.manage_lambda import rollback
-from tests.unit.helpers.config import basic_streamalert_config, MockCLIConfig
+from tests.unit.helpers.config import MockCLIConfig, basic_streamalert_config
 
 
 class MockOptions:
@@ -82,13 +81,12 @@ class RollbackTest(unittest.TestCase):
             'alert', 'alert_merger', 'apps', 'athena', 'classifier',
             'rule', 'rule_promo', 'scheduled_queries', 'threat_intel_downloader'
         ]
-        assert_equal(
+        assert (
             rollback.RollbackCommand.handler(
                 MockOptions(None, funcs),
                 MockCLIConfig(config=basic_streamalert_config())
-            ),
-            True
-        )
+            ) ==
+            True)
         mock_helper.assert_has_calls([
             mock.call(mock.ANY, 'unit-test_streamalert_alert_processor'),
             mock.call(mock.ANY, 'unit-test_streamalert_alert_merger'),
@@ -108,13 +106,12 @@ class RollbackTest(unittest.TestCase):
     def test_rollback_subset(self, mock_helper):
         """CLI - Lambda rollback apps and rule"""
         mock_helper.return_value = True
-        assert_equal(
+        assert (
             rollback.RollbackCommand.handler(
                 MockOptions(None, ['apps', 'rule']),
                 MockCLIConfig(config=basic_streamalert_config())
-            ),
-            True
-        )
+            ) ==
+            True)
         mock_helper.assert_has_calls([
             mock.call(mock.ANY, 'unit-test_corp_box_admin_events_box_collector_app'),
             mock.call(mock.ANY, 'unit-test_corp_duo_admin_duo_admin_collector_app'),

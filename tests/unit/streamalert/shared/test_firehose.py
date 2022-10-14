@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from unittest.mock import Mock, patch
+
 from botocore.exceptions import ClientError
-from mock import Mock, patch
-from nose.tools import assert_equal
 
 from streamalert.shared.firehose import FirehoseClient
 
@@ -69,10 +69,7 @@ class TestFirehoseClient:
 
     @classmethod
     def _sample_raw_records(cls, count=2):
-        return [
-            {'key_{}'.format(i): 'value_{}'.format(i)}
-            for i in range(count)
-        ]
+        return [{f'key_{i}': f'value_{i}'} for i in range(count)]
 
     def test_records_to_json_list(self):
         """FirehoseClient - Records JSON Lines"""
@@ -84,7 +81,7 @@ class TestFirehoseClient:
         ]
 
         result = FirehoseClient._records_to_json_list(records)
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_record_batches(self):
         """FirehoseClient - Record Batches"""
@@ -98,7 +95,7 @@ class TestFirehoseClient:
         ]
 
         result = list(FirehoseClient._record_batches(records, 'test_function_name'))
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     @patch.object(FirehoseClient, '_log_failed')
     def test_record_batches_rec_too_large(self, failure_mock):
@@ -108,7 +105,7 @@ class TestFirehoseClient:
         ]
 
         result = list(FirehoseClient._record_batches(records, 'test_function_name'))
-        assert_equal(result, [])
+        assert not result
         failure_mock.assert_called_with(1, 'test_function_name')
 
     def test_record_batches_max_batch_count(self):
@@ -116,25 +113,22 @@ class TestFirehoseClient:
         records = self._sample_raw_records(count=501)
 
         result = list(FirehoseClient._record_batches(records, 'test_function_name'))
-        assert_equal(len(result), 2)
-        assert_equal(len(result[0]), 500)
-        assert_equal(len(result[1]), 1)
+        assert len(result) == 2
+        assert len(result[0]) == 500
+        assert len(result[1]) == 1
 
     def test_record_batches_max_batch_size(self):
         """FirehoseClient - Record Batches, Max Batch Size"""
-        records = [
-            {'key_{}'.format(i): 'test' * 100000}
-            for i in range(10)
-        ]
+        records = [{f'key_{i}': 'test' * 100000} for i in range(10)]
         result = list(FirehoseClient._record_batches(records, 'test_function_name'))
-        assert_equal(len(result), 2)
-        assert_equal(len(result[0]), 9)
-        assert_equal(len(result[1]), 1)
+        assert len(result) == 2
+        assert len(result[0]) == 9
+        assert len(result[1]) == 1
         batch_size_01 = sum(len(rec) for rec in result[0])
         batch_size_02 = sum(len(rec) for rec in result[1])
-        assert_equal(batch_size_01 < FirehoseClient.MAX_BATCH_SIZE, True)
-        assert_equal(batch_size_02 < FirehoseClient.MAX_BATCH_SIZE, True)
-        assert_equal(batch_size_01 + batch_size_02 > FirehoseClient.MAX_BATCH_SIZE, True)
+        assert batch_size_01 < FirehoseClient.MAX_BATCH_SIZE
+        assert batch_size_02 < FirehoseClient.MAX_BATCH_SIZE
+        assert batch_size_01 + batch_size_02 > FirehoseClient.MAX_BATCH_SIZE
 
     def test_sanitize_keys(self):
         """FirehoseClient - Sanitize Keys"""
@@ -161,7 +155,7 @@ class TestFirehoseClient:
         }
 
         sanitized_event = FirehoseClient.sanitize_keys(test_event)
-        assert_equal(sanitized_event, expected_sanitized_event)
+        assert sanitized_event == expected_sanitized_event
 
     def test_strip_successful_records(self):
         """FirehoseClient - Strip Successful Records"""
@@ -178,7 +172,7 @@ class TestFirehoseClient:
         expected_batch = [{'other': 'failure'}]
         FirehoseClient._strip_successful_records(batch, response)
 
-        assert_equal(batch, expected_batch)
+        assert batch == expected_batch
 
     def test_categorize_records(self):
         """FirehoseClient - Categorize Records"""
@@ -194,14 +188,14 @@ class TestFirehoseClient:
             'log_type_01_sub_type_01': payloads[0].parsed_records,
             'log_type_02_sub_type_01': payloads[1].parsed_records
         }
-        assert_equal(dict(result), expected_result)
+        assert dict(result) == expected_result
 
     def test_categorize_records_none_enabled(self):
         """FirehoseClient - Categorize Records, None Enabled"""
         payloads = self._sample_payloads
         result = self._client._categorize_records(payloads)
 
-        assert_equal(dict(result), dict())
+        assert not dict(result)
 
     def test_categorize_records_subset_enabled(self):
         """FirehoseClient - Categorize Records, Subset Enabled"""
@@ -215,7 +209,7 @@ class TestFirehoseClient:
         expected_result = {
             'log_type_01_sub_type_01': payloads[0].parsed_records
         }
-        assert_equal(dict(result), expected_result)
+        assert dict(result) == expected_result
 
     @patch.object(FirehoseClient, '_log_failed')
     def test_finalize_failures(self, failure_mock):
@@ -304,7 +298,7 @@ class TestFirehoseClient:
         """FirehoseClient - Sanitized Value"""
         expected_result = 'test_log_type_name'
         result = FirehoseClient.sanitized_value('test*log.type-name')
-        assert_equal(result, expected_result)
+        assert result == expected_result
 
     def test_enabled_log_source(self):
         """FirehoseClient - Enabled Log Source"""
@@ -312,12 +306,12 @@ class TestFirehoseClient:
         FirehoseClient._ENABLED_LOGS = {
             log: 'enabled:log'
         }
-        assert_equal(FirehoseClient.enabled_log_source(log), True)
+        assert FirehoseClient.enabled_log_source(log)
 
     def test_enabled_log_source_false(self):
         """FirehoseClient - Enabled Log Source, False"""
         log = 'enabled_log'
-        assert_equal(FirehoseClient.enabled_log_source(log), False)
+        assert FirehoseClient.enabled_log_source(log) == False
 
     def test_load_enabled_sources(self):
         """FirehoseClient - Load Enabled Log Sources"""
@@ -340,7 +334,7 @@ class TestFirehoseClient:
         }
 
         enabled_logs = FirehoseClient.load_enabled_log_sources(firehose_config, logs_config)
-        assert_equal(enabled_logs, expected_result)
+        assert enabled_logs == expected_result
 
     @patch('logging.Logger.error')
     def test_load_enabled_sources_invalid_log(self, log_mock):
@@ -357,7 +351,7 @@ class TestFirehoseClient:
         }
 
         enabled_logs = FirehoseClient.load_enabled_log_sources(firehose_config, logs_config)
-        assert_equal(enabled_logs, dict())
+        assert enabled_logs == {}
         log_mock.assert_called_with(
             'Enabled Firehose log %s not declared in logs.json', log_type
         )
@@ -376,7 +370,7 @@ class TestFirehoseClient:
         }
 
         enabled_logs = FirehoseClient.load_enabled_log_sources(firehose_config, logs_config)
-        assert_equal(enabled_logs, dict())
+        assert enabled_logs == {}
         log_mock.assert_called_with(
             'Enabled Firehose log %s not declared in logs.json', log_type
         )
@@ -389,7 +383,7 @@ class TestFirehoseClient:
                 firehose_config={'enabled': True},
                 log_sources=None
             )
-            assert_equal(isinstance(client, FirehoseClient), True)
+            assert isinstance(client, FirehoseClient)
 
     def test_load_from_config_disabled(self):
         """FirehoseClient - Load From Config, Disabled"""
@@ -398,7 +392,7 @@ class TestFirehoseClient:
             firehose_config={},
             log_sources=None
         )
-        assert_equal(client, None)
+        assert client is None
 
     @patch.object(FirehoseClient, '_send_batch')
     def test_send(self, send_batch_mock):
@@ -501,7 +495,7 @@ class TestFirehoseClient:
             for log_name in log_names
         ]
 
-        assert_equal(expected_results, results)
+        assert expected_results == results
 
     def test_generate_firehose_name_prefix(self):
         """FirehoseClient - Test helper to generate firehose stream name with prefix"""
@@ -523,7 +517,7 @@ class TestFirehoseClient:
             for log_name in log_names
         ]
 
-        assert_equal(expected_results, results)
+        assert expected_results == results
 
     def test_artifacts_firehose_stream_name(self):
         """FirehoseClient - Test generate artifacts firehose stream name"""
@@ -538,16 +532,14 @@ class TestFirehoseClient:
             }
         }
 
-        assert_equal(
-            self._client.artifacts_firehose_stream_name(config_data),
-            'unittest_streamalert_artifacts'
-        )
+        assert (
+            self._client.artifacts_firehose_stream_name(config_data) ==
+            'unittest_streamalert_artifacts')
 
         config_data['lambda']['artifact_extractor_config']['firehose_stream_name'] = (
             'test_artifacts_fh_name'
         )
 
-        assert_equal(
-            self._client.artifacts_firehose_stream_name(config_data),
-            'test_artifacts_fh_name'
-        )
+        assert (
+            self._client.artifacts_firehose_stream_name(config_data) ==
+            'test_artifacts_fh_name')

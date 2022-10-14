@@ -14,15 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime, timezone
-from mock import MagicMock, patch
-from nose.tools import assert_equals, assert_false, assert_true
+from unittest.mock import MagicMock, patch
 
 from streamalert.scheduled_queries.query_packs.manager import (
-    QueryPack, QueryPacksManager,
-    QueryPackExecutionContext,
-    QueryPacksManagerFactory,
-)
-from streamalert.scheduled_queries.query_packs.parameters import QueryParameterGenerator
+    QueryPack, QueryPackExecutionContext, QueryPacksManager,
+    QueryPacksManagerFactory)
+from streamalert.scheduled_queries.query_packs.parameters import \
+    QueryParameterGenerator
 
 
 class TestQueryPackExecutionContext:
@@ -40,12 +38,12 @@ class TestQueryPackExecutionContext:
 
     def test_methods(self):
         """StreamQuery - QueryPackExecutionContext - Test methods"""
-        assert_equals(self._cache, self._context.state_manager)
-        assert_equals(self._athena, self._context.athena_client)
-        assert_equals(self._logger, self._context.logger)
-        assert_equals(self._params, self._context.parameter_generator)
-        assert_equals(self._repo, self._context.query_pack_repository)
-        assert_equals(self._clock, self._context.clock)
+        assert self._cache == self._context.state_manager
+        assert self._athena == self._context.athena_client
+        assert self._logger == self._context.logger
+        assert self._params == self._context.parameter_generator
+        assert self._repo == self._context.query_pack_repository
+        assert self._clock == self._context.clock
 
 
 class TestQueryPack:
@@ -64,11 +62,11 @@ class TestQueryPack:
         self._config.tags = ['hourly']
         self._config.name = 'test_pack_name'
 
-        assert_equals(self._query_pack.unique_id, 'test_pack_name')
+        assert self._query_pack.unique_id == 'test_pack_name'
 
     def test_query_pack_configuration(self):
         """StreamQuery - QueryPack - query_pack_configuration"""
-        assert_equals(self._query_pack.query_pack_configuration, self._config)
+        assert self._query_pack.query_pack_configuration == self._config
 
     def test_load_from_cache(self):
         """StreamQuery - QueryPack - load_from_cache"""
@@ -77,19 +75,19 @@ class TestQueryPack:
             'query_execution_id': '1111-2222-3333-4444'
         }
         self._query_pack.load_from_cache()
-        assert_equals(self._query_pack.query_execution_id, '1111-2222-3333-4444')
-        assert_true(self._query_pack.is_previously_started)
+        assert self._query_pack.query_execution_id == '1111-2222-3333-4444'
+        assert self._query_pack.is_previously_started
 
     def test_load_from_cache_none(self):
         """StreamQuery - QueryPack - load_from_cache - not in cache"""
         self._execution.state_manager.has.return_value = False
         self._query_pack.load_from_cache()
-        assert_equals(self._query_pack.query_execution_id, None)
-        assert_false(self._query_pack.is_previously_started)
+        assert self._query_pack.query_execution_id is None
+        assert not self._query_pack.is_previously_started
 
     def test_query_execution_before_start(self):
         """StreamQuery - QueryPack - query_execution - before start"""
-        assert_equals(self._query_pack.query_execution, None)
+        assert self._query_pack.query_execution is None
 
     def test_query_execution_start(self):
         """StreamQuery - QueryPack - query_execution - start"""
@@ -97,7 +95,7 @@ class TestQueryPack:
         self._config.generate_query.return_value = 'MOCK QUERY STRING'
         self._execution.athena_client.run_async_query.return_value = 'query_id'
 
-        assert_equals(self._query_pack.start_query(), 'query_id')
+        assert self._query_pack.start_query() == 'query_id'
 
         self._execution.athena_client.run_async_query.assert_called_with('MOCK QUERY STRING')
 
@@ -112,8 +110,8 @@ class TestQueryPack:
         mock_execution = MagicMock(name='MockedQueryExecution')
         self._execution.athena_client.get_query_execution.return_value = mock_execution
 
-        assert_equals(self._query_pack.load_query_execution(), mock_execution)
-        assert_equals(self._query_pack.query_execution, mock_execution)
+        assert self._query_pack.load_query_execution() == mock_execution
+        assert self._query_pack.query_execution == mock_execution
 
     def test_fetch_results_done(self):
         """StreamQuery - QueryPack - fetch_results - done"""
@@ -129,7 +127,7 @@ class TestQueryPack:
         mocked_res = MagicMock(name='MockedResult')
         self._execution.athena_client.get_query_result.return_value = mocked_res
 
-        assert_equals(self._query_pack.fetch_results(), mocked_res)
+        assert self._query_pack.fetch_results() == mocked_res
 
     def test_fetch_results_not_done(self):
         """StreamQuery - QueryPack - fetch_results - not done"""
@@ -142,7 +140,7 @@ class TestQueryPack:
         self._query_pack.load_query_execution()
 
         mock_execution.is_succeeded.return_value = False
-        assert_equals(self._query_pack.fetch_results(), None)
+        assert self._query_pack.fetch_results() is None
 
 
 class TestQueryPacksManager:
@@ -180,7 +178,7 @@ class TestQueryPacksManager:
             'Executing Query Pack "%s"...', 'test_query_pack_name_2'
         )
 
-        assert_equals(self._manager.num_queries_still_running, 2)
+        assert self._manager.num_queries_still_running == 2
 
     def test_start_queries_from_cache(self):
         """StreamQuery - QueryPacksManager - start_queries - from cache"""
@@ -223,35 +221,35 @@ class TestQueryParameterGenerator:
 
     def test_generate_utcdatehour_minus7day(self):
         """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus7day"""
-        assert_equals(self._generator.generate('utcdatehour_minus7day'), '2018-12-25-01')
+        assert self._generator.generate('utcdatehour_minus7day') == '2018-12-25-01'
 
     def test_generate_utcdatehour_minus1hour(self):
         """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus1hour"""
-        assert_equals(self._generator.generate('utcdatehour_minus1hour'), '2019-01-01-00')
+        assert self._generator.generate('utcdatehour_minus1hour') == '2019-01-01-00'
 
     def test_generate_utctimestamp_minus1hour(self):
         """StreamQuery - QueryParameterGenerator - generate - utctimestamp_minus1hour"""
-        assert_equals(self._generator.generate('utctimestamp_minus1hour'), '1546300861')
+        assert self._generator.generate('utctimestamp_minus1hour') == '1546300861'
 
     def test_generate_utcdatehour_minus2hour(self):
         """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus2hour"""
-        assert_equals(self._generator.generate('utcdatehour_minus2hour'), '2018-12-31-23')
+        assert self._generator.generate('utcdatehour_minus2hour') == '2018-12-31-23'
 
     def test_generate_utcdatehour_minus1day(self):
         """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus1day"""
-        assert_equals(self._generator.generate('utcdatehour_minus1day'), '2018-12-31-01')
+        assert self._generator.generate('utcdatehour_minus1day') == '2018-12-31-01'
 
     def test_generate_utcdatehour_minus2day(self):
         """StreamQuery - QueryParameterGenerator - generate - utcdatehour_minus2day"""
-        assert_equals(self._generator.generate('utcdatehour_minus2day'), '2018-12-30-01')
+        assert self._generator.generate('utcdatehour_minus2day') == '2018-12-30-01'
 
     def test_generate_utcdatehour(self):
         """StreamQuery - QueryParameterGenerator - generate - utcdatehour"""
-        assert_equals(self._generator.generate('utcdatehour'), '2019-01-01-01')
+        assert self._generator.generate('utcdatehour') == '2019-01-01-01'
 
     def test_generate_utctimestamp(self):
         """StreamQuery - QueryParameterGenerator - generate - utctimestamp"""
-        assert_equals(self._generator.generate('utctimestamp'), '1546304461')
+        assert self._generator.generate('utctimestamp') == '1546304461'
 
     def test_generate_unsupported(self):
         """StreamQuery - QueryParameterGenerator - generate - unsupported"""
@@ -265,11 +263,11 @@ class TestQueryParameterGenerator:
         """StreamQuery - QueryParameterGenerator - generate_advanced - Function"""
         def thing(date):
             return date.strftime('%Y-%m-%d-%H-%I-%S')
-        assert_equals(self._generator.generate_advanced('thing', thing), '2019-01-01-01-01-01')
+        assert self._generator.generate_advanced('thing', thing) == '2019-01-01-01-01-01'
 
     def test_generate_advanced_nothing(self):
         """StreamQuery - QueryParameterGenerator - generate_advanced - Nothing"""
-        assert_equals(self._generator.generate_advanced('utctimestamp', None), '1546304461')
+        assert self._generator.generate_advanced('utctimestamp', None) == '1546304461'
 
 
 @patch('streamalert.scheduled_queries.query_packs.manager.QueryPacksManager')
@@ -281,6 +279,6 @@ def test_new_manager(constructor_spy):
     instance = MagicMock(name='MockedManager')
     constructor_spy.return_value = instance
 
-    assert_equals(factory.new_manager(), instance)
+    assert factory.new_manager() == instance
 
     constructor_spy.assert_called_with(context)

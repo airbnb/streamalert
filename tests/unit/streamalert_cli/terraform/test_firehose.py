@@ -13,10 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal
 
 from streamalert_cli.config import CLIConfig
 from streamalert_cli.terraform import common, firehose
+
 
 class TestFirehoseGenerate:
     """Class for testing firehose generation code"""
@@ -57,7 +57,7 @@ class TestFirehoseGenerate:
             }
         }
 
-        assert_equal(cluster_dict, expected_result)
+        assert cluster_dict == expected_result
 
     def test_firehose_enabled_log(self):
         """CLI - Terraform Generate Kinesis Firehose, Enabled Log"""
@@ -88,7 +88,7 @@ class TestFirehoseGenerate:
                 }
             }
         }
-        assert_equal(cluster_dict, expected_result)
+        assert cluster_dict == expected_result
 
     def test_firehose_enabled_log_alarm_defaults(self):
         """CLI - Terraform Generate Kinesis Firehose, Enabled Alarm - Default Settings"""
@@ -126,7 +126,7 @@ class TestFirehoseGenerate:
             }
         }
 
-        assert_equal(cluster_dict, expected_result)
+        assert cluster_dict == expected_result
 
     def test_firehose_enabled_log_alarm_custom(self):
         """CLI - Terraform Generate Kinesis Firehose, Enabled Alarm - Custom Settings"""
@@ -170,7 +170,7 @@ class TestFirehoseGenerate:
             }
         }
 
-        assert_equal(cluster_dict, expected_result)
+        assert cluster_dict == expected_result
 
     def test_firehose_enabled_log_alarm_custom_sns(self):
         """CLI - Terraform Generate Kinesis Firehose, Enabled Alarm - Custom SNS"""
@@ -207,7 +207,7 @@ class TestFirehoseGenerate:
             }
         }
 
-        assert_equal(cluster_dict, expected_result)
+        assert cluster_dict == expected_result
 
     def test_firehose_enabled_log_json(self):
         """CLI - Terraform Generate Kinesis Firehose, Enabled Log with output in JSON format"""
@@ -238,4 +238,4 @@ class TestFirehoseGenerate:
                 }
             }
         }
-        assert_equal(cluster_dict, expected_result)
+        assert cluster_dict == expected_result

@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal
 
 from streamalert.classifier.payload.sns import SnsPayload
 
@@ -38,4 +37,4 @@ class TestSnsPayload:
 
         payload = SnsPayload(None, record)
         result = [rec._record_data for rec in list(payload.pre_parse())]
-        assert_equal(result, expected_result)
+        assert result == expected_result
