@@ -22,27 +22,18 @@ class ConfigureCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add configure subparser: manage.py configure key value"""
-        set_parser_epilog(
-            subparser,
-            epilog=(
-                '''\
+        set_parser_epilog(subparser,
+                          epilog=('''\
                 Example:
 
                     manage.py configure prefix orgname
-                '''
-            )
-        )
+                '''))
 
-        subparser.add_argument(
-            'key',
-            choices=['prefix', 'aws_account_id'],
-            help='Value of key being configured'
-        )
+        subparser.add_argument('key',
+                               choices=['prefix', 'aws_account_id'],
+                               help='Value of key being configured')
 
-        subparser.add_argument(
-            'value',
-            help='Value to assign to key being configured'
-        )
+        subparser.add_argument('value', help='Value to assign to key being configured')
 
     @classmethod
     def handler(cls, options, config):

@@ -21,8 +21,7 @@ class StagingStatistic:
     _ALERT_COUNT_UNKOWN = -1
 
     _COUNT_QUERY_TEMPLATE = (
-        "SELECT rule_name, count(*) AS count FROM alerts WHERE {where_clause} GROUP BY rule_name"
-    )
+        "SELECT rule_name, count(*) AS count FROM alerts WHERE {where_clause} GROUP BY rule_name")
 
     _COUNT_QUERY_WHERE_FRAGMENT = "(dt >= '{date}-{hour:02}' AND rule_name = '{rule_name}')"
 
@@ -63,20 +62,16 @@ class StagingStatistic:
 
     @property
     def sql_where_fragment(self):
-        return self._COUNT_QUERY_WHERE_FRAGMENT.format(
-            date=self._staged_at.date().isoformat(),
-            hour=self._staged_at.hour,
-            rule_name=self._rule_name
-        )
+        return self._COUNT_QUERY_WHERE_FRAGMENT.format(date=self._staged_at.date().isoformat(),
+                                                       hour=self._staged_at.hour,
+                                                       rule_name=self._rule_name)
 
     @property
     def sql_info_statement(self):
         """Athena info statement for this rule to get comprehensive alert info."""
-        return self._INFO_QUERY_TEMPLATE.format(
-            date=self._staged_at.date().isoformat(),
-            hour=self._staged_at.hour,
-            rule_name=self._rule_name
-        )
+        return self._INFO_QUERY_TEMPLATE.format(date=self._staged_at.date().isoformat(),
+                                                hour=self._staged_at.hour,
+                                                rule_name=self._rule_name)
 
     @property
     def rule_name(self):
@@ -95,33 +90,23 @@ class StagingStatistic:
             'pad': 34
         })
 
-        info['staged_time_label'] = (
-            'Remaining Stage Time:'
-            if self.staged_until > self._current_time
-            else 'Time Past Staging:\t'
-        )
+        info['staged_time_label'] = ('Remaining Stage Time:'
+                                     if self.staged_until > self._current_time else
+                                     'Time Past Staging:\t')
 
         staged_diff = abs(self._current_time - self.staged_until)
-        info['staged_delta'] = '{}d {}h {}m'.format(
-            staged_diff.days,
-            staged_diff.seconds // 3600,
-            (staged_diff.seconds // 60) % 60
-        )
+        info[
+            'staged_delta'] = f'{staged_diff.days}d {staged_diff.seconds // 3600}h {staged_diff.seconds // 60 % 60}m'
 
-        info['info_link'] = (
-            self._QUERY_EXECUTION_LINK_TEMPLATE.format(execution_id=self.execution_id)
-            if self.execution_id
-            else 'n/a'
-        )
+        info['info_link'] = (self._QUERY_EXECUTION_LINK_TEMPLATE.format(
+            execution_id=self.execution_id) if self.execution_id else 'n/a')
 
         info['alert_count'] = 'unknown' if info['alert_count'] == -1 else info['alert_count']
 
         # \u25E6 is unicode for a bullet
-        return (
-            '\u25E6 {_rule_name}\n'
-            '\t- {staged_at_label}:\t\t\t\t\t{_staged_at} UTC\n'
-            '\t- {staged_until_label}:\t\t\t\t\t{staged_until} UTC\n'
-            '\t- {staged_time_label}\t\t{staged_delta}\n'
-            '\t- {alert_count_label}:\t\t\t\t\t{alert_count}\n'
-            '\t- {alert_info_label}:\t\t\t\t\t{info_link}'
-        ).format(**info)
+        return ('\u25E6 {_rule_name}\n'
+                '\t- {staged_at_label}:\t\t\t\t\t{_staged_at} UTC\n'
+                '\t- {staged_until_label}:\t\t\t\t\t{staged_until} UTC\n'
+                '\t- {staged_time_label}\t\t{staged_delta}\n'
+                '\t- {alert_count_label}:\t\t\t\t\t{alert_count}\n'
+                '\t- {alert_info_label}:\t\t\t\t\t{info_link}').format(**info)

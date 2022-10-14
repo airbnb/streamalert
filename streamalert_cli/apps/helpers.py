@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.shared.logger import get_logger
 from streamalert.apps.config import AppConfig
-from streamalert_cli.helpers import user_input, save_parameter
+from streamalert.shared.logger import get_logger
+from streamalert_cli.helpers import save_parameter, user_input
 
 LOGGER = get_logger(__name__)
 
@@ -28,14 +28,15 @@ def save_app_auth_info(app, info, func_name, overwrite=False):
             information to AWS Parameter Store
     """
     # Get all of the required authentication values from the user for this app integration
-    auth_dict = {auth_key: user_input(info['description'], False, info['format'])
-                 for auth_key, info in app.required_auth_info().items()}
+    auth_dict = {
+        auth_key: user_input(info['description'], False, info['format'])
+        for auth_key, info in app.required_auth_info().items()
+    }
 
-    description = ('Required authentication information for the \'{}\' service for '
-                   'use in the \'{}\' app'.format(info['type'], info['app_name']))
+    description = f"Required authentication information for the \'{info['type']}\' service for use in the \'{info['app_name']}\' app"
 
     # Save these to the parameter store
-    param_name = '{}_{}'.format(func_name, AppConfig.AUTH_CONFIG_SUFFIX)
+    param_name = f'{func_name}_{AppConfig.AUTH_CONFIG_SUFFIX}'
     saved = save_parameter(info['region'], param_name, auth_dict, description, overwrite)
     if saved:
         LOGGER.info('App authentication info successfully saved to parameter store.')

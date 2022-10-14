@@ -3,8 +3,7 @@ from matchers.default import OsqueryMatcher
 from streamalert.shared.rule import rule
 
 
-@rule(logs=['osquery:differential'],
-      matchers=[OsqueryMatcher.added, OsqueryMatcher.user_login])
+@rule(logs=['osquery:differential'], matchers=[OsqueryMatcher.added, OsqueryMatcher.user_login])
 def ssh_login_activity(_):
     """
     author:           chunyong-lin

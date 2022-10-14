@@ -38,16 +38,15 @@ class LambdaPackage:
 
     # Define a package dict to support pinning versions across all subclasses
     REQUIRED_LIBS = {
-        'backoff==1.10.0',
-        'boto3==1.14.29',
-        'cbapi==1.7.1',
-        'google-api-python-client==1.10.0',
+        'backoff==2.2.1',
+        'boto3==1.24.90',
+        'cbapi==1.7.9',
+        'google-api-python-client==1.12.11',
         'jmespath==0.10.0',
-        'jsonlines==1.2.0',
+        'jsonlines==3.1.0',
         'netaddr==0.8.0',
-        'requests==2.24.0',
-        'pymsteams==0.1.13',
-        'idna==2.8',
+        'requests==2.28.1',
+        'pymsteams==0.2.2',
     }
 
     def __init__(self, config):
@@ -85,11 +84,8 @@ class LambdaPackage:
 
         # Zip it all up
         # Build these in the top-level of the terraform directory as streamalert.zip
-        result = shutil.make_archive(
-            os.path.join(self.config.build_directory, self.PACKAGE_NAME),
-            'zip',
-            self.temp_package_path
-        )
+        result = shutil.make_archive(os.path.join(self.config.build_directory, self.PACKAGE_NAME),
+                                     'zip', self.temp_package_path)
 
         LOGGER.info('Successfully created package: %s', result)
 
@@ -106,7 +102,7 @@ class LambdaPackage:
             ignores (set=None): File globs to be ignored during the copying of the directory
         """
         # Copy the directory, skipping any files explicitly ignored
-        kwargs = {'ignore': shutil.ignore_patterns(*ignores)} if ignores else dict()
+        kwargs = {'ignore': shutil.ignore_patterns(*ignores)} if ignores else {}
         destination = destination or path
         destination = os.path.join(self.temp_package_path, destination)
         shutil.copytree(path, destination, **kwargs)
@@ -119,8 +115,7 @@ class LambdaPackage:
         """
         # Merge any custom libs needed by rules, etc
         libs_to_install = self.REQUIRED_LIBS.union(
-            set(self.config['global']['general'].get('third_party_libraries', []))
-        )
+            set(self.config['global']['general'].get('third_party_libraries', [])))
 
         LOGGER.info('Installing libraries: %s', ', '.join(libs_to_install))
         pip_command = ['pip', 'install']

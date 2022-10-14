@@ -22,32 +22,25 @@ class ThreatIntelCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add threat intel subparser: manage.py threat-intel [action]"""
-        set_parser_epilog(
-            subparser,
-            epilog=(
-                '''\
+        set_parser_epilog(subparser,
+                          epilog=('''\
                 Examples:
 
                     manage.py threat-intel \\
                       enable \\
                       --dynamodb-table my_ioc_table
-                '''
-            )
-        )
+                '''))
 
         actions = ['disable', 'enable']
         subparser.add_argument(
             'action',
             metavar='ACTION',
             choices=actions,
-            help='One of the following actions to be performed: {}'.format(', '.join(actions))
-        )
+            help=f"One of the following actions to be performed: {', '.join(actions)}")
 
-        subparser.add_argument(
-            '--dynamodb-table',
-            dest='dynamodb_table_name',
-            help='DynamoDB table name where IOC information is stored'
-        )
+        subparser.add_argument('--dynamodb-table',
+                               dest='dynamodb_table_name',
+                               help='DynamoDB table name where IOC information is stored')
 
     @classmethod
     def handler(cls, options, config):

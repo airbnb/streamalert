@@ -39,15 +39,12 @@ def infinitedict(initial_value=None):
 def monitoring_topic_name(config):
     """Return the name of the monitoring SNS topic"""
     default_topic = DEFAULT_SNS_MONITORING_TOPIC_SUFFIX.format(
-        config['global']['account']['prefix']
-    )
+        config['global']['account']['prefix'])
     if 'monitoring' not in config['global']['infrastructure']:
         return default_topic, True  # Use the default name and create the sns topic
 
     sns_topic_name = config['global']['infrastructure']['monitoring'].get(
-        'sns_topic_name',
-        default_topic
-    )
+        'sns_topic_name', default_topic)
     return sns_topic_name, sns_topic_name == default_topic
 
 
@@ -56,8 +53,7 @@ def monitoring_topic_arn(config):
     return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
         region=config['global']['account']['region'],
         account_id=config['global']['account']['aws_account_id'],
-        topic=monitoring_topic_name(config)[0]
-    )
+        topic=monitoring_topic_name(config)[0])
 
 
 def s3_access_logging_bucket(config):
@@ -77,9 +73,7 @@ def s3_access_logging_bucket(config):
         return default_name, True  # Use the default name and create the bucket
 
     bucket_name = config['global']['infrastructure']['s3_access_logging'].get(
-        'bucket_name',
-        default_name
-    )
+        'bucket_name', default_name)
     return bucket_name, bucket_name == default_name
 
 
@@ -95,15 +89,11 @@ def terraform_state_bucket(config):
     # If a bucket name is specified for the remote Terraform state, we can assume the bucket
     # should NOT be created
     default_name = DEFAULT_TERRAFORM_STATE_BUCKET_SUFFIX.format(
-        config['global']['account']['prefix']
-    )
+        config['global']['account']['prefix'])
     if 'terraform' not in config['global']:
         return default_name, True  # Use the default name and create the bucket
 
-    bucket_name = config['global']['terraform'].get(
-        'bucket_name',
-        default_name
-    )
+    bucket_name = config['global']['terraform'].get('bucket_name', default_name)
     return bucket_name, bucket_name == default_name
 
 
@@ -118,6 +108,7 @@ def generate_tf_outputs(cluster_dict, module_name, outputs):
         outputs (list): Names of outputs that should be included
     """
     for output_var in sorted(outputs):
-        cluster_dict['output']['{}_{}'.format(module_name, output_var)] = {
-            'value': '${{module.{}.{}}}'.format(module_name, output_var)
+        cluster_dict['output'][f'{module_name}_{output_var}'] = {
+            'value': f'${{module.{module_name}.{output_var}}}',
+            'sensitive': 'true'
         }

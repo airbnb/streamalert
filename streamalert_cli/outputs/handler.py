@@ -15,12 +15,10 @@ limitations under the License.
 """
 import json
 
-from streamalert.shared.logger import get_logger
 from streamalert.alert_processor.outputs.output_base import (
-    StreamAlertOutput,
-    OutputCredentialsProvider
-)
-from streamalert_cli.helpers import user_input, response_is_valid
+    OutputCredentialsProvider, StreamAlertOutput)
+from streamalert.shared.logger import get_logger
+from streamalert_cli.helpers import response_is_valid, user_input
 from streamalert_cli.outputs.helpers import output_exists
 from streamalert_cli.utils import CLICommand, generate_subparser
 
@@ -74,23 +72,20 @@ class OutputSharedMethods:
         account_config = config['global']['account']
         region = account_config['region']
         prefix = account_config['prefix']
-        kms_key_alias = account_config.get(
-            'kms_key_alias',
-            '{}_streamalert_secrets'.format(prefix)
-        )
+        kms_key_alias = account_config.get('kms_key_alias', f'{prefix}_streamalert_secrets')
+
         # Verify that the word alias is not in the config.
         # It is interpolated when the API call is made.
         if 'alias/' in kms_key_alias:
             kms_key_alias = kms_key_alias.split('/')[1]
 
         provider = OutputCredentialsProvider(service, config=config, region=region, prefix=prefix)
-        result = provider.save_credentials(
-            properties['descriptor'].value, kms_key_alias, properties
-        )
+        result = provider.save_credentials(properties['descriptor'].value, kms_key_alias,
+                                           properties)
         if not result:
-            LOGGER.error('An error occurred while saving \'%s\' '
-                         'output configuration for service \'%s\'', properties['descriptor'].value,
-                         service)
+            LOGGER.error(
+                'An error occurred while saving \'%s\' '
+                'output configuration for service \'%s\'', properties['descriptor'].value, service)
         return result
 
     @staticmethod
@@ -111,8 +106,7 @@ class OutputSharedMethods:
             # Don't update the config if the output already existed, this will prevent duplicates
             LOGGER.debug(
                 'Output already exists, don\'t update the config for descriptor %s and service %s',
-                descriptor, service
-                )
+                descriptor, service)
         else:
             updated_config = output.format_output_config(output_config, properties)
             output_config[service] = updated_config
@@ -134,32 +128,27 @@ class OutputSetSubCommand(CLICommand, OutputSharedMethods):
         """
         outputs = sorted(StreamAlertOutput.get_all_outputs().keys())
 
-        set_parser = generate_subparser(
-            subparser,
-            'set',
-            description=cls.description,
-            help=cls.description,
-            subcommand=True
-        )
+        set_parser = generate_subparser(subparser,
+                                        'set',
+                                        description=cls.description,
+                                        help=cls.description,
+                                        subcommand=True)
 
         # Add the required positional arg of service
         set_parser.add_argument(
             'service',
             choices=outputs,
             metavar='SERVICE',
-            help='Create a new StreamAlert output for one of the available services: {}'.format(
-                ', '.join(outputs)
-            )
+            help=
+            f"Create a new StreamAlert output for one of the available services: {', '.join(outputs)}"
         )
 
         # Add the optional update flag, which allows existing outputs to be updated
-        set_parser.add_argument(
-            '--update',
-            '-u',
-            action='store_true',
-            default=False,
-            help='If the output already exists, overwrite it'
-        )
+        set_parser.add_argument('--update',
+                                '-u',
+                                action='store_true',
+                                default=False,
+                                help='If the output already exists, overwrite it')
 
     @classmethod
     def handler(cls, options, config):
@@ -214,30 +203,25 @@ class OutputSetFromFileSubCommand(CLICommand, OutputSharedMethods):
         Args:
             outputs (list): List of available output services
         """
-        set_from_file_parser = generate_subparser(
-            subparser,
-            'set-from-file',
-            description=cls.description,
-            help=cls.description,
-            subcommand=True
-        )
+        set_from_file_parser = generate_subparser(subparser,
+                                                  'set-from-file',
+                                                  description=cls.description,
+                                                  help=cls.description,
+                                                  subcommand=True)
 
         # Add the optional file flag
         set_from_file_parser.add_argument(
             '--file',
             '-f',
             default=OUTPUTS_FILE,
-            help='Path to the json file, relative to the current working directory'
-        )
+            help='Path to the json file, relative to the current working directory')
 
         # Add the optional update flag, which allows existing outputs to be updated
-        set_from_file_parser.add_argument(
-            '--update',
-            '-u',
-            action='store_true',
-            default=False,
-            help='Allow existing outputs to be overwritten'
-        )
+        set_from_file_parser.add_argument('--update',
+                                          '-u',
+                                          action='store_true',
+                                          default=False,
+                                          help='Allow existing outputs to be overwritten')
 
     @classmethod
     def handler(cls, options, config):
@@ -249,7 +233,7 @@ class OutputSetFromFileSubCommand(CLICommand, OutputSharedMethods):
             bool: False if errors occurred, True otherwise
         """
         try:
-            with open(options.file, 'r') as json_file_fp:
+            with open(options.file, encoding="utf-8") as json_file_fp:
                 file_contents = json.load(json_file_fp)
         except Exception:  # pylint: disable=broad-except
             LOGGER.error("Error opening file %s", options.file)
@@ -321,13 +305,11 @@ class OutputGenerateSkeletonSubCommand(CLICommand):
         outputs = sorted(StreamAlertOutput.get_all_outputs().keys())
 
         # Create the generate-skeleton parser
-        generate_skeleton_parser = generate_subparser(
-            subparser,
-            'generate-skeleton',
-            description=cls.description,
-            help=cls.description,
-            subcommand=True
-        )
+        generate_skeleton_parser = generate_subparser(subparser,
+                                                      'generate-skeleton',
+                                                      description=cls.description,
+                                                      help=cls.description,
+                                                      subcommand=True)
 
         # Add the optional ability to pass services
         generate_skeleton_parser.add_argument(
@@ -336,18 +318,15 @@ class OutputGenerateSkeletonSubCommand(CLICommand):
             nargs='+',
             metavar='SERVICE',
             default=outputs,
-            help='Pass the services to generate the skeleton for from services: {}'.format(
-                ', '.join(outputs)
-            )
-        )
+            help=
+            f"Pass the services to generate the skeleton for from services: {', '.join(outputs)}")
 
         # Add the optional file flag
         generate_skeleton_parser.add_argument(
             '--file',
             '-f',
             default=OUTPUTS_FILE,
-            help='File to write to, relative to the current working directory'
-        )
+            help='File to write to, relative to the current working directory')
 
     @classmethod
     def handler(cls, options, config):
@@ -367,27 +346,20 @@ class OutputGenerateSkeletonSubCommand(CLICommand):
 
             # get dictionary of OutputProperty items to be used for user prompting
             properties = output.get_user_defined_properties()
-            skeleton[service] = [
-                {
-                    name: 'desc: {}, restrictions: {}'.format(
-                        prop.description, prop.input_restrictions
-                    )
-                    for name, prop in properties.items()
-                }
-            ]
+            skeleton[service] = [{
+                name: f'desc: {prop.description}, restrictions: {prop.input_restrictions}'
+                for name, prop in properties.items()
+            }]
 
         try:
-            with open(options.file, 'w') as json_file_fp:
+            with open(options.file, 'w', encoding="utf-8") as json_file_fp:
                 json.dump(skeleton, json_file_fp, indent=2, sort_keys=True)
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.error(err)
             return False
 
-        LOGGER.info(
-            'Successfully generated the Skeleton file %s for services: %s',
-            options.file,
-            options.services
-        )
+        LOGGER.info('Successfully generated the Skeleton file %s for services: %s', options.file,
+                    options.services)
         return True
 
 
@@ -412,9 +384,8 @@ class OutputGetSubCommand(CLICommand):
             'service',
             choices=outputs,
             metavar='SERVICE',
-            help='Service to pull configured outputs and their secrets, select from: {}'.format(
-                ', '.join(outputs)
-            )
+            help=
+            f"Service to pull configured outputs and their secrets, select from: {', '.join(outputs)}"
         )
 
         # Add the optional ability to pass multiple descriptors
@@ -423,8 +394,7 @@ class OutputGetSubCommand(CLICommand):
             '-d',
             nargs='+',
             default=False,
-            help='Pass descriptor and service to pull back the relevant configuration'
-        )
+            help='Pass descriptor and service to pull back the relevant configuration')
 
         # Add the optional ability to pass service
 
@@ -447,7 +417,7 @@ class OutputGetSubCommand(CLICommand):
         ]
 
         # Set the descriptors to get the secrets for
-        descriptors = options.descriptors if options.descriptors else configured_descriptors
+        descriptors = options.descriptors or configured_descriptors
 
         LOGGER.debug('Getting secrets for service %s and descriptors %s', service, descriptors)
 
@@ -489,9 +459,8 @@ class OutputListSubCommand(CLICommand):
             default=outputs,
             nargs='*',
             metavar='SERVICE',
-            help='Pass Services to list configured output descriptors, select from: {}'.format(
-                ', '.join(outputs)
-            )
+            help=
+            f"Pass Services to list configured output descriptors, select from: {', '.join(outputs)}"
         )
 
     @classmethod
@@ -510,5 +479,5 @@ class OutputListSubCommand(CLICommand):
             if output not in outputs:
                 continue
             for descriptor in outputs[output]:
-                print("\t{}:{}".format(output, descriptor))
+                print(f"\t{output}:{descriptor}")
             print()  # ensure a newline between each service for easier reading

@@ -23,7 +23,6 @@ class ServiceContainer:
 
     @see https://symfony.com/doc/current/service_container.html
     """
-
     def __init__(self, parameters):
         self._services = {}
         self._parameters = parameters
@@ -41,7 +40,7 @@ class ServiceContainer:
     def get_parameter(self, parameter_name):
         """Returns a parameter registered in the service container"""
         if parameter_name not in self._parameters:
-            raise ValueError('ServiceContainer no such parameter: "{}"'.format(parameter_name))
+            raise ValueError(f'ServiceContainer no such parameter: "{parameter_name}"')
 
         return self._parameters[parameter_name]
 
@@ -57,9 +56,7 @@ class ServiceContainer:
         """
         service_id = definition.service_id
         if service_id in self._definitions:
-            raise ValueError(
-                'ServiceContainer registering duplicate definition: "{}"'.format(service_id)
-            )
+            raise ValueError(f'ServiceContainer registering duplicate definition: "{service_id}"')
 
         self._definitions[service_id] = definition
 
@@ -67,9 +64,7 @@ class ServiceContainer:
         if service_id in self._definitions:
             return self._definitions[service_id].instantiate(self)
 
-        raise ValueError(
-            'ServiceContainer does not know how to create: "{}"'.format(service_id)
-        )
+        raise ValueError(f'ServiceContainer does not know how to create: "{service_id}"')
 
 
 class ServiceDefinition:

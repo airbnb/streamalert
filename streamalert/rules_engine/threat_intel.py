@@ -21,15 +21,13 @@ import boto3
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
 from netaddr import IPNetwork
-from streamalert.shared.backoff_handlers import (
-    backoff_handler,
-    success_handler,
-    giveup_handler
-)
+
+from streamalert.shared.backoff_handlers import (backoff_handler,
+                                                 giveup_handler,
+                                                 success_handler)
 from streamalert.shared.logger import get_logger
 from streamalert.shared.normalize import Normalizer
 from streamalert.shared.utils import in_network, valid_ip
-
 
 LOGGER = get_logger(__name__)
 
@@ -38,14 +36,14 @@ class ThreatIntel:
     """Load threat intelligence data from DynamoDB and perform IOC detection"""
     IOC_KEY = 'streamalert:ioc'
 
-    EXCEPTIONS_TO_BACKOFF = (ClientError,)
+    EXCEPTIONS_TO_BACKOFF = (ClientError, )
     BACKOFF_MAX_RETRIES = 3
 
     # DynamoDB Table settings
     MAX_QUERY_CNT = 100
     PRIMARY_KEY = 'ioc_value'
     SUB_TYPE_KEY = 'sub_type'
-    PROJECTION_EXPRESSION = '{},{}'.format(PRIMARY_KEY, SUB_TYPE_KEY)
+    PROJECTION_EXPRESSION = f'{PRIMARY_KEY},{SUB_TYPE_KEY}'
 
     _deserializer = TypeDeserializer()
     _client = None
@@ -67,8 +65,7 @@ class ThreatIntel:
     def _exceptions_to_giveup(err):
         """Function to decide if giveup backoff or not."""
         error_code = {
-            'AccessDeniedException',
-            'ProvisionedThroughputExceededException',
+            'AccessDeniedException', 'ProvisionedThroughputExceededException',
             'ResourceNotFoundException'
         }
         return err.response['Error']['Code'] in error_code
@@ -146,8 +143,7 @@ class ThreatIntel:
                 LOGGER.exception('An error occurred while querying dynamodb table')
                 continue
 
-            for ioc in query_result:
-                yield ioc
+            yield from query_result
 
     @classmethod
     def _segment(cls, potential_iocs):
@@ -181,12 +177,13 @@ class ThreatIntel:
                     ]
             dict: A dict containing unprocesed keys.
         """
-        @backoff.on_predicate(backoff.fibo,
-                              lambda resp: bool(resp['UnprocessedKeys']),  # retry if this is true
-                              max_tries=2,  # only retry unprocessed key 2 times max
-                              on_backoff=backoff_handler(),
-                              on_success=success_handler(),
-                              on_giveup=giveup_handler())
+        @backoff.on_predicate(
+            backoff.fibo,
+            lambda resp: bool(resp['UnprocessedKeys']),  # retry if this is true
+            max_tries=2,  # only retry unprocessed key 2 times max
+            on_backoff=backoff_handler(),
+            on_success=success_handler(),
+            on_giveup=giveup_handler())
         @backoff.on_exception(backoff.expo,
                               self.EXCEPTIONS_TO_BACKOFF,
                               max_tries=self.BACKOFF_MAX_RETRIES,
@@ -198,14 +195,12 @@ class ThreatIntel:
 
             query_keys = [{self.PRIMARY_KEY: {'S': ioc}} for ioc in query_values if ioc]
 
-            response = self._dynamodb.batch_get_item(
-                RequestItems={
-                    self._table: {
-                        'Keys': query_keys,
-                        'ProjectionExpression': self.PROJECTION_EXPRESSION
-                    }
+            response = self._dynamodb.batch_get_item(RequestItems={
+                self._table: {
+                    'Keys': query_keys,
+                    'ProjectionExpression': self.PROJECTION_EXPRESSION
                 }
-            )
+            })
 
             results.extend(self._deserialize(response['Responses'].get(self._table)))
 
@@ -215,10 +210,8 @@ class ThreatIntel:
                              response['UnprocessedKeys'])
                 # Strip out the successful keys so only the unprocesed ones are retried.
                 # This changes the list in place, so the called function sees the updated list
-                self._remove_processed_keys(
-                    query_values,
-                    response['UnprocessedKeys'][self._table]['Keys']
-                )
+                self._remove_processed_keys(query_values,
+                                            response['UnprocessedKeys'][self._table]['Keys'])
 
             return response
 
@@ -264,10 +257,7 @@ class ThreatIntel:
             return
 
         for raw_data in dynamodb_data:
-            yield {
-                key: cls._deserializer.deserialize(val)
-                for key, val in raw_data.items()
-            }
+            yield {key: cls._deserializer.deserialize(val) for key, val in raw_data.items()}
 
     def _is_excluded_ioc(self, ioc_type, ioc_value):
         """Determine if we should bypass IOC lookup for specified IOC
@@ -355,7 +345,8 @@ class ThreatIntel:
 
         # Threat Intel can be disabled for any given cluster
         enabled_clusters = {
-            cluster for cluster, values in config['clusters'].items()
+            cluster
+            for cluster, values in config['clusters'].items()
             if values.get('enable_threat_intel', False)
         }
 
@@ -366,13 +357,10 @@ class ThreatIntel:
         # {'normalized_key': 'ioc_type'} for simpler lookups
         ioc_config = {
             key: ioc_type
-            for ioc_type, keys in intel_config['normalized_ioc_types'].items()
-            for key in keys
+            for ioc_type, keys in intel_config['normalized_ioc_types'].items() for key in keys
         }
 
-        return cls(
-            table=intel_config['dynamodb_table_name'],
-            enabled_clusters=enabled_clusters,
-            ioc_types_map=ioc_config,
-            excluded_iocs=intel_config.get('excluded_iocs')
-        )
+        return cls(table=intel_config['dynamodb_table_name'],
+                   enabled_clusters=enabled_clusters,
+                   ioc_types_map=ioc_config,
+                   excluded_iocs=intel_config.get('excluded_iocs'))

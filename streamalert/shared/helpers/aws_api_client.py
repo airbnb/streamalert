@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
-import boto3
 
+import boto3
 from botocore.exceptions import ClientError
 
 from streamalert.shared.helpers.boto import default_config
@@ -45,7 +45,7 @@ class AwsKms:
         """
         try:
             if not key_alias.startswith('alias/'):
-                key_alias = 'alias/{}'.format(key_alias)
+                key_alias = f'alias/{key_alias}'
             client = boto3.client('kms', config=default_config(region=region))
             response = client.encrypt(KeyId=key_alias, Plaintext=plaintext_data)
             return response['CiphertextBlob']
@@ -173,11 +173,7 @@ class AwsS3:
         """
         try:
             client = boto3.client('s3', config=default_config(region=region))
-            client.download_fileobj(
-                bucket,
-                key,
-                file_handle
-            )
+            client.download_fileobj(bucket, key, file_handle)
 
             file_handle.seek(0)
             return file_handle.read()
@@ -188,7 +184,6 @@ class AwsS3:
 
 class AwsSsm:
     """Class containing helper functions for aws ssm"""
-
     @staticmethod
     def get_parameter(parameter_name, region, with_decryption=True):
         """gets the parameter_name from SSM Parameter store
@@ -230,23 +225,18 @@ class AwsSsm:
         client = boto3.client('ssm', config=default_config(region=region))
         result = False
 
-        key_id = 'alias/{}'.format(kms_key_alias)
+        key_id = f'alias/{kms_key_alias}'
         parameter_value = json.dumps(value) if isinstance(value, dict) else str(value)
         try:
-            client.put_parameter(
-                Name=name,
-                Description='StreamAlert Secret',
-                Value=parameter_value,
-                Type='SecureString',
-                KeyId=key_id,
-                Overwrite=True,
-                Tier='Standard'
-            )
+            client.put_parameter(Name=name,
+                                 Description='StreamAlert Secret',
+                                 Value=parameter_value,
+                                 Type='SecureString',
+                                 KeyId=key_id,
+                                 Overwrite=True,
+                                 Tier='Standard')
         except ClientError as err:
-            LOGGER.exception(
-                'Error saving parameter %s to SSM Param Store\n%s',
-                name, err
-            )
+            LOGGER.exception('Error saving parameter %s to SSM Param Store\n%s', name, err)
             result = False
         else:
             result = True

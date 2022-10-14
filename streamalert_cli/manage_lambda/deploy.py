@@ -17,12 +17,8 @@ from streamalert.shared import rule_table
 from streamalert.shared.logger import get_logger
 from streamalert_cli.terraform.generate import terraform_generate_handler
 from streamalert_cli.terraform.helpers import terraform_runner
-from streamalert_cli.utils import (
-    add_default_lambda_args,
-    CLICommand,
-    MutuallyExclusiveStagingAction,
-    set_parser_epilog,
-)
+from streamalert_cli.utils import (CLICommand, MutuallyExclusiveStagingAction,
+                                   add_default_lambda_args, set_parser_epilog)
 
 LOGGER = get_logger(__name__)
 
@@ -33,41 +29,38 @@ class DeployCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the deploy subparser: manage.py deploy [options]"""
-        set_parser_epilog(
-            subparser,
-            epilog=(
-                '''\
+        set_parser_epilog(subparser,
+                          epilog=('''\
                 Example:
 
                     manage.py deploy --function rule alert
-                '''
-            )
-        )
+                '''))
 
         # Flag to manually bypass rule staging for new rules upon deploy
         # This only has an effect if rule staging is enabled
-        subparser.add_argument(
-            '--skip-rule-staging',
-            action='store_true',
-            help='Skip staging of new rules so they go directly into production'
-        )
+        subparser.add_argument('--skip-rule-staging',
+                               action='store_true',
+                               help='Skip staging of new rules so they go directly into production')
 
         # flag to manually demote specific rules to staging during deploy
-        subparser.add_argument(
-            '--stage-rules',
-            action=MutuallyExclusiveStagingAction,
-            default=set(),
-            help='Stage the rules provided in a space-separated list',
-            nargs='+'
-        )
+        subparser.add_argument('--stage-rules',
+                               action=MutuallyExclusiveStagingAction,
+                               default=set(),
+                               help='Stage the rules provided in a space-separated list',
+                               nargs='+')
 
         # flag to manually bypass rule staging for specific rules during deploy
+        subparser.add_argument('--unstage-rules',
+                               action=MutuallyExclusiveStagingAction,
+                               default=set(),
+                               help='Unstage the rules provided in a space-separated list',
+                               nargs='+')
+
+        # flag to manually bypass approvals for StreamAlert deploys
         subparser.add_argument(
-            '--unstage-rules',
-            action=MutuallyExclusiveStagingAction,
-            default=set(),
-            help='Unstage the rules provided in a space-separated list',
-            nargs='+'
+            '--auto-approve',
+            action='store_true',
+            help='Automatically approve Terraform applies.',
         )
 
         add_default_lambda_args(subparser)
@@ -87,7 +80,7 @@ class DeployCommand(CLICommand):
         if not terraform_generate_handler(config=config):
             return False
 
-        if not deploy(config, options.functions, options.clusters):
+        if not deploy(config, options.functions, options.clusters, options.auto_approve):
             return False
 
         # Update the rule table now if the rules engine is being deployed
@@ -97,7 +90,7 @@ class DeployCommand(CLICommand):
         return True
 
 
-def deploy(config, functions, clusters=None):
+def deploy(config, functions, clusters=None, auto_approve=False):
     """Deploy the functions
 
     Args:
@@ -118,7 +111,7 @@ def deploy(config, functions, clusters=None):
     LOGGER.debug('Applying terraform targets: %s', ', '.join(sorted(deploy_targets)))
 
     # Terraform applies the new package and publishes a new version
-    return terraform_runner(config, targets=deploy_targets)
+    return terraform_runner(config, targets=deploy_targets, auto_approve=auto_approve)
 
 
 def _update_rule_table(options, config):
@@ -135,14 +128,16 @@ def _update_rule_table(options, config):
     # Get the rule import paths to load
     rule_import_paths = config['global']['general']['rule_locations']
 
-    table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
+    table_name = f"{config['global']['account']['prefix']}_streamalert_rules"
     table = rule_table.RuleTable(table_name, *rule_import_paths)
     table.update(options.skip_rule_staging)
 
     if options.stage_rules or options.unstage_rules:
-        # Create a dictionary of rule_name: stage=True|False
-        rules = {rule_name: False for rule_name in options.unstage_rules}
-        rules.update({rule_name: True for rule_name in options.stage_rules})
+        rules = {rule_name: False
+                 for rule_name in options.unstage_rules
+                 } | {rule_name: True
+                      for rule_name in options.stage_rules}
+
         for rule, stage in rules.items():
             table.toggle_staged_state(rule, stage)
 
@@ -168,51 +163,45 @@ def _lambda_terraform_targets(config, functions, clusters):
                 'module.alert_processor_iam',
                 'module.alert_processor_lambda',
             },
-            'enabled': True  # required function
+            'enabled': True
         },
         'alert_merger': {
             'targets': {
                 'module.alert_merger_iam',
                 'module.alert_merger_lambda',
             },
-            'enabled': True  # required function
+            'enabled': True
         },
         'athena': {
             'targets': {
                 'module.athena_partitioner_iam',
                 'module.athena_partitioner_lambda',
             },
-            'enabled': True  # required function
+            'enabled': True
         },
         'rule': {
             'targets': {
                 'module.rules_engine_iam',
                 'module.rules_engine_lambda',
             },
-            'enabled': True  # required function
+            'enabled': True
         },
         'classifier': {
             'targets': {
-                'module.classifier_{}_{}'.format(cluster, suffix)
-                for suffix in {'lambda', 'iam'}
-                for cluster in clusters
+                f'module.classifier_{cluster}_{suffix}'
+                for suffix in {'lambda', 'iam'} for cluster in clusters
             },
-            'enabled': bool(clusters)  # one cluster at least is required
+            'enabled': bool(clusters)
         },
         'apps': {
             'targets': {
-                'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
+                f"module.app_{app_info['app_name']}_{cluster}_{suffix}"
                 for suffix in {'lambda', 'iam'}
-                for cluster in clusters
-                for app_info in config['clusters'][cluster]['modules'].get(
-                    'streamalert_apps', {}
-                ).values()
-                if 'app_name' in app_info
+                for cluster in clusters for app_info in config['clusters'][cluster]['modules'].get(
+                    'streamalert_apps', {}).values() if 'app_name' in app_info
             },
-            'enabled': any(
-                info['modules'].get('streamalert_apps')
-                for info in config['clusters'].values()
-            )
+            'enabled':
+            any(info['modules'].get('streamalert_apps') for info in config['clusters'].values())
         },
         'rule_promo': {
             'targets': {
@@ -234,7 +223,7 @@ def _lambda_terraform_targets(config, functions, clusters):
             },
             'enabled': config['lambda'].get('threat_intel_downloader_config', False),
         }
-    }
+    }  # required function  # required function  # required function  # required function
 
     targets = set()
     for function in functions:

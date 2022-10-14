@@ -7,8 +7,8 @@ from netaddr.core import AddrFormatError
 from streamalert.shared.logger import get_logger
 from streamalert.shared.normalize import Normalizer
 
-
 LOGGER = get_logger(__name__)
+
 
 def valid_ip(ip_address):
     """Verify that a ip_address string is valid
@@ -144,6 +144,7 @@ def get_keys(data, search_key, max_matches=-1):
                     containers.append(val)
     return results
 
+
 def get_database_name(config):
     """Get the name of the athena database using the current config settings
     Args:
@@ -154,7 +155,8 @@ def get_database_name(config):
     prefix = config['global']['account']['prefix']
     athena_config = config['lambda'].get('athena_partitioner_config')
 
-    return athena_config.get('database_name', '{}_streamalert'.format(prefix))
+    return athena_config.get('database_name', f'{prefix}_streamalert')
+
 
 def get_data_file_format(config):
     """Get the data store format using the current config settings

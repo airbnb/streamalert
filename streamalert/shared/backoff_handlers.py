@@ -15,7 +15,6 @@ limitations under the License.
 """
 from streamalert.shared.logger import get_logger
 
-
 LOGGER = get_logger(__name__)
 
 
@@ -29,14 +28,12 @@ def backoff_handler(debug_only=True):
     """
     def _wrapped(details):
         message = '[Backoff]: Calling \'{}\' again in {:f} seconds with {:d} tries so far'.format(
-            details['target'].__name__,
-            details['wait'],
-            details['tries']
-        )
+            details['target'].__name__, details['wait'], details['tries'])
         if not debug_only:
             LOGGER.info(message)
         else:
             LOGGER.debug(message)
+
     return _wrapped
 
 
@@ -59,6 +56,7 @@ def success_handler(debug_only=False):
             LOGGER.info(message)
         else:
             LOGGER.debug(message)
+
     return _wrapped
 
 
@@ -72,12 +70,10 @@ def giveup_handler(debug_only=False):
     """
     def _wrapped(details):
         message = '[Backoff]: Giving up calling \'{}\' after {:f} seconds and {:d} tries'.format(
-            details['target'].__name__,
-            details['elapsed'],
-            details['tries']
-        )
+            details['target'].__name__, details['elapsed'], details['tries'])
         if not debug_only:
             LOGGER.info(message)
         else:
             LOGGER.debug(message)
+
     return _wrapped

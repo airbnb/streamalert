@@ -13,17 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 import base64
+import logging
 import zlib
 
-from streamalert.classifier.payload.payload_base import (
-    PayloadRecord,
-    RegisterInput,
-    StreamPayload
-)
+from streamalert.classifier.payload.payload_base import (PayloadRecord,
+                                                         RegisterInput,
+                                                         StreamPayload)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
@@ -32,7 +29,6 @@ LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 @RegisterInput
 class KinesisPayload(StreamPayload):
     """KinesisPayload class"""
-
     @classmethod
     def service(cls):
         return 'kinesis'

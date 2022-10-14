@@ -20,15 +20,17 @@ REQUIRED_OUTPUTS = {
     }
 }
 
+
 def get_required_outputs():
     """Iterates through the required outputs and collapses to the right format
 
     Returns:
         set: Set of required output services and names in the form service:name
     """
-    return {'{}:{}'.format(service, output)
-            for service, value in REQUIRED_OUTPUTS.items()
-            for output in value}
+    return {
+        f'{service}:{output}'
+        for service, value in REQUIRED_OUTPUTS.items() for output in value
+    }
 
 
 def merge_required_outputs(user_config, prefix):

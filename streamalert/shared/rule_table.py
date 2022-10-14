@@ -22,7 +22,6 @@ from streamalert.shared.importer import import_folders
 from streamalert.shared.logger import get_logger
 from streamalert.shared.rule import Rule
 
-
 LOGGER = get_logger(__name__)
 
 
@@ -51,32 +50,24 @@ class RuleTable:
         if not self.remote_rule_names:
             return 'Rule table is empty'
 
-        pad_size = max([len(rule) for rule in list(self.remote_rule_info.keys())]) + 4
-        output = ['{rule:<{pad}}Staged?'.format(rule='Rule', pad=pad_size+5)]
+        pad_size = max(len(rule) for rule in list(self.remote_rule_info.keys())) + 4
+        output = ['{rule:<{pad}}Staged?'.format(rule='Rule', pad=pad_size + 5)]
         for index, rule in enumerate(sorted(self.remote_rule_info.keys()), start=1):
-            output.append(
-                '{index:>3d}: {rule: <{pad}}{staged}'.format(
-                    index=index,
-                    rule=rule,
-                    pad=pad_size,
-                    staged=self.remote_rule_info[rule]['Staged']
-                )
-            )
+            output.append('{index:>3d}: {rule: <{pad}}{staged}'.format(
+                index=index, rule=rule, pad=pad_size, staged=self.remote_rule_info[rule]['Staged']))
             # Append additional information if verbose is enabled
             if verbose:
-                details_pad_size = max([len(prop)
-                                        for prop in list(self.remote_rule_info[rule].keys())]) + 4
-                output.extend(
-                    '{prefix:>{left_pad}}{property: <{internal_pad}}{value}'.format(
-                        prefix='- ',
-                        left_pad=7,
-                        property='{}:'.format(prop),
-                        internal_pad=details_pad_size,
-                        value=self.remote_rule_info[rule][prop]
-                    )
-                    for prop in sorted(self.remote_rule_info[rule].keys())
-                    if prop != 'Staged'
-                )
+                details_pad_size = max(
+                    len(prop) for prop in list(self.remote_rule_info[rule].keys())) + 4
+
+                output.extend('{prefix:>{left_pad}}{property: <{internal_pad}}{value}'.format(
+                    prefix='- ',
+                    left_pad=7,
+                    property=f'{prop}:',
+                    internal_pad=details_pad_size,
+                    value=self.remote_rule_info[rule][prop])
+                              for prop in sorted(self.remote_rule_info[rule].keys())
+                              if prop != 'Staged')
 
         return '\n'.join(output)
 
@@ -133,21 +124,15 @@ class RuleTable:
         paginator = self._table.meta.client.get_paginator('scan')
         page_iterator = paginator.paginate(TableName=self.name, ConsistentRead=True)
         return {
-            item['RuleName']: {
-                key: self._cast_value(key, value)
-                for key, value in item.items()
-                if key != 'RuleName'
-            }
-            for page in page_iterator
-            for item in page['Items']
+            item['RuleName']:
+            {key: self._cast_value(key, value)
+             for key, value in item.items() if key != 'RuleName'}
+            for page in page_iterator for item in page['Items']
         }
 
     @staticmethod
     def _default_dynamo_kwargs(rule_name):
-        return {
-            'Key': {'RuleName': rule_name},
-            'ConditionExpression': 'attribute_exists(RuleName)'
-        }
+        return {'Key': {'RuleName': rule_name}, 'ConditionExpression': 'attribute_exists(RuleName)'}
 
     @staticmethod
     def _dynamo_record(rule_name, skip_staging=False):
@@ -162,10 +147,7 @@ class RuleTable:
                 argument can also be used to during the deploy process to
                 immediately put new rules into production.
         """
-        item = {
-            'RuleName': rule_name,
-            'Staged': not skip_staging
-        }
+        item = {'RuleName': rule_name, 'Staged': not skip_staging}
 
         # We may want to skip staging if the database is empty (ie: newly created)
         # or if the user is manually bypassing staging for this rule
@@ -173,10 +155,7 @@ class RuleTable:
             return item
 
         staged_at, staged_until = RuleTable._staged_window()
-        item.update({
-            'StagedAt': staged_at,
-            'StagedUntil': staged_until
-        })
+        item |= {'StagedAt': staged_at, 'StagedUntil': staged_until}
 
         return item
 
@@ -189,10 +168,8 @@ class RuleTable:
         """
         staged_at = datetime.utcnow()
         staged_until = staged_at + timedelta(hours=RuleTable.DEFAULT_STAGING_HOURS)
-        return (
-            staged_at.strftime(RuleTable.DATETIME_FORMAT),
-            staged_until.strftime(RuleTable.DATETIME_FORMAT)
-        )
+        return (staged_at.strftime(RuleTable.DATETIME_FORMAT),
+                staged_until.strftime(RuleTable.DATETIME_FORMAT))
 
     def update_local_cache(self):
         """Force the local cache of remote rule info to be updated"""
@@ -216,17 +193,13 @@ class RuleTable:
                 this rule should be promoted out of staging.
         """
         if rule_name not in self.remote_rule_info:
-            LOGGER.error(
-                'Staging status for rule \'%s\' cannot be set to %s; rule does not exist',
-                rule_name, stage
-            )
+            LOGGER.error('Staging status for rule \'%s\' cannot be set to %s; rule does not exist',
+                         rule_name, stage)
             return
 
         if self.remote_rule_info[rule_name]['Staged'] and stage:
-            LOGGER.info(
-                'Rule \'%s\' is already staged and will have its staging window updated',
-                rule_name
-            )
+            LOGGER.info('Rule \'%s\' is already staged and will have its staging window updated',
+                        rule_name)
 
         LOGGER.debug('Toggling staged state for rule \'%s\' to: %s', rule_name, stage)
 
@@ -244,7 +217,7 @@ class RuleTable:
             'UpdateExpression': ','.join(update_expressions),
             'ExpressionAttributeValues': dict(list(zip(expression_attributes, expression_values)))
         }
-        args.update(self._default_dynamo_kwargs(rule_name))
+        args |= self._default_dynamo_kwargs(rule_name)
 
         self._table.update_item(**args)
 

@@ -13,22 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 import json
+import logging
 import re
 import socket
 import ssl
 
 import googleapiclient.discovery
 import googleapiclient.errors
-from google.oauth2 import service_account
 from google.auth.exceptions import GoogleAuthError
+from google.oauth2 import service_account
 
 from . import AppIntegration, StreamAlertApp, get_logger
 
-
 LOGGER = get_logger(__name__)
-
 
 # Disable noisy google api client logger
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
@@ -51,7 +49,7 @@ class GSuiteReportsApp(AppIntegration):
     _MAX_EVENT_IDS = 100
 
     def __init__(self, event, context):
-        super(GSuiteReportsApp, self).__init__(event, context)
+        super().__init__(event, context)
         self._activities_service = None
         self._last_event_timestamp = None
         self._next_page_token = None
@@ -113,11 +111,9 @@ class GSuiteReportsApp(AppIntegration):
 
         delegation = creds.with_subject(self._config.auth['delegation_email'])
         try:
-            resource = googleapiclient.discovery.build(
-                'admin',
-                'reports_v1',
-                credentials=delegation
-            )
+            resource = googleapiclient.discovery.build('admin',
+                                                       'reports_v1',
+                                                       credentials=delegation)
         except self._GOOGLE_API_EXCEPTIONS:
             LOGGER.exception('[%s] Failed to build discovery service', self)
             return False
@@ -148,12 +144,10 @@ class GSuiteReportsApp(AppIntegration):
         LOGGER.debug('[%s] Using next page token: %s', self, self._next_page_token)
         LOGGER.debug('[%s] Last run event ids: %s', self, self._last_run_event_ids)
 
-        activities_list = self._activities_service.list(
-            userKey='all',
-            applicationName=self._type(),
-            startTime=self._last_event_timestamp,
-            pageToken=self._next_page_token
-        )
+        activities_list = self._activities_service.list(userKey='all',
+                                                        applicationName=self._type(),
+                                                        startTime=self._last_event_timestamp,
+                                                        pageToken=self._next_page_token)
 
         try:
             results = activities_list.execute()
@@ -182,8 +176,7 @@ class GSuiteReportsApp(AppIntegration):
             LOGGER.debug('[%s] Caching last timestamp: %s', self, self._last_timestamp)
             # Store the event ids with the most recent timestamp to de-duplicate them next time
             next_run_event_ids = [
-                activity['id']['uniqueQualifier']
-                for activity in activities
+                activity['id']['uniqueQualifier'] for activity in activities
                 if activity['id']['time'] == self._last_timestamp
             ]
             self._context['last_event_ids'] = next_run_event_ids[:self._MAX_EVENT_IDS]
@@ -202,29 +195,25 @@ class GSuiteReportsApp(AppIntegration):
         def keyfile_validator(keyfile):
             """A JSON formatted (not p12) Google service account private key file key"""
             try:
-                with open(keyfile.strip(), 'r') as json_keyfile:
+                with open(keyfile.strip(), encoding="utf-8") as json_keyfile:
                     keydata = json.load(json_keyfile)
-            except (IOError, ValueError):
+            except (OSError, ValueError):
                 return False
 
-            if not cls._load_credentials(keydata):
-                return False
-
-            return keydata
+            return keydata if cls._load_credentials(keydata) else False
 
         return {
-            'keyfile':
-                {
-                    'description': ('the path on disk to the JSON formatted Google '
-                                    'service account private key file'),
-                    'format': keyfile_validator
-                },
-            'delegation_email':
-                {
-                    'description': 'the service account user email to delegate access to',
-                    'format': re.compile(r'^[A-Za-z0-9-_.+]+@[A-Za-z0-9-.]+\.[A-Za-z]{2,}$')
-                }
+            'keyfile': {
+                'description': ('the path on disk to the JSON formatted Google '
+                                'service account private key file'),
+                'format':
+                keyfile_validator
+            },
+            'delegation_email': {
+                'description': 'the service account user email to delegate access to',
+                'format': re.compile(r'^[A-Za-z0-9-_.+]+@[A-Za-z0-9-.]+\.[A-Za-z]{2,}$')
             }
+        }
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for
@@ -244,7 +233,6 @@ class GSuiteReportsApp(AppIntegration):
 @StreamAlertApp
 class GSuiteAccessTransparencyReports(GSuiteReportsApp):
     """G Suite Access Transparency  Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'access_transparency'
@@ -253,7 +241,6 @@ class GSuiteAccessTransparencyReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteAdminReports(GSuiteReportsApp):
     """G Suite Admin Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'admin'
@@ -262,7 +249,6 @@ class GSuiteAdminReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteCalendarReports(GSuiteReportsApp):
     """G Suite Calendar Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'calendar'
@@ -271,23 +257,22 @@ class GSuiteCalendarReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteDriveReports(GSuiteReportsApp):
     """G Suite Drive Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'drive'
 
+
 @StreamAlertApp
 class GSuiteUserGCPReports(GSuiteReportsApp):
     """G Suite GCP Accounts Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'gcp'
 
+
 @StreamAlertApp
 class GSuiteGroupReports(GSuiteReportsApp):
     """G Suite Group Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'groups'
@@ -296,7 +281,6 @@ class GSuiteGroupReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteGroupEnterpriseReports(GSuiteReportsApp):
     """G Suite Groups Enterprise Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'groups_enterprise'
@@ -305,7 +289,6 @@ class GSuiteGroupEnterpriseReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteGPlusReports(GSuiteReportsApp):
     """G Suite Google Plus Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'gplus'
@@ -314,23 +297,22 @@ class GSuiteGPlusReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteLoginReports(GSuiteReportsApp):
     """G Suite Login Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'login'
 
+
 @StreamAlertApp
 class GSuiteMeetGCPReports(GSuiteReportsApp):
     """G Suite meet Accounts Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'meet'
 
+
 @StreamAlertApp
 class GSuiteMobileReports(GSuiteReportsApp):
     """G Suite Mobile Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'mobile'
@@ -339,15 +321,14 @@ class GSuiteMobileReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteRulesReports(GSuiteReportsApp):
     """G Suite Rules Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'rules'
 
+
 @StreamAlertApp
 class GSuiteSAMLGCPReports(GSuiteReportsApp):
     """G Suite SAML Accounts Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'saml'
@@ -356,7 +337,6 @@ class GSuiteSAMLGCPReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteTokenReports(GSuiteReportsApp):
     """G Suite Token Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'token'
@@ -365,7 +345,6 @@ class GSuiteTokenReports(GSuiteReportsApp):
 @StreamAlertApp
 class GSuiteUserAccountsReports(GSuiteReportsApp):
     """G Suite User Accounts Activity Report app integration"""
-
     @classmethod
     def _type(cls):
         return 'user_accounts'

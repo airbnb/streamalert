@@ -37,15 +37,14 @@ def generate_alert_merger(config):
 
     # Set variables for the Lambda module
     result['module']['alert_merger_lambda'] = generate_lambda(
-        '{}_streamalert_{}'.format(config['global']['account']['prefix'], ALERT_MERGER_NAME),
+        f"{config['global']['account']['prefix']}_streamalert_{ALERT_MERGER_NAME}",
         'streamalert.alert_merger.main.handler',
         config['lambda']['alert_merger_config'],
         config,
         environment={
-            'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
-            'ALERT_PROCESSOR': '{}_streamalert_alert_processor'.format(prefix),
-            'ALERT_PROCESSOR_TIMEOUT_SEC': config['lambda']['alert_processor_config']['timeout'],
-        }
-    )
+            'ALERTS_TABLE': f'{prefix}_streamalert_alerts',
+            'ALERT_PROCESSOR': f'{prefix}_streamalert_alert_processor',
+            'ALERT_PROCESSOR_TIMEOUT_SEC': config['lambda']['alert_processor_config']['timeout']
+        })
 
     return result

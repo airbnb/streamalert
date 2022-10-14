@@ -19,11 +19,9 @@ import pymsteams
 from pymsteams import TeamsWebhookException
 
 from streamalert.alert_processor.helpers import compose_alert
-from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    StreamAlertOutput,
-)
+from streamalert.alert_processor.outputs.output_base import (OutputDispatcher,
+                                                             OutputProperty,
+                                                             StreamAlertOutput)
 from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -51,25 +49,22 @@ class TeamsOutput(OutputDispatcher):
         Returns:
             OrderedDict: Contains various OutputProperty items
         """
-        return OrderedDict(
-            [
-                (
-                    "descriptor",
-                    OutputProperty(
-                        description="a short and unique descriptor for this service configuration "
-                        "(ie: name of Team the webhook relates too)"
-                    ),
+        return OrderedDict([
+            (
+                "descriptor",
+                OutputProperty(
+                    description="a short and unique descriptor for this service configuration "
+                    "(ie: name of Team the webhook relates too)"),
+            ),
+            (
+                "url",
+                OutputProperty(
+                    description="the full teams webhook url, including the secret",
+                    mask_input=True,
+                    cred_requirement=True,
                 ),
-                (
-                    "url",
-                    OutputProperty(
-                        description="the full teams webhook url, including the secret",
-                        mask_input=True,
-                        cred_requirement=True,
-                    ),
-                ),
-            ]
-        )
+            ),
+        ])
 
     @classmethod
     def _format_message(cls, alert, publication, webhook_url):
@@ -93,7 +88,7 @@ class TeamsOutput(OutputDispatcher):
                       ...
         """
         # Presentation defaults
-        default_title = "StreamAlert Rule Triggered: {}".format(alert.rule_name)
+        default_title = f"StreamAlert Rule Triggered: {alert.rule_name}"
         default_description = alert.rule_description
         default_color = "E81123"  # Red in Hexstring format
 
@@ -120,13 +115,10 @@ class TeamsOutput(OutputDispatcher):
 
         if "@teams.additional_card_sections" in publication:
             teams_card = cls._add_additional_sections(
-                teams_card, publication["@teams.additional_card_sections"]
-            )
+                teams_card, publication["@teams.additional_card_sections"])
 
         if "@teams.buttons" in publication:
-            teams_card = cls._add_buttons(
-                teams_card, publication["@teams.buttons"]
-            )
+            teams_card = cls._add_buttons(teams_card, publication["@teams.buttons"])
 
         return teams_card
 

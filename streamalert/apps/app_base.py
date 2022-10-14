@@ -13,18 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from abc import ABCMeta, abstractmethod, abstractproperty
-from json import JSONDecodeError
 import time
+from abc import ABCMeta, abstractmethod , abstractproperty
+from json import JSONDecodeError
 
 import boto3
-from botocore.exceptions import ClientError
 import requests
+from botocore.exceptions import ClientError
 
-from streamalert.apps.config import AppConfig
 from streamalert.apps.batcher import Batcher
+from streamalert.apps.config import AppConfig
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -43,6 +42,7 @@ def _report_time(func):
         total = time.time() - start
         LOGGER.info('[%s] Function executed in %.4f seconds.', func.__name__, total)
         return total
+
     return _wrapper
 
 
@@ -59,6 +59,7 @@ def safe_timeout(func):
         except requests.exceptions.Timeout:
             LOGGER.exception('[%s] Request timed out', func.__name__)
             return False, None
+
     return _wrapper
 
 
@@ -120,7 +121,7 @@ class AppIntegration(metaclass=ABCMeta):
         Returns:
             str: The specific type of log (duo_auth, duo_admin, google_admin, etc)
         """
-        return '_'.join([cls.service(), cls._type()])
+        return '_'.join([cls.service(), cls._type()]) # pylint: disable=no-value-for-parameter
 
     @classmethod
     def required_auth_info(cls):
@@ -135,7 +136,7 @@ class AppIntegration(metaclass=ABCMeta):
                 format they should follow
         """
         req_auth_info = cls._required_auth_info()
-        return req_auth_info if isinstance(req_auth_info, dict) else dict()
+        return req_auth_info if isinstance(req_auth_info, dict) else {}
 
     @classmethod
     @abstractmethod
@@ -241,8 +242,8 @@ class AppIntegration(metaclass=ABCMeta):
             LOGGER.info('Ending last timestamp is the same as the beginning last timestamp. '
                         'This could occur if there were no logs collected for this execution.')
 
-        LOGGER.info('[%s] App complete; gathered %d logs in %d polls.',
-                    self, self._gathered_log_count, self._poll_count)
+        LOGGER.info('[%s] App complete; gathered %d logs in %d polls.', self,
+                    self._gathered_log_count, self._poll_count)
 
         self._config.last_timestamp = self._last_timestamp
         self._config.context = self._context
@@ -270,23 +271,19 @@ class AppIntegration(metaclass=ABCMeta):
         """
         lambda_client = boto3.client('lambda')
         try:
-            response = lambda_client.invoke(
-                FunctionName=self._config.function_name,
-                InvocationType='Event',
-                Payload=self._config.successive_event,
-                Qualifier=self._config.function_version
-            )
+            response = lambda_client.invoke(FunctionName=self._config.function_name,
+                                            InvocationType='Event',
+                                            Payload=self._config.successive_event,
+                                            Qualifier=self._config.function_version)
         except ClientError as err:
-            LOGGER.error('An error occurred while invoking a subsequent app function '
-                         '(\'%s:%s\'). Error is: %s',
-                         self._config.function_name,
-                         self._config.function_version,
-                         err.response)
+            LOGGER.error(
+                'An error occurred while invoking a subsequent app function '
+                '(\'%s:%s\'). Error is: %s', self._config.function_name,
+                self._config.function_version, err.response)
             raise
 
         LOGGER.info('Invoking successive apps function \'%s\' with Lambda request ID \'%s\'',
-                    self._config.function_name,
-                    response['ResponseMetadata']['RequestId'])
+                    self._config.function_name, response['ResponseMetadata']['RequestId'])
 
     def _check_http_response(self, response):
         """Method for checking for a valid HTTP response code
@@ -296,9 +293,8 @@ class AppIntegration(metaclass=ABCMeta):
         """
         success = response is not None and (200 <= response.status_code <= 299)
         if not success:
-            LOGGER.error(
-                '[%s] HTTP request failed: [%d] %s', self, response.status_code, response.content
-            )
+            LOGGER.error('[%s] HTTP request failed: [%d] %s', self, response.status_code,
+                         response.content)
         return success
 
     @safe_timeout
@@ -312,8 +308,10 @@ class AppIntegration(metaclass=ABCMeta):
         LOGGER.debug('[%s] Making GET request on poll #%d', self, self._poll_count)
 
         # Perform the request and return the response as a dict
-        response = requests.get(full_url, headers=headers,
-                                params=params, timeout=self._DEFAULT_REQUEST_TIMEOUT)
+        response = requests.get(full_url,
+                                headers=headers,
+                                params=params,
+                                timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
         return self._check_http_response(response), response.json()
 
@@ -331,12 +329,16 @@ class AppIntegration(metaclass=ABCMeta):
 
         # Perform the request and return the response as a dict
         if is_json:
-            response = requests.post(full_url, headers=headers,
-                                     json=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
+            response = requests.post(full_url,
+                                     headers=headers,
+                                     json=data,
+                                     timeout=self._DEFAULT_REQUEST_TIMEOUT)
         else:
             # if content type is form-encoded, the param is 'data' rather than 'json'
-            response = requests.post(full_url, headers=headers,
-                                     data=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
+            response = requests.post(full_url,
+                                     headers=headers,
+                                     data=data,
+                                     timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
         try:
             return self._check_http_response(response), response.json()
@@ -377,8 +379,8 @@ class AppIntegration(metaclass=ABCMeta):
         # Utilize the batcher to send logs to the classifier function
         self._batcher.send_logs(logs)
 
-        LOGGER.debug('Updating config last timestamp from %s to %s',
-                     self._config.last_timestamp, self._last_timestamp)
+        LOGGER.debug('Updating config last timestamp from %s to %s', self._config.last_timestamp,
+                     self._last_timestamp)
 
         # Save the config's last timestamp after each function run
         self._config.last_timestamp = self._last_timestamp
@@ -403,8 +405,9 @@ class AppIntegration(metaclass=ABCMeta):
                 # set this to 'True' within their implementation of the '_gather_logs' function
                 self._more_to_poll = not self._more_to_poll
 
-            LOGGER.debug('[%s] Gathered all logs possible for this execution. More logs to poll: '
-                         '%s', self, self._more_to_poll)
+            LOGGER.debug(
+                '[%s] Gathered all logs possible for this execution. More logs to poll: '
+                '%s', self, self._more_to_poll)
 
             self._config.report_remaining_seconds()
 

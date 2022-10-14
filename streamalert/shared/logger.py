@@ -22,7 +22,6 @@ logging.basicConfig(level=logging.INFO, format=LOCAL_LOGGER_FMT)
 
 
 class LogFormatter(logging.Formatter):
-
     def formatException(self, ei):
         """Override the default exception logger so it looks nice in CloudWatch Logs"""
         value = super().formatException(ei)

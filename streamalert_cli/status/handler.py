@@ -40,11 +40,11 @@ class StatusCommand(CLICommand):
         def _format_header(value, section_header=False):
             char = '=' if section_header else '+'
             value = value if section_header else _format_key(value)
-            return '\n{value:{char}^60}'.format(char=char, value='  {}  '.format(value))
+            return '\n{value:{char}^60}'.format(char=char, value=f'  {value}  ')
 
         def _print_row(key, value):
             key = _format_key(key)
-            print('{}: {}'.format(key, value))
+            print(f'{key}: {value}')
 
         print(_format_header('Global Account Settings', True))
         for key in sorted(['aws_account_id', 'prefix', 'region']):
@@ -52,15 +52,10 @@ class StatusCommand(CLICommand):
             _print_row(key, value)
 
         lambda_keys = sorted([
-            'concurrency_limit',
-            'enable_custom_metrics',
-            'log_level',
-            'log_retention_days',
-            'memory',
-            'timeout',
-            'schedule_expression'
+            'concurrency_limit', 'enable_custom_metrics', 'log_level', 'log_retention_days',
+            'memory', 'timeout', 'schedule_expression'
         ])
-        for name in set((config['lambda'])):
+        for name in set(config['lambda']):
             config_value = config['lambda'][name]
             name = name.replace('_config', '')
             if name in CLUSTERED_FUNCTIONS:
@@ -74,12 +69,12 @@ class StatusCommand(CLICommand):
         for cluster in sorted(config['clusters']):
             sa_config = config['clusters'][cluster]
 
-            print(_format_header('Cluster: {}'.format(cluster), True))
+            print(_format_header(f'Cluster: {cluster}', True))
             for key in cluster_non_func_keys:
                 _print_row(key, sa_config.get(key))
 
             for function in CLUSTERED_FUNCTIONS:
-                config_value = sa_config['{}_config'.format(function)]
+                config_value = sa_config[f'{function}_config']
 
                 print(_format_header(function))
                 for key in lambda_keys:

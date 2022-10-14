@@ -28,7 +28,6 @@ class ShortenTitle(AlertPublisher):
     Instead, this publisher strips out the 'StreamAlert Rule Triggered' prefix and opts to only
     output the rule name.
     """
-
     def publish(self, alert, publication):
 
         publication['@pagerduty-v2.summary'] = alert.rule_name
@@ -47,9 +46,7 @@ def as_custom_details(_, publication):
     def _is_custom_field(key):
         return key.startswith('@pagerduty')
 
-    custom_details = {
-        key: value for key, value in publication.items() if not _is_custom_field(key)
-    }
+    custom_details = {key: value for key, value in publication.items() if not _is_custom_field(key)}
 
     publication['@pagerduty.details'] = custom_details
     publication['@pagerduty-v2.custom_details'] = custom_details

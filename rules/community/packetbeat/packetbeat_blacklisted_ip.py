@@ -1,5 +1,6 @@
 """Alert on PacketBeat events"""
 import ipaddress
+
 from streamalert.shared.rule import rule
 
 IP_BLACKLIST = [

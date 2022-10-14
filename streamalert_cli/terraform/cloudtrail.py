@@ -14,9 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared.logger import get_logger
-from streamalert_cli.terraform.cloudwatch_destinations import (
-    generate_cloudwatch_destinations_internal,
-)
+from streamalert_cli.terraform.cloudwatch_destinations import \
+    generate_cloudwatch_destinations_internal
 from streamalert_cli.terraform.common import s3_access_logging_bucket
 from streamalert_cli.terraform.s3_events import generate_s3_events_by_bucket
 
@@ -46,10 +45,8 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     s3_settings = settings.get('s3_settings', {})
     enable_s3_events = s3_settings.get('enable_events', False)
 
-    s3_bucket_name = s3_settings.get(
-        'bucket_name',
-        '{}-{}-streamalert-cloudtrail'.format(prefix, cluster_name)
-    )
+    s3_bucket_name = s3_settings.get('bucket_name',
+                                     f'{prefix}-{cluster_name}-streamalert-cloudtrail')
 
     primary_account_id = config['global']['account']['aws_account_id']
     account_ids = set(s3_settings.get('cross_account_ids', []))
@@ -84,26 +81,17 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         module_info['s3_event_selector_type'] = s3_settings.get('event_selector_type')
 
     if send_to_cloudwatch:
-        if not generate_cloudtrail_cloudwatch(
-                cluster_name,
-                cluster_dict,
-                config,
-                settings,
-                prefix,
-                region
-        ):
+        if not generate_cloudtrail_cloudwatch(cluster_name, cluster_dict, config, settings, prefix,
+                                              region):
             return False
 
         module_info['cloudwatch_logs_role_arn'] = (
             '${{module.cloudtrail_cloudwatch_{}.cloudtrail_to_cloudwatch_logs_role}}'.format(
-                cluster_name
-            )
-        )
+                cluster_name))
         module_info['cloudwatch_logs_group_arn'] = (
-            '${{module.cloudtrail_cloudwatch_{}.cloudwatch_logs_group_arn}}'.format(cluster_name)
-        )
+            f'${{module.cloudtrail_cloudwatch_{cluster_name}.cloudwatch_logs_group_arn}}')
 
-    cluster_dict['module']['cloudtrail_{}'.format(cluster_name)] = module_info
+    cluster_dict['module'][f'cloudtrail_{cluster_name}'] = module_info
 
     if enable_s3_events:
         ignore_digest = s3_settings.get('ignore_digest', True)
@@ -111,21 +99,15 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         # Omit the primary account ID from the event notifications to avoid duplicative processing
         if send_to_cloudwatch:
             s3_event_account_ids = [
-                account_id
-                for account_id in account_ids
-                if account_id != primary_account_id
+                account_id for account_id in account_ids if account_id != primary_account_id
             ]
         bucket_info = {
-            s3_bucket_name: [
-                {
-                    'filter_prefix': (
-                        'AWSLogs/{}/CloudTrail/'.format(account_id)
-                        if ignore_digest else
-                        'AWSLogs/{}/'.format(account_id)
-                    )
-                } for account_id in s3_event_account_ids
-            ]
+            s3_bucket_name: [{
+                'filter_prefix':
+                f'AWSLogs/{account_id}/CloudTrail/' if ignore_digest else f'AWSLogs/{account_id}/'
+            } for account_id in s3_event_account_ids]
         }
+
         generate_s3_events_by_bucket(
             cluster_name,
             cluster_dict,
@@ -170,6 +152,6 @@ def generate_cloudtrail_cloudwatch(cluster_name, cluster_dict, config, settings,
 
     module_info['cloudwatch_destination_arn'] = destination_arn
 
-    cluster_dict['module']['cloudtrail_cloudwatch_{}'.format(cluster_name)] = module_info
+    cluster_dict['module'][f'cloudtrail_cloudwatch_{cluster_name}'] = module_info
 
     return True

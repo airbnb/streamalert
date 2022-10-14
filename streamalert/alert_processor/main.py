@@ -62,9 +62,10 @@ class AlertProcessor:
         try:
             service, descriptor = output.split(':')
         except ValueError:
-            LOGGER.error('Improperly formatted output [%s]. Outputs for rules must '
-                         'be declared with both a service and a descriptor for the '
-                         'integration (ie: \'slack:my_channel\')', output)
+            LOGGER.error(
+                'Improperly formatted output [%s]. Outputs for rules must '
+                'be declared with both a service and a descriptor for the '
+                'integration (ie: \'slack:my_channel\')', output)
             return None
 
         if service not in self.config or descriptor not in self.config[service]:
@@ -88,11 +89,14 @@ class AlertProcessor:
             dispatcher = self._create_dispatcher(output)
             result[output] = dispatcher.dispatch(alert, output) if dispatcher else False
 
-        alert.outputs_sent = set(output for output, success in list(result.items()) if success)
+        alert.outputs_sent = {output for output, success in list(result.items()) if success}
+
         return result
 
-    @backoff.on_exception(backoff.expo, ClientError,
-                          max_tries=BACKOFF_MAX_TRIES, jitter=backoff.full_jitter,
+    @backoff.on_exception(backoff.expo,
+                          ClientError,
+                          max_tries=BACKOFF_MAX_TRIES,
+                          jitter=backoff.full_jitter,
                           on_backoff=backoff_handlers.backoff_handler(),
                           on_success=backoff_handlers.success_handler(),
                           on_giveup=backoff_handlers.giveup_handler())

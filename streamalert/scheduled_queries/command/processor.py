@@ -21,9 +21,7 @@ from streamalert.scheduled_queries.streamalert.kinesis import KinesisClient
 
 
 class CommandProcessor:
-
-    def __init__(self,
-                 logger=None, kinesis=None, state_manager=None, manager_factory=None):
+    def __init__(self, logger=None, kinesis=None, state_manager=None, manager_factory=None):
         self._logger = logger  # type: Logger
         self._kinesis = kinesis  # type: KinesisClient
         self._state_manager = state_manager  # type: StateManager
@@ -38,8 +36,7 @@ class CommandProcessor:
             bool: True when all work is finished. False otherwise.
         """
         self._logger.info(
-            'Discovered {} query packs to execute'.format(self._manager.num_registered_queries)
-        )
+            f'Discovered {self._manager.num_registered_queries} query packs to execute')
 
         self._manager.initialize_query_packs()
         self._manager.start_queries()
@@ -75,11 +72,9 @@ class CommandProcessor:
             # uh o
             self._logger.error('ENCOUNTERED ERROR')
             self._logger.error(
-                'QUERY FOR {} (Execution Id = {}) HAS FAILED'.format(
-                    query_pack.query_pack_configuration.name,
-                    query_execution_id
-                )
+                f'QUERY FOR {query_pack.query_pack_configuration.name} (Execution Id = {query_execution_id}) HAS FAILED'
             )
+
             self._logger.error(query_execution.status_description)
 
             self._kinesis.send_error_results(query_pack)
@@ -91,19 +86,10 @@ class CommandProcessor:
         result = query_pack.fetch_results()
 
         self._logger.debug('Query Completed:')
-        self._logger.debug(
-            'Execution Id: %s',
-            result.query_execution.query_execution_id
-        )
+        self._logger.debug('Execution Id: %s', result.query_execution.query_execution_id)
         self._logger.debug('Query: %s', result.query_execution.query)
-        self._logger.debug(
-            'Runtime: %d',
-            result.query_execution.engine_execution_time_in_millis
-        )
-        self._logger.debug(
-            'Bytes: %d',
-            result.query_execution.data_scanned_in_bytes
-        )
+        self._logger.debug('Runtime: %d', result.query_execution.engine_execution_time_in_millis)
+        self._logger.debug('Bytes: %d', result.query_execution.data_scanned_in_bytes)
         self._logger.debug('Status: %s', result.query_execution.status)
         self._logger.debug('Reason: %s', result.query_execution.status_description)
 

@@ -14,16 +14,20 @@ jobs:
     strategy:
       matrix:
         python:
-          - 3.7
+          - '3.9'
         task:
           - name: Lint
             command: |
               ./tests/scripts/pylint.sh
-          - name: Test
+          - name: Pytest
+            run: |
+              pytest
+          - name: Test Classifiers
             command: |
-              ./tests/scripts/unit_tests.sh
-              ./manage.py test rules
               ./manage.py test classifier
+          - name: Test Rules
+            command: |
+              ./manage.py test rules
           - name: Docs
             command: |
               sphinx-build -W docs/source docs/build
@@ -40,8 +44,3 @@ jobs:
         run: pip install -r requirements.txt
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.command }}
-      - name: Submit Coverage
-        run: ([ -z "$COVERALLS_REPO_TOKEN" ] && echo "coveralls is skipped in forked repo tests" || coveralls)
-        if: matrix.task.name == 'Test'
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}

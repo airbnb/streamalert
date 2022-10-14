@@ -15,13 +15,10 @@ limitations under the License.
 """
 import logging
 
-from streamalert.classifier.payload.payload_base import (
-    PayloadRecord,
-    RegisterInput,
-    StreamPayload
-)
+from streamalert.classifier.payload.payload_base import (PayloadRecord,
+                                                         RegisterInput,
+                                                         StreamPayload)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
@@ -30,7 +27,6 @@ LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 @RegisterInput
 class SnsPayload(StreamPayload):
     """SnsPayload class"""
-
     @classmethod
     def service(cls):
         return 'sns'
@@ -43,9 +39,7 @@ class SnsPayload(StreamPayload):
         Yields:
             Instances of PayloadRecord back to the caller containing the current log data
         """
-        LOGGER.debug(
-            'Pre-parsing record from SNS. MessageId: %s, EventSubscriptionArn: %s',
-            self.raw_record['Sns']['MessageId'],
-            self.raw_record['EventSubscriptionArn'])
+        LOGGER.debug('Pre-parsing record from SNS. MessageId: %s, EventSubscriptionArn: %s',
+                     self.raw_record['Sns']['MessageId'], self.raw_record['EventSubscriptionArn'])
 
         yield PayloadRecord(self.raw_record['Sns']['Message'])

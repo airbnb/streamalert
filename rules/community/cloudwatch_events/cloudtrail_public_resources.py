@@ -1,7 +1,10 @@
 """Alert when resources are made public."""
 import json
+
 from policyuniverse.policy import Policy
+
 from streamalert.shared.rule import rule
+
 
 @rule(logs=['cloudtrail:events'])
 def cloudtrail_public_resources(rec):
@@ -35,24 +38,18 @@ def cloudtrail_public_resources(rec):
 
     # Check Glacier Vaults
     elif rec['eventName'] == 'SetVaultAccessPolicy':
-        policy_string = (
-            rec.get('requestParameters', {}).get('policy', {}).get('policy', '')
-        )
+        policy_string = (rec.get('requestParameters', {}).get('policy', {}).get('policy', ''))
 
     # Check SQS
     elif rec['eventName'] == 'SetQueueAttributes':
-        policy_string = (
-            rec.get('requestParameters', {}).get('attributes', {}).get('Policy', '')
-        )
+        policy_string = (rec.get('requestParameters', {}).get('attributes', {}).get('Policy', ''))
 
     # Check SNS
     elif rec['eventName'] == 'SetTopicAttributes':
         if rec.get('requestParameters', {}).get('attributeName', '') == 'Policy':
             policy_string = rec['requestParameters'].get('attributeValue', '')
     elif rec['eventName'] == 'CreateTopic':
-        policy_string = (
-            rec.get('requestParameters', {}).get('attributes', {}).get('Policy', '')
-        )
+        policy_string = (rec.get('requestParameters', {}).get('attributes', {}).get('Policy', ''))
 
     # Check ECR
     elif rec['eventName'] == 'SetRepositoryPolicy':

@@ -2,11 +2,7 @@
 from streamalert.shared.rule import rule
 
 
-@rule(
-    logs=['cloudwatch:events'],
-    req_subkeys={
-        'detail': ['eventName', 'requestParameters']
-    })
+@rule(logs=['cloudwatch:events'], req_subkeys={'detail': ['eventName', 'requestParameters']})
 def cloudtrail_network_acl_ingress_anywhere(rec):
     """
     author:         @mimeframe
@@ -20,6 +16,5 @@ def cloudtrail_network_acl_ingress_anywhere(rec):
 
     req_params = rec['detail']['requestParameters']
 
-    return (req_params['cidrBlock'] == '0.0.0.0/0'
-            and req_params['ruleAction'] == 'allow'
+    return (req_params['cidrBlock'] == '0.0.0.0/0' and req_params['ruleAction'] == 'allow'
             and req_params['egress'] is False)

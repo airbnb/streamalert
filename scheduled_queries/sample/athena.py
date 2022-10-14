@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.scheduled_queries.query_packs.configuration import QueryPackConfiguration
+from streamalert.scheduled_queries.query_packs.configuration import \
+    QueryPackConfiguration
 
 QueryPackConfiguration(
     name='athena_any_query',
@@ -46,5 +47,4 @@ WHERE
   AND upper(substr(requestparameters['querystring'], 1, 5)) NOT IN ('ALTER', 'SHOW ')
 """,
     params=['utcdatehour_minus1hour'],
-    tags=['sample']
-)
+    tags=['sample'])

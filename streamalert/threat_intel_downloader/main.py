@@ -13,27 +13,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 
 import backoff
 import boto3
-from botocore.exceptions import ClientError
 import requests
+from botocore.exceptions import ClientError
 
-from streamalert.shared.backoff_handlers import (
-    backoff_handler,
-    success_handler,
-    giveup_handler
-)
+from streamalert.shared.backoff_handlers import (backoff_handler,
+                                                 giveup_handler,
+                                                 success_handler)
 from streamalert.shared.config import load_config, parse_lambda_arn
 from streamalert.shared.logger import get_logger
 from streamalert.threat_intel_downloader.exceptions import (
-    ThreatStreamCredsError,
-    ThreatStreamLambdaInvokeError,
-    ThreatStreamRequestsError
-)
-
+    ThreatStreamCredsError, ThreatStreamLambdaInvokeError,
+    ThreatStreamRequestsError)
 
 LOGGER = get_logger(__name__)
 
@@ -50,10 +45,8 @@ class ThreatStream:
     _END_TIME_BUFFER = 5
     CRED_PARAMETER_NAME = 'threat_intel_downloader_api_creds'
 
-    EXCEPTIONS_TO_BACKOFF = (requests.exceptions.Timeout,
-                             requests.exceptions.ConnectionError,
-                             requests.exceptions.ChunkedEncodingError,
-                             ThreatStreamRequestsError)
+    EXCEPTIONS_TO_BACKOFF = (requests.exceptions.Timeout, requests.exceptions.ConnectionError,
+                             requests.exceptions.ChunkedEncodingError, ThreatStreamRequestsError)
     BACKOFF_MAX_RETRIES = 3
 
     def __init__(self, function_arn, timing_func):
@@ -81,7 +74,7 @@ class ThreatStream:
     def _load_api_creds(self):
         """Retrieve ThreatStream API credentials from Parameter Store"""
         if self.api_user and self.api_key:
-            return # credentials already loaded from SSM
+            return  # credentials already loaded from SSM
 
         try:
             ssm = boto3.client('ssm', self.region)
@@ -95,11 +88,12 @@ class ThreatStream:
 
         try:
             decoded_creds = json.loads(response['Parameter']['Value'])
-        except ValueError:
-            raise ThreatStreamCredsError('Cannot load value for parameter with name '
-                                         '\'{}\'. The value is not valid json: '
-                                         '\'{}\''.format(response['Parameter']['Name'],
-                                                         response['Parameter']['Value']))
+        except ValueError as e:
+            raise ThreatStreamCredsError(
+                f"Cannot load value for parameter with name '{response['Parameter']['Name']}'. "
+                f"The value is not valid json: '{response['Parameter']['Value']}'"
+            ) from e
+
 
         self.api_user = decoded_creds['api_user']
         self.api_key = decoded_creds['api_key']
@@ -121,8 +115,8 @@ class ThreatStream:
             next_url (str): url of next token to retrieve more objects from
                 ThreatStream
         """
-        intelligence = list()
-        https_req = requests.get('{}{}'.format(self._API_URL, next_url), timeout=10)
+        intelligence = []
+        https_req = requests.get(f'{self._API_URL}{next_url}', timeout=10)
 
         next_url = None
         if https_req.status_code == 200:
@@ -132,8 +126,9 @@ class ThreatStream:
 
             LOGGER.info('IOC Offset: %d', data['meta']['offset'])
             if not (data['meta']['next'] and data['meta']['offset'] < self.threshold):
-                LOGGER.debug('Either next token is empty or IOC offset reaches threshold '
-                             '%d. Stop retrieve more IOCs.', self.threshold)
+                LOGGER.debug(
+                    'Either next token is empty or IOC offset reaches threshold '
+                    '%d. Stop retrieve more IOCs.', self.threshold)
             else:
                 next_url = data['meta']['next']
         elif https_req.status_code == 401:
@@ -142,7 +137,7 @@ class ThreatStream:
             raise ThreatStreamRequestsError('Response status code 500, retry now.')
         else:
             raise ThreatStreamRequestsError(
-                'Unknown status code {}, do not retry.'.format(https_req.status_code))
+                f'Unknown status code {https_req.status_code}, do not retry.')
 
         self._finalize(intelligence, next_url)
 
@@ -172,14 +167,12 @@ class ThreatStream:
         LOGGER.debug('This invocation is invoked by lambda function self.')
         lambda_client = boto3.client('lambda', region_name=self.region)
         try:
-            lambda_client.invoke(
-                FunctionName=self._config['function_name'],
-                InvocationType='Event',
-                Payload=json.dumps({'next_url': next_url}),
-                Qualifier=self._config['qualifier']
-            )
+            lambda_client.invoke(FunctionName=self._config['function_name'],
+                                 InvocationType='Event',
+                                 Payload=json.dumps({'next_url': next_url}),
+                                 Qualifier=self._config['qualifier'])
         except ClientError as err:
-            raise ThreatStreamLambdaInvokeError('Error invoking function: {}'.format(err))
+            raise ThreatStreamLambdaInvokeError(f'Error invoking function: {err}') from err
 
     @staticmethod
     def _epoch_time(time_str, days=90):
@@ -194,9 +187,8 @@ class ThreatStream:
                 default value which is current time + 90 days.
         """
         if not time_str:
-            return int((datetime.utcnow()
-                        + timedelta(days)
-                        - datetime.utcfromtimestamp(0)).total_seconds())
+            return int((datetime.utcnow() + timedelta(days) -
+                        datetime.utcfromtimestamp(0)).total_seconds())
 
         try:
             utc_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -246,12 +238,14 @@ class ThreatStream:
                         }
                     ]
         """
-        results = list()
+        results = []
         for obj in data:
             for source in self.ioc_sources:
                 if source in obj['source'].lower():
-                    filtered_obj = {key: value for key, value in obj.items()
-                                    if key in self.ioc_keys}
+                    filtered_obj = {
+                        key: value
+                        for key, value in obj.items() if key in self.ioc_keys
+                    }
                     filtered_obj['expiration_ts'] = self._epoch_time(filtered_obj['expiration_ts'])
                     results.append(filtered_obj)
         return results
@@ -270,8 +264,7 @@ class ThreatStream:
                             'sub_type': ioc['itype'],
                             'source': ioc['source'],
                             'expiration_ts': ioc['expiration_ts']
-                        }
-                    )
+                        })
         except ClientError as err:
             LOGGER.debug('DynamoDB client error: %s', err)
             raise
@@ -296,19 +289,12 @@ class ThreatStream:
         self._load_api_creds()
 
         query = '(status="{}")+AND+({})+AND+NOT+({})'.format(
-            self._IOC_STATUS,
-            "+OR+".join(['type="{}"'.format(ioc) for ioc in self.ioc_types]),
-            "+OR+".join(['itype="{}"'.format(itype) for itype in self.excluded_sub_types])
-        )
+            self._IOC_STATUS, "+OR+".join([f'type="{ioc}"' for ioc in self.ioc_types]),
+            "+OR+".join([f'itype="{itype}"' for itype in self.excluded_sub_types]))
+
         next_url = event.get(
             'next_url',
-            '/api/v2/{}/?username={}&api_key={}&limit={}&q={}'.format(
-                self._API_RESOURCE,
-                self.api_user,
-                self.api_key,
-                self._API_MAX_LIMIT,
-                query
-            )
+            f'/api/v2/{self._API_RESOURCE}/?username={self.api_user}&api_key={self.api_key}&limit={self._API_MAX_LIMIT}&q={query}'
         )
 
         self._connect(next_url)

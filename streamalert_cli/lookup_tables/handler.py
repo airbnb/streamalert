@@ -19,7 +19,8 @@ import json
 from streamalert.shared.logger import get_logger
 from streamalert.shared.lookup_tables.core import LookupTables
 from streamalert.shared.lookup_tables.utils import LookupTablesMagic
-from streamalert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
+from streamalert_cli.utils import (CLICommand, generate_subparser,
+                                   set_parser_epilog)
 
 LOGGER = get_logger(__name__)
 
@@ -51,13 +52,9 @@ Examples:
                         # FIXME (Derek.wang)
                         #   Ryan suggested that we could implement a __str__ or __repr__ function
                         #   for each of the CLICommand classes
-                        description=subcommand.description
-                    )
-                    for command, subcommand
-                    in subcommands.items()
-                ]))
-            )
-        )
+                        description=subcommand.description)
+                    for command, subcommand in subcommands.items()
+                ]))))
 
         lookup_tables_subparsers = subparser.add_subparsers()
 
@@ -94,41 +91,28 @@ class LookupTablesSetFromFile(CLICommand):
             subparser,
             'set-from-json-file',
             description='Pushes the contents of a given json file into the LookupTable key',
-            subcommand=True
-        )
+            subcommand=True)
 
-        set_parser_epilog(
-            set_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(set_parser,
+                          epilog=('''\
                 Examples:
 
                     manage.py lookup-tables set-from-json-file -t [table] -k [key] -f \
 [path/to/file.json]
-                '''
-            )
-        )
+                '''))
 
-        set_parser.add_argument(
-            '-t',
-            '--table',
-            help='Name of the LookupTable',
-            required=True
-        )
+        set_parser.add_argument('-t', '--table', help='Name of the LookupTable', required=True)
 
-        set_parser.add_argument(
-            '-k',
-            '--key',
-            help='Key to modify on the LookupTable',
-            required=True
-        )
+        set_parser.add_argument('-k',
+                                '--key',
+                                help='Key to modify on the LookupTable',
+                                required=True)
 
         set_parser.add_argument(
             '-f',
             '--file',
             help='Path to the json file, relative to the current working directory',
-            required=True
-        )
+            required=True)
 
     @classmethod
     def handler(cls, options, config):
@@ -136,21 +120,19 @@ class LookupTablesSetFromFile(CLICommand):
 
         core = LookupTables.get_instance(config=config)
 
-        print('  Table: {}'.format(options.table))
-        print('  Key:   {}'.format(options.key))
-        print('  File:  {}'.format(options.file))
+        print(f'  Table: {options.table}')
+        print(f'  Key:   {options.key}')
+        print(f'  File:  {options.file}')
 
         table = core.table(options.table)
 
         old_value = table.get(options.key)
 
-        with open(options.file, "r") as json_file_fp:
+        with open(options.file, encoding="utf-8") as json_file_fp:
             new_value = json.load(json_file_fp)
 
-        print('  Value: {} --> {}'.format(
-            json.dumps(old_value, indent=2, sort_keys=True),
-            json.dumps(new_value, indent=2, sort_keys=True)
-        ))
+        print('  Value: {} --> {}'.format(json.dumps(old_value, indent=2, sort_keys=True),
+                                          json.dumps(new_value, indent=2, sort_keys=True)))
 
         LookupTablesMagic.set_table_value(table, options.key, new_value)
 
@@ -162,58 +144,33 @@ class LookupTablesListAddSubCommand(CLICommand):
 
     @classmethod
     def setup_subparser(cls, subparser):
-        set_parser = generate_subparser(
-            subparser,
-            'list-add',
-            description='Sets a key on the requested LookupTable',
-            subcommand=True
-        )
+        set_parser = generate_subparser(subparser,
+                                        'list-add',
+                                        description='Sets a key on the requested LookupTable',
+                                        subcommand=True)
 
-        set_parser_epilog(
-            set_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(set_parser,
+                          epilog=('''\
                 Examples:
 
                     manage.py lookup-tables list-add -t [table] -k [key] -v [value]
-                '''
-            )
-        )
+                '''))
 
-        set_parser.add_argument(
-            '-t',
-            '--table',
-            help='Name of the LookupTable',
-            required=True
-        )
+        set_parser.add_argument('-t', '--table', help='Name of the LookupTable', required=True)
 
-        set_parser.add_argument(
-            '-k',
-            '--key',
-            help='Key to modify on the LookupTable',
-            required=True
-        )
+        set_parser.add_argument('-k',
+                                '--key',
+                                help='Key to modify on the LookupTable',
+                                required=True)
 
-        set_parser.add_argument(
-            '-v',
-            '--value',
-            help='Value to add to the key',
-            required=True
-        )
+        set_parser.add_argument('-v', '--value', help='Value to add to the key', required=True)
 
-        set_parser.add_argument(
-            '-u',
-            '--unique',
-            help='Remove duplicate values from the final list',
-            action='store_true'
-        )
+        set_parser.add_argument('-u',
+                                '--unique',
+                                help='Remove duplicate values from the final list',
+                                action='store_true')
 
-        set_parser.add_argument(
-            '-s',
-            '--sort',
-            help='Sort the final list',
-            action='store_true'
-        )
+        set_parser.add_argument('-s', '--sort', help='Sort the final list', action='store_true')
 
     @classmethod
     def handler(cls, options, config):
@@ -224,8 +181,8 @@ class LookupTablesListAddSubCommand(CLICommand):
 
         core = LookupTables.get_instance(config=config)
 
-        print('  Table: {}'.format(table_name))
-        print('  Key:   {}'.format(key))
+        print(f'  Table: {table_name}')
+        print(f'  Key:   {key}')
 
         table = core.table(table_name)
         old_value = table.get(key)
@@ -234,7 +191,7 @@ class LookupTablesListAddSubCommand(CLICommand):
             old_value = []
 
         if not isinstance(old_value, list):
-            print('  ERROR: The current value is not a list: {}'.format(old_value))
+            print(f'  ERROR: The current value is not a list: {old_value}')
             return False
 
         new_value = copy.copy(old_value)
@@ -246,7 +203,7 @@ class LookupTablesListAddSubCommand(CLICommand):
         if options.sort:
             new_value = sorted(new_value)
 
-        print('  Value: {} --> {}'.format(old_value, new_value))
+        print(f'  Value: {old_value} --> {new_value}')
 
         LookupTablesMagic.set_table_value(table, key, new_value)
 
@@ -262,19 +219,14 @@ class LookupTablesDescribeTablesSubCommand(CLICommand):
             subparser,
             'describe-tables',
             description='Shows metadata about all currently configured LookupTables',
-            subcommand=True
-        )
+            subcommand=True)
 
-        set_parser_epilog(
-            describe_tables_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(describe_tables_parser,
+                          epilog=('''\
                 Examples:
 
                     manage.py lookup-tables describe-tables
-                '''
-            )
-        )
+                '''))
 
     @classmethod
     def handler(cls, options, config):
@@ -282,11 +234,11 @@ class LookupTablesDescribeTablesSubCommand(CLICommand):
 
         lookup_tables = LookupTablesMagic.get_all_tables(LookupTables.get_instance(config=config))
 
-        print('{} Tables:\n'.format(len(lookup_tables)))
+        print(f'{len(lookup_tables)} Tables:\n')
         for table in lookup_tables.values():
-            print(' Table Name: {}'.format(table.table_name))
-            print(' Driver Id: {}'.format(table.driver_id))
-            print(' Driver Type: {}\n'.format(table.driver_type))
+            print(f' Table Name: {table.table_name}')
+            print(f' Driver Id: {table.driver_id}')
+            print(f' Driver Type: {table.driver_type}\n')
 
 
 class LookupTablesGetKeySubCommand(CLICommand):
@@ -298,33 +250,21 @@ class LookupTablesGetKeySubCommand(CLICommand):
             subparser,
             'get',
             description='Retrieves a key from the requested LookupTable',
-            subcommand=True
-        )
+            subcommand=True)
 
-        set_parser_epilog(
-            get_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(get_parser,
+                          epilog=('''\
                 Examples:
 
                     manage.py lookup-tables get -t [table] -k [key]
-                '''
-            )
-        )
+                '''))
 
-        get_parser.add_argument(
-            '-t',
-            '--table',
-            help='Name of the LookupTable',
-            required=True
-        )
+        get_parser.add_argument('-t', '--table', help='Name of the LookupTable', required=True)
 
-        get_parser.add_argument(
-            '-k',
-            '--key',
-            help='Key to fetch on the LookupTable',
-            required=True
-        )
+        get_parser.add_argument('-k',
+                                '--key',
+                                help='Key to fetch on the LookupTable',
+                                required=True)
 
     @classmethod
     def handler(cls, options, config):
@@ -335,20 +275,20 @@ class LookupTablesGetKeySubCommand(CLICommand):
 
         LookupTables.get_instance(config=config)
 
-        print('  Table: {}'.format(table_name))
-        print('  Key:   {}'.format(key))
+        print(f'  Table: {table_name}')
+        print(f'  Key:   {key}')
 
         value = LookupTables.get(table_name, key)
 
         print()
-        print('  Type:  {}'.format(type(value)))
+        print(f'  Type:  {type(value)}')
 
         if isinstance(value, (list, dict)):
             # Render lists and dicts a bit better to make them easier to read
             print('  Value:')
             print(json.dumps(value, indent=2, sort_keys=True))
         else:
-            print('  Value: {}'.format(value))
+            print(f'  Value: {value}')
 
         print()
 
@@ -360,51 +300,31 @@ class LookupTablesSetSubCommand(CLICommand):
 
     @classmethod
     def setup_subparser(cls, subparser):
-        set_parser = generate_subparser(
-            subparser,
-            'set',
-            description='Sets a key on the requested LookupTable',
-            subcommand=True
-        )
+        set_parser = generate_subparser(subparser,
+                                        'set',
+                                        description='Sets a key on the requested LookupTable',
+                                        subcommand=True)
 
-        set_parser_epilog(
-            set_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(set_parser,
+                          epilog=('''\
                 Examples:
 
                     manage.py lookup-tables set -t [table] -k [key] -v [value]
-                '''
-            )
-        )
+                '''))
 
-        set_parser.add_argument(
-            '-t',
-            '--table',
-            help='Name of the LookupTable',
-            required=True
-        )
+        set_parser.add_argument('-t', '--table', help='Name of the LookupTable', required=True)
 
-        set_parser.add_argument(
-            '-k',
-            '--key',
-            help='Key to set on the LookupTable',
-            required=True
-        )
+        set_parser.add_argument('-k', '--key', help='Key to set on the LookupTable', required=True)
 
-        set_parser.add_argument(
-            '-v',
-            '--value',
-            help='Value to save into LookupTable',
-            required=True
-        )
+        set_parser.add_argument('-v',
+                                '--value',
+                                help='Value to save into LookupTable',
+                                required=True)
 
-        set_parser.add_argument(
-            '-j',
-            '--json',
-            help='Interpret the value as a JSON-encoded string',
-            action='store_true'
-        )
+        set_parser.add_argument('-j',
+                                '--json',
+                                help='Interpret the value as a JSON-encoded string',
+                                action='store_true')
 
     @classmethod
     def handler(cls, options, config):
@@ -425,13 +345,13 @@ class LookupTablesSetSubCommand(CLICommand):
 
         core = LookupTables.get_instance(config=config)
 
-        print('  Table: {}'.format(table_name))
-        print('  Key:   {}'.format(key))
+        print(f'  Table: {table_name}')
+        print(f'  Key:   {key}')
 
         table = core.table(table_name)
         old_value = table.get(key)
 
-        print('  Value: {} --> {}'.format(old_value, new_value))
+        print(f'  Value: {old_value} --> {new_value}')
 
         LookupTablesMagic.set_table_value(table, key, new_value)
 

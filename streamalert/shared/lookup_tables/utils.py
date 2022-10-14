@@ -23,7 +23,6 @@ class LookupTablesMagic:
     These methods are not on the public interface by design to prevent these access patterns from
     being utilized in "normal" Lambda code.
     """
-
     @staticmethod
     def get_all_table_data(table):
         """

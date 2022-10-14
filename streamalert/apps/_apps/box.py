@@ -15,13 +15,12 @@ limitations under the License.
 """
 import json
 
+import requests
 from boxsdk import Client, JWTAuth
 from boxsdk.exception import BoxException
 from boxsdk.object.events import EnterpriseEventsStreamType
-import requests
 
 from . import AppIntegration, StreamAlertApp, get_logger, safe_timeout
-
 
 LOGGER = get_logger(__name__)
 
@@ -33,7 +32,7 @@ class BoxApp(AppIntegration):
     _MAX_RETRY_COUNT = 3
 
     def __init__(self, event, context):
-        super(BoxApp, self).__init__(event, context)
+        super().__init__(event, context)
         self._client = None
         self._next_stream_position = None
 
@@ -122,15 +121,13 @@ class BoxApp(AppIntegration):
             try:
                 # Get the events using a make_request call with the box api. This is to
                 # support custom parameters such as 'created_after' and 'created_before'
-                box_response = self._client.make_request(
-                    'GET',
-                    self._client.get_url('events'),
-                    params=params,
-                    timeout=timeout
-                )
+                box_response = self._client.make_request('GET',
+                                                         self._client.get_url('events'),
+                                                         params=params,
+                                                         timeout=timeout)
             except BoxException:
                 LOGGER.exception('[%s] Failed to get events', self)
-                return False, {}   # Return a tuple to conform to return value of safe_timeout
+                return False, {}  # Return a tuple to conform to return value of safe_timeout
             except requests.exceptions.Timeout:
                 # Retry requests that timed out a few more times, with increased timeout
                 timeout *= 2
@@ -146,7 +143,7 @@ class BoxApp(AppIntegration):
                 if allow_retry:
                     return _perform_request(timeout, allow_retry=False)
 
-                return False, {}   # Return a tuple to conform to return value of safe_timeout
+                return False, {}  # Return a tuple to conform to return value of safe_timeout
 
             # Return a successful status and the JSON from the box response
             # Return a tuple to conform to return value of safe_timeout
@@ -200,24 +197,21 @@ class BoxApp(AppIntegration):
         def keyfile_validator(keyfile):
             """A JSON formatted Box service account private key file key"""
             try:
-                with open(keyfile.strip(), 'r') as json_keyfile:
+                with open(keyfile.strip(), encoding="utf-8") as json_keyfile:
                     auth_data = json.load(json_keyfile)
-            except (IOError, ValueError):
+            except (OSError, ValueError):
                 return False
 
-            if not cls._load_auth(auth_data):
-                return False
-
-            return auth_data
+            return auth_data if cls._load_auth(auth_data) else False
 
         return {
-            'keyfile':
-                {
-                    'description': ('the path on disk to the JSON formatted Box '
-                                    'service account private key file'),
-                    'format': keyfile_validator
-                }
+            'keyfile': {
+                'description': ('the path on disk to the JSON formatted Box '
+                                'service account private key file'),
+                'format':
+                keyfile_validator
             }
+        }
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for

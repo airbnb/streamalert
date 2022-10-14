@@ -13,20 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.shared.firehose import FirehoseClient
-from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert.shared.alert import Alert
 from streamalert.shared.athena import AthenaClient
-from streamalert.shared.config import firehose_alerts_bucket, firehose_data_bucket
+from streamalert.shared.config import (firehose_alerts_bucket,
+                                       firehose_data_bucket)
+from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.logger import get_logger
+from streamalert.shared.utils import get_data_file_format, get_database_name
 from streamalert_cli.athena import helpers
 from streamalert_cli.helpers import continue_prompt, record_to_schema
-from streamalert_cli.utils import (
-    CLICommand,
-    generate_subparser,
-    set_parser_epilog,
-    UniqueSortedListAction
-)
+from streamalert_cli.utils import (CLICommand, UniqueSortedListAction,
+                                   generate_subparser, set_parser_epilog)
 
 LOGGER = get_logger(__name__)
 
@@ -38,6 +35,7 @@ STORE_FORMAT_JSON = ('ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
                      'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\')')
 
 STORE_FORMAT_PARQUET = 'STORED AS PARQUET'
+
 
 class AthenaCommand(CLICommand):
     description = 'Perform actions related to Athena'
@@ -54,25 +52,19 @@ class AthenaCommand(CLICommand):
     @classmethod
     def _setup_athena_create_table_subparser(cls, subparsers):
         """Add the athena create-table subparser: manage.py athena create-table [options]"""
-        athena_create_table_parser = generate_subparser(
-            subparsers,
-            'create-table',
-            description='Create an Athena table',
-            subcommand=True
-        )
+        athena_create_table_parser = generate_subparser(subparsers,
+                                                        'create-table',
+                                                        description='Create an Athena table',
+                                                        subcommand=True)
 
-        set_parser_epilog(
-            athena_create_table_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(athena_create_table_parser,
+                          epilog=('''\
                 Examples:
 
                     manage.py athena create-table \\
                       --bucket s3.bucket.name \\
                       --table-name my_athena_table
-                '''
-            )
-        )
+                '''))
 
         cls._add_default_athena_args(athena_create_table_parser)
 
@@ -90,15 +82,12 @@ class AthenaCommand(CLICommand):
         athena_create_table_parser.add_argument(
             '--schema-override',
             nargs='+',
-            help=(
-                'Value types to override with new types in the log schema. '
-                'The provided input should be space-separated '
-                'directives like "column_name=value_type"'
-            ),
+            help=('Value types to override with new types in the log schema. '
+                  'The provided input should be space-separated '
+                  'directives like "column_name=value_type"'),
             action=UniqueSortedListAction,
             default=[],
-            type=_validate_override
-        )
+            type=_validate_override)
 
     @classmethod
     def _setup_athena_rebuild_subparser(cls, subparsers):
@@ -111,53 +100,41 @@ class AthenaCommand(CLICommand):
             subparsers,
             'rebuild-partitions',
             description='Rebuild the partitions for an Athena table',
-            subcommand=True
-        )
+            subcommand=True)
 
-        set_parser_epilog(
-            athena_rebuild_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(athena_rebuild_parser,
+                          epilog=('''\
                 Examples:
 
                     manage.py athena rebuild-partitions \\
                       --bucket s3.bucket.name \\
                       --table-name my_athena_table
-                '''
-            )
-        )
+                '''))
 
         cls._add_default_athena_args(athena_rebuild_parser)
 
     @staticmethod
     def _setup_athena_drop_all_subparser(subparsers):
         """Add the athena drop-all-tables subparser: manage.py athena drop-all-tables"""
-        generate_subparser(
-            subparsers,
-            'drop-all-tables',
-            description='Drop all tables from an Athena database',
-            subcommand=True
-        )
+        generate_subparser(subparsers,
+                           'drop-all-tables',
+                           description='Drop all tables from an Athena database',
+                           subcommand=True)
 
     @staticmethod
     def _add_default_athena_args(athena_parser):
         """Adds the default required arguments for athena subcommands (bucket and table)"""
         athena_parser.add_argument(
-            '-b', '--bucket',
-            help=(
-                'Name of the S3 bucket where log data is located. If not supplied, default will '
-                'be "<prefix>-streamalert-data"'
-            )
-        )
+            '-b',
+            '--bucket',
+            help=('Name of the S3 bucket where log data is located. If not supplied, default will '
+                  'be "<prefix>-streamalert-data"'))
 
-        athena_parser.add_argument(
-            '-t', '--table-name',
-            help=(
-                'Name of the Athena table to create. '
-                'This must be a type of log defined in logs.json'
-            ),
-            required=True
-        )
+        athena_parser.add_argument('-t',
+                                   '--table-name',
+                                   help=('Name of the Athena table to create. '
+                                         'This must be a type of log defined in logs.json'),
+                                   required=True)
 
     @classmethod
     def handler(cls, options, config):
@@ -171,21 +148,13 @@ class AthenaCommand(CLICommand):
             bool: False if errors occurred, True otherwise
         """
         if options.subcommand == 'rebuild-partitions':
-            return rebuild_partitions(
-                options.table_name,
-                options.bucket,
-                config)
+            return rebuild_partitions(options.table_name, options.bucket, config)
 
         if options.subcommand == 'drop-all-tables':
             return drop_all_tables(config)
 
         if options.subcommand == 'create-table':
-            return create_table(
-                options.table_name,
-                options.bucket,
-                config,
-                options.schema_override
-            )
+            return create_table(options.table_name, options.bucket, config, options.schema_override)
 
 
 def get_athena_client(config):
@@ -203,17 +172,13 @@ def get_athena_client(config):
     db_name = get_database_name(config)
 
     # Get the S3 bucket to store Athena query results
-    results_bucket = athena_config.get(
-        'results_bucket',
-        's3://{}-streamalert-athena-results'.format(prefix)
-    )
+    results_bucket = athena_config.get('results_bucket',
+                                       f's3://{prefix}-streamalert-athena-results')
 
-    return AthenaClient(
-        db_name,
-        results_bucket,
-        'streamalert_cli',
-        region=config['global']['account']['region']
-    )
+    return AthenaClient(db_name,
+                        results_bucket,
+                        'streamalert_cli',
+                        region=config['global']['account']['region'])
 
 
 def rebuild_partitions(table, bucket, config):
@@ -256,14 +221,14 @@ def rebuild_partitions(table, bucket, config):
     if not create_table(table, bucket, config):
         return False
 
-    new_partitions_statements = helpers.add_partition_statements(
-        partitions, bucket, sanitized_table_name)
+    new_partitions_statements = helpers.add_partition_statements(partitions, bucket,
+                                                                 sanitized_table_name)
 
     LOGGER.info('Creating total %d new partitions for %s', len(partitions), sanitized_table_name)
 
     for idx, statement in enumerate(new_partitions_statements):
         success = athena_client.run_query(query=statement)
-        LOGGER.info('Rebuilt partitions part %d', idx+1)
+        LOGGER.info('Rebuilt partitions part %d', idx + 1)
         if not success:
             LOGGER.error('Error re-creating new partitions for %s', sanitized_table_name)
             write_partitions_statements(new_partitions_statements, sanitized_table_name)
@@ -275,12 +240,9 @@ def rebuild_partitions(table, bucket, config):
 
 def write_partitions_statements(statements, sanitized_table_name):
     """Write partitions statements to a file if re-creating new partitions failed"""
-    file_name = 'partitions_{}.txt'.format(sanitized_table_name)
-    LOGGER.error(
-        'Rebuild partitions failed, writing to local file with name %s',
-        file_name
-    )
-    with open(file_name, 'w') as partition_file:
+    file_name = f'partitions_{sanitized_table_name}.txt'
+    LOGGER.error('Rebuild partitions failed, writing to local file with name %s', file_name)
+    with open(file_name, 'w', encoding="utf-8") as partition_file:
         partition_file.write(statements)
 
 
@@ -324,14 +286,12 @@ def _construct_create_table_statement(schema, table_name, bucket, file_format='p
     for key_name in sorted(schema.keys()):
         key_type = schema[key_name]
         if isinstance(key_type, str):
-            schema_statement.append('{0} {1}'.format(key_name, key_type))
+            schema_statement.append(f'{key_name} {key_type}')
         # Account for nested structs
         elif isinstance(key_type, dict):
-            struct_schema = ', '.join(
-                '{0}:{1}'.format(sub_key, key_type[sub_key])
-                for sub_key in sorted(key_type.keys())
-            )
-            schema_statement.append('{0} struct<{1}>'.format(key_name, struct_schema))
+            struct_schema = ', '.join(f'{sub_key}:{key_type[sub_key]}'
+                                      for sub_key in sorted(key_type.keys()))
+            schema_statement.append(f'{key_name} struct<{struct_schema}>')
 
     return CREATE_TABLE_STATEMENT.format(
         table_name=table_name,
@@ -355,9 +315,7 @@ def create_table(table, bucket, config, schema_override=None):
         bool: False if errors occurred, True otherwise
     """
     enabled_logs = FirehoseClient.load_enabled_log_sources(
-        config['global']['infrastructure']['firehose'],
-        config['logs']
-    )
+        config['global']['infrastructure']['firehose'], config['logs'])
 
     # Convert special characters in schema name to underscores
     sanitized_table_name = FirehoseClient.sanitized_value(table)
@@ -385,12 +343,10 @@ def create_table(table, bucket, config, schema_override=None):
         # Use the bucket if supplied, otherwise use the default alerts bucket
         bucket = bucket or firehose_alerts_bucket(config)
 
-        query = _construct_create_table_statement(
-            schema=athena_schema,
-            table_name=table,
-            bucket=bucket,
-            file_format=get_data_file_format(config)
-        )
+        query = _construct_create_table_statement(schema=athena_schema,
+                                                  table_name=table,
+                                                  bucket=bucket,
+                                                  file_format=get_data_file_format(config))
 
     else:  # all other tables are log types
 
@@ -409,11 +365,8 @@ def create_table(table, bucket, config, schema_override=None):
 
         athena_schema = helpers.logs_schema_to_athena_schema(sanitized_schema)
 
-        # Add envelope keys to Athena Schema
-        configuration_options = log_info.get('configuration')
-        if configuration_options:
-            envelope_keys = configuration_options.get('envelope_keys')
-            if envelope_keys:
+        if configuration_options := log_info.get('configuration'):
+            if envelope_keys := configuration_options.get('envelope_keys'):
                 sanitized_envelope_key_schema = FirehoseClient.sanitize_keys(envelope_keys)
                 # Note: this key is wrapped in backticks to be Hive compliant
                 athena_schema['`streamalert:envelope_keys`'] = helpers.logs_schema_to_athena_schema(
@@ -425,22 +378,18 @@ def create_table(table, bucket, config, schema_override=None):
             for override in schema_override:
                 column_name, column_type = override.split('=')
                 # Columns are escaped to avoid Hive issues with special characters
-                column_name = '`{}`'.format(column_name)
+                column_name = f'`{column_name}`'
                 if column_name in athena_schema:
                     athena_schema[column_name] = column_type
                     LOGGER.info('Applied schema override: %s:%s', column_name, column_type)
                 else:
-                    LOGGER.error(
-                        'Schema override column %s not found in Athena Schema, skipping',
-                        column_name
-                    )
+                    LOGGER.error('Schema override column %s not found in Athena Schema, skipping',
+                                 column_name)
 
-        query = _construct_create_table_statement(
-            schema=athena_schema,
-            table_name=sanitized_table_name,
-            bucket=bucket,
-            file_format=get_data_file_format(config)
-        )
+        query = _construct_create_table_statement(schema=athena_schema,
+                                                  table_name=sanitized_table_name,
+                                                  bucket=bucket,
+                                                  file_format=get_data_file_format(config))
 
     success = athena_client.run_query(query=query)
     if not success:
@@ -452,8 +401,7 @@ def create_table(table, bucket, config, schema_override=None):
         # Only add buckets to the config if they are not one of the default/configured buckets
         # Ensure 'buckets' exists in the config (since it is not required)
         config['lambda']['athena_partitioner_config']['buckets'] = (
-            config['lambda']['athena_partitioner_config'].get('buckets', {})
-        )
+            config['lambda']['athena_partitioner_config'].get('buckets', {}))
         if bucket not in config['lambda']['athena_partitioner_config']['buckets']:
             config['lambda']['athena_partitioner_config']['buckets'][bucket] = 'data'
             config.write()
@@ -475,16 +423,11 @@ def create_log_tables(config):
 
     firehose_config = config['global']['infrastructure']['firehose']
     firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert-data')
-    firehose_s3_bucket_name = '{}-{}'.format(config['global']['account']['prefix'],
-                                             firehose_s3_bucket_suffix)
+    firehose_s3_bucket_name = f"{config['global']['account']['prefix']}-{firehose_s3_bucket_suffix}"
 
     enabled_logs = FirehoseClient.load_enabled_log_sources(
-        config['global']['infrastructure']['firehose'],
-        config['logs']
-    )
+        config['global']['infrastructure']['firehose'], config['logs'])
 
-    for log_stream_name in enabled_logs:
-        if not create_table(log_stream_name, firehose_s3_bucket_name, config):
-            return False
-
-    return True
+    return all(
+        create_table(log_stream_name, firehose_s3_bucket_name, config)
+        for log_stream_name in enabled_logs)

@@ -14,19 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import calendar
-from datetime import datetime
 import json
 import re
 import time
+from datetime import datetime
 
 import backoff
 import boto3
 from botocore import client
 from botocore.exceptions import ClientError
 
-from streamalert.apps.exceptions import AppAuthError, AppConfigError, AppStateError
+from streamalert.apps.exceptions import (AppAuthError, AppConfigError,
+                                         AppStateError)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
@@ -77,7 +77,7 @@ class AppConfig:
     def successive_event(self):
         """Return formatted json for event representing a successive invocation"""
         event = {'invocation_type': self.Events.SUCCESSIVE_INVOKE}
-        event.update(self._event)
+        event |= self._event
         return json.dumps(event)
 
     @property
@@ -103,7 +103,7 @@ class AppConfig:
     @property
     def _state_name(self):
         """The name of the state parameter in ssm"""
-        return '{}_{}'.format(self.function_name, self.STATE_CONFIG_SUFFIX)
+        return f'{self.function_name}_{self.STATE_CONFIG_SUFFIX}'
 
     @staticmethod
     def remaining_ms():
@@ -147,8 +147,8 @@ class AppConfig:
 
         # Check to see if the authentication param is in the invalid params list
         if auth_param_name in invalid_params:
-            raise AppConfigError('Could not load authentication parameter required for this '
-                                 'app: {}'.format(auth_param_name))
+            raise AppConfigError(
+                f'Could not load authentication parameter required for this app: {auth_param_name}')
 
         LOGGER.debug('Retrieved parameters from parameter store: %s',
                      cls._scrub_auth_info(params, auth_param_name))
@@ -180,8 +180,10 @@ class AppConfig:
                 information scrubbed with an asterisk for each character
         """
         info = param_info.copy()
-        info[auth_param_name] = {key: '*' * len(str(value))
-                                 for key, value in info[auth_param_name].items()}
+        info[auth_param_name] = {
+            key: '*' * len(str(value))
+            for key, value in info[auth_param_name].items()
+        }
 
         return info
 
@@ -196,15 +198,15 @@ class AppConfig:
         """
         # The config validates that the 'auth' dict was loaded, but do a safety check here
         if not self.auth:
-            raise AppAuthError('[{}] Auth config is empty'.format(self))
+            raise AppAuthError(f'[{self}] Auth config is empty')
 
         auth_key_diff = required_keys.difference(set(self.auth))
         if not auth_key_diff:
             return True
 
-        missing_auth_keys = ', '.join('\'{}\''.format(key) for key in auth_key_diff)
-        raise AppAuthError('[{}] Auth config is missing the following '
-                           'required keys: {}'.format(self, missing_auth_keys))
+        missing_auth_keys = ', '.join(f"\'{key}\'" for key in auth_key_diff)
+        raise AppAuthError(
+            f'[{self}] Auth config is missing the following required keys: {missing_auth_keys}')
 
     @classmethod
     def _get_parameters(cls, *names):
@@ -222,32 +224,29 @@ class AppConfig:
         # Create the ssm boto3 client that will be cached and used throughout this execution
         # if one does not exist already
         if AppConfig.SSM_CLIENT is None:
-            boto_config = client.Config(
-                connect_timeout=cls.BOTO_TIMEOUT,
-                read_timeout=cls.BOTO_TIMEOUT
-            )
+            boto_config = client.Config(connect_timeout=cls.BOTO_TIMEOUT,
+                                        read_timeout=cls.BOTO_TIMEOUT)
             AppConfig.SSM_CLIENT = boto3.client('ssm', config=boto_config)
 
         LOGGER.debug('Retrieving values from parameter store with names: %s',
-                     ', '.join('\'{}\''.format(name) for name in names))
+                     ', '.join(f"\'{name}\'" for name in names))
+
         try:
-            parameters = AppConfig.SSM_CLIENT.get_parameters(
-                Names=list(names),
-                WithDecryption=True
-            )
+            parameters = AppConfig.SSM_CLIENT.get_parameters(Names=list(names), WithDecryption=True)
         except ClientError as err:
-            joined_names = ', '.join('\'{}\''.format(name) for name in names)
-            raise AppConfigError('Could not get parameter with names {}. Error: '
-                                 '{}'.format(joined_names, err.response['Error']['Message']))
+            joined_names = ', '.join(f"\'{name}\'" for name in names)
+            raise AppConfigError(f"Could not get parameter with names {joined_names}. Error: {err.response['Error']['Message']}") from err
+
 
         decoded_params = {}
         for param in parameters['Parameters']:
             try:
                 decoded_params[param['Name']] = json.loads(param['Value'])
-            except ValueError:
-                raise AppConfigError('Could not load value for parameter with '
-                                     'name \'{}\'. The value is not valid json: '
-                                     '\'{}\''.format(param['Name'], param['Value']))
+            except ValueError as e:
+                raise AppConfigError(
+                    f"Could not load value for parameter with name \'{param['Name']}\'. The value is not valid json: \'{param['Value']}\'"
+                ) from e
+
 
         return decoded_params, parameters['InvalidParameters']
 
@@ -290,7 +289,7 @@ class AppConfig:
             })
         except TypeError as err:
             raise AppStateError('Could not serialize state for name \'{}\'. Error: '
-                                '{}'.format(self._state_name, str(err)))
+                                '{}'.format(self._state_name, str(err))) from err
 
         @backoff.on_exception(backoff.expo,
                               ClientError,
@@ -298,19 +297,19 @@ class AppConfig:
                               jitter=backoff.full_jitter)
         def save():
             """Function to save the value of the state dictionary to parameter store"""
-            self.SSM_CLIENT.put_parameter(
-                Name=self._state_name,
-                Description=self._STATE_DESCRIPTION.format(self._app_type, self.function_name),
-                Value=param_value,
-                Type='SecureString',
-                Overwrite=True
-            )
+            self.SSM_CLIENT.put_parameter(Name=self._state_name,
+                                          Description=self._STATE_DESCRIPTION.format(
+                                              self._app_type, self.function_name),
+                                          Value=param_value,
+                                          Type='SecureString',
+                                          Overwrite=True)
+
         try:
             save()
         except ClientError as err:
             raise AppStateError('Could not save current state to parameter '
                                 'store with name \'{}\'. Response: '
-                                '{}'.format(self._state_name, err.response))
+                                '{}'.format(self._state_name, err.response)) from err
 
     @classmethod
     def _validate_event(cls, event):
@@ -323,9 +322,9 @@ class AppConfig:
         if not event_key_diff:
             return
 
-        missing_event_keys = ', '.join('\'{}\''.format(key) for key in event_key_diff)
-        raise AppConfigError('App event is missing the following required '
-                             'keys: {}'.format(missing_event_keys))
+        missing_event_keys = ', '.join(f"\'{key}\'" for key in event_key_diff)
+        raise AppConfigError(
+            f'App event is missing the following required keys: {missing_event_keys}')
 
     def _evaluate_interval(self):
         """Get the interval at which this function is executing. This translates
@@ -334,15 +333,12 @@ class AppConfig:
         rate_match = AWS_RATE_RE.match(self._schedule)
 
         if not rate_match:
-            raise AppConfigError('Invalid \'rate\' interval value: '
-                                 '{}'.format(self._schedule))
+            raise AppConfigError(f"Invalid \'rate\' interval value: {self._schedule}")
 
         value = rate_match.group(2) or rate_match.group(4)
         unit = rate_match.group(3) or rate_match.group(5).replace('s', '')
 
-        translate_to_seconds = {'minute': 60,
-                                'hour': 60*60,
-                                'day': 60*60*24}
+        translate_to_seconds = {'minute': 60, 'hour': 60 * 60, 'day': 60 * 60 * 24}
 
         interval = int(value) * translate_to_seconds[unit]
 
@@ -414,7 +410,7 @@ class AppConfig:
             return
 
         if not isinstance(context, dict):
-            raise AppStateError('Unable to set context, must be a dict: {}'.format(context))
+            raise AppStateError(f'Unable to set context, must be a dict: {context}')
 
         LOGGER.debug('Setting context to: %s', context)
 

@@ -56,6 +56,6 @@ def _path_to_module(path):
     """
     base_name = os.path.splitext(path)[0]
     if '.' in base_name:
-        raise NameError('Python file "{}" cannot be imported '
-                        'because of "." in the name'.format(path))
+        raise NameError(f'Python file "{path}" cannot be imported because of "." in the name')
+
     return base_name.replace('/', '.')

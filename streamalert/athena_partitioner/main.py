@@ -13,20 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import defaultdict
 import json
 import posixpath
 import re
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
+from collections import defaultdict
 
-from streamalert.shared.utils import get_database_name, get_data_file_format
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import athena_partition_buckets, load_config
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
-
+from streamalert.shared.utils import get_data_file_format, get_database_name
 
 LOGGER = get_logger(__name__)
 
@@ -77,10 +76,8 @@ class AthenaPartitioner:
             self._data_regex = self.DATA_REGEX
         else:
             message = (
-                'file format "{}" is not supported. Supported file format are '
-                '"parquet", "json". Please update the setting in athena_partitioner_config '
-                'in "conf/lambda.json"'.format(self._file_format)
-            )
+                f'file format "{self._file_format}" is not supported. Supported file format are "parquet", "json". '
+                f'Please update the setting in athena_partitioner_config in "conf/lambda.json"')
             raise ConfigError(message)
 
         self._athena_buckets = athena_partition_buckets(config)
@@ -88,10 +85,8 @@ class AthenaPartitioner:
         db_name = get_database_name(config)
 
         # Get the S3 bucket to store Athena query results
-        results_bucket = athena_config.get(
-            'results_bucket',
-            's3://{}-streamalert-athena-results'.format(prefix)
-        )
+        results_bucket = athena_config.get('results_bucket',
+                                           f's3://{prefix}-streamalert-athena-results')
 
         self._s3_buckets_and_keys = defaultdict(set)
 
@@ -106,7 +101,7 @@ class AthenaPartitioner:
 
         # Check if the database exists when the client is created
         if not cls._ATHENA_CLIENT.check_database_exists():
-            raise AthenaPartitionerError('The \'{}\' database does not exist'.format(db_name))
+            raise AthenaPartitionerError(f"The \'{db_name}\' database does not exist")
 
     def _get_partitions_from_keys(self):
         """Get the partitions that need to be added for the Athena tables
@@ -127,9 +122,9 @@ class AthenaPartitioner:
             athena_table = self._athena_buckets.get(bucket)
             if not athena_table:
                 # TODO(jacknagz): Add this as a metric
-                LOGGER.error('\'%s\' not found in \'buckets\' config. Please add this '
-                             'bucket to enable additions of Hive partitions.',
-                             bucket)
+                LOGGER.error(
+                    '\'%s\' not found in \'buckets\' config. Please add this '
+                    'bucket to enable additions of Hive partitions.', bucket)
                 continue
 
             # Iterate over each key
@@ -160,14 +155,13 @@ class AthenaPartitioner:
                         #   s3://bucketname/[data-type]/YYYY/MM/DD/hh/*.gz
                         # when file_format is parquet, s3 file path is
                         #   s3://bucketname/parquet/[data-type]/dt=YYYY-MM-DD-hh/*.parquet
-                        path.split('/')[1] if self._file_format == 'parquet'
-                        else path.split('/')[0]
-                    )
+                        path.split('/')[1]
+                        if self._file_format == 'parquet' else path.split('/')[0])
 
                 # Example:
                 # PARTITION (dt = '2017-01-01-01') LOCATION 's3://bucket/path/'
                 partition = '(dt = \'{year}-{month}-{day}-{hour}\')'.format(**match.groupdict())
-                location = '\'s3://{bucket}/{path}\''.format(bucket=bucket, path=path)
+                location = f'\'s3://{bucket}/{path}\''
                 # By using the partition as the dict key, this ensures that
                 # Athena will not try to add the same partition twice.
                 # TODO(jacknagz): Write this dictionary to SSM/DynamoDB
@@ -188,22 +182,20 @@ class AthenaPartitioner:
             return False
 
         for athena_table in partitions:
-            partition_statement = ' '.join(
-                ['PARTITION {0} LOCATION {1}'.format(partition, location)
-                 for partition, location in partitions[athena_table].items()])
+            partition_statement = ' '.join([
+                f'PARTITION {partition} LOCATION {location}'
+                for partition, location in partitions[athena_table].items()
+            ])
             query = ('ALTER TABLE {athena_table} '
                      'ADD IF NOT EXISTS {partition_statement};'.format(
-                         athena_table=athena_table,
-                         partition_statement=partition_statement))
+                         athena_table=athena_table, partition_statement=partition_statement))
 
-            success = self._ATHENA_CLIENT.run_query(query=query)
-            if not success:
-                raise AthenaPartitionerError(
-                    'The add hive partition query has failed:\n{}'.format(query)
-                )
+            if  self._ATHENA_CLIENT.run_query(query=query):
+                LOGGER.info('Successfully added the following partitions:\n%s',
+                            json.dumps({athena_table: partitions[athena_table]}))
+            else:
+                raise AthenaPartitionerError(f'The add hive partition query has failed:\n{query}')
 
-            LOGGER.info('Successfully added the following partitions:\n%s',
-                        json.dumps({athena_table: partitions[athena_table]}))
         return True
 
     def run(self, event):
@@ -216,8 +208,7 @@ class AthenaPartitioner:
         # Check that the database being used exists before running queries
         for sqs_rec in event['Records']:
             LOGGER.debug('Processing event with message ID \'%s\' and SentTimestamp %s',
-                         sqs_rec['messageId'],
-                         sqs_rec['attributes']['SentTimestamp'])
+                         sqs_rec['messageId'], sqs_rec['attributes']['SentTimestamp'])
 
             body = json.loads(sqs_rec['body'])
             if body.get('Event') == 's3:TestEvent':
@@ -238,8 +229,7 @@ class AthenaPartitioner:
                     LOGGER.info('Skipping placeholder file notification with key: %s', object_key)
                     continue
 
-                LOGGER.debug('Received notification for object \'%s\' in bucket \'%s\'',
-                             object_key,
+                LOGGER.debug('Received notification for object \'%s\' in bucket \'%s\'', object_key,
                              bucket_name)
 
                 self._s3_buckets_and_keys[bucket_name].add(object_key)

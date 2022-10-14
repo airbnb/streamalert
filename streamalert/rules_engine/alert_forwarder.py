@@ -22,13 +22,11 @@ from streamalert.shared.alert_table import AlertTable
 from streamalert.shared.logger import get_logger
 from streamalert.shared.metrics import MetricLogger
 
-
 LOGGER = get_logger(__name__)
 
 
 class AlertForwarder:
     """Sends alerts to the Alert Processor and the alerts DynamoDB table."""
-
     def __init__(self):
         """Initialize the Forwarder with the boto3 clients and resource names."""
         self._table = AlertTable(os.environ['ALERTS_TABLE'])

@@ -7,11 +7,7 @@ _DENIED_ACLS = {
 }
 
 
-@rule(
-    logs=['cloudwatch:events'],
-    req_subkeys={
-        'detail': ['requestParameters', 'eventName']
-    })
+@rule(logs=['cloudwatch:events'], req_subkeys={'detail': ['requestParameters', 'eventName']})
 def cloudtrail_put_bucket_acl(rec):
     """
     author:       airbnb_csirt

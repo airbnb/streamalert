@@ -14,9 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared.logger import get_logger
-from streamalert_cli.terraform.cloudwatch_destinations import (
-    generate_cloudwatch_destinations_internal,
-)
+from streamalert_cli.terraform.cloudwatch_destinations import \
+    generate_cloudwatch_destinations_internal
 
 LOGGER = get_logger(__name__)
 
@@ -44,17 +43,13 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
 
     # If 'vpcs', 'subnets', or 'enis' is defined within the config, we should create
     # flow logs for these values
-    create_flow_logs = any(
-        modules['flow_logs'].get(flow_log_type)
-        for flow_log_type in DEFAULT_FLOW_LOG_TYPES
-    )
+    create_flow_logs = any(modules['flow_logs'].get(flow_log_type)
+                           for flow_log_type in DEFAULT_FLOW_LOG_TYPES)
 
     if not create_flow_logs:
         LOGGER.error(
             'Flow logs is enabled for cluster \'%s\', but none of the following are specified: %s',
-            cluster_name,
-            DEFAULT_FLOW_LOG_TYPES
-        )
+            cluster_name, DEFAULT_FLOW_LOG_TYPES)
         return False
 
     dest_fmt = '${{module.cloudwatch_logs_destination_{}_{}.cloudwatch_logs_destination_arn}}'
@@ -71,11 +66,10 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
             flow_logs_settings[variable] = modules['flow_logs'][variable]
 
     for flow_log_type in DEFAULT_FLOW_LOG_TYPES:
-        values = modules['flow_logs'].get(flow_log_type)
-        if values:
+        if values := modules['flow_logs'].get(flow_log_type):
             flow_logs_settings[flow_log_type] = values
 
-    cluster_dict['module']['flow_logs_{}'.format(cluster_name)] = flow_logs_settings
+    cluster_dict['module'][f'flow_logs_{cluster_name}'] = flow_logs_settings
 
     # Add the additional settings to allow for internal flow log sending
     return generate_cloudwatch_destinations_internal(cluster_name, cluster_dict, config)

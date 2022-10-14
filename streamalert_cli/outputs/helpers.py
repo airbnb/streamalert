@@ -33,10 +33,9 @@ def output_exists(config, props, service, log_message=True):
     """
     if service in config and props['descriptor'].value in config[service]:
         if log_message:
-            LOGGER.error('This descriptor %s is already configured for %s. '
-                         'Please select a new and unique descriptor',
-                         props['descriptor'].value, service
-                         )
+            LOGGER.error(
+                'This descriptor %s is already configured for %s. '
+                'Please select a new and unique descriptor', props['descriptor'].value, service)
         return True
 
     return False

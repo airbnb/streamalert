@@ -16,15 +16,14 @@ limitations under the License.
 import json
 
 from streamalert.shared.logger import get_logger
-from streamalert_cli.test.results import TestResult
 from streamalert_cli.test.format import format_red, format_underline
+from streamalert_cli.test.results import TestResult
 
 LOGGER = get_logger(__name__)
 
 
 class TestEventFile:
     """TestEventFile handles caching results of test events within a test file"""
-
     def __init__(self, full_path):
         self._full_path = full_path
         self._results = []  # type: list[streamalert_cli.test.results.TestResult]
@@ -34,14 +33,12 @@ class TestEventFile:
         return bool(self._results)
 
     def __str__(self):
-        output = [format_underline('\nFile: {file_name}\n'.format(file_name=self._full_path))]
+        output = [format_underline(f'\nFile: {self._full_path}\n')]
 
         if self.error:
             output.append(format_red(self.error))
         else:
-            for result in self._results:
-                output.append(result)
-
+            output.extend(iter(self._results))
         return '\n'.join(str(item) for item in output)
 
     @property
@@ -62,7 +59,7 @@ class TestEventFile:
 
     @property
     def failed(self):
-        return sum(1 for result in self._results if not (result.suppressed or result.passed))
+        return sum(not (result.suppressed or result.passed) for result in self._results)
 
     def load_file(self):
         """Helper to json load the contents of a file with some error handling
@@ -80,7 +77,7 @@ class TestEventFile:
         Returns:
             dict: Loaded JSON from test event file
         """
-        with open(self._full_path, 'r') as test_event_file:
+        with open(self._full_path, encoding="utf-8") as test_event_file:
             try:
                 data = json.load(test_event_file)
             except (ValueError, TypeError):
@@ -91,8 +88,7 @@ class TestEventFile:
                 self.error = 'Test event file is improperly formatted; events should be in a list'
                 return
 
-            for event in data:
-                yield event
+            yield from data
 
     def process_file(self, config, verbose, with_rules):
         for idx, event in enumerate(self.load_file()):

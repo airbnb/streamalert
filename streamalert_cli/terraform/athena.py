@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared import ATHENA_PARTITIONER_NAME
-from streamalert.shared.config import athena_partition_buckets_tf, athena_query_results_bucket
-from streamalert_cli.terraform.common import (
-    infinitedict,
-    s3_access_logging_bucket,
-)
+from streamalert.shared.config import (athena_partition_buckets_tf,
+                                       athena_query_results_bucket)
+from streamalert_cli.terraform.common import (infinitedict,
+                                              s3_access_logging_bucket)
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
 
@@ -37,14 +36,12 @@ def generate_athena(config):
     athena_config = config['lambda']['athena_partitioner_config']
 
     data_buckets = athena_partition_buckets_tf(config)
-    database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
+    database = athena_config.get('database_name', f'{prefix}_streamalert')
 
     results_bucket_name = athena_query_results_bucket(config)
 
-    queue_name = athena_config.get(
-        'queue_name',
-        '{}_streamalert_athena_s3_notifications'.format(prefix)
-    ).strip()
+    queue_name = athena_config.get('queue_name',
+                                   f'{prefix}_streamalert_athena_s3_notifications').strip()
 
     logging_bucket, _ = s3_access_logging_bucket(config)
 
@@ -67,13 +64,10 @@ def generate_athena(config):
 
     # Set variables for the Lambda module
     result['module']['athena_partitioner_lambda'] = generate_lambda(
-        '{}_streamalert_{}'.format(prefix, ATHENA_PARTITIONER_NAME),
+        f'{prefix}_streamalert_{ATHENA_PARTITIONER_NAME}',
         'streamalert.athena_partitioner.main.handler',
         athena_config,
         config,
-        tags={
-            'Subcomponent': 'AthenaPartitioner'
-        }
-    )
+        tags={'Subcomponent': 'AthenaPartitioner'})
 
     return result

@@ -1,4 +1,3 @@
-
 class LookupTablesError(RuntimeError):
     """Generic class for errors raised from LookupTables systems"""
 

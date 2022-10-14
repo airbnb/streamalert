@@ -65,11 +65,9 @@ class RuleDescriptionParser:
     # Match alphanumeric, plus underscores, dashes, spaces, and & signs
     # Labels are a maximum of 20 characters long. They also never start with http or https
     _FIELD_REGEX = re.compile(
-        r'^(?!http:|https:)(?P<field>[a-zA-Z\d\-_&\s]{0,20}):(?P<remainder>.*)$'
-    )
+        r'^(?!http:|https:)(?P<field>[a-zA-Z\d\-_&\s]{0,20}):(?P<remainder>.*)$')
     _URL_REGEX = re.compile(
-        r'^(?:http(s)?://)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+$'
-    )
+        r'^(?:http(s)?://)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+$')
 
     @classmethod
     def parse(cls, rule_description):
@@ -82,7 +80,7 @@ class RuleDescriptionParser:
             dict: A dict mapping fields to lists of strings, each corresponding to a line belonging
                   to that field. All field names are lowercase.
         """
-        rule_description = '' if not rule_description else rule_description
+        rule_description = rule_description or ''
         tokens = [line.strip() for line in rule_description.strip().split('\n')]
 
         field_lines = {}
@@ -136,7 +134,7 @@ class RuleDescriptionParser:
                     if match is not None:
                         document += line
                     else:
-                        space = buffered_newlines if buffered_newlines else ' '
+                        space = buffered_newlines or ' '
                         buffered_newlines = ''
                         document += space + line
 

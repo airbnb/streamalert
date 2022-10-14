@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.config import firehose_data_bucket
-from streamalert.shared.utils import get_database_name, get_data_file_format
+from streamalert.shared.firehose import FirehoseClient
+from streamalert.shared.utils import get_data_file_format, get_database_name
 from streamalert_cli.athena.helpers import generate_data_table_schema
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
@@ -49,11 +49,9 @@ def generate_firehose(logging_bucket, main_dict, config):
         'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
     }
 
-    enabled_logs = FirehoseClient.load_enabled_log_sources(
-        firehose_conf,
-        config['logs'],
-        force_load=True
-    )
+    enabled_logs = FirehoseClient.load_enabled_log_sources(firehose_conf,
+                                                           config['logs'],
+                                                           force_load=True)
 
     log_alarms_config = firehose_conf.get('enabled_logs', {})
 
@@ -65,12 +63,8 @@ def generate_firehose(logging_bucket, main_dict, config):
     for log_stream_name, log_type_name in enabled_logs.items():
         module_dict = {
             'source': './modules/tf_kinesis_firehose_delivery_stream',
-            'buffer_size': (
-                firehose_conf.get('buffer_size')
-            ),
-            'buffer_interval': (
-                firehose_conf.get('buffer_interval', 300)
-            ),
+            'buffer_size': (firehose_conf.get('buffer_size')),
+            'buffer_interval': (firehose_conf.get('buffer_interval', 300)),
             'file_format': get_data_file_format(config),
             'stream_name': FirehoseClient.generate_firehose_name(firehose_prefix, log_stream_name),
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
@@ -102,11 +96,10 @@ def generate_firehose(logging_bucket, main_dict, config):
                 module_dict['period_seconds'] = alarm_info.get('period_seconds')
 
             if alarm_info.get('alarm_actions'):
-                if not isinstance(alarm_info.get('alarm_actions'), list):
-                    module_dict['alarm_actions'] = [alarm_info.get('alarm_actions')]
-                else:
-                    module_dict['alarm_actions'] = alarm_info.get('alarm_actions')
+                module_dict['alarm_actions'] = alarm_info.get('alarm_actions') if isinstance(
+                    alarm_info.get('alarm_actions'), list) else [alarm_info.get('alarm_actions')]
+
             else:
                 module_dict['alarm_actions'] = [monitoring_topic_arn(config)]
 
-        main_dict['module']['kinesis_firehose_{}'.format(log_stream_name)] = module_dict
+        main_dict['module'][f'kinesis_firehose_{log_stream_name}'] = module_dict

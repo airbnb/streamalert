@@ -17,12 +17,11 @@ from datetime import datetime
 
 from streamalert.rule_promotion.publisher import StatsPublisher
 from streamalert.rule_promotion.statistic import StagingStatistic
-from streamalert.shared.utils import get_database_name
 from streamalert.shared.athena import AthenaClient
 from streamalert.shared.config import load_config
 from streamalert.shared.logger import get_logger
 from streamalert.shared.rule_table import RuleTable
-
+from streamalert.shared.utils import get_database_name
 
 LOGGER = get_logger(__name__)
 
@@ -37,7 +36,7 @@ class RulePromoter:
         prefix = self._config['global']['account']['prefix']
 
         # Create the rule table class for getting staging information
-        self._rule_table = RuleTable('{}_streamalert_rules'.format(prefix))
+        self._rule_table = RuleTable(f'{prefix}_streamalert_rules')
 
         athena_config = self._config['lambda']['athena_partitioner_config']
 
@@ -45,14 +44,12 @@ class RulePromoter:
         db_name = athena_config.get('database_name', get_database_name(self._config))
 
         # Get the S3 bucket to store Athena query results
-        results_bucket = athena_config.get(
-            'results_bucket',
-            's3://{}-streamalert-athena-results'.format(prefix)
-        )
+        results_bucket = athena_config.get('results_bucket',
+                                           f's3://{prefix}-streamalert-athena-results')
 
         self._athena_client = AthenaClient(db_name, results_bucket, self.ATHENA_S3_PREFIX)
         self._current_time = datetime.utcnow()
-        self._staging_stats = dict()
+        self._staging_stats = {}
 
     def _get_staging_info(self):
         """Query the Rule table for rule staging info needed to count each rule's alerts
@@ -73,12 +70,8 @@ class RulePromoter:
             if not info['Staged']:
                 continue
 
-            self._staging_stats[rule] = StagingStatistic(
-                info['StagedAt'],
-                info['StagedUntil'],
-                self._current_time,
-                rule
-            )
+            self._staging_stats[rule] = StagingStatistic(info['StagedAt'], info['StagedUntil'],
+                                                         self._current_time, rule)
 
         return len(self._staging_stats) != 0
 
@@ -96,7 +89,7 @@ class RulePromoter:
         LOGGER.debug('Running compound query for alert count: \'%s\'', query)
         for page, results in enumerate(self._athena_client.query_result_paginator(query)):
             for i, row in enumerate(results['ResultSet']['Rows']):
-                if page == 0 and i == 0: # skip header row included in first page only
+                if page == 0 and i == 0:  # skip header row included in first page only
                     continue
 
                 row_values = [list(data.values())[0] for data in row['Data']]
@@ -136,11 +129,12 @@ class RulePromoter:
     @property
     def _rules_to_be_promoted(self):
         """Returns a list of rules that are eligible for promotion"""
-        return [rule for rule, stat in self._staging_stats.items()
-                if self._current_time > stat.staged_until and stat.alert_count == 0]
+        return [
+            rule for rule, stat in self._staging_stats.items()
+            if self._current_time > stat.staged_until and stat.alert_count == 0
+        ]
 
     @property
     def _rules_failing_promotion(self):
         """Returns a list of rules that are ineligible for promotion"""
-        return [rule for rule, stat in self._staging_stats.items()
-                if stat.alert_count != 0]
+        return [rule for rule, stat in self._staging_stats.items() if stat.alert_count != 0]

@@ -10,7 +10,6 @@ class LookupTable:
     LookupTables offer a standardized interface, backed by the PersistenceDriver system in
     the background.
     """
-
     def __init__(self, table_name, driver, table_configuration):
         self._table_name = table_name
         self._table_configuration = table_configuration

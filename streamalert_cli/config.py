@@ -23,10 +23,9 @@ import tempfile
 from streamalert.apps import StreamAlertApp
 from streamalert.shared import CLUSTERED_FUNCTIONS, config, metrics
 from streamalert.shared.logger import get_logger
-from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 from streamalert_cli.apps.helpers import save_app_auth_info
 from streamalert_cli.helpers import continue_prompt
-
+from streamalert_cli.terraform import TERRAFORM_FILES_PATH
 
 DEFAULT_CONFIG_PATH = 'conf'
 LOGGER = get_logger(__name__)
@@ -34,7 +33,6 @@ LOGGER = get_logger(__name__)
 
 class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
-
     def __init__(self, config_path, extra_terraform_files=None, build_directory=None):
         self.config_path = config_path
         self.config = config.load_config(config_path)
@@ -66,9 +64,8 @@ class CLIConfig:
     @property
     def terraform_files(self):
         """Return set of terraform files to include with this deployment"""
-        return set(self._terraform_files).union(
-            self.config['global']['general'].get('terraform_files', [])
-        )
+        return set(self._terraform_files).union(self.config['global']['general'].get(
+            'terraform_files', []))
 
     def _copy_terraform_files(self, directory):
         """Copy all packaged terraform files and terraform files provided by the user to temp
@@ -100,6 +97,7 @@ class CLIConfig:
             # Without calling this here, an exception is raised when tempfile garbage collects
             temp_dir.cleanup()
 
+
         if os.path.exists(directory):
             shutil.rmtree(directory)  # shutil.copytree in python3.7 cannot handle existing dir
 
@@ -113,7 +111,7 @@ class CLIConfig:
             LOGGER.error('Invalid prefix type, must be string')
             return False
 
-        acceptable_chars = set([*string.digits, *string.ascii_lowercase])
+        acceptable_chars = {*string.digits, *string.ascii_lowercase}
         if not set(prefix).issubset(acceptable_chars):
             LOGGER.error('Prefix must contain only lowercase letters and numbers')
             return False
@@ -144,7 +142,7 @@ class CLIConfig:
         Args:
             enabled (bool): False if disabling rule staging, true if enabling
         """
-        print('Setting rule staging enabled setting to: {}'.format(enabled))
+        print(f'Setting rule staging enabled setting to: {enabled}')
         self.config['global']['infrastructure']['rule_staging']['enabled'] = enabled
         self.write()
 
@@ -160,7 +158,7 @@ class CLIConfig:
         enabled = kwargs.get('enabled', False)
         clusters = kwargs.get('clusters', [])
         for function in lambda_functions:
-            function_config = '{}_config'.format(function)
+            function_config = f'{function}_config'
             if function not in CLUSTERED_FUNCTIONS:
                 if function_config not in self.config['lambda']:
                     self.config['lambda'][function_config] = {}
@@ -169,8 +167,7 @@ class CLIConfig:
                 # Classifier - toggle for each cluster
                 for cluster in clusters:
                     self.config['clusters'][cluster][function_config]['enable_custom_metrics'] = (
-                        enabled
-                    )
+                        enabled)
 
         self.write()
 
@@ -211,26 +208,26 @@ class CLIConfig:
                    'so it can be updated or choose another name.')
         funcs = {metrics.CLASSIFIER_FUNCTION_NAME}
         for func in funcs:
-            func_config = '{}_config'.format(func)
+            func_config = f'{func}_config'
             for cluster, cluster_config in self.config['clusters'].items():
                 func_alarms = cluster_config[func_config].get('custom_metric_alarms', {})
                 if alarm_name in func_alarms:
-                    LOGGER.error('An alarm with name \'%s\' already exists in the '
-                                 '\'conf/clusters/%s.json\' cluster. %s', alarm_name, cluster,
-                                 message)
+                    LOGGER.error(
+                        'An alarm with name \'%s\' already exists in the '
+                        '\'conf/clusters/%s.json\' cluster. %s', alarm_name, cluster, message)
                     return True
 
         for func, global_lambda_config in self.config['lambda'].items():
             if alarm_name in global_lambda_config.get('custom_metric_alarms', {}):
-                LOGGER.error('An alarm with name \'%s\' already exists in the '
-                             '\'conf/lambda.json\' in function config \'%s\'. %s',
-                             alarm_name, func, message)
+                LOGGER.error(
+                    'An alarm with name \'%s\' already exists in the '
+                    '\'conf/lambda.json\' in function config \'%s\'. %s', alarm_name, func, message)
                 return True
 
         return False
 
     def _clusters_with_metrics_enabled(self, function):
-        function_config = '{}_config'.format(function)
+        function_config = f'{function}_config'
         return {
             cluster
             for cluster, cluster_config in self.config['clusters'].items()
@@ -248,16 +245,14 @@ class CLIConfig:
 
         # Go over each of the clusters and see if enable_metrics == True and prompt
         # the user to toggle metrics on if this is False
-        config_name = '{}_config'.format(function_name)
+        config_name = f'{function_name}_config'
         for cluster in alarm_info['clusters']:
-            function_config = (
-                self.config['clusters'][cluster][config_name])
+            function_config = (self.config['clusters'][cluster][config_name])
 
             if not function_config.get('enable_custom_metrics'):
-                prompt = ('Metrics are not currently enabled for the \'{}\' function '
-                          'within the \'{}\' cluster. Would you like to enable metrics '
-                          'for this cluster?'.format(function_name, cluster))
-
+                prompt = (
+                    f"Metrics are not currently enabled for the '{function_name}' function within the '{cluster}' cluster. "
+                    f"Would you like to enable metrics for this cluster?")
                 if continue_prompt(message=prompt):
                     self.toggle_metrics(function_name, enabled=True, clusters=[cluster])
 
@@ -270,19 +265,15 @@ class CLIConfig:
             # Format the metric name for the cluster based metric
             # Prepend a prefix for this function and append the cluster name
             alarm_settings = alarm_info.copy()
-            alarm_settings['metric_name'] = '{}-{}-{}'.format(
-                metrics.FUNC_PREFIXES[function_name],
-                alarm_settings['metric_name'],
-                cluster.upper()
-            )
+            alarm_settings[
+                'metric_name'] = f"{metrics.FUNC_PREFIXES[function_name]}-{alarm_settings['metric_name']}-{cluster.upper()}"
 
             function_config['custom_metric_alarms'] = self._add_metric_alarm_config(
-                alarm_settings,
-                metric_alarms
-            )
-            LOGGER.info('Successfully added \'%s\' metric alarm for the \'%s\' '
-                        'function to \'conf/clusters/%s.json\'.',
-                        alarm_settings['alarm_name'], function_name, cluster)
+                alarm_settings, metric_alarms)
+            LOGGER.info(
+                'Successfully added \'%s\' metric alarm for the \'%s\' '
+                'function to \'conf/clusters/%s.json\'.', alarm_settings['alarm_name'],
+                function_name, cluster)
 
         return True
 
@@ -295,7 +286,7 @@ class CLIConfig:
         """
         function_name = alarm_info['function']
 
-        func_config_name = '{}_config'.format(function_name)
+        func_config_name = f'{function_name}_config'
 
         # Check if metrics are not enabled, and ask the user if they would like to enable them
         if func_config_name not in self.config['lambda']:
@@ -306,41 +297,33 @@ class CLIConfig:
         if function_name in CLUSTERED_FUNCTIONS:
             if not self._clusters_with_metrics_enabled(function_name):
                 prompt = (
-                    'Metrics are not currently enabled for the \'{}\' function '
-                    'within any cluster. Creating an alarm will have no effect '
-                    'until metrics are enabled for this function in at least one '
-                    'cluster. Would you still like to continue?'.format(function_name)
+                    f"Metrics are not currently enabled for the \'{function_name}\' function within any cluster. Creating an alarm will "
+                    f"have no effect until metrics are enabled for this function in at least one cluster. Would you still like to continue?"
                 )
+
                 if not continue_prompt(message=prompt):
                     return False
 
-        else:
-            if not function_config.get('enable_custom_metrics'):
-                prompt = (
-                    'Metrics are not currently enabled for the \'{}\' function. '
-                    'Would you like to enable metrics for this function?'
-                ).format(function_name)
+        elif not function_config.get('enable_custom_metrics'):
+            prompt = (f"Metrics are not currently enabled for the \'{function_name}\' "
+                      f"function. Would you like to enable metrics for this function?")
 
-                if continue_prompt(message=prompt):
-                    self.toggle_metrics(function_name, enabled=True)
+            if continue_prompt(message=prompt):
+                self.toggle_metrics(function_name, enabled=True)
 
-                elif not continue_prompt(message='Would you still like to add this alarm '
-                                         'even though metrics are disabled?'):
-                    return False
+            elif not continue_prompt(message='Would you still like to add this alarm '
+                                     'even though metrics are disabled?'):
+                return False
 
         metric_alarms = function_config.get('custom_metric_alarms', {})
 
         # Format the metric name for the aggregate metric
         alarm_settings = alarm_info.copy()
-        alarm_settings['metric_name'] = '{}-{}'.format(
-            metrics.FUNC_PREFIXES[function_name],
-            alarm_settings['metric_name']
-        )
+        alarm_settings[
+            'metric_name'] = f"{metrics.FUNC_PREFIXES[function_name]}-{alarm_settings['metric_name']}"
 
         function_config['custom_metric_alarms'] = self._add_metric_alarm_config(
-            alarm_settings,
-            metric_alarms
-        )
+            alarm_settings, metric_alarms)
         LOGGER.info('Successfully added \'%s\' metric alarm to '
                     '\'conf/lambda.json\'.', alarm_settings['alarm_name'])
 
@@ -360,19 +343,15 @@ class CLIConfig:
         # Get the current metrics for each function
         current_metrics = metrics.MetricLogger.get_available_metrics()[alarm_info['function']]
 
-        if not alarm_info['metric_name'] in current_metrics:
-            LOGGER.error(
-                'Metric name \'%s\' not defined for function \'%s\'',
-                alarm_info['metric_name'],
-                alarm_info['function']
-            )
+        if alarm_info['metric_name'] not in current_metrics:
+            LOGGER.error('Metric name \'%s\' not defined for function \'%s\'',
+                         alarm_info['metric_name'], alarm_info['function'])
             return False
 
         if 'clusters' in alarm_info:
             self._add_cluster_metric_alarm(alarm_info)
-        else:
-            if not self._add_global_metric_alarm(alarm_info):
-                return False
+        elif not self._add_global_metric_alarm(alarm_info):
+            return False
 
         self.write()
 
@@ -398,9 +377,9 @@ class CLIConfig:
         cluster_config = self.config['clusters'][cluster_name]
 
         if func_name in cluster_config['modules'].get('streamalert_apps', {}):
-            prompt = ('An app with the name \'{}\' is already configured for cluster '
-                      '\'{}\'. Would you like to update the existing app\'s configuration'
-                      '?'.format(app_name, cluster_name))
+            prompt = (
+                f"An app with the name \'{app_name}\' is already configured for cluster \'{cluster_name}\'. "
+                f"Would you like to update the existing app\'s configuration?")
 
             exists = True
 
@@ -408,8 +387,7 @@ class CLIConfig:
             if not continue_prompt(message=prompt):
                 return
 
-            prompt = ('Would you also like to update the authentication information for '
-                      'app integration with name \'{}\'?'.format(app_name))
+            prompt = f"Would you also like to update the authentication information for app integration with name \'{app_name}\'?"
 
             # If this is true, we shouldn't prompt again to warn about overwriting
             prompt_for_auth = overwrite = continue_prompt(message=prompt)
@@ -454,14 +432,13 @@ class CLIConfig:
         # Add this service to the sources for this app integration
         # The `streamalert_app` is purposely singular here
         app_sources = self.config['clusters'][cluster_name]['data_sources'].get(
-            'streamalert_app', {}
-        )
+            'streamalert_app', {})
         app_sources[func_name] = [app.service()]
         self.config['clusters'][cluster_name]['data_sources']['streamalert_app'] = app_sources
 
-        LOGGER.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
-                    'for service \'%s\'.', app_info['app_name'], app_info['cluster'],
-                    app_info['type'])
+        LOGGER.info(
+            'Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
+            'for service \'%s\'.', app_info['app_name'], app_info['cluster'], app_info['type'])
 
         self.write()
 
@@ -480,14 +457,12 @@ class CLIConfig:
 
         self.config['threat_intel']['enabled'] = threat_intel_info['enable']
 
-        table_name = threat_intel_info.get('dynamodb_table_name')
-        if table_name:
+        if table_name := threat_intel_info.get('dynamodb_table_name'):
             self.config['threat_intel']['dynamodb_table_name'] = table_name
         elif not self.config['threat_intel'].get('dynamodb_table_name'):
             # set default dynamodb table name if one does not exist
-            self.config['threat_intel']['dynamodb_table_name'] = (
-                '{}_streamalert_threat_intel_downloader'.format(prefix)
-            )
+            self.config['threat_intel'][
+                'dynamodb_table_name'] = f'{prefix}_streamalert_threat_intel_downloader'
 
         self.write()
 
@@ -539,15 +514,16 @@ class CLIConfig:
 
     @staticmethod
     def _config_writer(path, data, sort=False):
-        with open(path, 'r+') as conf_file:
+        with open(path, 'r+', encoding="utf-8") as conf_file:
             json.dump(data, conf_file, indent=2, separators=(',', ': '), sort_keys=sort)
             conf_file.truncate()
 
     def write(self):
         """Write the current config in memory to disk"""
+
         # Write loaded configuration files
         def format_path(parts):
-            return '{}.json'.format(os.path.join(*parts))
+            return f'{os.path.join(*parts)}.json'
 
         for config_key in self.config:
             path_parts = [self.config_path, config_key]

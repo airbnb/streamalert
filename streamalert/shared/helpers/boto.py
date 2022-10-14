@@ -26,8 +26,6 @@ REGION = env.get('AWS_REGION') or env.get('AWS_DEFAULT_REGION') or 'us-east-1'
 
 
 def default_config(timeout=BOTO_TIMEOUT, region=REGION):
-    return client.Config(
-        connect_timeout=timeout,
-        read_timeout=timeout,
-        region_name=region if region else REGION  # Ensure region is never empty
-    )
+    return client.Config(connect_timeout=timeout,
+                         read_timeout=timeout,
+                         region_name=region or REGION)

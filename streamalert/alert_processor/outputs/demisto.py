@@ -17,10 +17,7 @@ from collections import OrderedDict
 
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    StreamAlertOutput,
-    OutputRequestFailure)
+    OutputDispatcher, OutputProperty, OutputRequestFailure, StreamAlertOutput)
 from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -45,15 +42,14 @@ class DemistoOutput(OutputDispatcher):
         return OrderedDict([
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this'
-                                        ' demisto output')),
+                            ' demisto output')),
             ('url',
              OutputProperty(description='URL to the Demisto server [https://hostname]',
                             mask_input=False,
                             input_restrictions={' '},
                             cred_requirement=True)),
             ('token',
-             OutputProperty(description='Demisto API token',
-                            mask_input=True,
+             OutputProperty(description='Demisto API token', mask_input=True,
                             cred_requirement=True)),
         ])
 
@@ -119,7 +115,6 @@ class DemistoOutput(OutputDispatcher):
 
 class DemistoApiIntegration:
     """Bridge class to reduce coupling between DemistoOutput and whatever client we use."""
-
     def __init__(self, creds, dispatcher):
         self._creds = creds
         self._dispatcher = dispatcher
@@ -146,20 +141,18 @@ class DemistoApiIntegration:
         if request.create_investigation:
             request_data['createInvestigation'] = True
 
-        create_incident_endpoint = '{}/incident'.format(self._creds['url'])
+        create_incident_endpoint = f"{self._creds['url']}/incident"
 
         #pylint: disable=protected-access
         # This is somewhat of a breach in abstraction, but is acceptable as-is for now.
-        self._dispatcher._post_request_retry(
-            create_incident_endpoint,
-            data=request_data,
-            headers={
-                'Accept': 'application/json',
-                'Content-type': 'application/json',
-                'Authorization': self._creds['token'],
-            },
-            verify=False
-        )
+        self._dispatcher._post_request_retry(create_incident_endpoint,
+                                             data=request_data,
+                                             headers={
+                                                 'Accept': 'application/json',
+                                                 'Content-type': 'application/json',
+                                                 'Authorization': self._creds['token'],
+                                             },
+                                             verify=False)
 
 
 class DemistoCreateIncidentRequest:
@@ -277,7 +270,6 @@ class DemistoCreateIncidentRequest:
 
 class DemistoRequestAssembler:
     """Factory class for DemistoCreateIncidentRequest objects"""
-
     @staticmethod
     def assemble(alert, alert_publication):
         """
@@ -301,8 +293,7 @@ class DemistoRequestAssembler:
         incident_type = alert_publication.get('@demisto.incident_type', default_incident_type)
         playbook = alert_publication.get('@demisto.playbook', default_playbook)
         severity = DemistoCreateIncidentRequest.map_severity_string_to_severity_value(
-            alert_publication.get('@demisto.severity', default_severity)
-        )
+            alert_publication.get('@demisto.severity', default_severity))
         owner = alert_publication.get('@demisto.owner', default_owner)
         details = alert_publication.get('@demisto.details', default_details)
         incident_name = alert_publication.get('@demisto.incident_name', default_incident_name)
@@ -323,14 +314,15 @@ class DemistoRequestAssembler:
         def enumerate_fields(record, path=''):
             if isinstance(record, list):
                 for index, item in enumerate(record):
-                    enumerate_fields(item, '{}[{}]'.format(path, index))
+                    enumerate_fields(item, f'{path}[{index}]')
 
             elif isinstance(record, dict):
                 for key in record:
-                    enumerate_fields(record[key], '{prefix}{key}'.format(
-                        prefix='{}.'.format(path) if path else '',  # Omit first period
-                        key=key
-                    ))
+                    enumerate_fields(
+                        record[key],
+                        '{prefix}{key}'.format(
+                            prefix=f'{path}.' if path else '',  # Omit first period
+                            key=key))
 
             else:
                 request.add_label(path, record)

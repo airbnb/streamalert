@@ -5,7 +5,6 @@ class LookupTablesConfiguration:
     """
     An abstraction around lookup tables configuration. LookupTables can be configured in two places.
     """
-
     def __init__(self, config=None):
         self._configuration = {}
 

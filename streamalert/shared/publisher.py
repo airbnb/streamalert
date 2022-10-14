@@ -38,7 +38,6 @@ class PublisherAssemblyError(PublisherError):
 
 class Register:
     """This is a decorator used to register publishers into the AlertPublisherRepository."""
-
     def __new__(cls, class_or_function):
         AlertPublisherRepository.register_publisher(class_or_function)
 
@@ -47,7 +46,6 @@ class Register:
 
 class AlertPublisher:
     """Interface for a Publisher. All class-based publishers must inherit from this class."""
-
     @abstractmethod
     def publish(self, alert, publication):
         """Publishes the given alert.
@@ -79,7 +77,6 @@ class CompositePublisher(AlertPublisher):
           It is only meant to be composed by AlertPublisherRepository to give a common interface to
           multiple publishers chained in sequence.
     """
-
     def __init__(self, publishers):
         self._publishers = publishers  # Type list(AlertPublisher)
 
@@ -93,10 +90,8 @@ class CompositePublisher(AlertPublisher):
                 publication = deepcopy(publication)
                 publication = publisher.publish(alert, publication)
             except KeyError:
-                LOGGER.exception(
-                    'CompositePublisher encountered KeyError with publisher: %s',
-                    publisher.__class__.__name__
-                )
+                LOGGER.exception('CompositePublisher encountered KeyError with publisher: %s',
+                                 publisher.__class__.__name__)
                 raise
 
         return publication
@@ -104,7 +99,6 @@ class CompositePublisher(AlertPublisher):
 
 class WrappedFunctionPublisher(AlertPublisher):
     """A class only used to wrap a function publisher."""
-
     def __init__(self, function):
         self._function = function
 
@@ -160,7 +154,7 @@ class AlertPublisherRepository:
         Returns:
             string
         """
-        return '{}.{}'.format(class_or_function.__module__, class_or_function.__name__)
+        return f'{class_or_function.__module__}.{class_or_function.__name__}'
 
     @classmethod
     def register_publisher(cls, publisher):
@@ -174,9 +168,8 @@ class AlertPublisherRepository:
              publisher (callable|AlertPublisher): An instance of a publisher class or a function
         """
         if not AlertPublisherRepository.is_valid_publisher(publisher):
-            error = (
-                'Could not register publisher {}; Not callable nor subclass of AlertPublisher'
-            ).format(publisher)
+            error = f'Could not register publisher {publisher}; Not callable nor subclass of AlertPublisher'
+
             raise PublisherRegistrationError(error)
 
         if isclass(publisher):
@@ -191,7 +184,7 @@ class AlertPublisherRepository:
         name = AlertPublisherRepository.get_publisher_name(publisher)
 
         if name in cls._publishers:
-            error = 'Publisher with name [{}] has already been registered.'.format(name)
+            error = f'Publisher with name [{name}] has already been registered.'
             raise PublisherRegistrationError(error)
 
         cls._publishers[name] = publisher_instance
@@ -245,8 +238,7 @@ class AlertPublisherRepository:
         publishers = []
 
         for publisher_name in publisher_names:
-            publisher = cls.get_publisher(publisher_name)
-            if publisher:
+            if publisher := cls.get_publisher(publisher_name):
                 publishers.append(publisher)
 
         if not publishers:
@@ -261,6 +253,5 @@ class AlertPublisherRepository:
 @Register
 class DefaultPublisher(AlertPublisher):
     """The default publisher that is used when no other publishers are provided"""
-
     def publish(self, alert, publication):
         return alert.output_dict()

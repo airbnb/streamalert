@@ -15,24 +15,21 @@ limitations under the License.
 """
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
-import requests
-from requests.exceptions import Timeout as ReqTimeout
-import urllib3
 
 import backoff
+import requests
+import urllib3
+from requests.exceptions import Timeout as ReqTimeout
 
-from streamalert.alert_processor.outputs.credentials.provider import OutputCredentialsProvider
-from streamalert.shared.backoff_handlers import (
-    backoff_handler,
-    success_handler,
-    giveup_handler
-)
+from streamalert.alert_processor.outputs.credentials.provider import \
+    OutputCredentialsProvider
+from streamalert.shared.backoff_handlers import (backoff_handler,
+                                                 giveup_handler,
+                                                 success_handler)
 from streamalert.shared.helpers.boto import REGION
 from streamalert.shared.logger import get_logger
 
-
 LOGGER = get_logger(__name__)
-
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 OutputProperty = namedtuple('OutputProperty',
@@ -42,9 +39,8 @@ OutputProperty.__new__.__defaults__ = ('', '', {' ', ':'}, False, False)
 
 class OutputRequestFailure(Exception):
     """OutputRequestFailure handles any HTTP failures"""
-
     def __init__(self, response):
-        super(OutputRequestFailure, self).__init__()
+        super().__init__()
         self.response = response
 
 
@@ -52,16 +48,19 @@ def retry_on_exception(exceptions):
     """Decorator function to attempt retry based on passed exceptions"""
     def real_decorator(func):
         """Actual decorator to retry on exceptions"""
-        @backoff.on_exception(backoff.expo,
-                              exceptions, # This is a tuple with exceptions
-                              max_tries=OutputDispatcher.MAX_RETRY_ATTEMPTS,
-                              jitter=backoff.full_jitter,
-                              on_backoff=backoff_handler(),
-                              on_success=success_handler(),
-                              on_giveup=giveup_handler())
+        @backoff.on_exception(
+            backoff.expo,
+            exceptions,  # This is a tuple with exceptions
+            max_tries=OutputDispatcher.MAX_RETRY_ATTEMPTS,
+            jitter=backoff.full_jitter,
+            on_backoff=backoff_handler(),
+            on_success=success_handler(),
+            on_giveup=giveup_handler())
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapper
+
     return real_decorator
 
 
@@ -85,10 +84,7 @@ class StreamAlertOutput:
             OutputDispatcher: Subclass of OutputDispatcher to use for sending alerts
         """
         dispatcher = cls.get_dispatcher(service)
-        if not dispatcher:
-            return False
-
-        return dispatcher(config)
+        return dispatcher(config) if dispatcher else False
 
     @classmethod
     def get_dispatcher(cls, service):
@@ -144,8 +140,7 @@ class OutputDispatcher(metaclass=ABCMeta):
             self.__service__,
             config=config,
             defaults=self._get_default_properties(),
-            region=self.region
-        )
+            region=self.region)
 
     def _load_creds(self, descriptor):
         """Loads a dict of credentials relevant to this output descriptor
@@ -176,14 +171,11 @@ class OutputDispatcher(metaclass=ABCMeta):
     def _catch_exceptions(cls):
         """Classmethod that returns a tuple of the exceptions to catch"""
         default_exceptions = (OutputRequestFailure, ReqTimeout)
-        exceptions = cls._get_exceptions_to_catch()
-        if not exceptions:
-            return default_exceptions
+        if exceptions := cls._get_exceptions_to_catch():
+            return default_exceptions + exceptions if isinstance(
+                exceptions, tuple) else default_exceptions + (exceptions, )
 
-        if isinstance(exceptions, tuple):
-            return default_exceptions + exceptions
-
-        return default_exceptions + (exceptions,)
+        return default_exceptions
 
     @classmethod
     def _get_exceptions_to_catch(cls):
@@ -201,8 +193,11 @@ class OutputDispatcher(metaclass=ABCMeta):
         Returns:
             dict: Contains the http response object
         """
-        return requests.put(url, headers=headers, json=params,
-                            verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+        return requests.put(url,
+                            headers=headers,
+                            json=params,
+                            verify=verify,
+                            timeout=cls._DEFAULT_REQUEST_TIMEOUT)
 
     @classmethod
     def _put_request_retry(cls, url, params=None, headers=None, verify=True):
@@ -228,6 +223,7 @@ class OutputDispatcher(metaclass=ABCMeta):
                 raise OutputRequestFailure(resp)
 
             return resp
+
         return do_put_request()
 
     @classmethod
@@ -242,8 +238,11 @@ class OutputDispatcher(metaclass=ABCMeta):
         Returns:
             dict: Contains the http response object
         """
-        return requests.get(url, headers=headers, params=params,
-                            verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+        return requests.get(url,
+                            headers=headers,
+                            params=params,
+                            verify=verify,
+                            timeout=cls._DEFAULT_REQUEST_TIMEOUT)
 
     @classmethod
     def _get_request_retry(cls, url, params=None, headers=None, verify=True):
@@ -269,6 +268,7 @@ class OutputDispatcher(metaclass=ABCMeta):
                 raise OutputRequestFailure(resp)
 
             return resp
+
         return do_get_request()
 
     @classmethod
@@ -283,8 +283,11 @@ class OutputDispatcher(metaclass=ABCMeta):
         Returns:
             dict: Contains the http response object
         """
-        return requests.post(url, headers=headers, json=data,
-                             verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+        return requests.post(url,
+                             headers=headers,
+                             json=data,
+                             verify=verify,
+                             timeout=cls._DEFAULT_REQUEST_TIMEOUT)
 
     @classmethod
     def _post_request_retry(cls, url, data=None, headers=None, verify=True):
@@ -310,6 +313,7 @@ class OutputDispatcher(metaclass=ABCMeta):
                 raise OutputRequestFailure(resp)
 
             return resp
+
         return do_post_request()
 
     @classmethod
@@ -324,8 +328,7 @@ class OutputDispatcher(metaclass=ABCMeta):
         """
         success = response is not None and (200 <= response.status_code <= 299)
         if not success:
-            LOGGER.error('Encountered an error while sending to %s:\n%s',
-                         cls.__service__,
+            LOGGER.error('Encountered an error while sending to %s:\n%s', cls.__service__,
                          response.content)
         return success
 
@@ -407,8 +410,8 @@ class OutputDispatcher(metaclass=ABCMeta):
         try:
             sent = bool(self._dispatch(alert, descriptor))
         except Exception:  # pylint: disable=broad-except
-            LOGGER.exception('Exception when sending %s to %s. Alert:\n%s',
-                             alert, output, repr(alert))
+            LOGGER.exception('Exception when sending %s to %s. Alert:\n%s', alert, output,
+                             repr(alert))
             sent = False
 
         self._log_status(sent, descriptor)

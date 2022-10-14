@@ -21,7 +21,6 @@ from botocore.exceptions import ClientError
 
 from streamalert.shared.logger import get_logger
 
-
 LOGGER = get_logger(__name__)
 
 
@@ -94,37 +93,33 @@ class Batcher:
         payload_json = json.dumps(payload, separators=(',', ':'))
         if len(payload_json) > self.MAX_LAMBDA_PAYLOAD_SIZE:
             if len(logs) == 1:
-                LOGGER.error('Log payload size for single log exceeds input limit and will be '
-                             'dropped (%d > %d max).', len(payload_json),
-                             self.MAX_LAMBDA_PAYLOAD_SIZE)
+                LOGGER.error(
+                    'Log payload size for single log exceeds input limit and will be '
+                    'dropped (%d > %d max).', len(payload_json), self.MAX_LAMBDA_PAYLOAD_SIZE)
                 return True
 
-            LOGGER.debug('Log payload size for %d logs exceeds limit and will be '
-                         'segmented (%d > %d max).', len(logs), len(payload_json),
-                         self.MAX_LAMBDA_PAYLOAD_SIZE)
+            LOGGER.debug(
+                'Log payload size for %d logs exceeds limit and will be '
+                'segmented (%d > %d max).', len(logs), len(payload_json),
+                self.MAX_LAMBDA_PAYLOAD_SIZE)
             return False
 
-        LOGGER.debug('Sending %d logs to classifier function with payload size %d',
-                     len(logs), len(payload_json))
+        LOGGER.debug('Sending %d logs to classifier function with payload size %d', len(logs),
+                     len(payload_json))
 
         try:
-            response = Batcher.LAMBDA_CLIENT.invoke(
-                FunctionName=self._destination_function,
-                InvocationType='Event',
-                Payload=payload_json,
-                Qualifier='production'
-            )
+            response = Batcher.LAMBDA_CLIENT.invoke(FunctionName=self._destination_function,
+                                                    InvocationType='Event',
+                                                    Payload=payload_json,
+                                                    Qualifier='production')
 
         except ClientError as err:
-            LOGGER.error('An error occurred while sending logs to '
-                         '\'%s:production\'. Error is: %s',
-                         self._destination_function,
-                         err.response)
+            LOGGER.error(
+                'An error occurred while sending logs to '
+                '\'%s:production\'. Error is: %s', self._destination_function, err.response)
             raise
 
-        LOGGER.info('Sent %d logs to \'%s\' with Lambda request ID \'%s\'',
-                    len(logs),
-                    self._destination_function,
-                    response['ResponseMetadata']['RequestId'])
+        LOGGER.info('Sent %d logs to \'%s\' with Lambda request ID \'%s\'', len(logs),
+                    self._destination_function, response['ResponseMetadata']['RequestId'])
 
         return True

@@ -28,7 +28,6 @@ class AthenaQueryExecutionError(Exception):
 #   streamalert/shared/athena.py
 class AthenaClient:
     """A StreamAlert Athena Client for creating tables, databases, and executing queries"""
-
     def __init__(self, logger=None, client=None, database=None, results_bucket=None):
         """Initialize the Boto3 Athena Client, and S3 results bucket/key"""
         self._logger = logger
@@ -57,21 +56,18 @@ class AthenaClient:
         """
         self._logger.debug('Executing query: %s', query)
         try:
-            output_location = 's3://{bucket}/{key}.csv'.format(
-                bucket=self._s3_results_bucket,
-                key=uuid.uuid4()
-            )
+            output_location = 's3://{bucket}/{key}.csv'.format(bucket=self._s3_results_bucket,
+                                                               key=uuid.uuid4())
             result = self._client.start_query_execution(
                 QueryString=query,
                 QueryExecutionContext={'Database': options.get('database', self._database)},
-                ResultConfiguration={'OutputLocation': output_location}
-            )
+                ResultConfiguration={'OutputLocation': output_location})
             query_execution_id = result['QueryExecutionId']
             self._logger.debug('Query dispatched. ID returned: %s', query_execution_id)
 
             return query_execution_id
         except ClientError as err:
-            raise AthenaQueryExecutionError('Athena query failed:\n{}'.format(err))
+            raise AthenaQueryExecutionError(f'Athena query failed:\n{err}') from err
 
     def get_query_execution(self, query_execution_id):
         """Gets an AthenaQueryExecution object encapsulating the result of a query
@@ -85,9 +81,8 @@ class AthenaClient:
         Returns:
             AthenaQueryExecution
         """
-        return AthenaQueryExecution(self._client.get_query_execution(
-            QueryExecutionId=query_execution_id
-        ))
+        return AthenaQueryExecution(
+            self._client.get_query_execution(QueryExecutionId=query_execution_id))
 
     def get_query_result(self, query_execution):
         """Returns a query result payload, wrapped in a AthenaQueryResult object
@@ -99,12 +94,10 @@ class AthenaClient:
             AthenaQueryResult
             Returns None if the given query_execution is not completed
         """
-        if not query_execution.is_succeeded():
-            return None
         return AthenaQueryResult(
             query_execution,
             self._client.get_query_results(QueryExecutionId=query_execution.query_execution_id)
-        )
+        ) if query_execution.is_succeeded() else None
 
     def run_async_query(self, query, options=None):
         """Run an Athena query in an asynchronous fashion. This operation is non-blocking
@@ -132,7 +125,6 @@ class AthenaQueryExecution:
     See:
         https://docs.aws.amazon.com/cli/latest/reference/athena/get-query-execution.html
     """
-
     def __init__(self, response):
         self._response = response
 
@@ -181,7 +173,6 @@ class AthenaQueryExecution:
 
 class AthenaQueryResult:
     """Encapsulation of a query execution's result"""
-
     def __init__(self, query_execution, result):
         self._query_execution = query_execution
         self._result = result
@@ -233,9 +224,7 @@ class AthenaQueryResult:
 
         data = []
         for row in self.data_as_list:
-            dict_row = {}
-            for index, header in enumerate(headers):
-                dict_row[header] = row[index]
+            dict_row = {header: row[index] for index, header in enumerate(headers)}
             data.append(dict_row)
         return data
 

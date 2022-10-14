@@ -24,23 +24,20 @@ from streamalert_cli.lookup_tables.handler import LookupTablesCommand
 from streamalert_cli.manage_lambda.deploy import DeployCommand
 from streamalert_cli.manage_lambda.rollback import RollbackCommand
 from streamalert_cli.metrics_alarms.handler import (
-    CreateMetricAlarmCommand,
-    CreateClusterMetricAlarmCommand,
-    CustomMetricsCommand,
-)
+    CreateClusterMetricAlarmCommand, CreateMetricAlarmCommand,
+    CustomMetricsCommand)
 from streamalert_cli.outputs.handler import OutputCommand
 from streamalert_cli.rule_table import RuleStagingCommand
 from streamalert_cli.status.handler import StatusCommand
 from streamalert_cli.terraform.generate import TerraformGenerateCommand
-from streamalert_cli.terraform.handlers import (
-    TerraformBuildCommand,
-    TerraformDestroyCommand,
-    TerraformInitCommand,
-    TerraformListTargetsCommand,
-)
+from streamalert_cli.terraform.handlers import (TerraformBuildCommand,
+                                                TerraformDestroyCommand,
+                                                TerraformInitCommand,
+                                                TerraformListTargetsCommand)
 from streamalert_cli.test.handler import TestCommand
 from streamalert_cli.threat_intel.handler import ThreatIntelCommand
-from streamalert_cli.threat_intel_downloader.handler import ThreatIntelDownloaderCommand
+from streamalert_cli.threat_intel_downloader.handler import \
+    ThreatIntelDownloaderCommand
 from streamalert_cli.utils import CLICommand
 
 LOGGER = get_logger(__name__)

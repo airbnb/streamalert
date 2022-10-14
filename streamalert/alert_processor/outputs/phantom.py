@@ -13,18 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    OutputRequestFailure,
-    StreamAlertOutput
-)
+    OutputDispatcher, OutputProperty, OutputRequestFailure, StreamAlertOutput)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -55,7 +50,7 @@ class PhantomOutput(OutputDispatcher):
         return OrderedDict([
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
-                                        'Phantom integration')),
+                            'Phantom integration')),
             ('ph_auth_token',
              OutputProperty(description='the auth token for this Phantom integration',
                             mask_input=True,
@@ -82,23 +77,15 @@ class PhantomOutput(OutputDispatcher):
         """
         # Limit the query to 1 page, since we only care if one container exists with
         # this name.
-        params = {
-            '_filter_name': '"{}"'.format(rule_name),
-            'page_size': 1
-        }
+        params = {'_filter_name': f'"{rule_name}"', 'page_size': 1}
         try:
             resp = cls._get_request_retry(container_url, params, headers, False)
         except OutputRequestFailure:
             return False
 
         response = resp.json()
-        if not response:
-            return False
-
-        # If the count == 0 then we know there are no containers with this name and this
-        # will evaluate to False. Otherwise there is at least one item in the list
-        # of 'data' with a container id we can use
-        return response and response.get('count') and response.get('data')[0]['id']
+        return response and response.get('count') and response.get(
+            'data')[0]['id'] if response else False
 
     @classmethod
     def _setup_container(cls, rule_name, rule_description, base_url, headers):
@@ -116,9 +103,7 @@ class PhantomOutput(OutputDispatcher):
         """
         container_url = os.path.join(base_url, cls.CONTAINER_ENDPOINT)
 
-        # Check to see if there is a container already created for this rule name
-        existing_id = cls._check_container_exists(rule_name, container_url, headers)
-        if existing_id:
+        if existing_id := cls._check_container_exists(rule_name, container_url, headers):
             return existing_id
 
         # Try to use the rule_description from the rule as the container description
@@ -129,10 +114,7 @@ class PhantomOutput(OutputDispatcher):
             return False
 
         response = resp.json()
-        if not response:
-            return False
-
-        return response and response.get('id')
+        return response and response.get('id') if response else False
 
     def _dispatch(self, alert, descriptor):
         """Send alert to Phantom
@@ -156,23 +138,21 @@ class PhantomOutput(OutputDispatcher):
         record = alert.record
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
-        container_id = self._setup_container(
-            alert.rule_name,
-            alert.rule_description,
-            creds['url'],
-            headers
-        )
+        container_id = self._setup_container(alert.rule_name, alert.rule_description, creds['url'],
+                                             headers)
 
         LOGGER.debug('sending alert to Phantom container with id %s', container_id)
 
         if not container_id:
             return False
 
-        artifact = {'cef': record,
-                    'container_id': container_id,
-                    'data': publication,
-                    'name': 'Phantom Artifact',
-                    'label': 'Alert'}
+        artifact = {
+            'cef': record,
+            'container_id': container_id,
+            'data': publication,
+            'name': 'Phantom Artifact',
+            'label': 'Alert'
+        }
         artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
         try:
             self._post_request_retry(artifact_url, artifact, headers, False)

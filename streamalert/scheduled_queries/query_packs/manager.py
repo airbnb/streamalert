@@ -18,18 +18,22 @@ from logging import Logger
 
 from streamalert.scheduled_queries.handlers.athena import AthenaClient
 from streamalert.scheduled_queries.query_packs.configuration import (
-    QueryPackConfiguration, QueryPackRepository
-)
-from streamalert.scheduled_queries.query_packs.parameters import QueryParameterGenerator
+    QueryPackConfiguration, QueryPackRepository)
+from streamalert.scheduled_queries.query_packs.parameters import \
+    QueryParameterGenerator
 from streamalert.scheduled_queries.state.state_manager import StateManager
 from streamalert.scheduled_queries.support.clock import Clock
 
 
 class QueryPackExecutionContext:
     """A convenience service bundle for multiple services related to querying"""
-
-    def __init__(self, cache=None, athena=None, logger=None, params=None,
-                 repository=None, clock=None):
+    def __init__(self,
+                 cache=None,
+                 athena=None,
+                 logger=None,
+                 params=None,
+                 repository=None,
+                 clock=None):
         self._cache = cache  # type: StateManager
         self._athena = athena  # type: AthenaClient
         self._logger = logger  # type: Logger
@@ -67,7 +71,6 @@ class QueryPack:
 
     This "pack" includes any additional state, parameters, and other stuff.
     """
-
     def __init__(self, query_pack_configuration, execution_context):
         self._configuration = query_pack_configuration  # type: QueryPackConfiguration
         self._execution_context = execution_context
@@ -78,9 +81,8 @@ class QueryPack:
 
         if isinstance(self._configuration.query_parameters, dict):
             self._query_parameters = {
-                param: self._execution_context.parameter_generator.generate_advanced(
-                    param, configuration
-                )
+                param:
+                self._execution_context.parameter_generator.generate_advanced(param, configuration)
                 for param, configuration in self._configuration.query_parameters.items()
             }
         elif isinstance(self._configuration.query_parameters, list):
@@ -151,8 +153,7 @@ class QueryPack:
             return None
 
         self._query_execution_id = self._execution_context.athena_client.run_async_query(
-            self.generate_query_string()
-        )
+            self.generate_query_string())
         self.save_to_cache()
         return self._query_execution_id
 
@@ -166,8 +167,7 @@ class QueryPack:
             return None
 
         self._query_execution = self._execution_context.athena_client.get_query_execution(
-            self._query_execution_id
-        )
+            self._query_execution_id)
         return self._query_execution
 
     def fetch_results(self):
@@ -180,8 +180,7 @@ class QueryPack:
             return None
 
         self._query_result = self._execution_context.athena_client.get_query_result(
-            self._query_execution
-        )
+            self._query_execution)
         return self._query_result
 
     def save_to_cache(self):
@@ -194,16 +193,14 @@ class QueryPack:
 
     def generate_query_string(self):
         params = self._query_parameters
-        self._execution_context.logger.debug(
-            'Generated Parameters: {}'.format(json.dumps(params, indent=2))
-        )
+        self._execution_context.logger.debug('Generated Parameters: {}'.format(
+            json.dumps(params, indent=2)))
         self._query_string = self._configuration.generate_query(**params)
         return self._query_string
 
 
 class QueryPacksManagerFactory:
     """A factory service for generating QueryPacksManager instances"""
-
     def __init__(self, execution_context):
         self._execution_context = execution_context  # type: QueryPackExecutionContext
 
@@ -224,7 +221,6 @@ class QueryPacksManager:
     This class is not a service--it is a stateful container for QueryPacks, which themselves
     can be stateful.
     """
-
     def __init__(self, execution_context):
         self._execution_context = execution_context
 
@@ -239,16 +235,11 @@ class QueryPacksManager:
         # If no tags are provided, then it includes all packs
         # If multiple tags are provided, then only the packs that contain ALL OF THE TAGS
         # will be run
-        configured_tags = self._execution_context.state_manager.get(
-            'streamquery_configuration', {}
-        ).get('tags', [])
+        configured_tags = self._execution_context.state_manager.get('streamquery_configuration',
+                                                                    {}).get('tags', [])
 
         for tag in configured_tags:
-            repo_packs = [
-                pack
-                for pack in repo_packs
-                if tag in pack.tags
-            ]
+            repo_packs = [pack for pack in repo_packs if tag in pack.tags]
 
         self._query_configs = repo_packs
 
@@ -281,8 +272,7 @@ class QueryPacksManager:
     @property
     def finished_query_packs(self):
         return [
-            query
-            for query in self._query_packs
+            query for query in self._query_packs
             if not query.load_query_execution().is_still_running()
         ]
 
@@ -309,16 +299,13 @@ class QueryPacksManager:
             QueryPack
         """
         if query_pack.is_previously_started:
-            self._execution_context.logger.debug(
-                'Existing Query Execution exists for "%s": [%s]',
-                query_pack.query_pack_configuration.name,
-                query_pack.query_execution_id
-            )
+            self._execution_context.logger.debug('Existing Query Execution exists for "%s": [%s]',
+                                                 query_pack.query_pack_configuration.name,
+                                                 query_pack.query_execution_id)
             return query_pack
 
-        self._execution_context.logger.info(
-            'Executing Query Pack "%s"...', query_pack.query_pack_configuration.name
-        )
+        self._execution_context.logger.info('Executing Query Pack "%s"...',
+                                            query_pack.query_pack_configuration.name)
 
         query_pack.start_query()
 

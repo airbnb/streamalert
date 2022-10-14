@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import copy
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
 
 from streamalert.shared.logger import get_logger
 
@@ -38,7 +38,6 @@ class DriverCache:
 
         return cache.get(key, default)
     """
-
     def __init__(self, maximum_key_count=0):
         """
         Constructor
@@ -78,10 +77,7 @@ class DriverCache:
         Returns:
             bool
         """
-        if key not in self._ttls:
-            return False
-
-        return self._clock.utcnow() <= self._ttls[key]
+        return self._clock.utcnow() <= self._ttls[key] if key in self._ttls else False
 
     def get(self, key, default=None):
         """
@@ -164,7 +160,6 @@ class DriverCacheClock:
     """
     The DriverCacheClock is a convenient utility that is useful for manipulating time during tests.
     """
-
     def __init__(self):
         self._time_machine = None
 
@@ -175,10 +170,7 @@ class DriverCacheClock:
         Returns:
             datetime
         """
-        if self._time_machine:
-            return self._time_machine
-
-        return datetime.utcnow()
+        return self._time_machine or datetime.utcnow()
 
     def time_machine(self, new_datetime):
         """

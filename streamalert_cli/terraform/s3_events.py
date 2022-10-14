@@ -48,24 +48,20 @@ def generate_s3_events_by_bucket(cluster_name, cluster_dict, config, buckets, mo
         bool: Result of applying the s3_events module
     """
     prefix = config['global']['account']['prefix']
-    lambda_module_path = 'module.classifier_{}_lambda'.format(cluster_name)
+    lambda_module_path = f'module.classifier_{cluster_name}_lambda'
 
-    module_prefix = '{}s3_events_{}_{}'.format(
-        '' if not module_prefix else '{}_'.format(module_prefix),
-        prefix,
-        cluster_name
-    )
+    module_prefix = f"{f'{module_prefix}_' if module_prefix else ''}s3_events_{prefix}_{cluster_name}"
 
     # Add each configured S3 bucket module
     for bucket_name, info in buckets.items():
         # Replace all invalid module characters with underscores
         mod_suffix = re.sub('[^a-zA-Z0-9_-]', '_', bucket_name)
-        cluster_dict['module']['{}_{}'.format(module_prefix, mod_suffix)] = {
+        cluster_dict['module'][f'{module_prefix}_{mod_suffix}'] = {
             'source': './modules/tf_s3_events',
-            'lambda_role_id': '${{{}.role_id}}'.format(lambda_module_path),
-            'lambda_function_alias': '${{{}.function_alias}}'.format(lambda_module_path),
-            'lambda_function_alias_arn': '${{{}.function_alias_arn}}'.format(lambda_module_path),
-            'lambda_function_name': '${{{}.function_name}}'.format(lambda_module_path),
+            'lambda_role_id': f'${{{lambda_module_path}.role_id}}',
+            'lambda_function_alias': f'${{{lambda_module_path}.function_alias}}',
+            'lambda_function_alias_arn': f'${{{lambda_module_path}.function_alias_arn}}',
+            'lambda_function_name': f'${{{lambda_module_path}.function_name}}',
             'bucket_name': bucket_name,
             'filters': info
         }

@@ -13,13 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.shared import metrics, CLUSTERED_FUNCTIONS
+from streamalert.shared import CLUSTERED_FUNCTIONS, metrics
 from streamalert.shared.logger import get_logger
-from streamalert_cli.utils import (
-    add_clusters_arg,
-    CLICommand,
-    set_parser_epilog,
-)
+from streamalert_cli.utils import (CLICommand, add_clusters_arg,
+                                   set_parser_epilog)
 
 LOGGER = get_logger(__name__)
 
@@ -30,10 +27,8 @@ class CreateMetricAlarmCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the create-alarm subparser: manage.py create-alarm [options]"""
-        set_parser_epilog(
-            subparser,
-            epilog=(
-                '''\
+        set_parser_epilog(subparser,
+                          epilog=('''\
                 Other Constraints:
 
                     The product of the value for period multiplied by the value for evaluation
@@ -58,9 +53,7 @@ class CreateMetricAlarmCommand(CLICommand):
     latest/APIReference/API_PutMetricAlarm.html
                     Terraform:  https://www.terraform.io/docs/providers/aws/r/\
     cloudwatch_metric_alarm.html
-                '''
-            )
-        )
+                '''))
 
         _add_default_metric_alarms_args(subparser)
 
@@ -75,10 +68,8 @@ class CreateClusterMetricAlarmCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the create-cluster-alarm subparser: manage.py create-cluster-alarm [options]"""
-        set_parser_epilog(
-            subparser,
-            epilog=(
-                '''\
+        set_parser_epilog(subparser,
+                          epilog=('''\
                 Other Constraints:
 
                     The product of the value for period multiplied by the value for evaluation
@@ -104,9 +95,7 @@ class CreateClusterMetricAlarmCommand(CLICommand):
     latest/APIReference/API_PutMetricAlarm.html
                     Terraform:  https://www.terraform.io/docs/providers/aws/r/\
     cloudwatch_metric_alarm.html
-                '''
-            )
-        )
+                '''))
 
         _add_default_metric_alarms_args(subparser, clustered=True)
 
@@ -124,16 +113,12 @@ class CustomMetricsCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the metrics subparser: manage.py custom-metrics [options]"""
-        set_parser_epilog(
-            subparser,
-            epilog=(
-                '''\
+        set_parser_epilog(subparser,
+                          epilog=('''\
                 Example:
 
                     manage.py custom-metrics --enable --functions rule
-                '''
-            )
-        )
+                '''))
 
         available_metrics = metrics.MetricLogger.get_available_metrics()
         available_functions = [func for func, value in available_metrics.items() if value]
@@ -144,31 +129,25 @@ class CustomMetricsCommand(CLICommand):
             '--functions',
             choices=available_functions,
             metavar='FUNCTION',
-            help='One or more of the following functions for which to enable metrics: {}'.format(
-                ', '.join(available_functions)
-            ),
+            help=
+            f"One or more of the following functions for which to enable metrics: {', '.join(available_functions)}",
             nargs='+',
-            required=True
-        )
+            required=True)
 
         # get the metric toggle value
         toggle_group = subparser.add_mutually_exclusive_group(required=True)
 
-        toggle_group.add_argument(
-            '-e',
-            '--enable',
-            dest='enable_custom_metrics',
-            help='Enable custom CloudWatch metrics',
-            action='store_true'
-        )
+        toggle_group.add_argument('-e',
+                                  '--enable',
+                                  dest='enable_custom_metrics',
+                                  help='Enable custom CloudWatch metrics',
+                                  action='store_true')
 
-        toggle_group.add_argument(
-            '-d',
-            '--disable',
-            dest='enable_custom_metrics',
-            help='Disable custom CloudWatch metrics',
-            action='store_false'
-        )
+        toggle_group.add_argument('-d',
+                                  '--disable',
+                                  dest='enable_custom_metrics',
+                                  help='Disable custom CloudWatch metrics',
+                                  action='store_false')
 
         # Add the option to specify cluster(s)
         add_clusters_arg(subparser)
@@ -184,11 +163,9 @@ class CustomMetricsCommand(CLICommand):
         Returns:
             bool: False if errors occurred, True otherwise
         """
-        config.toggle_metrics(
-            *options.functions,
-            enabled=options.enable_custom_metrics,
-            clusters=options.clusters
-        )
+        config.toggle_metrics(*options.functions,
+                              enabled=options.enable_custom_metrics,
+                              clusters=options.clusters)
 
         return True
 
@@ -205,8 +182,7 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
     alarm_parser.add_argument(
         'alarm_name',
         help='Name for the alarm. Each alarm name must be unique within the AWS account.',
-        type=_alarm_name_validator
-    )
+        type=_alarm_name_validator)
 
     # get the available metrics to be used
     available_metrics = metrics.MetricLogger.get_available_metrics()
@@ -228,12 +204,9 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         choices=all_metrics,
         dest='metric_name',
         metavar='METRIC_NAME',
-        help=(
-            'One of the following predefined metrics to assign this alarm to for a '
-            'given function: {}'
-        ).format(', '.join(sorted(all_metrics))),
-        required=True
-    )
+        help=('One of the following predefined metrics to assign this alarm to for a '
+              'given function: {}').format(', '.join(sorted(all_metrics))),
+        required=True)
 
     # Get the function to apply this alarm to
     alarm_parser.add_argument(
@@ -241,11 +214,9 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         '--function',
         metavar='FUNCTION',
         choices=available_functions,
-        help=(
-            'One of the following Lambda functions to which to apply this alarm: {}'
-        ).format(', '.join(sorted(available_functions))),
-        required=True
-    )
+        help=('One of the following Lambda functions to which to apply this alarm: {}').format(
+            ', '.join(sorted(available_functions))),
+        required=True)
 
     operators = sorted([
         'GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'LessThanThreshold',
@@ -258,19 +229,17 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         '--comparison-operator',
         metavar='OPERATOR',
         choices=operators,
-        help=(
-            'One of the following comparison operator to use for this metric: {}'
-        ).format(', '.join(operators)),
-        required=True
-    )
+        help=('One of the following comparison operator to use for this metric: {}').format(
+            ', '.join(operators)),
+        required=True)
 
     # get the evaluation period for this alarm
     def _alarm_eval_periods_validator(val):
         error = 'evaluation periods must be an integer greater than 0'
         try:
             period = int(val)
-        except ValueError:
-            raise alarm_parser.error(error)
+        except ValueError as err:
+            raise alarm_parser.error(error) from err
 
         if period <= 0:
             raise alarm_parser.error(error)
@@ -279,22 +248,19 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
     alarm_parser.add_argument(
         '-e',
         '--evaluation-periods',
-        help=(
-            'The number of periods over which data is compared to the specified threshold. '
-            'The minimum value for this is 1. See the \'Other Constraints\' section below for '
-            'more information'
-        ),
+        help=('The number of periods over which data is compared to the specified threshold. '
+              'The minimum value for this is 1. See the \'Other Constraints\' section below for '
+              'more information'),
         required=True,
-        type=_alarm_eval_periods_validator
-    )
+        type=_alarm_eval_periods_validator)
 
     # get the period for this alarm
     def _alarm_period_validator(val):
         error = 'period must be an integer in multiples of 60'
         try:
             period = int(val)
-        except ValueError:
-            raise alarm_parser.error(error)
+        except ValueError as err:
+            raise alarm_parser.error(error) from err
 
         if period <= 0 or period % 60 != 0:
             raise alarm_parser.error(error)
@@ -307,23 +273,17 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         help=(
             'The period, in seconds, over which the specified statistic is applied. '
             'Valid values are any multiple of 60. See the \'Other Constraints\' section below for '
-            'more information'
-        ),
+            'more information'),
         required=True,
-        type=_alarm_period_validator
-    )
+        type=_alarm_period_validator)
 
     # get the threshold for this alarm
-    alarm_parser.add_argument(
-        '-t',
-        '--threshold',
-        help=(
-            'The value against which the specified statistic is compared. '
-            'This value should be a double/float.'
-        ),
-        required=True,
-        type=float
-    )
+    alarm_parser.add_argument('-t',
+                              '--threshold',
+                              help=('The value against which the specified statistic is compared. '
+                                    'This value should be a double/float.'),
+                              required=True,
+                              type=float)
 
     # all other optional flags
     # get the optional alarm description
@@ -332,13 +292,11 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
             raise alarm_parser.error('alarm description length must be less than 1024')
         return val
 
-    alarm_parser.add_argument(
-        '-d',
-        '--alarm-description',
-        help='A description for the alarm',
-        type=_alarm_description_validator,
-        default=''
-    )
+    alarm_parser.add_argument('-d',
+                              '--alarm-description',
+                              help='A description for the alarm',
+                              type=_alarm_description_validator,
+                              default='')
 
     statistics = sorted(['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'])
 
@@ -347,11 +305,9 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         '--statistic',
         metavar='STATISTIC',
         choices=statistics,
-        help=(
-            'One of the following statistics to use for the metric associated with the alarm: {}'
-        ).format(', '.join(statistics)),
-        default='Sum'
-    )
+        help=('One of the following statistics to use for the metric associated with the alarm: {}'
+              ).format(', '.join(statistics)),
+        default='Sum')
 
 
 def _create_alarm_handler(options, config):

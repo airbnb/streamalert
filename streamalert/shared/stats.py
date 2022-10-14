@@ -13,12 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import time
 from collections import defaultdict
 
-import time
-
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -63,10 +61,10 @@ class RuleStatisticTracker:
             LOGGER.error('No rule statistics to return')
             return
 
-        max_rule_name_len = max([len(rule) for rule in cls.STATS])
+        max_rule_name_len = max(len(rule) for rule in cls.STATS)
 
         stat_lines = [
-            '{rule: <{pad}}{stat}'.format(rule=rule, pad=max_rule_name_len+4, stat=stat)
+            '{rule: <{pad}}{stat}'.format(rule=rule, pad=max_rule_name_len + 4, stat=stat)
             for rule, stat in sorted(iter(cls.STATS.items()), key=lambda k_v: (k_v[1], k_v[0]))
         ]
 
@@ -88,25 +86,20 @@ class RuleStatistic:
         return self.tracked_time < other.tracked_time
 
     def __str__(self):
-        return '{:14.8f} ms  {:6d} calls  {:14.8f} avg'.format(
-            self.tracked_time,
-            self.calls,
-            self.tracked_time/self.calls
-        )
+        return '{:14.8f} ms  {:6d} calls  {:14.8f} avg'.format(self.tracked_time, self.calls,
+                                                               self.tracked_time / self.calls)
 
 
 def time_me(func):
     """Timing decorator for wrapping a function"""
-
     def timed(*args, **kw):
         """Wrapping function"""
         time_start = time.time()
         result = func(*args, **kw)
         time_end = time.time()
 
-        message = '(module) {} (method) {} (time): {:>.4f}ms'.format(
-            func.__module__, func.__name__, (time_end - time_start) * 1000
-        )
+        message = '(module) {} (method) {} (time): {:>.4f}ms'.format(func.__module__, func.__name__,
+                                                                     (time_end - time_start) * 1000)
 
         LOGGER.debug(message)
 

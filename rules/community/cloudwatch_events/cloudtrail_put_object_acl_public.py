@@ -2,7 +2,6 @@
 from rules.helpers.base import data_has_value_from_substring_list
 from streamalert.shared.rule import rule
 
-
 _PUBLIC_ACLS = {
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',
     'http://acs.amazonaws.com/groups/global/AllUsers'
@@ -12,11 +11,7 @@ _PUBLIC_ACLS = {
 _PUBLIC_BUCKETS = {'example-bucket-to-ignore'}
 
 
-@rule(
-    logs=['cloudwatch:events'],
-    req_subkeys={
-        'detail': ['requestParameters']
-    })
+@rule(logs=['cloudwatch:events'], req_subkeys={'detail': ['requestParameters']})
 def cloudtrail_put_object_acl_public(rec):
     """
     author:         @mimeframe

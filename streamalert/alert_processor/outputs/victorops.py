@@ -16,11 +16,9 @@ limitations under the License.
 from collections import OrderedDict
 
 from streamalert.alert_processor.helpers import compose_alert
-from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    StreamAlertOutput
-)
+from streamalert.alert_processor.outputs.output_base import (OutputDispatcher,
+                                                             OutputProperty,
+                                                             StreamAlertOutput)
 from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -50,7 +48,7 @@ class VictorOpsOutput(OutputDispatcher):
         return OrderedDict([
             ('descriptor',
              OutputProperty(description='A short and unique descriptor for this '
-                                        'VictorOps integration')),
+                            'VictorOps integration')),
             ('victorops_api_id',
              OutputProperty(description='The API Id for this VictorOps integration.',
                             mask_input=True,
@@ -89,7 +87,6 @@ class VictorOpsOutput(OutputDispatcher):
 
         publication = compose_alert(alert, self, descriptor)
 
-
         headers = {
             'Content-Type': 'application/json',
             'X-VO-Api-Id': creds['victorops_api_id'],
@@ -105,11 +102,6 @@ class VictorOpsOutput(OutputDispatcher):
 
         LOGGER.critical('Sending alert to VictorOps')
         url = creds['url'] + '/' + creds['routing_key']
-        resp = self._post_request(
-            url,
-            data,
-            headers,
-            True
-            )
+        resp = self._post_request(url, data, headers, True)
 
         return self._check_http_response(resp)

@@ -13,15 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import defaultdict
-import logging
 import itertools
+import logging
 import uuid
+from collections import defaultdict
 
 from streamalert.shared.config import TopLevelConfigKeys
 from streamalert.shared.exceptions import ConfigError
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
@@ -31,6 +30,7 @@ CONST_PATH = 'path'
 CONST_CONDITION = 'condition'
 CONST_VALUES = 'values'
 CONST_ARTIFACTS_FLAG = 'send_to_artifacts'
+
 
 class NormalizedType:
     """The class encapsulates normalization information for each normalized type"""
@@ -71,21 +71,15 @@ class NormalizedType:
         """Compare two NormalizedType instances and it is very helpful in unit test when use
         assert_equal
         """
-        if not (self._log_type == other.log_type
-                and self._log_source == other.log_source
+        if not (self._log_type == other.log_type and self._log_source == other.log_source
                 and self._normalized_type == other.normalized_type):
             return False
 
         if len(self._parsed_params) != len(other.parsed_params):
             return False
 
-        for idx in range(len(self._parsed_params)):
-            if self._parsed_params[idx][CONST_PATH] == other.parsed_params[idx][CONST_PATH]:
-                continue
-
-            return False
-
-        return True
+        return all(self._parsed_params[idx][CONST_PATH] == other.parsed_params[idx][CONST_PATH]
+                   for idx in range(len(self._parsed_params)))
 
     @property
     def log_type(self):
@@ -137,12 +131,7 @@ class NormalizedType:
 
         if param_type == self.CONST_STR:
             # Format params to include 'function' field which is set to None.
-            return [
-                {
-                    CONST_PATH: params,
-                    CONST_FUNCTION: None
-                }
-            ]
+            return [{CONST_PATH: params, CONST_FUNCTION: None}]
 
         return params
 
@@ -154,21 +143,19 @@ class NormalizedType:
         """
         if not isinstance(params, list):
             raise ConfigError(
-                'Unsupported params {} for normalization. Convert params to a list'.format(params)
-            )
+                f'Unsupported params {params} for normalization. Convert params to a list')
 
         if all(isinstance(param, str) for param in params):
             return self.CONST_STR
 
-        if all(isinstance(param, dict) and set(param.keys()).issubset(self.VALID_KEYS)
-               for param in params
-              ):
+        if all(
+                isinstance(param, dict) and set(param.keys()).issubset(self.VALID_KEYS)
+                for param in params):
             return self.CONST_DICT
 
         # FIXME: should we raise exception here? Or may just return False and log a warming message
         raise ConfigError(
-            ('Unsupported type(s) used in {} or missing keys. Valid types are str or dict and '
-             'valid keys are {}').format(params, self.VALID_KEYS)
+            f'Unsupported type(s) used in {params} or missing keys. Valid types are str or dict and valid keys are {self.VALID_KEYS}'
         )
 
 
@@ -179,7 +166,7 @@ class Normalizer:
     RECORD_ID_KEY = 'streamalert_record_id'
 
     # Store the normalized types mapping to original keys from the records
-    _types_config = dict()
+    _types_config = {}
 
     @classmethod
     def match_types(cls, record, normalized_types):
@@ -209,9 +196,7 @@ class Normalizer:
         """
         results = {}
         for type_name, type_info in normalized_types.items():
-            result = list(cls._extract_values(record, type_info))
-
-            if result:
+            if result := list(cls._extract_values(record, type_info)):
                 results[type_name] = result
 
         if results:
@@ -230,10 +215,7 @@ class Normalizer:
                 break
             found_value = True
 
-        if not found_value:
-            return False, None
-
-        return True, value
+        return (True, value) if found_value else (False, None)
 
     @classmethod
     def _extract_values(cls, record, paths_to_normalize):
@@ -253,8 +235,7 @@ class Normalizer:
         """
         for param in paths_to_normalize.parsed_params:
             if param.get(CONST_CONDITION) and not cls._match_condition(
-                    record, param[CONST_CONDITION]
-                ):
+                    record, param[CONST_CONDITION]):
                 # If optional 'condition' block is configured, it will only extract values if
                 # condition is matched.
                 continue
@@ -345,11 +326,9 @@ class Normalizer:
             set: The values for the normalized type specified
         """
         normalization_results = record.get(cls.NORMALIZATION_KEY, {}).get(datatype)
-        if not normalization_results:
-            # Return an empty set to be compatible existing rules calling this method which doesn't
-            # check if the return value is None or empty set.
-            return set()
-        return set(itertools.chain(*[result.get(CONST_VALUES) for result in normalization_results]))
+        return set(itertools.chain(
+            *[result.get(CONST_VALUES)
+              for result in normalization_results])) if normalization_results else set()
 
     @classmethod
     def load_from_config(cls, config):

@@ -43,7 +43,6 @@ class OutputCredentialsProvider:
         get_local_credentials_temp_dir(): Returns full path to a temporary directory where all
             encrypted credentials are cached.
     """
-
     def __init__(self,
                  service_name,
                  config=None,
@@ -62,7 +61,7 @@ class OutputCredentialsProvider:
         # Account Id: Check constructor args first, then ENV, then config
         self._account_id = self._calculate_account_id(aws_account_id, config)
 
-        self._defaults = defaults if defaults else {}
+        self._defaults = defaults or {}
 
         # Drivers are strategies utilized by this class for fetching credentials from various
         # locations on disk or remotely
@@ -101,9 +100,10 @@ class OutputCredentialsProvider:
         self._drivers.append(ep_driver)
 
         # SSM Driver
-        ssm_driver = SSMDriver(
-            self._prefix, self._service_name, self._region, cache_driver=ep_driver
-        )
+        ssm_driver = SSMDriver(self._prefix,
+                               self._service_name,
+                               self._region,
+                               cache_driver=ep_driver)
         self._core_driver = ssm_driver
         self._drivers.append(ssm_driver)
 
@@ -120,8 +120,7 @@ class OutputCredentialsProvider:
             bool: True is credentials successfully saved. False otherwise.
         """
 
-        creds = {name: prop.value
-                 for (name, prop) in props.items() if prop.cred_requirement}
+        creds = {name: prop.value for (name, prop) in props.items() if prop.cred_requirement}
 
         credentials = Credentials(creds, False, self._region)
         return self._core_driver.save_credentials(descriptor, credentials, kms_key_alias)
@@ -144,11 +143,8 @@ class OutputCredentialsProvider:
                     break
 
         if not credentials:
-            LOGGER.error(
-                'All drivers failed to retrieve credentials for [%s.%s]',
-                self._service_name,
-                descriptor
-            )
+            LOGGER.error('All drivers failed to retrieve credentials for [%s.%s]',
+                         self._service_name, descriptor)
             return None
         if credentials.is_encrypted():
             decrypted_creds = credentials.get_data_kms_decrypted()
@@ -157,9 +153,7 @@ class OutputCredentialsProvider:
 
         creds_dict = json.loads(decrypted_creds)
 
-        # Add any of the hard-coded default output props to this dict (ie: url)
-        defaults = self._defaults
-        if defaults:
+        if defaults := self._defaults:
             creds_dict.update(defaults)
 
         return creds_dict
@@ -185,7 +179,6 @@ class Credentials:
         else:
             return credentials.data()
     """
-
     def __init__(self, data, is_encrypted=False, region=None):
         """
         Args:
@@ -253,7 +246,6 @@ class Credentials:
 
 class CredentialsProvidingDriver:
     """Drivers encapsulate logic for loading credentials"""
-
     @abstractmethod
     def load_credentials(self, descriptor):
         """Loads the requested credentials into a new Credentials object.
@@ -281,7 +273,6 @@ class CredentialsProvidingDriver:
 
 class FileDescriptorProvider:
     """Interface for Drivers capable of offering file-handles to aid in download of credentials."""
-
     @abstractmethod
     def offer_fileobj(self, descriptor):
         """Offers a file-like object.
@@ -297,7 +288,6 @@ class FileDescriptorProvider:
 class CredentialsCachingDriver:
     """Interface for Drivers capable of being used as a caching layer to accelerate the speed
     of credential loading."""
-
     @abstractmethod
     def save_credentials(self, descriptor, credentials):
         """Saves the given credentials.
@@ -328,13 +318,12 @@ def get_formatted_output_credentials_name(service_name, descriptor):
 
     # should descriptor be enforced in all rules?
     if descriptor:
-        cred_name = '{}/{}'.format(cred_name, descriptor)
+        cred_name = f'{cred_name}/{descriptor}'
 
     return cred_name
 
 
 class SSMDriver(CredentialsProvidingDriver):
-
     def __init__(self, prefix, service_name, region, cache_driver=None):
         """
         Args:
@@ -393,11 +382,8 @@ class SSMDriver(CredentialsProvidingDriver):
             bool: True on success, False otherwise.
         """
         # If the creds are encrypted, decrypt them as SSM will handle the encryption
-        unencrypted_creds = (
-            credentials.get_data_kms_decrypted()
-            if credentials.is_encrypted()
-            else credentials.data()
-        )
+        unencrypted_creds = (credentials.get_data_kms_decrypted()
+                             if credentials.is_encrypted() else credentials.data())
 
         parameter_name = self._get_parameter_name(descriptor)
 
@@ -423,12 +409,11 @@ class SSMDriver(CredentialsProvidingDriver):
         parameter_suffix = get_formatted_output_credentials_name(self._service_name, descriptor)
 
         # The leading forward slash character is intentional for parameters in a hierarchy
-        return "/{}/streamalert/outputs/{}".format(self._prefix, parameter_suffix)
+        return f"/{self._prefix}/streamalert/outputs/{parameter_suffix}"
 
 
 class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, CredentialsCachingDriver):
     """Driver for fetching credentials that are saved locally on the filesystem."""
-
     def __init__(self, region, service_name):
         self._region = region
         self._service_name = service_name
@@ -485,11 +470,8 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
         return open(file_path, 'a+b')  # read+write and in binary mode
 
     def get_file_path(self, descriptor):
-        local_cred_location = os.path.join(
-            self._temp_dir,
-            get_formatted_output_credentials_name(self._service_name, descriptor)
-        )
-        return local_cred_location
+        return os.path.join(self._temp_dir,
+                            get_formatted_output_credentials_name(self._service_name, descriptor))
 
     @staticmethod
     def get_local_credentials_temp_dir():
@@ -531,9 +513,7 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
         key = self.get_spool_cache_key(descriptor)
         if key not in type(self).SERVICE_SPOOLS:
             LOGGER.error(
-                'SpooledTempfileDriver failed to load_credentials: Spool "%s" does not exist?',
-                key
-            )
+                'SpooledTempfileDriver failed to load_credentials: Spool "%s" does not exist?', key)
             return None
 
         spool = type(self).SERVICE_SPOOLS[key]
@@ -598,7 +578,7 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
         return tempfile.SpooledTemporaryFile(0, 'a+b')
 
     def get_spool_cache_key(self, descriptor):
-        return '{}/{}'.format(self._service_name, descriptor)
+        return f'{self._service_name}/{descriptor}'
 
 
 class EphemeralUnencryptedDriver(CredentialsProvidingDriver, CredentialsCachingDriver):
@@ -621,8 +601,7 @@ class EphemeralUnencryptedDriver(CredentialsProvidingDriver, CredentialsCachingD
         if key not in type(self).CREDENTIALS_STORE:
             LOGGER.error(
                 'EphemeralUnencryptedDriver failed to load_credentials: Key "%s" does not exist?',
-                key
-            )
+                key)
             return None
 
         unencrypted_raw_creds = type(self).CREDENTIALS_STORE[key]
@@ -653,4 +632,4 @@ class EphemeralUnencryptedDriver(CredentialsProvidingDriver, CredentialsCachingD
         cls.CREDENTIALS_STORE.clear()
 
     def get_storage_key(self, descriptor):
-        return '{}/{}'.format(self._service_name, descriptor)
+        return f'{self._service_name}/{descriptor}'

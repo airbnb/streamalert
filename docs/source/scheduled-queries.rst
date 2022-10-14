@@ -106,7 +106,7 @@ All scheduled queries are located in the ``scheduled_queries/`` directory, locat
     from streamalert.scheduled_queries.query_packs.configuration import QueryPackConfiguration
 
     QueryPackConfiguration(
-        name='NAME_OF_QUERY_PACK',
+        name='NAME_OF_QUERY',
         description='Hey, hey! This is a description!',
 
         # Make sure to edit the database name properly or this query will error with some
@@ -235,7 +235,7 @@ Anytime you change the configured query packs, you will need to run this to upda
 
 .. code-block:: bash
 
-    % ./manage.py built -t scheduled_queries
+    % ./manage.py build -t scheduled_queries
 
 
 Deploying Python Code to Lambda

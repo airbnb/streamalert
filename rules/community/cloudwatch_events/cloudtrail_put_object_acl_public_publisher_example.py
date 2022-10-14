@@ -1,13 +1,12 @@
 """Identifies new S3 object ACLs that grant access to the public."""
 from publishers.community.generic import add_record, populate_fields
-from publishers.community.pagerduty.pagerduty_layout import (
-    ShortenTitle, as_custom_details,
-    PrettyPrintArrays,
-)
-from publishers.community.slack.slack_layout import Summary, AttachRuleInfo, AttachFullRecord
+from publishers.community.pagerduty.pagerduty_layout import (PrettyPrintArrays,
+                                                             ShortenTitle,
+                                                             as_custom_details)
+from publishers.community.slack.slack_layout import (AttachFullRecord,
+                                                     AttachRuleInfo, Summary)
 from rules.helpers.base import data_has_value_from_substring_list
 from streamalert.shared.rule import rule
-
 
 _PUBLIC_ACLS = {
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',
@@ -15,33 +14,24 @@ _PUBLIC_ACLS = {
 }
 
 
-@rule(
-    logs=['cloudwatch:events'],
-    req_subkeys={
-        'detail': ['eventName', 'requestParameters', 'sourceIPAddress']
-    },
-    outputs=['slack:sample-channel', 'pagerduty:sample-integration'],
-    publishers={
-        'slack': [Summary, AttachRuleInfo, AttachFullRecord],
-        'pagerduty': [
-            add_record,
-            populate_fields,
-            PrettyPrintArrays,
-            ShortenTitle,
-            as_custom_details
-        ],
-    },
-    context={
-        'populate_fields': [
-            'userName',
-            'sourceIPAddress',
-            'eventTime',
-            'eventName',
-            'eventSource',
-            'bucketName',
-        ]
-    }
-)
+@rule(logs=['cloudwatch:events'],
+      req_subkeys={'detail': ['eventName', 'requestParameters', 'sourceIPAddress']},
+      outputs=['slack:sample-channel', 'pagerduty:sample-integration'],
+      publishers={
+          'slack': [Summary, AttachRuleInfo, AttachFullRecord],
+          'pagerduty':
+          [add_record, populate_fields, PrettyPrintArrays, ShortenTitle, as_custom_details],
+      },
+      context={
+          'populate_fields': [
+              'userName',
+              'sourceIPAddress',
+              'eventTime',
+              'eventName',
+              'eventSource',
+              'bucketName',
+          ]
+      })
 def cloudtrail_put_object_acl_public_publisher_example(rec, _):
     """
     description:    Identifies a change to an S3 object ACL that grants access

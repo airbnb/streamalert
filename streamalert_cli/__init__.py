@@ -15,4 +15,4 @@ limitations under the License.
 """
 import os
 
-STREAMALERT_CLI_ROOT = os.path.dirname(os.path.abspath(__file__))
+STREAMALERT_CLI_ROOT = os.path.dirname(__file__)

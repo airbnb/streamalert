@@ -23,7 +23,7 @@ LOGGER = get_logger(__name__)
 class ThreatIntelMocks:
     """Simple class to encapsulate the mocked threat intel results"""
 
-    _MOCKS = dict()
+    _MOCKS = {}
 
     @classmethod
     def add_fixtures(cls, fixtures):
@@ -46,21 +46,19 @@ class ThreatIntelMocks:
 
     @classmethod
     def get_mock_values(cls, values):
-
         """Return the function to mock out ThreatIntel._query
 
         This simply returns values from the log that are in the mock_ioc_values
         based on fixtures that match the provided rule_path
         """
-        return [
-            cls._MOCKS[item] for item in cls._MOCKS if item in values
-        ]
+        # rewrite to use dict items
+        return {value: cls._MOCKS[value] for value in values if value in cls._MOCKS}
 
 
 class LookupTableMocks:
     """Simple class to encapsulate the mocked lookup table results"""
 
-    _MOCKS = dict()
+    _MOCKS = {}
 
     @classmethod
     def add_fixtures(cls, fixtures):

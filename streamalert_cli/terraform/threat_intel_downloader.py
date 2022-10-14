@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from streamalert.shared import THREAT_INTEL_DOWNLOADER_NAME
-from streamalert_cli.terraform.common import infinitedict, monitoring_topic_name
+from streamalert_cli.terraform.common import (infinitedict,
+                                              monitoring_topic_name)
 from streamalert_cli.terraform.lambda_module import generate_lambda
 
 
@@ -59,9 +60,7 @@ def generate_threat_intel_downloader(config):
     }
 
     result['module']['threat_intel_downloader'] = generate_lambda(
-        '{}_streamalert_{}'.format(prefix, THREAT_INTEL_DOWNLOADER_NAME),
-        'streamalert.threat_intel_downloader.main.handler',
-        tid_config,
-        config,
-    )
+        f'{prefix}_streamalert_{THREAT_INTEL_DOWNLOADER_NAME}',
+        'streamalert.threat_intel_downloader.main.handler', tid_config, config)
+
     return result

@@ -17,7 +17,6 @@ import re
 
 from . import AppIntegration, StreamAlertApp, get_logger
 
-
 LOGGER = get_logger(__name__)
 
 
@@ -25,14 +24,14 @@ LOGGER = get_logger(__name__)
 class OneLoginApp(AppIntegration):
     """OneLogin StreamAlert App"""
     _ONELOGIN_EVENTS_URL = 'https://api.{}.onelogin.com/api/1/events'
-    _ONELOGIN_TOKEN_URL = 'https://api.{}.onelogin.com/auth/oauth2/v2/token' # nosec
+    _ONELOGIN_TOKEN_URL = 'https://api.{}.onelogin.com/auth/oauth2/v2/token'  # nosec
     _ONELOGIN_RATE_LIMIT_URL = 'https://api.{}.onelogin.com/auth/rate_limit'
     # OneLogin API returns 50 events per page
     _MAX_EVENTS_LIMIT = 50
 
     # Define our authorization headers variable
     def __init__(self, event, config):
-        super(OneLoginApp, self).__init__(event, config)
+        super().__init__(event, config)
         self._auth_headers = None
         self._next_page_url = None
         self._rate_limit_sleep = 0
@@ -86,15 +85,12 @@ class OneLoginApp(AppIntegration):
         if self._auth_headers:
             return True
 
-        authorization = 'client_id: {}, client_secret: {}'.format(
-            self._config.auth['client_id'], self._config.auth['client_secret'])
+        authorization = f"client_id: {self._config.auth['client_id']}, client_secret: {self._config.auth['client_secret']}"
 
-        headers_token = {'Authorization': authorization,
-                         'Content-Type': 'application/json'}
+        headers_token = {'Authorization': authorization, 'Content-Type': 'application/json'}
 
-        result, response = self._make_post_request(self._token_endpoint(),
-                                                   headers_token,
-                                                   {'grant_type':'client_credentials'})
+        result, response = self._make_post_request(self._token_endpoint(), headers_token,
+                                                   {'grant_type': 'client_credentials'})
 
         if not result:
             return False
@@ -103,17 +99,14 @@ class OneLoginApp(AppIntegration):
             LOGGER.error('[%s] Response invalid, could not generate headers', self)
             return False
 
-        bearer = 'bearer:{}'.format(response.get('access_token'))
+        bearer = f"bearer:{response.get('access_token')}"
         self._auth_headers = {'Authorization': bearer}
 
         return True
 
     def _gather_logs(self):
         """Gather the authentication log events."""
-        if not self._generate_headers():
-            return False
-
-        return self._get_onelogin_events()
+        return self._get_onelogin_events() if self._generate_headers() else False
 
     def _set_rate_limit_sleep(self):
         """Get the number of seconds we need to sleep until we are clear to continue"""
@@ -123,8 +116,7 @@ class OneLoginApp(AppIntegration):
             LOGGER.error('[%s] No authentication headers set', self)
             return
 
-        result, response = self._make_get_request(self._rate_limit_endpoint(),
-                                                  self._auth_headers)
+        result, response = self._make_get_request(self._rate_limit_endpoint(), self._auth_headers)
 
         if not result:
             self._rate_limit_sleep = 0
@@ -224,25 +216,24 @@ class OneLoginApp(AppIntegration):
     @classmethod
     def _required_auth_info(cls):
         return {
-            'region':
-                {
-                    'description': ('the region for the OneLogin API. This should be'
-                                    'just "en" or "us".'),
-                    'format': re.compile(r'^(en|us)$')
-                },
-            'client_secret':
-                {
-                    'description': ('the client secret for the OneLogin API. This '
-                                    'should be a string of 64 alphanumeric characters'),
-                    'format': re.compile(r'^[a-z0-9]{64}$')
-                },
-            'client_id':
-                {
-                    'description': ('the client id for the OneLogin API. This '
-                                    'should be a string of 64 alphanumeric characters'),
-                    'format': re.compile(r'^[a-z0-9]{64}$')
-                }
+            'region': {
+                'description': ('the region for the OneLogin API. This should be'
+                                'just "en" or "us".'),
+                'format': re.compile(r'^(en|us)$')
+            },
+            'client_secret': {
+                'description': ('the client secret for the OneLogin API. This '
+                                'should be a string of 64 alphanumeric characters'),
+                'format':
+                re.compile(r'^[a-z0-9]{64}$')
+            },
+            'client_id': {
+                'description': ('the client id for the OneLogin API. This '
+                                'should be a string of 64 alphanumeric characters'),
+                'format':
+                re.compile(r'^[a-z0-9]{64}$')
             }
+        }
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for

@@ -8,11 +8,6 @@ for output_file in os.listdir(os.path.dirname(__file__)):
     if output_file.startswith(('__init__', 'output_base')) or not output_file.endswith('.py'):
         continue
 
-    full_import = [
-        'streamalert',
-        'alert_processor',
-        'outputs',
-        os.path.splitext(output_file)[0]
-    ]
+    full_import = ['streamalert', 'alert_processor', 'outputs', os.path.splitext(output_file)[0]]
 
     importlib.import_module('.'.join(full_import))

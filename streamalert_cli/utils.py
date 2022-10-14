@@ -23,15 +23,16 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd>
 """
-from abc import abstractmethod
-from argparse import _AppendAction, Action, ArgumentTypeError, RawDescriptionHelpFormatter
 import os
 import textwrap
-from streamalert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
+from abc import abstractmethod
+from argparse import (Action, ArgumentTypeError, RawDescriptionHelpFormatter,
+                      _AppendAction)
+
+from streamalert.apps.config import AWS_RATE_HELPER, AWS_RATE_RE
 
 CLUSTERS = [
-    os.path.splitext(cluster)[0] for _, _, files in os.walk('./conf/clusters')
-    for cluster in files
+    os.path.splitext(cluster)[0] for _, _, files in os.walk('./conf/clusters') for cluster in files
 ]
 
 
@@ -78,7 +79,6 @@ class CLICommand:
 
 class UniqueSortedListAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
-
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = set(values)
         setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
@@ -86,7 +86,6 @@ class UniqueSortedListAction(Action):
 
 class UniqueSortedFileListAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list of files"""
-
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = {value.name for value in values}
         setattr(namespace, self.dest, sorted(unique_items))  # We want this to be consistent
@@ -97,7 +96,6 @@ class UniqueSortedFileListAppendAction(_AppendAction):
 
     This is meant to augment the 'append' argparse action
     """
-
     def __call__(self, parser, namespace, value, option_string=None):
         unique_items = set(getattr(namespace, self.dest, set()))
         unique_items.add(value.name)
@@ -106,32 +104,26 @@ class UniqueSortedFileListAppendAction(_AppendAction):
 
 class MutuallyExclusiveStagingAction(Action):
     """Subclass of argparse.Action to avoid staging and unstaging the same rules"""
-
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = set(values)
-        error = (
-            'The following rules cannot be within both the \'--stage-rules\' argument '
-            'and the \'--unstage-rules\' argument: {}'
-        )
+        error = ('The following rules cannot be within both the \'--stage-rules\' argument '
+                 'and the \'--unstage-rules\' argument: {}')
         if namespace.unstage_rules:
-            offending_rules = unique_items.intersection(namespace.unstage_rules)
-            if offending_rules:
+            if offending_rules := unique_items.intersection(namespace.unstage_rules):
                 raise parser.error(error.format(', '.join(list(offending_rules))))
         if namespace.stage_rules:
-            offending_rules = unique_items.intersection(namespace.stage_rules)
-            if offending_rules:
+            if offending_rules := unique_items.intersection(namespace.stage_rules):
                 raise parser.error(error.format(', '.join(list(offending_rules))))
         setattr(namespace, self.dest, unique_items)
 
 
 class DirectoryType:
     """Factory for ensuring a directory exists"""
-
     def __call__(self, value):
         if os.path.isdir(value):
             return value
 
-        raise ArgumentTypeError('\'{}\' is not a directory'.format(value))
+        raise ArgumentTypeError(f"\'{value}\' is not a directory")
 
 
 def add_timeout_arg(parser):
@@ -141,24 +133,20 @@ def add_timeout_arg(parser):
         error = 'Value for \'timeout\' must be an integer between 10 and 900'
         try:
             timeout = int(val)
-        except ValueError:
-            raise parser.error(error)
+        except ValueError as exc:
+            raise parser.error(error) from exc
 
         if not 10 <= timeout <= 900:
             raise parser.error(error)
 
         return timeout
 
-    parser.add_argument(
-        '-t',
-        '--timeout',
-        required=True,
-        help=(
-            'The AWS Lambda function timeout value, in seconds. '
-            'This should be an integer between 10 and 900.'
-        ),
-        type=_validator
-    )
+    parser.add_argument('-t',
+                        '--timeout',
+                        required=True,
+                        help=('The AWS Lambda function timeout value, in seconds. '
+                              'This should be an integer between 10 and 900.'),
+                        type=_validator)
 
 
 def add_memory_arg(parser):
@@ -166,12 +154,11 @@ def add_memory_arg(parser):
     def _validator(val):
         """Validate the memory value to ensure it is between 128 and 3008 and a multiple of 64"""
         error = (
-            'Value for \'memory\' must be an integer between 128 and 3008, and be a multiple of 64'
-        )
+            'Value for \'memory\' must be an integer between 128 and 3008, and be a multiple of 64')
         try:
             memory = int(val)
-        except ValueError:
-            raise parser.error(error)
+        except ValueError as exc:
+            raise parser.error(error) from exc
 
         if not 128 <= memory <= 3008:
             raise parser.error(error)
@@ -185,12 +172,9 @@ def add_memory_arg(parser):
         '-m',
         '--memory',
         required=True,
-        help=(
-            'The AWS Lambda function max memory value, in megabytes. '
-            'This should be an integer between 128 and 3008, and be a multiple of 64.'
-        ),
-        type=_validator
-    )
+        help=('The AWS Lambda function max memory value, in megabytes. '
+              'This should be an integer between 128 and 3008, and be a multiple of 64.'),
+        type=_validator)
 
 
 def add_schedule_expression_arg(parser):
@@ -202,8 +186,8 @@ def add_schedule_expression_arg(parser):
             return val
 
         if val.startswith('rate('):
-            err = ('Invalid rate expression \'{}\'. For help see {}'
-                   .format(val, '{}#RateExpressions'.format(AWS_RATE_HELPER)))
+            err = ('Invalid rate expression \'{}\'. For help see {}'.format(
+                val, f'{AWS_RATE_HELPER}#RateExpressions'))
             raise parser.error(err)
 
         raise parser.error('Invalid expression \'{}\'. For help '
@@ -212,26 +196,21 @@ def add_schedule_expression_arg(parser):
     schedule_help = (
         'The interval, defined using a \'rate\' expression, at which this function should '
         'execute. Examples of acceptable input are: \'rate(1 hour)\', \'rate(2 days)\', and '
-        '\'rate(20 minutes)\'. For more information, see: {}'
-    ).format(AWS_RATE_HELPER)
+        '\'rate(20 minutes)\'. For more information, see: {}').format(AWS_RATE_HELPER)
 
-    parser.add_argument(
-        '-s',
-        '--schedule-expression',
-        required=True,
-        help=schedule_help,
-        type=_validator
-    )
+    parser.add_argument('-s',
+                        '--schedule-expression',
+                        required=True,
+                        help=schedule_help,
+                        type=_validator)
 
 
 def add_clusters_arg(parser, required=False):
     """Add ability to select 0 or more clusters to act against"""
     kwargs = {
         'choices': CLUSTERS,
-        'help': (
-            'One or more clusters to target. '
-            'If omitted, this action will be performed against all clusters.'
-        ) if not required else 'One or more clusters to target',
+        'help': 'One or more clusters to target' if required else 'One or more clusters to target. '
+        'If omitted, this action will be performed against all clusters.',
         'nargs': '+',
         'action': UniqueSortedListAction,
         'required': required
@@ -240,11 +219,7 @@ def add_clusters_arg(parser, required=False):
     if not required:
         kwargs['default'] = CLUSTERS
 
-    parser.add_argument(
-        '-c',
-        '--clusters',
-        **kwargs
-    )
+    parser.add_argument('-c', '--clusters', **kwargs)
 
 
 def set_parser_epilog(parser, epilog):
@@ -254,12 +229,10 @@ def set_parser_epilog(parser, epilog):
 
 def generate_subparser(parser, name, description=None, subcommand=False, **kwargs):
     """Helper function to return a subparser with the given options"""
-    subparser = parser.add_parser(
-        name,
-        description=description,
-        formatter_class=RawDescriptionHelpFormatter,
-        **kwargs
-    )
+    subparser = parser.add_parser(name,
+                                  description=description,
+                                  formatter_class=RawDescriptionHelpFormatter,
+                                  **kwargs)
 
     if subcommand:
         subparser.set_defaults(subcommand=name)
@@ -274,17 +247,16 @@ def add_default_lambda_args(lambda_parser):
     functions = sorted(function_map())
     # optionally allow for the name of 1+ functions being deployed/rolled back
     lambda_parser.add_argument(
-        '-f', '--functions',
+        '-f',
+        '--functions',
         choices=functions,
         default=functions,
         metavar='FUNCTIONS',
-        help=(
-            'One or more of the following functions to perform this action against: {}. '
-            'If omitted, this action will be performed against all functions.'
-        ).format(', '.join(functions)),
+        help=
+        (f"One or more of the following functions to perform this action against: {', '.join(functions)}. "
+         f"If omitted, this action will be performed against all functions."),
         nargs='+',
-        action=UniqueSortedListAction,
-    )
+        action=UniqueSortedListAction)
 
     # Add the option to specify cluster(s)
     add_clusters_arg(lambda_parser)

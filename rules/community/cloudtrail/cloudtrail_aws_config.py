@@ -2,7 +2,6 @@
 from matchers.default import AwsConfigMatcher
 from streamalert.shared.rule import rule
 
-
 # Populate this list to alert on specific Config Rules, otherwise all rules will be in-scope
 # Also consider the use of Lookup-Tables
 RULES_TO_ALERT_ON = []
@@ -18,20 +17,16 @@ def config_compliance(record):
                     trigger as compliant or non-compliant.
     """
 
-    non_compliance_present = any(
-        evaluation["complianceType"] == "NON_COMPLIANT"
-        for evaluation in record["requestParameters"]["evaluations"]
-    )
+    non_compliance_present = any(evaluation["complianceType"] == "NON_COMPLIANT"
+                                 for evaluation in record["requestParameters"]["evaluations"])
 
     if RULES_TO_ALERT_ON:
         # Alert on specific rule names. Useful when some Config Rules are just TOO noisy.
         rule_name = record["additionalEventData"]["configRuleName"]
-        result = rule_name in RULES_TO_ALERT_ON and non_compliance_present
+        return rule_name in RULES_TO_ALERT_ON and non_compliance_present
     else:
         # Alert on ALL config rules regardless of their name
-        result = non_compliance_present
-
-    return result
+        return non_compliance_present
 
 
 @rule(logs=["cloudtrail:events"], matchers=[AwsConfigMatcher.is_auto_remediation])

@@ -1,8 +1,10 @@
 from streamalert.shared.config import load_config
 from streamalert.shared.logger import get_logger
-from streamalert.shared.lookup_tables.configuration import LookupTablesConfiguration
+from streamalert.shared.lookup_tables.configuration import \
+    LookupTablesConfiguration
 from streamalert.shared.lookup_tables.drivers import NullDriver
-from streamalert.shared.lookup_tables.drivers_factory import construct_persistence_driver
+from streamalert.shared.lookup_tables.drivers_factory import \
+    construct_persistence_driver
 from streamalert.shared.lookup_tables.table import LookupTable
 
 LOGGER = get_logger(__name__)
@@ -86,18 +88,12 @@ class LookupTablesCore:
         preventing unnecessary memory usage.
         """
         if not self._configuration.is_enabled:
-            LOGGER.debug(
-                'Skipping LookupTables as it is not enabled'
-            )
+            LOGGER.debug('Skipping LookupTables as it is not enabled')
             return
 
         for table_name, table_configuration in self._configuration.table_configurations.items():
             driver = construct_persistence_driver(table_configuration)
-            self._tables[table_name] = LookupTable(
-                table_name,
-                driver,
-                table_configuration
-            )
+            self._tables[table_name] = LookupTable(table_name, driver, table_configuration)
 
         LOGGER.info('LookupTablesCore initialized!')
 
@@ -131,10 +127,7 @@ class LookupTablesCore:
 
         LOGGER.error(
             'Nonexistent LookupTable \'%s\' referenced. Defaulting to null table. '
-            'Valid tables were (%s)',
-            table_name,
-            ', '.join(sorted(self._tables.keys()))
-        )
+            'Valid tables were (%s)', table_name, ', '.join(sorted(self._tables.keys())))
 
         return self._null_table
 

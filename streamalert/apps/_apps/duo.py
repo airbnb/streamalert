@@ -13,19 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from base64 import b64encode
-from datetime import datetime
 import hashlib
 import hmac
 import re
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
+from base64 import b64encode
+from datetime import datetime
 
 import requests
 
 from . import AppIntegration, StreamAlertApp, get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -60,12 +59,14 @@ class DuoApp(AppIntegration):
         """
         formatted_date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S -0000')
 
-        auth_string = '\n'.join([formatted_date, 'GET', hostname,
-                                 self._endpoint(), urllib.parse.urlencode(params)]).encode()
+        auth_string = '\n'.join(
+            [formatted_date, 'GET', hostname,
+             self._endpoint(),
+             urllib.parse.urlencode(params)]).encode()
 
         try:
-            signature = hmac.new(self._config.auth['secret_key'].encode(),
-                                 auth_string, hashlib.sha1)
+            signature = hmac.new(self._config.auth['secret_key'].encode(), auth_string,
+                                 hashlib.sha1)
         # Since we force the auth_string and auth['secret_key'] to types which
         # support .encode(), we must expand the catch to include attribute
         # errors for mismatched types.
@@ -79,17 +80,15 @@ class DuoApp(AppIntegration):
 
         return {
             'Date': formatted_date,
-            'Authorization': 'Basic {}'.format(b64encode(basic_auth).decode()),
+            'Authorization': f'Basic {b64encode(basic_auth).decode()}',
             'Host': hostname
         }
 
     def _gather_logs(self):
         """Gather the Duo log events."""
         hostname = self._config.auth['api_hostname']
-        full_url = 'https://{hostname}{endpoint}'.format(
-            hostname=hostname,
-            endpoint=self._endpoint()
-        )
+        full_url = 'https://{hostname}{endpoint}'.format(hostname=hostname,
+                                                         endpoint=self._endpoint())
 
         return self._get_duo_logs(hostname, full_url)
 
@@ -166,25 +165,25 @@ class DuoApp(AppIntegration):
     @classmethod
     def _required_auth_info(cls):
         return {
-            'api_hostname':
-                {
-                    'description': ('the API URL for your duosecurity instance. This should '
-                                    'be in a format similar to \'api-abcdef12.duosecurity.com\''),
-                    'format': re.compile(r'^api-[a-f0-9]{8}\.duosecurity\.com$')
-                },
-            'integration_key':
-                {
-                    'description': ('the integration key for your duosecurity Admin API. This '
-                                    'should be in a format similar to \'DIABCDEFGHIJKLMN1234\''),
-                    'format': re.compile(r'^DI[A-Z0-9]{18}$')
-                },
-            'secret_key':
-                {
-                    'description': ('the secret key for your duosecurity Admin API. This '
-                                    'should be a string of 40 alphanumeric characters'),
-                    'format': re.compile(r'^[a-zA-Z0-9]{40}$')
-                }
+            'api_hostname': {
+                'description': ('the API URL for your duosecurity instance. This should '
+                                'be in a format similar to \'api-abcdef12.duosecurity.com\''),
+                'format':
+                re.compile(r'^api-[a-f0-9]{8}\.duosecurity\.com$')
+            },
+            'integration_key': {
+                'description': ('the integration key for your duosecurity Admin API. This '
+                                'should be in a format similar to \'DIABCDEFGHIJKLMN1234\''),
+                'format':
+                re.compile(r'^DI[A-Z0-9]{18}$')
+            },
+            'secret_key': {
+                'description': ('the secret key for your duosecurity Admin API. This '
+                                'should be a string of 40 alphanumeric characters'),
+                'format':
+                re.compile(r'^[a-zA-Z0-9]{40}$')
             }
+        }
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for
@@ -200,7 +199,6 @@ class DuoApp(AppIntegration):
 @StreamAlertApp
 class DuoAuthApp(DuoApp):
     """Duo authentication log app integration"""
-
     @classmethod
     def _type(cls):
         return 'auth'
@@ -212,13 +210,12 @@ class DuoAuthApp(DuoApp):
         Returns:
             str: Path of the authentication endpoint to query
         """
-        return '{}authentication'.format(cls._ENDPOINT_PREFIX)
+        return f'{cls._ENDPOINT_PREFIX}authentication'
 
 
 @StreamAlertApp
 class DuoAdminApp(DuoApp):
     """Duo administrator log app integration"""
-
     @classmethod
     def _type(cls):
         return 'admin'
@@ -230,4 +227,4 @@ class DuoAdminApp(DuoApp):
         Returns:
             str: Path of the administrator endpoint to query
         """
-        return '{}administrator'.format(cls._ENDPOINT_PREFIX)
+        return f'{cls._ENDPOINT_PREFIX}administrator'

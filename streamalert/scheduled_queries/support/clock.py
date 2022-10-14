@@ -4,7 +4,6 @@ from datetime import datetime
 
 class Clock:
     """A service that provides time and time-manipulation methods"""
-
     def __init__(self):
         self._internal_time = datetime.utcnow()
 

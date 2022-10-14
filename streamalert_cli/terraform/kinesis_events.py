@@ -32,15 +32,14 @@ def generate_kinesis_events(cluster_name, cluster_dict, config):
     batch_size = cluster_config['kinesis_events'].get('batch_size', 100)
 
     # Kinesis events module
-    cluster_dict['module']['kinesis_events_{}'.format(cluster_name)] = {
+    cluster_dict['module'][f'kinesis_events_{cluster_name}'] = {
         'source': './modules/tf_kinesis_events',
         'batch_size': batch_size,
         'lambda_production_enabled': kinesis_events_enabled,
-        'lambda_role_id': '${{module.classifier_{}_lambda.role_id}}'.format(cluster_name),
-        'lambda_function_alias_arn': '${{module.classifier_{}_lambda.function_alias_arn}}'.format(
-            cluster_name
-        ),
-        'kinesis_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
+        'lambda_role_id': f'${{module.classifier_{cluster_name}_lambda.role_id}}',
+        'lambda_function_alias_arn':
+        f'${{module.classifier_{cluster_name}_lambda.function_alias_arn}}',
+        'kinesis_stream_arn': f'${{module.kinesis_{cluster_name}.arn}}',
     }
 
     return True

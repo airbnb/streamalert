@@ -70,10 +70,8 @@ def cloudtrail_critical_api_calls(rec):
     if rec['eventName'] in _CRITICAL_EVENTS:
         return True
 
-    if rec['eventName'] == 'UpdateDetector':
-        # Check if GuardDuty is being disabled, where enable is set to False
-        if not rec.get('requestParameters', {}).get('enable', True):
-            return True
+    if rec['eventName'] == 'UpdateDetector' and not rec.get('requestParameters', {}).get('enable', True):
+        return True
 
     if rec['eventName'] in {'PutBucketPublicAccessBlock', 'PutAccountPublicAccessBlock'}:
         # These calls set the policy for what to block for a bucket.
@@ -85,7 +83,4 @@ def cloudtrail_critical_api_calls(rec):
                 return True
 
     # Detect important Organizations calls
-    if rec['eventSource'] == 'organizations.amazonaws.com' and rec['eventName'] in AWS_ORG_EVENTS:
-        return True
-
-    return False
+    return rec['eventSource'] == 'organizations.amazonaws.com' and rec['eventName'] in AWS_ORG_EVENTS

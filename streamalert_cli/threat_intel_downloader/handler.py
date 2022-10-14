@@ -17,15 +17,10 @@ import re
 
 from streamalert.shared.logger import get_logger
 from streamalert.threat_intel_downloader.main import ThreatStream
-from streamalert_cli.helpers import user_input, save_parameter
-from streamalert_cli.utils import (
-    add_memory_arg,
-    add_schedule_expression_arg,
-    add_timeout_arg,
-    CLICommand,
-    generate_subparser,
-    UniqueSortedListAction,
-)
+from streamalert_cli.helpers import save_parameter, user_input
+from streamalert_cli.utils import (CLICommand, UniqueSortedListAction,
+                                   add_memory_arg, add_schedule_expression_arg,
+                                   add_timeout_arg, generate_subparser)
 
 LOGGER = get_logger(__name__)
 
@@ -52,28 +47,22 @@ class ThreatIntelDownloaderCommand(CLICommand):
             subparsers,
             'configure',
             description='Enable, disable, or configure the threat intel downloader function',
-            subcommand=True
-        )
+            subcommand=True)
 
         # Enable/Disable toggle group
-        toggle_group = ti_downloader_configure_parser.add_mutually_exclusive_group(
-            required=False)
+        toggle_group = ti_downloader_configure_parser.add_mutually_exclusive_group(required=False)
 
-        toggle_group.add_argument(
-            '-e',
-            '--enable',
-            dest='enable_threat_intel_downloader',
-            help='Enable the threat intel downloader function',
-            action='store_true'
-        )
+        toggle_group.add_argument('-e',
+                                  '--enable',
+                                  dest='enable_threat_intel_downloader',
+                                  help='Enable the threat intel downloader function',
+                                  action='store_true')
 
-        toggle_group.add_argument(
-            '-d',
-            '--disable',
-            dest='enable_threat_intel_downloader',
-            help='Disable the threat intel downloader function',
-            action='store_false'
-        )
+        toggle_group.add_argument('-d',
+                                  '--disable',
+                                  dest='enable_threat_intel_downloader',
+                                  help='Disable the threat intel downloader function',
+                                  action='store_false')
 
         # Function schedule expression (rate) arg
         add_schedule_expression_arg(ti_downloader_configure_parser)
@@ -89,16 +78,14 @@ class ThreatIntelDownloaderCommand(CLICommand):
             '--table-rcu',
             help='Read capacity units to use for the DynamoDB table',
             type=int,
-            default=10
-        )
+            default=10)
 
         ti_downloader_configure_parser.add_argument(
             '-w',
             '--table-wcu',
             help='Write capacity units to use for the DynamoDB table',
             type=int,
-            default=10
-        )
+            default=10)
 
         ti_downloader_configure_parser.add_argument(
             '-k',
@@ -106,8 +93,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
             help='One or more IOC keys to store in DynamoDB table',
             nargs='+',
             action=UniqueSortedListAction,
-            default=['expiration_ts', 'itype', 'source', 'type', 'value']
-        )
+            default=['expiration_ts', 'itype', 'source', 'type', 'value'])
 
         ti_downloader_configure_parser.add_argument(
             '-f',
@@ -115,8 +101,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
             help='One or more filters to apply when retrieving IOCs from Threat Feed',
             nargs='+',
             action=UniqueSortedListAction,
-            default=['crowdstrike', '@airbnb.com']
-        )
+            default=['crowdstrike', '@airbnb.com'])
 
         ti_downloader_configure_parser.add_argument(
             '-i',
@@ -124,49 +109,41 @@ class ThreatIntelDownloaderCommand(CLICommand):
             help='One or more IOC type defined by the Threat Feed. IOC types can vary by feed',
             nargs='+',
             action=UniqueSortedListAction,
-            default=['domain', 'ip', 'md5']
-        )
+            default=['domain', 'ip', 'md5'])
 
         ti_downloader_configure_parser.add_argument(
             '-x',
             '--excluded-sub-types',
             help='IOC subtypes to be excluded',
             action=UniqueSortedListAction,
-            default=['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip']
-        )
+            default=['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip'])
 
         ti_downloader_configure_parser.add_argument(
             '-a',
             '--autoscale',
             help='Enable auto scaling for the threat intel DynamoDB table',
             default=False,
-            action='store_true'
-        )
+            action='store_true')
 
         ti_downloader_configure_parser.add_argument(
             '--max-read-capacity',
             help='Maximum read capacity to use when auto scaling is enabled',
             type=int,
-            default=5
-        )
+            default=5)
 
         ti_downloader_configure_parser.add_argument(
             '--min-read-capacity',
             help='Minimum read capacity to use when auto scaling is enabled',
             type=int,
-            default=5
-        )
+            default=5)
 
         ti_downloader_configure_parser.add_argument(
             '-u',
             '--target-utilization',
-            help=(
-                'Target percentage of consumed provisioned throughput at a point in time '
-                'to use for auto-scaling the read capacity units'
-            ),
+            help=('Target percentage of consumed provisioned throughput at a point in time '
+                  'to use for auto-scaling the read capacity units'),
             type=int,
-            default=70
-        )
+            default=70)
 
     @staticmethod
     def _setup_threat_intel_auth_subparser(subparsers):
@@ -178,8 +155,7 @@ class ThreatIntelDownloaderCommand(CLICommand):
             subparsers,
             'update-auth',
             description='Enable, disable, or configure the threat intel downloader function',
-            subcommand=True
-        )
+            subcommand=True)
 
     @classmethod
     def handler(cls, options, config):
@@ -192,7 +168,6 @@ class ThreatIntelDownloaderCommand(CLICommand):
         Returns:
             bool: False if errors occurred, True otherwise
         """
-
         def _validate_options(options):
             if not options.interval:
                 LOGGER.error('Missing command line argument --interval')
@@ -232,23 +207,27 @@ def save_api_creds_info(region, overwrite=False):
         'api_user': {
             'description': ('API username to retrieve IOCs via API calls. '
                             'This should be an email address.'),
-            'format': re.compile(r'^[a-zA-Z].*@.*')
+            'format':
+            re.compile(r'^[a-zA-Z].*@.*')
         },
         'api_key': {
             'description': ('API key to retrieve IOCs via API calls. '
                             'This should be a string of 40 alphanumeric characters.'),
-            'format': re.compile(r'^[a-zA-Z0-9]{40}$')
+            'format':
+            re.compile(r'^[a-zA-Z0-9]{40}$')
         }
     }
 
-    creds_dict = {auth_key: user_input(info['description'], False, info['format'])
-                  for auth_key, info in required_creds.items()}
+    creds_dict = {
+        auth_key: user_input(info['description'], False, info['format'])
+        for auth_key, info in required_creds.items()
+    }
 
     description = ('Required credentials for the Threat Intel Downloader')
 
     # Save these to the parameter store
-    saved = save_parameter(region, ThreatStream.CRED_PARAMETER_NAME,
-                           creds_dict, description, overwrite)
+    saved = save_parameter(region, ThreatStream.CRED_PARAMETER_NAME, creds_dict, description,
+                           overwrite)
     if saved:
         LOGGER.info('Threat Intel Downloader credentials were successfully '
                     'saved to parameter store.')

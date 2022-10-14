@@ -1,6 +1,6 @@
 """Alert on the OneLogin event that a user has assumed the role of someone else."""
-from streamalert.shared.rule import disable, rule
 from streamalert.rules_engine.threat_intel import ThreatIntel
+from streamalert.shared.rule import disable, rule
 
 
 # This example is disabled because it requires the threat_intel feature to be

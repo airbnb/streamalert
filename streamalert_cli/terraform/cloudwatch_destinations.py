@@ -45,9 +45,7 @@ def generate_cloudwatch_destinations(cluster_name, cluster_dict, config):
     if not regions:
         LOGGER.error(
             'CloudWatch destinations must be enabled for at '
-            'least one region in the \'%s\' cluster',
-            cluster_name
-        )
+            'least one region in the \'%s\' cluster', cluster_name)
         return False
 
     return _generate(cluster_name, cluster_dict, config, account_ids, regions)
@@ -96,15 +94,14 @@ def _generate(cluster_name, cluster_dict, config, account_ids, regions):
                      '\'cloudwatch\' module.')
         return False
 
-    parent_module_name = 'cloudwatch_logs_destination_{}'.format(cluster_name)
+    parent_module_name = f'cloudwatch_logs_destination_{cluster_name}'
 
     prefix = config['global']['account']['prefix']
-    stream_arn = '${{module.kinesis_{}.arn}}'.format(cluster_name)
+    stream_arn = f'${{module.kinesis_{cluster_name}.arn}}'
 
     # Merge these regions with any that are already in the configuration
     all_regions = sorted(
-        set(cluster_dict['module'][parent_module_name].get('regions', [])).union(set(regions))
-    )
+        set(cluster_dict['module'][parent_module_name].get('regions', [])).union(set(regions)))
 
     cluster_dict['module'][parent_module_name] = {
         'source': './modules/tf_cloudwatch_logs_destination',
@@ -115,26 +112,28 @@ def _generate(cluster_name, cluster_dict, config, account_ids, regions):
     }
 
     for region in all_regions:
-        module_name = 'cloudwatch_logs_destination_{}_{}'.format(cluster_name, region)
+        module_name = f'cloudwatch_logs_destination_{cluster_name}_{region}'
 
         # Merge these account IDs with any that are already in the configuration
-        all_account_ids = set(
-            cluster_dict['module'][module_name].get('account_ids', [])
-        ).union(set(account_ids))
+        all_account_ids = set(cluster_dict['module'][module_name].get('account_ids',
+                                                                      [])).union(set(account_ids))
 
         cluster_dict['module'][module_name] = {
-            'source': './modules/tf_cloudwatch_logs_destination/modules/destination',
-            'prefix': prefix,
-            'cluster': cluster_name,
-            'account_ids': sorted(all_account_ids),
-            'destination_kinesis_stream_arn': stream_arn,
-            'cloudwatch_logs_subscription_role_arn': (
-                '${{module.{}.cloudwatch_logs_subscription_role_arn}}'.format(parent_module_name)
-            ),
+            'source':
+            './modules/tf_cloudwatch_logs_destination/modules/destination',
+            'prefix':
+            prefix,
+            'cluster':
+            cluster_name,
+            'account_ids':
+            sorted(all_account_ids),
+            'destination_kinesis_stream_arn':
+            stream_arn,
+            'cloudwatch_logs_subscription_role_arn':
+            (f'${{module.{parent_module_name}.cloudwatch_logs_subscription_role_arn}}'),
             'providers': {
-                # use the aliased provider for this region from providers.tf
-                'aws': 'aws.{}'.format(region)
-            },
+                'aws': f'aws.{region}'
+            }
         }
 
     return True

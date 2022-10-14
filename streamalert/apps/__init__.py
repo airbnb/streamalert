@@ -31,8 +31,8 @@ class StreamAlertApp:
         """
         try:
             return cls._apps[app_type]
-        except KeyError:
-            raise AppException('App integration does not exist for type: {}'.format(app_type))
+        except KeyError as e:
+            raise AppException(f'App integration does not exist for type: {app_type}') from e
 
     @classmethod
     def get_all_apps(cls):

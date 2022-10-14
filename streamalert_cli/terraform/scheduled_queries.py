@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.shared.config import athena_partition_buckets_tf, athena_query_results_bucket
+from streamalert.shared.config import (athena_partition_buckets_tf,
+                                       athena_query_results_bucket)
 from streamalert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -28,7 +29,7 @@ def generate_scheduled_queries_module_configuration(config):
 
     # FIXME (derek.wang) make consistent with streamalert_athena module,
     # maybe make this dependent on output of that module?
-    database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
+    database = athena_config.get('database_name', f'{prefix}_streamalert')
 
     # The results bucket cannot reference the output from the streamalert_athena module:
     #   '${module.athena_partitioner_iam.results_bucket_arn}'
@@ -54,34 +55,23 @@ def generate_scheduled_queries_module_configuration(config):
     })
 
     # Transforms the query_packs key
-    scheduled_queries_module['query_packs'] = [
-        {
-            'name': key,
-            'schedule_expression': item['schedule_expression'],
-            'description': item['description']
-        }
-        for key, item
-        in streamquery_config.get('packs', {}).items()
-    ]
+    scheduled_queries_module['query_packs'] = [{
+        'name': key,
+        'schedule_expression': item['schedule_expression'],
+        'description': item['description']
+    } for key, item in streamquery_config.get('packs', {}).items()]
 
     # Take lambda_config and move stuff into here, prefixed with "lambda_*"
     lambda_config = streamquery_config.get('lambda_config', {})
     lambda_fields = [
-        'log_level', 'log_retention_days', 'memory', 'timeout',
-        'alarms_enabled', 'error_threshold', 'error_period_secs',
-        'error_evaluation_periods'
+        'log_level', 'log_retention_days', 'memory', 'timeout', 'alarms_enabled', 'error_threshold',
+        'error_period_secs', 'error_evaluation_periods'
     ]
     for field in lambda_fields:
         if field in lambda_config:
-            scheduled_queries_module['lambda_{}'.format(field)] = (
-                lambda_config[field]
-            )
+            scheduled_queries_module[f'lambda_{field}'] = lambda_config[field]
 
     if scheduled_queries_module.get('lambda_alarms_enabled', False):
         scheduled_queries_module['lambda_alarm_actions'] = [monitoring_topic_arn(config)]
 
-    return {
-        'module': {
-            'scheduled_queries': scheduled_queries_module
-        }
-    }
+    return {'module': {'scheduled_queries': scheduled_queries_module}}

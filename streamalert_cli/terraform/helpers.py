@@ -49,25 +49,22 @@ def terraform_runner(config, refresh=True, auto_approve=False, targets=None, des
         tf_command.append('destroy')
         # Terraform destroy has a '-force' flag instead of '-auto-approve'
         LOGGER.info('Destroying infrastructure')
-        tf_command.append('-force={}'.format(str(auto_approve).lower()))
+        tf_command.append(f'-force={str(auto_approve).lower()}')
     else:
         tf_command.append('apply')
         LOGGER.info('%s changes', 'Applying' if auto_approve else 'Planning')
-        tf_command.append('-auto-approve={}'.format(str(auto_approve).lower()))
+        tf_command.append(f'-auto-approve={str(auto_approve).lower()}')
 
-    tf_command.append('-refresh={}'.format(str(refresh).lower()))
+    tf_command.append(f'-refresh={str(refresh).lower()}')
 
     if targets:
-        tf_command.extend('-target={}'.format(x) for x in targets)
+        tf_command.extend(f'-target={x}' for x in targets)
 
     # Build the deployment package so the Lambda does not produce an error
     # TODO: maybe remove this as packaging improvements progress
     deployment_package = package.LambdaPackage(config)
     package_path = deployment_package.create()
-    if not package_path:
-        return False
-
-    return run_command(tf_command, cwd=config.build_directory)
+    return run_command(tf_command, cwd=config.build_directory) if package_path else False
 
 
 def terraform_check():
@@ -76,10 +73,8 @@ def terraform_check():
     Returns:
         bool: Success or failure of the command ran
     """
-    error_message = (
-        'Terraform not found! Please install and add to your $PATH:\n'
-        '\texport PATH=$PATH:/usr/local/terraform/bin'
-    )
+    error_message = ('Terraform not found! Please install and add to your $PATH:\n'
+                     '\texport PATH=$PATH:/usr/local/terraform/bin')
     return run_command(
         ['terraform', 'version'],
         error_message=error_message,

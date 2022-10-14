@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # streamalert documentation build configuration file, created by
 # sphinx-quickstart on Mon Jan 23 21:19:26 2017.
@@ -30,7 +29,6 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -55,9 +53,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'StreamAlert'
-copyright = u'Airbnb, Inc.'
-author = u''
+project = 'StreamAlert'
+copyright = 'Airbnb, Inc.'
+author = ''
 
 # Use a custom favicon
 html_favicon = '../images/sa-square-logo-standalone.png'
@@ -67,9 +65,8 @@ html_favicon = '../images/sa-square-logo-standalone.png'
 # built documents.
 
 # We want both the |version| and the |release| to be the full X.Y.Z version string.
-with open('../../streamalert/__init__.py', 'r') as version_file:
-    release = re.search(
-        r"^__version__ = ['\"]([^'\"]+)['\"]", version_file.read(), re.MULTILINE).group(1)
+with open('../../streamalert/__init__.py', encoding="utf-8") as version_file:
+    release = re.search(r"^__version__ = ['\"]([^'\"]+)['\"]", version_file.read(), re.MULTILINE)[1]
 
 version = release
 
@@ -78,7 +75,7 @@ version = release
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -90,7 +87,6 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
-
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -110,12 +106,10 @@ todo_include_todos = False
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 
-
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'streamalertdoc'
-
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -141,20 +135,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'streamalert.tex', u'streamalert Documentation',
-     u'airbnb', 'manual'),
+    (master_doc, 'streamalert.tex', 'streamalert Documentation', 'airbnb', 'manual'),
 ]
-
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'streamalert', u'streamalert Documentation',
-     [author], 1)
-]
-
+man_pages = [(master_doc, 'streamalert', 'streamalert Documentation', [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -162,7 +150,6 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'streamalert', u'streamalert Documentation',
-     author, 'streamalert', 'One line description of project.',
-     'Miscellaneous'),
+    (master_doc, 'streamalert', 'streamalert Documentation', author, 'streamalert',
+     'One line description of project.', 'Miscellaneous'),
 ]

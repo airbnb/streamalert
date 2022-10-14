@@ -16,20 +16,20 @@ limitations under the License.
 from datetime import datetime, timedelta
 from os import environ as env
 
-from streamalert.shared.publisher import AlertPublisherRepository
 from streamalert.rules_engine.alert_forwarder import AlertForwarder
 from streamalert.rules_engine.threat_intel import ThreatIntel
-from streamalert.shared import resources, RULES_ENGINE_FUNCTION_NAME as FUNCTION_NAME
+from streamalert.shared import RULES_ENGINE_FUNCTION_NAME as FUNCTION_NAME
+from streamalert.shared import resources
 from streamalert.shared.alert import Alert
 from streamalert.shared.config import load_config
 from streamalert.shared.importer import import_folders
 from streamalert.shared.logger import get_logger
 from streamalert.shared.lookup_tables.core import LookupTables
 from streamalert.shared.metrics import MetricLogger
+from streamalert.shared.publisher import AlertPublisherRepository
 from streamalert.shared.rule import Rule
 from streamalert.shared.rule_table import RuleTable
 from streamalert.shared.stats import RuleStatisticTracker
-
 
 LOGGER = get_logger(__name__)
 
@@ -47,9 +47,8 @@ class RulesEngine:
 
     def __init__(self, *rule_paths):
         RulesEngine._config = RulesEngine._config or load_config()
-        RulesEngine._threat_intel = (
-            RulesEngine._threat_intel or ThreatIntel.load_from_config(self.config)
-        )
+        RulesEngine._threat_intel = (RulesEngine._threat_intel
+                                     or ThreatIntel.load_from_config(self.config))
         # Instantiate the alert forwarder to handle sending alerts to the alert processor
         RulesEngine._alert_forwarder = RulesEngine._alert_forwarder or AlertForwarder()
 
@@ -64,10 +63,8 @@ class RulesEngine:
 
         import_folders(*rule_paths)
 
-        self._rule_stat_tracker = RuleStatisticTracker(
-            'STREAMALERT_TRACK_RULE_STATS' in env,
-            'LAMBDA_RUNTIME_DIR' in env
-        )
+        self._rule_stat_tracker = RuleStatisticTracker('STREAMALERT_TRACK_RULE_STATS' in env,
+                                                       'LAMBDA_RUNTIME_DIR' in env)
         self._required_outputs_set = resources.get_required_outputs()
         self._load_rule_table(self.config)
 
@@ -110,25 +107,22 @@ class RulesEngine:
             return
 
         now = datetime.utcnow()
-        refresh_delta = timedelta(
-            minutes=rule_staging_config.get(
-                'cache_refresh_minutes',
-                cls._RULE_TABLE_DEFAULT_REFRESH_MIN
-            )
-        )
+        refresh_delta = timedelta(minutes=rule_staging_config.get(
+            'cache_refresh_minutes', cls._RULE_TABLE_DEFAULT_REFRESH_MIN))
 
         # The rule table will need 'refreshed' if the refresh interval has been surpassed
         needs_refresh = cls._RULE_TABLE_LAST_REFRESH + refresh_delta < now
 
         if not needs_refresh:
-            LOGGER.debug('Rule table does not need refreshed (last refresh time: %s; '
-                         'current time: %s)', cls._RULE_TABLE_LAST_REFRESH, now)
+            LOGGER.debug(
+                'Rule table does not need refreshed (last refresh time: %s; '
+                'current time: %s)', cls._RULE_TABLE_LAST_REFRESH, now)
             return
 
         LOGGER.info('Refreshing rule table (last refresh time: %s; current time: %s)',
                     cls._RULE_TABLE_LAST_REFRESH, now)
 
-        table_name = '{}_streamalert_rules'.format(env['STREAMALERT_PREFIX'])
+        table_name = f"{env['STREAMALERT_PREFIX']}_streamalert_rules"
         cls._rule_table = RuleTable(table_name)
         cls._RULE_TABLE_LAST_REFRESH = now
 
@@ -155,9 +149,8 @@ class RulesEngine:
             # In the case of CloudTrail, a top level key has been
             # observed as either a map with subkeys, or null.
             if key not in record:
-                LOGGER.debug(
-                    'The required subkey %s is not found when trying to process %s: \n%s',
-                    key, rule.name, record)
+                LOGGER.debug('The required subkey %s is not found when trying to process %s: \n%s',
+                             key, rule.name, record)
                 return False
             if not isinstance(record[key], dict):
                 LOGGER.debug(
@@ -195,24 +188,25 @@ class RulesEngine:
         # Define the outputs
         outputs = self._configure_outputs(payload['record'], rule)
 
-        alert = Alert(
-            rule.name, payload['record'], outputs,
-            cluster=payload['cluster'],
-            context=rule.context,
-            log_source=payload['log_schema_type'],
-            log_type=payload['data_type'],
-            merge_by_keys=rule.merge_by_keys,
-            merge_window=timedelta(minutes=rule.merge_window_mins),
-            publishers=self._configure_publishers(rule, outputs),
-            rule_description=rule.description,
-            source_entity=payload['resource'],
-            source_service=payload['service'],
-            staged=rule.is_staged(self._rule_table)
-        )
+        alert = Alert(rule.name,
+                      payload['record'],
+                      outputs,
+                      cluster=payload['cluster'],
+                      context=rule.context,
+                      log_source=payload['log_schema_type'],
+                      log_type=payload['data_type'],
+                      merge_by_keys=rule.merge_by_keys,
+                      merge_window=timedelta(minutes=rule.merge_window_mins),
+                      publishers=self._configure_publishers(rule, outputs),
+                      rule_description=rule.description,
+                      source_entity=payload['resource'],
+                      source_service=payload['service'],
+                      staged=rule.is_staged(self._rule_table))
 
-        LOGGER.info('Rule \'%s\' triggered alert \'%s\' on log type \'%s\' from resource \'%s\' '
-                    'in service \'%s\'', rule.name, alert.alert_id, payload['log_schema_type'],
-                    payload['resource'], payload['service'])
+        LOGGER.info(
+            'Rule \'%s\' triggered alert \'%s\' on log type \'%s\' from resource \'%s\' '
+            'in service \'%s\'', rule.name, alert.alert_id, payload['log_schema_type'],
+            payload['resource'], payload['service'])
 
         return alert
 
@@ -237,8 +231,7 @@ class RulesEngine:
 
         return {
             output
-            for output_source in output_sources
-            for output in output_source
+            for output_source in output_sources for output in output_source
             if self._check_valid_output(output)
         }
 
@@ -258,11 +251,8 @@ class RulesEngine:
             args_list.append(rule.context)
 
         return [
-            output
-            for dynamic_output_function in rule.dynamic_outputs_set
-            for output in cls._call_dynamic_output_function(
-                dynamic_output_function, rule.name, args_list
-            )
+            output for dynamic_output_function in rule.dynamic_outputs_set for output in
+            cls._call_dynamic_output_function(dynamic_output_function, rule.name, args_list)
         ]
 
     @staticmethod
@@ -285,10 +275,8 @@ class RulesEngine:
             outputs = function(*args_list)
         except Exception:  # pylint: disable=broad-except
             # Logger error and return []
-            LOGGER.error(
-                "Exception when calling dynamic_output %s for rule %s",
-                function.__name__, rule_name
-            )
+            LOGGER.error("Exception when calling dynamic_output %s for rule %s", function.__name__,
+                         rule_name)
         else:
             LOGGER.debug("function %s returned: %s", function.__name__, outputs)
 
@@ -296,11 +284,7 @@ class RulesEngine:
                 # Case 1: outputs is a string
                 #   return outputs wrapped in a list
                 outputs = [outputs]
-            elif isinstance(outputs, list):
-                # Case 2: outputs is a list
-                #   return outputs
-                pass
-            else:
+            elif not isinstance(outputs, list):
                 # Case 3: outputs is neither a string or a list
                 #   return an empty list
                 outputs = []
@@ -317,25 +301,23 @@ class RulesEngine:
             True (bool): Output is valid
             False (bool): Output is invalid
         """
-        valid = False
 
         if not isinstance(output, str):
             # Case 1: output is not a string
             #   return False
             LOGGER.warning("Output (%s) is not a string", output)
-            valid = False
-        elif isinstance(output, str) and ":" not in output:
+            return False
+
+        if ":" not in output:
             # Case 2: output is a string but missing ":"
             #   Log warning and return False
             LOGGER.warning("Output (%s) is missing ':'", output)
 
-            valid = False
-        else:
-            # Case 3: output is a string and contains ":"
-            # return True
-            valid = True
+            return False
 
-        return valid
+        # Case 3: output is a string and contains ":"
+        # return True
+        return True
 
     @classmethod
     def _configure_publishers(cls, rule, requested_outputs):
@@ -429,9 +411,7 @@ class RulesEngine:
         if isinstance(string_or_reference, str):
             publisher_name = string_or_reference
         else:
-            publisher_name = AlertPublisherRepository.get_publisher_name(
-                string_or_reference
-            )
+            publisher_name = AlertPublisherRepository.get_publisher_name(string_or_reference)
 
         if AlertPublisherRepository.has_publisher(publisher_name):
             return publisher_name
@@ -441,10 +421,8 @@ class RulesEngine:
     @classmethod
     def is_publisher_declaration(cls, string_or_reference):
         """Returns TRUE if the requested publisher is valid (a string name or reference)"""
-        return (
-            isinstance(string_or_reference, str) or
-            AlertPublisherRepository.is_valid_publisher(string_or_reference)
-        )
+        return (isinstance(string_or_reference, str)
+                or AlertPublisherRepository.is_valid_publisher(string_or_reference))
 
     @classmethod
     def add_publisher(cls, publisher_reference, current_list):
@@ -496,8 +474,7 @@ class RulesEngine:
                 if not rule.check_matchers(payload['record']):
                     continue
 
-                alert = self._rule_analysis(payload, rule)
-                if alert:
+                if alert := self._rule_analysis(payload, rule):
                     alerts.append(alert)
 
         self._alert_forwarder.send_alerts(alerts)

@@ -36,10 +36,8 @@ class KinesisClient:
         query = query_pack.query_pack_configuration  # type: QueryPackConfiguration
 
         query_execution_id = query_pack.query_execution.query_execution_id
-        console_link = (
-            'https://us-east-1.console.aws.amazon.com/athena/home'
-            '?region=us-east-1#query/history/{}'
-        ).format(query_execution_id)
+        console_link = f'https://us-east-1.console.aws.amazon.com/athena/home?region=us-east-1#query/history/{query_execution_id}'
+
         streamquery_result = {
             "streamquery_schema_version": self.STREAMQUERY_SCHEMA_VERSION,
             "execution": {
@@ -60,20 +58,17 @@ class KinesisClient:
             },
         }
 
-        self._logger.info(
-            'Sending StreamQuery record to kinesis stream: {}'.format(self._kinesis_stream)
-        )
+        self._logger.info(f'Sending StreamQuery record to kinesis stream: {self._kinesis_stream}')
+
         self._logger.debug(json.dumps(streamquery_result, indent=2, separators=(', ', ': ')))
 
-        response = self._client.put_records(
-            Records=[
-                {
-                    'Data': json.dumps(streamquery_result),
-                    'PartitionKey': 'partitionKeyFoo'
-                },
-            ],
-            StreamName=self._kinesis_stream
-        )
+        response = self._client.put_records(Records=[
+            {
+                'Data': json.dumps(streamquery_result),
+                'PartitionKey': 'partitionKeyFoo'
+            },
+        ],
+                                            StreamName=self._kinesis_stream)
         self._logger.debug(response)
 
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
@@ -94,10 +89,8 @@ class KinesisClient:
         query = query_pack.query_pack_configuration  # type: QueryPackConfiguration
 
         query_execution_id = query_pack.query_execution.query_execution_id
-        console_link = (
-            'https://us-east-1.console.aws.amazon.com/athena/home'
-            '?region=us-east-1#query/history/{}'
-        ).format(query_execution_id)
+        console_link = f'https://us-east-1.console.aws.amazon.com/athena/home?region=us-east-1#query/history/{query_execution_id}'
+
         streamquery_result = {
             "streamquery_schema_version": self.STREAMQUERY_SCHEMA_VERSION,
             "execution": {
@@ -121,20 +114,17 @@ class KinesisClient:
             },
         }
 
-        self._logger.info(
-            'Sending StreamQuery record to kinesis stream: {}'.format(self._kinesis_stream)
-        )
+        self._logger.info(f'Sending StreamQuery record to kinesis stream: {self._kinesis_stream}')
+
         self._logger.debug(json.dumps(streamquery_result, indent=2, separators=(', ', ': ')))
 
-        response = self._client.put_records(
-            Records=[
-                {
-                    'Data': json.dumps(streamquery_result),
-                    'PartitionKey': 'partitionKeyFoo'
-                },
-            ],
-            StreamName=self._kinesis_stream
-        )
+        response = self._client.put_records(Records=[
+            {
+                'Data': json.dumps(streamquery_result),
+                'PartitionKey': 'partitionKeyFoo'
+            },
+        ],
+                                            StreamName=self._kinesis_stream)
         self._logger.debug(response)
 
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:

@@ -13,12 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.scheduled_queries.config.lambda_conf import get_streamquery_env_vars
+from streamalert.scheduled_queries.config.lambda_conf import \
+    get_streamquery_env_vars
 from streamalert.scheduled_queries.config.services import ApplicationServices
 
 
 class ScheduledQueries:
-
     def __init__(self):
         # Ready all services
         self._services = ApplicationServices()
@@ -54,12 +54,8 @@ class ScheduledQueries:
 
         # Start the function
         self._services.logger.info('Running scheduled_queries lambda handler')
-        self._services.logger.debug(
-            'Invocation event: %s', event
-        )
-        self._services.logger.debug(
-            'ServiceContainer parameters: %s', get_streamquery_env_vars()
-        )
+        self._services.logger.debug('Invocation event: %s', event)
+        self._services.logger.debug('ServiceContainer parameters: %s', get_streamquery_env_vars())
 
         # Load up any prior state from the event passed in from the StepFunction
         state_manager_loader = self._services.create_step_function_state_manager()

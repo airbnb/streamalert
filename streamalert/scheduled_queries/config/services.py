@@ -20,16 +20,18 @@ from botocore import client as botocore_client
 from botocore.exceptions import ProfileNotFound
 
 from streamalert.scheduled_queries.command.processor import CommandProcessor
-from streamalert.scheduled_queries.config.lambda_conf import get_streamquery_env_vars
-from streamalert.scheduled_queries.container.container import ServiceDefinition, ServiceContainer
+from streamalert.scheduled_queries.config.lambda_conf import \
+    get_streamquery_env_vars
+from streamalert.scheduled_queries.container.container import (
+    ServiceContainer, ServiceDefinition)
 from streamalert.scheduled_queries.handlers.athena import AthenaClient
-from streamalert.scheduled_queries.query_packs.configuration import QueryPackRepository
+from streamalert.scheduled_queries.query_packs.configuration import \
+    QueryPackRepository
 from streamalert.scheduled_queries.query_packs.manager import (
-    QueryPackExecutionContext,
-    QueryPacksManagerFactory,
-    QueryParameterGenerator,
-)
-from streamalert.scheduled_queries.state.state_manager import StateManager, StepFunctionStateManager
+    QueryPackExecutionContext, QueryPacksManagerFactory,
+    QueryParameterGenerator)
+from streamalert.scheduled_queries.state.state_manager import (
+    StateManager, StepFunctionStateManager)
 from streamalert.scheduled_queries.streamalert.kinesis import KinesisClient
 from streamalert.scheduled_queries.support.clock import Clock
 from streamalert.shared.config import load_config
@@ -61,11 +63,7 @@ class ApplicationServices:
         return self._service_container.get('clock')
 
     def create_step_function_state_manager(self):
-        return StepFunctionStateManager(
-            self.state_manager,
-            self.logger,
-            self.clock
-        )
+        return StepFunctionStateManager(self.state_manager, self.logger, self.clock)
 
 
 # pylint: disable=too-many-statements
@@ -95,46 +93,34 @@ def _load_config(_):
 
 
 def _make_command_processor(container):
-    return CommandProcessor(
-        logger=container.get('logger'),
-        kinesis=container.get('streamalert_forwarder'),
-        state_manager=container.get('state_manager'),
-        manager_factory=container.get('query_pack_manager_factory')
-    )
+    return CommandProcessor(logger=container.get('logger'),
+                            kinesis=container.get('streamalert_forwarder'),
+                            state_manager=container.get('state_manager'),
+                            manager_factory=container.get('query_pack_manager_factory'))
 
 
 def _make_logger(container):
     logger = logging.getLogger(container.get_parameter('command_name'))
     logger.setLevel(container.get_parameter('log_level').upper())
-    logging.basicConfig(
-        format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s'
-    )
+    logging.basicConfig(format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
     return logger
 
 
 def _make_kinesis(container):
-    return KinesisClient(
-        logger=container.get('logger'),
-        client=container.get('boto3_kinesis_client'),
-        kinesis_stream=container.get_parameter('kinesis_stream')
-    )
+    return KinesisClient(logger=container.get('logger'),
+                         client=container.get('boto3_kinesis_client'),
+                         kinesis_stream=container.get_parameter('kinesis_stream'))
 
 
 def _make_cache(container):
-    cache = StateManager(
-        logger=container.get('logger')
-    )
-
-    return cache
+    return StateManager(logger=container.get('logger'))
 
 
 def _make_athena(container):
-    return AthenaClient(
-        logger=container.get('logger'),
-        client=container.get('boto3_athena_client'),
-        database=container.get_parameter('athena_database'),
-        results_bucket=container.get_parameter('athena_results_bucket')
-    )
+    return AthenaClient(logger=container.get('logger'),
+                        client=container.get('boto3_athena_client'),
+                        database=container.get_parameter('athena_database'),
+                        results_bucket=container.get_parameter('athena_results_bucket'))
 
 
 def _make_param_generator(container):
@@ -145,30 +131,23 @@ def _make_query_pack_repo(container):
     repo = QueryPackRepository
 
     config = container.get('config')
-    query_directories = [
-        item
-        for item in config['global']['general'].get('scheduled_query_locations', [])
-    ]
+    query_directories = list(config['global']['general'].get('scheduled_query_locations', []))
 
     repo.load_packs(query_directories)
     return repo
 
 
 def _make_query_pack_factory(container):
-    return QueryPacksManagerFactory(
-        container.get('query_pack_execution_context')
-    )
+    return QueryPacksManagerFactory(container.get('query_pack_execution_context'))
 
 
 def _make_execution_context(container):
-    return QueryPackExecutionContext(
-        cache=container.get('state_manager'),
-        athena=container.get('athena'),
-        logger=container.get('logger'),
-        params=container.get('query_parameter_generator'),
-        repository=container.get('query_pack_repository'),
-        clock=container.get('clock')
-    )
+    return QueryPackExecutionContext(cache=container.get('state_manager'),
+                                     athena=container.get('athena'),
+                                     logger=container.get('logger'),
+                                     params=container.get('query_parameter_generator'),
+                                     repository=container.get('query_pack_repository'),
+                                     clock=container.get('clock'))
 
 
 def _make_clock(_):
@@ -179,11 +158,7 @@ def _make_boto3_athena_client(container):
     region = container.get_parameter('aws_region')
     logger = container.get('logger')
 
-    config = botocore_client.Config(
-        connect_timeout=5,
-        read_timeout=5,
-        region_name=region
-    )
+    config = botocore_client.Config(connect_timeout=5, read_timeout=5, region_name=region)
 
     session_kwargs = {}
     try:
@@ -200,11 +175,7 @@ def _make_boto3_kinesis_client(container):
     region = container.get_parameter('aws_region')
     logger = container.get('logger')
 
-    config = botocore_client.Config(
-        connect_timeout=5,
-        read_timeout=5,
-        region_name=region
-    )
+    config = botocore_client.Config(connect_timeout=5, read_timeout=5, region_name=region)
 
     session_kwargs = {}
     try:

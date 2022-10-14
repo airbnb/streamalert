@@ -45,7 +45,7 @@ Download StreamAlert
 .. code-block:: bash
 
   cd streamalert
-  python3.7 -m venv venv
+  python3.9 -m venv venv
   source venv/bin/activate
 
 3. Install the StreamAlert requirements:

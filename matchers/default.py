@@ -18,23 +18,25 @@ You can also supply multiple matchers for many common scenarios:
 
 class AwsGuardDutyMatcher:
     """A class contains matchers for AWS GuardDuty service"""
-
     @classmethod
     def guard_duty(cls, rec):
         return rec['detail-type'] == 'GuardDuty Finding'
+
+
+class StreamQueryMatcher:
+    """A class contains matchers for StreamQuery"""
+    def streamquery_queury_name(*packs):
+        def _matcher(rec):
+            return rec.get('execution', {}).get('name', '') in set(packs)
+
+        return _matcher
 
 
 class OsqueryMatcher:
     """A class defines contains matchers for Osquery events"""
 
     _EVENT_TYPE_LOGIN = 7
-    _RUNLEVELS = {
-        '',
-        'LOGIN',
-        'reboot',
-        'shutdown',
-        'runlevel'
-    }
+    _RUNLEVELS = {'', 'LOGIN', 'reboot', 'shutdown', 'runlevel'}
 
     @classmethod
     def added(cls, rec):
@@ -47,16 +49,13 @@ class OsqueryMatcher:
         located at /usr/share/osquery/packs/incident-response.conf on the linux host.
         Update the pack name (rec['name']) if it is different.
         """
-        return (
-            rec['name'] == 'pack_incident-response_last' and
-            int(rec['columns']['type']) == cls._EVENT_TYPE_LOGIN and
-            (rec['columns']['username'] not in cls._RUNLEVELS)
-        )
+        return (rec['name'] == 'pack_incident-response_last'
+                and int(rec['columns']['type']) == cls._EVENT_TYPE_LOGIN
+                and (rec['columns']['username'] not in cls._RUNLEVELS))
 
 
 class AwsConfigMatcher:
     """Contains Matchers relevant to AWS Config"""
-
     @staticmethod
     def is_config_compliance(rec):
         """Check if the record event is from config compliance
@@ -67,11 +66,9 @@ class AwsConfigMatcher:
         Returns:
             bool: True if from config and not in testMode else False
         """
-        return (
-            rec['eventSource'] == 'config.amazonaws.com'
-            and rec['eventName'] == 'PutEvaluations'
-            and not rec['requestParameters']['testMode']
-        )
+        return (rec['eventSource'] == 'config.amazonaws.com'
+                and rec['eventName'] == 'PutEvaluations'
+                and not rec['requestParameters']['testMode'])
 
     @staticmethod
     def is_auto_remediation(rec):
@@ -82,8 +79,6 @@ class AwsConfigMatcher:
         Returns:
             bool: True if auto_remediation event else False
         """
-        return (
-            rec['eventName'] == 'StartAutomationExecution'
-            and rec['eventSource'] == 'ssm.amazonaws.com'
-            and rec['sourceIPAddress'] == 'config.amazonaws.com'
-        )
+        return (rec['eventName'] == 'StartAutomationExecution'
+                and rec['eventSource'] == 'ssm.amazonaws.com'
+                and rec['sourceIPAddress'] == 'config.amazonaws.com')

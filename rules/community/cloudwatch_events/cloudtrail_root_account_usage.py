@@ -2,11 +2,7 @@
 from streamalert.shared.rule import rule
 
 
-@rule(
-    logs=['cloudwatch:events'],
-    req_subkeys={
-        'detail': ['userIdentity', 'eventType']
-    })
+@rule(logs=['cloudwatch:events'], req_subkeys={'detail': ['userIdentity', 'eventType']})
 def cloudtrail_root_account_usage(rec):
     """
     author:           airbnb_csirt

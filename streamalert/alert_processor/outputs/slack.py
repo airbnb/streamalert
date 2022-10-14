@@ -16,15 +16,11 @@ limitations under the License.
 import html
 from collections import OrderedDict
 
-from streamalert.alert_processor.helpers import compose_alert, elide_string_middle
+from streamalert.alert_processor.helpers import (compose_alert,
+                                                 elide_string_middle)
 from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    OutputRequestFailure,
-    StreamAlertOutput
-)
+    OutputDispatcher, OutputProperty, OutputRequestFailure, StreamAlertOutput)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -56,7 +52,7 @@ class SlackOutput(OutputDispatcher):
         return OrderedDict([
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this Slack integration '
-                                        '(ie: channel, group, etc)')),
+                            '(ie: channel, group, etc)')),
             ('url',
              OutputProperty(description='the full Slack webhook url, including the secret',
                             mask_input=True,
@@ -87,11 +83,11 @@ class SlackOutput(OutputDispatcher):
                 break
 
             # Find the closest line break prior to this index
-            index = alert_text[:cls.MAX_MESSAGE_SIZE+1].rfind('\n')
+            index = alert_text[:cls.MAX_MESSAGE_SIZE + 1].rfind('\n')
 
             # If a new line was not found, split on the closest space instead
             if index == -1:
-                index = alert_text[:cls.MAX_MESSAGE_SIZE+1].rfind(' ')
+                index = alert_text[:cls.MAX_MESSAGE_SIZE + 1].rfind(' ')
 
             # If there is no good place to split the message, just use the max index
             if index == -1:
@@ -99,7 +95,7 @@ class SlackOutput(OutputDispatcher):
 
             # Append the message part up until this index, and move to the next chunk
             yield alert_text[:index]
-            alert_text = alert_text[index+1:]
+            alert_text = alert_text[index + 1:]
 
     @classmethod
     def _format_default_attachments(cls, alert, alert_publication, fallback_text):
@@ -124,12 +120,12 @@ class SlackOutput(OutputDispatcher):
         for index, message in enumerate(messages, start=1):
             title = 'Record:'
             if len(messages) > 1:
-                title = 'Record (Part {} of {}):'.format(index, len(messages))
+                title = f'Record (Part {index} of {len(messages)}):'
             rule_desc = ''
             # Only print the rule description on the first attachment
             if index == 1:
                 rule_desc = rule_description
-                rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
+                rule_desc = f'*Rule Description:*\n{rule_desc}\n'
 
             # https://api.slack.com/docs/message-attachments#attachment_structure
             attachments.append({
@@ -142,8 +138,8 @@ class SlackOutput(OutputDispatcher):
             })
 
             if index == cls.MAX_ATTACHMENTS:
-                LOGGER.warning('%s: %d-part message truncated to %d parts',
-                               alert_publication, len(messages), cls.MAX_ATTACHMENTS)
+                LOGGER.warning('%s: %d-part message truncated to %d parts', alert_publication,
+                               len(messages), cls.MAX_ATTACHMENTS)
                 break
 
         return attachments
@@ -274,22 +270,16 @@ class SlackOutput(OutputDispatcher):
             # Enforce maximum text length; make sure to check size AFTER escaping in case
             # extra escape characters pushes it over the limit
             if len(attachment['text']) > cls.MAX_MESSAGE_SIZE:
-                LOGGER.warning(
-                    'Custom attachment was truncated to length %d. Full message: %s',
-                    cls.MAX_MESSAGE_SIZE,
-                    attachment['text']
-                )
+                LOGGER.warning('Custom attachment was truncated to length %d. Full message: %s',
+                               cls.MAX_MESSAGE_SIZE, attachment['text'])
                 attachment['text'] = elide_string_middle(attachment['text'], cls.MAX_MESSAGE_SIZE)
 
             attachments.append(attachment)
 
             # Enforce maximum number of attachments
             if len(attachments) >= cls.MAX_ATTACHMENTS:
-                LOGGER.warning(
-                    'Message with %d custom attachments was truncated to %d attachments',
-                    len(custom_slack_attachments),
-                    cls.MAX_ATTACHMENTS
-                )
+                LOGGER.warning('Message with %d custom attachments was truncated to %d attachments',
+                               len(custom_slack_attachments), cls.MAX_ATTACHMENTS)
                 break
 
         return attachments
@@ -312,25 +302,18 @@ class SlackOutput(OutputDispatcher):
                     Record (Part 1 of 2):
                     ...
         """
-        default_header_text = '*StreamAlert Rule Triggered: {}*'.format(alert.rule_name)
+        default_header_text = f'*StreamAlert Rule Triggered: {alert.rule_name}*'
         header_text = alert_publication.get('@slack.text', default_header_text)
 
         if '@slack.attachments' in alert_publication:
             attachments = cls._standardize_custom_attachments(
-                alert_publication.get('@slack.attachments')
-            )
+                alert_publication.get('@slack.attachments'))
         else:
             # Default attachments
             attachments = cls._format_default_attachments(alert, alert_publication, header_text)
 
-        full_message = {
-            'text': header_text,
-            'mrkdwn': True,
-            'attachments': attachments
-        }
-
         # Return the json dict payload to be sent to slack
-        return full_message
+        return {'text': header_text, 'mrkdwn': True, 'attachments': attachments}
 
     @classmethod
     def _json_to_slack_mrkdwn(cls, json_values, indent_count):
@@ -351,7 +334,7 @@ class SlackOutput(OutputDispatcher):
         elif isinstance(json_values, list):
             all_lines = cls._json_list_to_text(json_values, tab, indent_count)
         else:
-            all_lines.append('{}'.format(json_values))
+            all_lines.append(f'{json_values}')
 
         return all_lines
 
@@ -371,17 +354,17 @@ class SlackOutput(OutputDispatcher):
         all_lines = []
         for key, value in sorted(json_values.items()):
             if isinstance(value, (dict, list)) and value:
-                all_lines.append('{}*{}:*'.format(tab*indent_count, key))
-                all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count+1))
+                all_lines.append(f'{tab * indent_count}*{key}:*')
+                all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count + 1))
             else:
-                new_lines = cls._json_to_slack_mrkdwn(value, indent_count+1)
+                new_lines = cls._json_to_slack_mrkdwn(value, indent_count + 1)
                 if len(new_lines) == 1:
-                    all_lines.append('{}*{}:* {}'.format(tab*indent_count, key, new_lines[0]))
+                    all_lines.append(f'{tab * indent_count}*{key}:* {new_lines[0]}')
                 elif new_lines:
-                    all_lines.append('{}*{}:*'.format(tab*indent_count, key))
+                    all_lines.append(f'{tab * indent_count}*{key}:*')
                     all_lines.extend(new_lines)
                 else:
-                    all_lines.append('{}*{}:* {}'.format(tab*indent_count, key, value))
+                    all_lines.append(f'{tab * indent_count}*{key}:* {value}')
 
         return all_lines
 
@@ -401,17 +384,17 @@ class SlackOutput(OutputDispatcher):
         all_lines = []
         for index, value in enumerate(json_values):
             if isinstance(value, (dict, list)) and value:
-                all_lines.append('{}*[{}]*'.format(tab*indent_count, index+1))
-                all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count+1))
+                all_lines.append(f'{tab * indent_count}*[{index + 1}]*')
+                all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count + 1))
             else:
-                new_lines = cls._json_to_slack_mrkdwn(value, indent_count+1)
+                new_lines = cls._json_to_slack_mrkdwn(value, indent_count + 1)
                 if len(new_lines) == 1:
-                    all_lines.append('{}*[{}]* {}'.format(tab*indent_count, index+1, new_lines[0]))
+                    all_lines.append(f'{tab * indent_count}*[{index + 1}]* {new_lines[0]}')
                 elif new_lines:
-                    all_lines.append('{}*[{}]*'.format(tab*indent_count, index+1))
+                    all_lines.append(f'{tab * indent_count}*[{index + 1}]*')
                     all_lines.extend(new_lines)
                 else:
-                    all_lines.append('{}*[{}]* {}'.format(tab*indent_count, index+1, value))
+                    all_lines.append(f'{tab * indent_count}*[{index + 1}]* {value}')
 
         return all_lines
 

@@ -20,22 +20,20 @@ def cloudtrail_snapshot_or_ami_made_public(rec):
     if rec['eventName'] == 'ModifyImageAttribute':
         # For AMIs
         params = rec.get('requestParameters', {})
-        if params.get('attributeType', '') == 'launchPermission':
-            if 'add' in params.get('launchPermission', {}):
-                items = params['launchPermission']['add'].get('items', [])
-                for item in items:
-                    if item.get('group', '') == 'all':
-                        return True
+        if params.get('attributeType', '') == 'launchPermission' and 'add' in params.get('launchPermission', {}):
+            items = params['launchPermission']['add'].get('items', [])
+            for item in items:
+                if item.get('group', '') == 'all':
+                    return True
 
     # Check EBS snapshots
     if rec['eventName'] == 'ModifySnapshotAttribute':
         params = rec.get('requestParameters', {})
-        if params.get('attributeType', '') == 'CREATE_VOLUME_PERMISSION':
-            if 'add' in params.get('createVolumePermission', {}):
-                items = params['createVolumePermission']['add'].get('items', [])
-                for item in items:
-                    if item.get('group', '') == 'all':
-                        return True
+        if params.get('attributeType', '') == 'CREATE_VOLUME_PERMISSION' and 'add' in params.get('createVolumePermission', {}):
+            items = params['createVolumePermission']['add'].get('items', [])
+            for item in items:
+                if item.get('group', '') == 'all':
+                    return True
 
     # Check RDS snapshots
     if rec['eventName'] == 'ModifyDBClusterSnapshotAttribute':

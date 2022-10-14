@@ -16,13 +16,10 @@ limitations under the License.
 from collections import OrderedDict
 
 from streamalert.alert_processor.helpers import compose_alert
-from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    StreamAlertOutput
-)
+from streamalert.alert_processor.outputs.output_base import (OutputDispatcher,
+                                                             OutputProperty,
+                                                             StreamAlertOutput)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -47,7 +44,7 @@ class KomandOutput(OutputDispatcher):
         return OrderedDict([
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
-                                        'Komand integration')),
+                            'Komand integration')),
             ('komand_auth_token',
              OutputProperty(description='the auth token for this Komand integration. '
                             'Example: 00000000-0000-0000-0000-000000000000',

@@ -18,8 +18,7 @@ import json
 import re
 import time
 import zlib
-
-from mock import patch
+from unittest.mock import patch
 
 from streamalert.classifier.parsers import ParserBase
 from streamalert.shared import rule
@@ -125,39 +124,33 @@ class TestEvent:
             bool: True if the proper keys are present
         """
         if not isinstance(self._event, dict):
-            self.error = 'Invalid type for event: {}; should be dict'.format(type(self._event))
+            self.error = f'Invalid type for event: {type(self._event)}; should be dict'
             return False
 
         test_event_keys = set(self._event)
         if not self.REQUIRED_KEYS.issubset(test_event_keys):
             req_key_diff = self.REQUIRED_KEYS.difference(test_event_keys)
-            missing_keys = ', '.join('\'{}\''.format(key) for key in req_key_diff)
-            self.error = 'Missing required key(s) in test event: {}'.format(missing_keys)
+            missing_keys = ', '.join(f"\'{key}\'" for key in req_key_diff)
+            self.error = f'Missing required key(s) in test event: {missing_keys}'
             return False
 
         if not (self.data or self.override_record):
             self.error = 'Test event must contain either \'data\' or \'override_record\''
             return False
 
-        if not self._event.get('classify_only'):
-            if 'trigger_rules' not in test_event_keys:
-                self.error = (
-                    'Test events that are not \'classify_only\' should have \'trigger_rules\' '
-                    'defined'
-                )
-                return False
-
-        if self.log not in config['logs']:
-            self.error = 'No defined schema in config for log type: {}'.format(self.log)
+        if not self._event.get('classify_only') and 'trigger_rules' not in test_event_keys:
+            self.error = (
+                'Test events that are not \'classify_only\' should have \'trigger_rules\' '
+                'defined')
             return False
 
-        # Log a warning if there are extra keys declared in the test log, but this is not an error
-        key_diff = test_event_keys.difference(
-            self.REQUIRED_KEYS | self.OPTIONAL_KEYS | self.ACCEPTABLE_DATA_KEYS
-        )
+        if self.log not in config['logs']:
+            self.error = f'No defined schema in config for log type: {self.log}'
+            return False
 
-        if key_diff:
-            extra_keys = ', '.join('\'{}\''.format(key) for key in key_diff)
+        if key_diff := test_event_keys.difference(self.REQUIRED_KEYS | self.OPTIONAL_KEYS
+                                                  | self.ACCEPTABLE_DATA_KEYS):
+            extra_keys = ', '.join(f"\'{key}\'" for key in key_diff)
             LOGGER.warning('Additional unnecessary keys in test event: %s', extra_keys)
 
         return True
@@ -206,11 +199,11 @@ class TestEvent:
         if isinstance(rec_data, dict):
             rec_data = json.dumps(rec_data)
         elif not isinstance(self.data, str):
-            self.error = 'Invalid data type: {}'.format(type(rec_data))
+            self.error = f'Invalid data type: {type(rec_data)}'
             return False
 
         if self._event['service'] not in {'s3', 'kinesis', 'sns', 'streamalert_app'}:
-            self.error = 'Unsupported service: {}'.format(self.service)
+            self.error = f'Unsupported service: {self.service}'
             return False
 
         # Set a formatted record for this particular service
@@ -245,7 +238,7 @@ class TestEvent:
                         'size': len(data)
                     },
                     'bucket': {
-                        'arn': 'arn:aws:s3:::{}'.format(self.source),
+                        'arn': f'arn:aws:s3:::{self.source}',
                         'name': self.source,
                         'ownerIdentity': {
                             'principalId': 'EXAMPLE'
@@ -254,9 +247,7 @@ class TestEvent:
                     's3SchemaVersion': '1.0'
                 },
                 'responseElements': {
-                    'x-amz-id-2': (
-                        'EXAMPLE123/foo/bar'
-                    ),
+                    'x-amz-id-2': ('EXAMPLE123/foo/bar'),
                     'x-amz-request-id': '...'
                 },
                 'awsRegion': 'us-east-1',
@@ -285,9 +276,7 @@ class TestEvent:
                 },
                 'invokeIdentityArn': 'arn:aws:iam::EXAMPLE',
                 'eventName': 'aws:kinesis:record',
-                'eventSourceARN': 'arn:aws:kinesis:us-east-1:123456789012:stream/{}'.format(
-                    self.source
-                ),
+                'eventSourceARN': f'arn:aws:kinesis:us-east-1:123456789012:stream/{self.source}',
                 'eventSource': 'aws:kinesis',
                 'awsRegion': 'us-east-1'
             }
@@ -295,7 +284,7 @@ class TestEvent:
         if self.service == 'sns':
             return {
                 'EventVersion': '1.0',
-                'EventSubscriptionArn': 'arn:aws:sns:us-east-1:123456789012:{}'.format(self.source),
+                'EventSubscriptionArn': f'arn:aws:sns:us-east-1:123456789012:{self.source}',
                 'EventSource': 'aws:sns',
                 'Sns': {
                     'SignatureVersion': '1',
@@ -312,7 +301,7 @@ class TestEvent:
                     },
                     'Type': 'Notification',
                     'UnsubscribeUrl': '...',
-                    'TopicArn': 'arn:aws:sns:us-east-1:123456789012:{}'.format(self.source),
+                    'TopicArn': f'arn:aws:sns:us-east-1:123456789012:{self.source}',
                     'Subject': '...'
                 }
             }
@@ -331,20 +320,16 @@ class TestEvent:
                        last_hour rule helper.
         """
         # declare all helper functions here, they should always return a string
-        record_helpers = {
-            'last_hour': lambda: str(int(time.time()) - 60)
-        }
+        record_helpers = {'last_hour': lambda: str(int(time.time()) - 60)}
         helper_regex = re.compile(r'<helper:(?P<helper>\w+)>')
 
         def _find_and_apply_helpers(test_record):
             """Apply any helpers to the passed in test_record"""
             for key, value in test_record.items():
                 if isinstance(value, str):
-                    test_record[key] = re.sub(
-                        helper_regex,
-                        lambda match: record_helpers[match.group('helper')](),
-                        value
-                    )
+                    test_record[key] = re.sub(helper_regex,
+                                              lambda match: record_helpers[match.group('helper')](),
+                                              value)
                 elif isinstance(value, dict):
                     _find_and_apply_helpers(test_record[key])
 
@@ -354,8 +339,7 @@ class TestEvent:
     def _setup_s3_mock(data):
         s3_mocker = patch('streamalert.classifier.payload.s3.boto3.resource').start()
         s3_mocker.return_value.Bucket.return_value.download_fileobj = (
-            lambda k, d: d.write(json.dumps(data).encode())
-        )
+            lambda k, d: d.write(json.dumps(data).encode()))
 
     def _apply_defaults(self, config):
         """Apply default values to the given test event"""
@@ -376,5 +360,5 @@ class TestEvent:
 
         # Overwrite the fields included in the 'override_record' field,
         # and update the test event with a full 'data' key
-        default_test_event.update(self.override_record)
+        default_test_event |= self.override_record
         self._event['data'] = default_test_event

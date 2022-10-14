@@ -17,13 +17,10 @@ from collections import OrderedDict
 
 from cbapi.response import BannedHash, Binary, CbResponseAPI
 
-from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    StreamAlertOutput
-)
+from streamalert.alert_processor.outputs.output_base import (OutputDispatcher,
+                                                             OutputProperty,
+                                                             StreamAlertOutput)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -45,7 +42,7 @@ class CarbonBlackOutput(OutputDispatcher):
         return OrderedDict([
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this'
-                                        ' carbonblack output')),
+                            ' carbonblack output')),
             ('url',
              OutputProperty(description='URL to the CB Response server [https://hostname]',
                             mask_input=False,
@@ -94,17 +91,14 @@ class CarbonBlackOutput(OutputDispatcher):
                     return True
                 # If the binary is banned and disabled, begin the banning hash operation
                 banned_hash = client.select(BannedHash, binary_hash)
-                banned_hash.enabled = True
-                banned_hash.save()
             else:
                 # Create a new BannedHash object to be saved
                 banned_hash = client.create(BannedHash)
                 # Begin the banning hash operation
                 banned_hash.md5hash = binary.md5
                 banned_hash.text = "Banned from StreamAlert"
-                banned_hash.enabled = True
-                banned_hash.save()
-
-            return banned_hash.enabled is True
+            banned_hash.enabled = True
+            banned_hash.save()
+            return banned_hash.enabled
         LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
         return False

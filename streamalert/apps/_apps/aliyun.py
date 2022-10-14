@@ -13,16 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
 import json
 import re
+from datetime import datetime
 
-from aliyunsdkcore.client import AcsClient
-from aliyunsdkcore.acs_exception.exceptions import ServerException, ClientException
 from aliyunsdkactiontrail.request.v20171204 import LookupEventsRequest
+from aliyunsdkcore.acs_exception.exceptions import (ClientException,
+                                                    ServerException)
+from aliyunsdkcore.client import AcsClient
 
 from . import AppIntegration, StreamAlertApp, get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -59,7 +59,7 @@ class AliyunApp(AppIntegration):
     _READ_TIMEOUT = 15
 
     def __init__(self, event, context):
-        super(AliyunApp, self).__init__(event, context)
+        super().__init__(event, context)
         auth = self._config.auth
         self.client = AcsClient(auth['access_key_id'], auth['access_key_secret'], auth['region_id'])
 
@@ -160,15 +160,15 @@ class AliyunApp(AppIntegration):
     @classmethod
     def _required_auth_info(cls):
         """Required credentials for access to the resources"""
-
         def region_validator(region):
             """Region names pulled from https://www.alibabacloud.com/help/doc-detail/40654.htm"""
 
-            if region in {'cn-qingdao', 'cn-beijing', 'cn-zhangjiakou', 'cn-huhehaote',
-                          'cn-hangzhou', 'cn-shanghai', 'cn-shenzhen', 'cn-hongkong',
-                          'ap-southeast-1', 'ap-southeast-2', 'ap-southeast-3', 'ap-southeast-5',
-                          'ap-northeast-1', 'ap-south-1', 'us-west-1', 'us-east-1',
-                          'eu-central-1', 'me-east-1'}:
+            if region in {
+                    'cn-qingdao', 'cn-beijing', 'cn-zhangjiakou', 'cn-huhehaote', 'cn-hangzhou',
+                    'cn-shanghai', 'cn-shenzhen', 'cn-hongkong', 'ap-southeast-1', 'ap-southeast-2',
+                    'ap-southeast-3', 'ap-southeast-5', 'ap-northeast-1', 'ap-south-1', 'us-west-1',
+                    'us-east-1', 'eu-central-1', 'me-east-1'
+            }:
                 return region
             return False
 
@@ -176,22 +176,25 @@ class AliyunApp(AppIntegration):
             'access_key_id': {
                 'description': ('The access key id generated for a RAM user. This '
                                 'should be a string of alphanumeric characters.'),
-                'format': re.compile(r'.*')
+                'format':
+                re.compile(r'.*')
             },
             'access_key_secret': {
                 'description': ('The access key secret generated for a RAM user. This '
                                 'should be a string of alphanumeric characters.'),
-                'format': re.compile(r'.*')
+                'format':
+                re.compile(r'.*')
             },
             'region_id': {
                 'description': ('The region for the Aliyun API. This should be '
                                 'a string like \'ap-northeast-1\'.'),
-                'format': region_validator
+                'format':
+                region_validator
             },
         }
 
     @classmethod
-    def _sleep_seconds(cls):
+    def _sleep_seconds(cls): # pylint: disable=arguments-differ
         """Return the number of seconds this polling function should sleep for
         between requests to avoid failed requests. The Aliyun documentation doesn't
         list limits on the requests portion of the actionTrail feature, so the only

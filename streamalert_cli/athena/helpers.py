@@ -15,12 +15,11 @@ limitations under the License.
 """
 import re
 
+from streamalert.shared.alert import Alert
 from streamalert.shared.artifact_extractor import Artifact
 from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.logger import get_logger
-from streamalert.shared.alert import Alert
 from streamalert_cli.helpers import record_to_schema
-
 
 LOGGER = get_logger(__name__)
 
@@ -61,24 +60,21 @@ def add_partition_statements(partitions, bucket, table_name):
         string: The ALTER TABLE statements to add the new partitions
     """
     # Each add partition statement starting with "ALTER TABLE"
-    initial_statement = 'ALTER TABLE {} ADD IF NOT EXISTS'.format(table_name)
+    initial_statement = f'ALTER TABLE {table_name} ADD IF NOT EXISTS'
     initial_statement_len = len(initial_statement)
 
     # The statement will be stored in a list of string format before join into a string
     statement = [initial_statement]
     statement_len = initial_statement_len
 
-    fmt_values = {
-        'bucket': bucket,
-        'table_name': table_name
-    }
+    fmt_values = {'bucket': bucket, 'table_name': table_name}
 
     for partition in sorted(partitions):
         parts = PARTITION_PARTS.match(partition)
         if not parts:
             continue
 
-        fmt_values.update(parts.groupdict())
+        fmt_values |= parts.groupdict()
         partition_stmt = PARTITION_STMT.format(**fmt_values)
         partition_stmt_len = len(partition_stmt)
 
@@ -117,7 +113,7 @@ def logs_schema_to_athena_schema(log_schema, ddl_statement=True):
         if ddl_statement:
             # Backticks are needed for backward compatibility when creating Athena
             # table via Athena DDL query.
-            key_name = '`{}`'.format(key_name)
+            key_name = f'`{key_name}`'
         if key_type == {}:
             # For empty dicts
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[dict]
@@ -150,6 +146,7 @@ def unique_values_from_query(query_result):
         for value in list(result.values())
     }
 
+
 def format_schema_tf(schema):
     """Format schema for an Athena table for terraform.
 
@@ -165,15 +162,13 @@ def format_schema_tf(schema):
         key_type = schema[key_name]
         if isinstance(key_type, str):
             formatted_schema.append((key_name.lower(), key_type))
-        # Account for nested structs
         elif isinstance(key_type, dict):
-            struct_schema = ','.join(
-                '{0}:{1}'.format(sub_key.lower(), key_type[sub_key])
-                for sub_key in sorted(key_type.keys())
-            )
-            formatted_schema.append((key_name.lower(), 'struct<{}>'.format(struct_schema)))
+            struct_schema = ','.join(f'{sub_key.lower()}:{key_type[sub_key]}'
+                                     for sub_key in sorted(key_type.keys()))
+            formatted_schema.append((key_name.lower(), f'struct<{struct_schema}>'))
 
     return formatted_schema
+
 
 def generate_alerts_table_schema():
     """Generate the schema for alerts table in terraform by using a fake alert
@@ -200,9 +195,7 @@ def generate_data_table_schema(config, table, schema_override=None):
         athena_schema (dict): Equivalent Athena schema used for generating create table statement
     """
     enabled_logs = FirehoseClient.load_enabled_log_sources(
-        config['global']['infrastructure']['firehose'],
-        config['logs']
-    )
+        config['global']['infrastructure']['firehose'], config['logs'])
 
     # Convert special characters in schema name to underscores
     sanitized_table_name = FirehoseClient.sanitized_value(table)
@@ -220,16 +213,12 @@ def generate_data_table_schema(config, table, schema_override=None):
 
     athena_schema = logs_schema_to_athena_schema(sanitized_schema, False)
 
-    # Add envelope keys to Athena Schema
-    configuration_options = log_info.get('configuration')
-    if configuration_options:
-        envelope_keys = configuration_options.get('envelope_keys')
-        if envelope_keys:
+    if configuration_options := log_info.get('configuration'):
+        if envelope_keys := configuration_options.get('envelope_keys'):
             sanitized_envelope_key_schema = FirehoseClient.sanitize_keys(envelope_keys)
             # Note: this key is wrapped in backticks to be Hive compliant
             athena_schema['streamalert:envelope_keys'] = logs_schema_to_athena_schema(
-                sanitized_envelope_key_schema, False
-            )
+                sanitized_envelope_key_schema, False)
 
     # Handle Schema overrides
     #   This is useful when an Athena schema needs to differ from the normal log schema
@@ -237,17 +226,16 @@ def generate_data_table_schema(config, table, schema_override=None):
         for override in schema_override:
             column_name, column_type = override.split('=')
             # Columns are escaped to avoid Hive issues with special characters
-            column_name = '{}'.format(column_name)
+            column_name = f'{column_name}'
             if column_name in athena_schema:
                 athena_schema[column_name] = column_type
                 LOGGER.info('Applied schema override: %s:%s', column_name, column_type)
             else:
-                LOGGER.error(
-                    'Schema override column %s not found in Athena Schema, skipping',
-                    column_name
-                )
+                LOGGER.error('Schema override column %s not found in Athena Schema, skipping',
+                             column_name)
 
     return format_schema_tf(athena_schema)
+
 
 def generate_artifacts_table_schema():
     """Generate the schema for artifacts table in terraform by using a test artifact instance
@@ -255,13 +243,11 @@ def generate_artifacts_table_schema():
     Returns:
         athena_schema (dict): Equivalent Athena schema used for generating create table statement
     """
-    artifact = artifact = Artifact(
-        normalized_type='test_normalized_type',
-        value='test_value',
-        source_type='test_source_type',
-        record_id='test_record_id',
-        function=None
-    )
+    artifact = artifact = Artifact(normalized_type='test_normalized_type',
+                                   value='test_value',
+                                   source_type='test_source_type',
+                                   record_id='test_record_id',
+                                   function=None)
     schema = record_to_schema(artifact.artifact)
     athena_schema = logs_schema_to_athena_schema(schema, False)
 

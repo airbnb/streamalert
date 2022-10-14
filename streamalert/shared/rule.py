@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import ast
-from copy import deepcopy
 import hashlib
 import inspect
 import json
+from copy import deepcopy
 
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -34,6 +33,7 @@ def rule(**opts):
     def decorator(rule_func):
         """Rule decorator logic that returns instance of Rule"""
         return Rule(rule_func, **opts)
+
     return decorator
 
 
@@ -70,21 +70,16 @@ class Rule:
 
         if not (self.logs or self.datatypes):
             raise RuleCreationError(
-                "Invalid rule [{}] - rule must have either 'logs' "
-                "or 'datatypes' declared'".format(self.name)
+                f"Invalid rule [{self.name}] - rule must have either 'logs' or 'datatypes' declared'"
             )
 
         if self.name in Rule._rules:
-            raise RuleCreationError('Rule [{}] already defined'.format(self.name))
+            raise RuleCreationError(f'Rule [{self.name}] already defined')
 
         Rule._rules[self.name] = self
 
     def __str__(self):
-        return '<Rule: {}; outputs: {}; disabled: {}>'.format(
-            self.name,
-            self.outputs,
-            self.disabled
-        )
+        return f'<Rule: {self.name}; outputs: {self.outputs}; disabled: {self.disabled}>'
 
     def __repr__(self):
         return self.__str__()
@@ -98,10 +93,8 @@ class Rule:
         Returns:
             bools: True if all matchers apply to this record, False otherwise
         """
-        if not self.matchers:
-            return True
-
-        return all(self._run_matcher(func, record) for func in self.matchers)
+        return all(self._run_matcher(func, record)
+                   for func in self.matchers) if self.matchers else True
 
     @classmethod
     def _run_matcher(cls, func, record):
@@ -134,10 +127,7 @@ class Rule:
             return False
 
         rule_info = rule_table.rule_info(self.name)
-        if not rule_info:
-            return False
-
-        return rule_info.get('Staged', False)
+        return rule_info.get('Staged', False) if rule_info else False
 
     def process(self, record):
         """Process will call this rule's function on the passed record
@@ -200,16 +190,13 @@ class Rule:
     def outputs_set(self):
         return set(self.outputs or [])
 
-
     @property
     def dynamic_outputs_set(self):
         return set(self.dynamic_outputs or [])
 
     @classmethod
     def disabled_rules(cls):
-        return {
-            name for name in cls._rules if cls._rules[name].disabled
-        }
+        return {name for name, rule in cls._rules.items() if rule.disabled}
 
     @classmethod
     def disable(cls, name):
@@ -225,10 +212,11 @@ class Rule:
 
     @classmethod
     def rules_with_datatypes(cls):
-        return [item for item in list(Rule._rules.values())
-                if item.datatypes and not item.disabled]
+        return [item for item in list(Rule._rules.values()) if item.datatypes and not item.disabled]
 
     @classmethod
     def rules_for_log_type(cls, log_type):
-        return [item for item in list(Rule._rules.values())
-                if (item.logs is None or log_type in item.logs) and not item.disabled]
+        return [
+            item for item in list(Rule._rules.values())
+            if (item.logs is None or log_type in item.logs) and not item.disabled
+        ]

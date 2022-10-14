@@ -13,19 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from abc import ABCMeta, abstractmethod
-from copy import deepcopy
 import csv
-from fnmatch import fnmatch
+import io
 import json
 import logging
 import re
-import io
+from abc import ABCMeta, abstractmethod
+from copy import deepcopy
+from fnmatch import fnmatch
 
 import jmespath
 
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
@@ -38,8 +37,7 @@ def parser(cls):
     parser_type = cls.type()
     if not parser_type:
         raise NotImplementedError(
-            '{}: Parser does not define a class property for \'_type\''.format(cls.__name__)
-        )
+            f"{cls.__name__}: Parser does not define a class property for \'_type\'")
 
     PARSERS[parser_type] = cls
     return cls
@@ -62,12 +60,7 @@ class ParserBase(metaclass=ABCMeta):
     _type = None
 
     ENVELOPE_KEY = 'streamalert:envelope_keys'
-    _TYPE_MAP = {
-        'string': str,
-        'integer': int,
-        'float': float,
-        'boolean': bool
-    }
+    _TYPE_MAP = {'string': str, 'integer': int, 'float': float, 'boolean': bool}
 
     def __init__(self, options, log_type=None):
         """Setup required parser properties
@@ -203,11 +196,8 @@ class ParserBase(metaclass=ABCMeta):
 
             # Ensure the pattern key is in the record
             if field not in record:
-                LOGGER.error(
-                    'Declared log pattern key [%s] does exist in record:\n%s',
-                    field,
-                    record
-                )
+                LOGGER.error('Declared log pattern key [%s] does exist in record:\n%s', field,
+                             record)
                 return False
 
             value = record.get(field)
@@ -247,28 +237,20 @@ class ParserBase(metaclass=ABCMeta):
 
         schema_keys = set(schema)
 
-        keys = set(record) if not optionals else set(record).union(optionals)
+        keys = set(record).union(optionals) if optionals else set(record)
 
         if is_envelope and not schema_keys.issubset(keys):
             LOGGER.debug('Missing keys in record envelope: %s', schema_keys - keys)
             return False
 
         if not is_envelope and keys != schema_keys:
-            expected = schema_keys - keys
-            if expected:
-                LOGGER.debug(
-                    'Expected keys not found in record: %s', ', '.join(
-                        str(val) for val in sorted(expected, key=str)
-                    )
-                )
+            if expected := schema_keys - keys:
+                LOGGER.debug('Expected keys not found in record: %s',
+                             ', '.join(str(val) for val in sorted(expected, key=str)))
 
-            found = keys - schema_keys
-            if found:
-                LOGGER.debug(
-                    'Found keys not expected in record: %s', ', '.join(
-                        str(val) for val in sorted(found, key=str)
-                    )
-                )
+            if found := keys - schema_keys:
+                LOGGER.debug('Found keys not expected in record: %s',
+                             ', '.join(str(val) for val in sorted(found, key=str)))
             return False
 
         # Nested key check
@@ -283,11 +265,9 @@ class ParserBase(metaclass=ABCMeta):
             match = match and cls._key_check(record.get(key, {}), key_type)
 
         if not match and LOGGER_DEBUG_ENABLED:
-            LOGGER.debug(
-                'Nested key check failure. Schema:\n%s\nRecord:\n%s',
-                json.dumps(schema, indent=2, sort_keys=True),
-                json.dumps(record, indent=2, sort_keys=True)
-            )
+            LOGGER.debug('Nested key check failure. Schema:\n%s\nRecord:\n%s',
+                         json.dumps(schema, indent=2, sort_keys=True),
+                         json.dumps(record, indent=2, sort_keys=True))
 
         return match
 
@@ -334,16 +314,16 @@ class ParserBase(metaclass=ABCMeta):
                 try:
                     record[key] = int(record[key])
                 except (ValueError, TypeError):
-                    LOGGER.error('Invalid schema. Value for key [%s] is not an int: %s',
-                                 key, record[key])
+                    LOGGER.error('Invalid schema. Value for key [%s] is not an int: %s', key,
+                                 record[key])
                     return False
 
             elif value == 'float':
                 try:
                     record[key] = float(record[key])
                 except (ValueError, TypeError):
-                    LOGGER.error('Invalid schema. Value for key [%s] is not a float: %s',
-                                 key, record[key])
+                    LOGGER.error('Invalid schema. Value for key [%s] is not a float: %s', key,
+                                 record[key])
                     return False
 
             elif value == 'boolean':
@@ -358,8 +338,8 @@ class ParserBase(metaclass=ABCMeta):
                 # Ensure a list is actually a list, but do not check list value types
                 # since we do not currently support type checking list elements
                 if not isinstance(record[key], list):
-                    LOGGER.error('Invalid schema. Value for key [%s] is not a list: %s',
-                                 key, record[key])
+                    LOGGER.error('Invalid schema. Value for key [%s] is not a list: %s', key,
+                                 record[key])
                     return False
 
             else:
@@ -383,10 +363,8 @@ class ParserBase(metaclass=ABCMeta):
         """
         # TODO (ryandeivert): check the value of types defined in the schema to ensure
         # they are valid before erroring out at the _convert_type stage
-        values = [
-            (self._schema, self._optional_top_level_keys),
-            (self._envelope_schema, self._optional_envelope_keys)
-        ]
+        values = [(self._schema, self._optional_top_level_keys),
+                  (self._envelope_schema, self._optional_envelope_keys)]
 
         return all(optionals.issubset(schema) for schema, optionals in values)
 
@@ -458,8 +436,8 @@ class ParserBase(metaclass=ABCMeta):
         """
         # Ensure the schema is defined properly. Invalid schemas will not be used
         if not self._validate_schema():
-            LOGGER.error('Schema definition is not valid (%s):\n%s',
-                         self._schema_type, self._schema)
+            LOGGER.error('Schema definition is not valid (%s):\n%s', self._schema_type,
+                         self._schema)
             return False
 
         data_copy = None
@@ -478,8 +456,8 @@ class ParserBase(metaclass=ABCMeta):
                 data_copy = data
 
         # Check to make sure any non-optional envelope keys exist before proceeding
-        if not self._key_check(data_copy, self._envelope_schema,
-                               self._optional_envelope_keys, True):
+        if not self._key_check(data_copy, self._envelope_schema, self._optional_envelope_keys,
+                               True):
             return False
 
         # Get the envelope and try to convert the value to the proper type(s)
@@ -492,9 +470,8 @@ class ParserBase(metaclass=ABCMeta):
 
         for record, valid in self._parse(data_copy):
             valid = valid and self._key_check(record, self._schema, self._optional_top_level_keys)
-            valid = valid and self._convert_type(
-                record, self._schema, self._optional_top_level_keys
-            )
+            valid = valid and self._convert_type(record, self._schema,
+                                                 self._optional_top_level_keys)
             valid = valid and self._matches_log_patterns(record, self._log_patterns, envelope)
             self._add_parse_result(record, valid, envelope)
 
@@ -616,10 +593,10 @@ class JSONParser(ParserBase):
         records = []
         if self._json_path:
             records = self._extract_via_json_path(data)
-        elif self.json_regex_key:
+        else:
             records = self._extract_via_json_regex_key(data)
 
-        return records if records else [(data, False)]
+        return records or [(data, False)]
 
 
 @parser
@@ -653,12 +630,10 @@ class CSVParser(ParserBase):
         try:
             if isinstance(data, bytes):
                 data = data.decode()
-            return csv.reader(
-                io.StringIO(data),
-                delimiter=self.delimiter,
-                quotechar=self.quotechar,
-                escapechar=self.escapechar
-            )
+            return csv.reader(io.StringIO(data),
+                              delimiter=self.delimiter,
+                              quotechar=self.quotechar,
+                              escapechar=self.escapechar)
         except (ValueError, csv.Error):
             return False
 
@@ -705,7 +680,7 @@ class CSVParser(ParserBase):
             try:
                 for row in reader:
                     parsed_payload = self._parse_row(row, schema)
-                    result = parsed_payload if parsed_payload else row
+                    result = parsed_payload or row
                     # Append the result and whether or not it was a success
                     csv_payloads.append((result, result is parsed_payload))
             except csv.Error:
@@ -838,7 +813,4 @@ class SyslogParser(ParserBase):
                 Examples: [({'key': 'value'}, True)]
         """
         match = self._regex.search(data)
-        if not match:
-            return [(data, False)]
-
-        return [(match.groupdict(), True)]
+        return [(match.groupdict(), True)] if match else [(data, False)]

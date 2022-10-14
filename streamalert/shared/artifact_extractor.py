@@ -13,19 +13,17 @@ limitations under the License.
 import re
 import uuid
 
-from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared import CLASSIFIER_FUNCTION_NAME, config
-from streamalert.shared.metrics import MetricLogger
-from streamalert.shared.normalize import Normalizer, CONST_ARTIFACTS_FLAG
+from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.logger import get_logger
-
+from streamalert.shared.metrics import MetricLogger
+from streamalert.shared.normalize import CONST_ARTIFACTS_FLAG, Normalizer
 
 LOGGER = get_logger(__name__)
 
 
 class Artifact:
     """Encapsulation of a single Artifact that is extracted from an input record."""
-
     def __init__(self, function, record_id, source_type, normalized_type, value):
         """Create a new Artifact based on normalized information
 
@@ -77,18 +75,15 @@ class ArtifactExtractor:
 
     def __init__(self, artifacts_fh_stream_name):
         self._dst_firehose_stream_name = artifacts_fh_stream_name
-        self._artifacts = list()
+        self._artifacts = []
 
         ArtifactExtractor._config = ArtifactExtractor._config or config.load_config(validate=True)
 
         ArtifactExtractor._firehose_client = (
-            ArtifactExtractor._firehose_client or FirehoseClient.get_client(
-                prefix=self.config['global']['account']['prefix'],
-                artifact_extractor_config=self.config['global'].get(
-                    'infrastructure', {}
-                ).get('artifact_extractor', {})
-            )
-        )
+            ArtifactExtractor._firehose_client
+            or FirehoseClient.get_client(prefix=self.config['global']['account']['prefix'],
+                                         artifact_extractor_config=self.config['global'].get(
+                                             'infrastructure', {}).get('artifact_extractor', {})))
 
     @property
     def config(self):
@@ -147,14 +142,14 @@ class ArtifactExtractor:
                         continue
 
                     for val in value.get('values', []):
-                        artifacts.append(Artifact(
-                            function=value.get('function'),
-                            record_id=record_id,
-                            # source_type=self._source_type,
-                            source_type=source_type,
-                            normalized_type=key,
-                            value=val
-                        ))
+                        artifacts.append(
+                            Artifact(
+                                function=value.get('function'),
+                                record_id=record_id,
+                                # source_type=self._source_type,
+                                source_type=source_type,
+                                normalized_type=key,
+                                value=val))
 
         return artifacts
 
@@ -179,10 +174,7 @@ class ArtifactExtractor:
 
         LOGGER.debug('Extracted %d artifact(s)', len(self._artifacts))
 
-        MetricLogger.log_metric(
-            CLASSIFIER_FUNCTION_NAME,
-            MetricLogger.EXTRACTED_ARTIFACTS,
-            len(self._artifacts)
-        )
+        MetricLogger.log_metric(CLASSIFIER_FUNCTION_NAME, MetricLogger.EXTRACTED_ARTIFACTS,
+                                len(self._artifacts))
 
         self.firehose.send_artifacts(self._artifacts, self._dst_firehose_stream_name)

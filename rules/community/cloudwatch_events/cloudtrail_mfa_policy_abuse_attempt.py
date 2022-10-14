@@ -1,16 +1,9 @@
 """Alert on calls made without MFA that may be attempting to abuse a flawed enforcement policy"""
 from streamalert.shared.rule import rule
 
-
 _IAM_ACTIONS = {
-    'CreateUser',
-    'CreateAccessKey',
-    'DetachUserPolicy',
-    'DetachGroupPolicy',
-    'RemoveUserFromGroup',
-    'DeleteUserPolicy',
-    'PutGroupPolicy',
-    'PutUserPolicy'
+    'CreateUser', 'CreateAccessKey', 'DetachUserPolicy', 'DetachGroupPolicy', 'RemoveUserFromGroup',
+    'DeleteUserPolicy', 'PutGroupPolicy', 'PutUserPolicy'
 }
 
 _EVENT_NAMES = {'CreateVirtualMFADevice', 'EnableMFADevice'}
@@ -66,7 +59,4 @@ def cloudtrail_mfa_policy_abuse_attempt(rec):
     # - 'AccessDenied'
     # - 'EntityAlreadyExists': Can't create another MFA device with the same name.
     # - 'LimitExceeded': Can't enable a second MFA device for the same user.
-    if rec['errorCode'] and rec['eventName'] in _EVENT_NAMES:
-        return True
-
-    return False
+    return bool(rec['errorCode'] and rec['eventName'] in _EVENT_NAMES)

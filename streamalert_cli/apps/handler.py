@@ -18,15 +18,10 @@ import string
 from streamalert.apps import StreamAlertApp
 from streamalert.shared.logger import get_logger
 from streamalert_cli.apps.helpers import save_app_auth_info
-from streamalert_cli.utils import (
-    add_memory_arg,
-    add_schedule_expression_arg,
-    add_timeout_arg,
-    CLICommand,
-    CLUSTERS,
-    generate_subparser,
-    set_parser_epilog,
-)
+from streamalert_cli.utils import (CLUSTERS, CLICommand, add_memory_arg,
+                                   add_schedule_expression_arg,
+                                   add_timeout_arg, generate_subparser,
+                                   set_parser_epilog)
 
 LOGGER = get_logger(__name__)
 
@@ -46,12 +41,10 @@ class AppCommand(CLICommand):
     @staticmethod
     def _setup_app_list_subparser(subparsers):
         """Add the app list subparser: manage.py app list"""
-        generate_subparser(
-            subparsers,
-            'list',
-            description='List all configured app functions, grouped by cluster',
-            subcommand=True
-        )
+        generate_subparser(subparsers,
+                           'list',
+                           description='List all configured app functions, grouped by cluster',
+                           subcommand=True)
 
     @classmethod
     def _setup_app_new_subparser(cls, subparsers):
@@ -60,13 +53,10 @@ class AppCommand(CLICommand):
             subparsers,
             'new',
             description='Create a new StreamAlert app to poll logs from various services',
-            subcommand=True
-        )
+            subcommand=True)
 
-        set_parser_epilog(
-            app_new_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(app_new_parser,
+                          epilog=('''\
                 Example:
 
                     manage.py app new \\
@@ -76,21 +66,17 @@ class AppCommand(CLICommand):
                       --schedule-expression 'rate(2 hours)' \\
                       --timeout 60 \\
                       --memory 256
-                '''
-            )
-        )
+                '''))
 
         cls._add_default_app_args(app_new_parser)
 
         app_types = sorted(StreamAlertApp.get_all_apps())
 
         # App type options
-        app_new_parser.add_argument(
-            'type',
-            choices=app_types,
-            metavar='APP_TYPE',
-            help='Type of app being configured: {}'.format(', '.join(app_types))
-        )
+        app_new_parser.add_argument('type',
+                                    choices=app_types,
+                                    metavar='APP_TYPE',
+                                    help=f"Type of app being configured: {', '.join(app_types)}")
 
         # Function schedule expression (rate) arg
         add_schedule_expression_arg(app_new_parser)
@@ -108,21 +94,16 @@ class AppCommand(CLICommand):
             subparsers,
             'update-auth',
             description='Update the authentication information for an existing app',
-            subcommand=True
-        )
+            subcommand=True)
 
-        set_parser_epilog(
-            app_update_parser,
-            epilog=(
-                '''\
+        set_parser_epilog(app_update_parser,
+                          epilog=('''\
                 Example:
 
                     manage.py app update-auth \\
                       --cluster prod \\
                       --name duo_prod_collector
-                '''
-            )
-        )
+                '''))
 
         cls._add_default_app_args(app_update_parser)
 
@@ -131,13 +112,11 @@ class AppCommand(CLICommand):
         """Add the default arguments to the app integration parsers"""
 
         # App integration cluster options
-        app_parser.add_argument(
-            '-c',
-            '--cluster',
-            choices=CLUSTERS,
-            required=True,
-            help='Cluster to perform this action against'
-        )
+        app_parser.add_argument('-c',
+                                '--cluster',
+                                choices=CLUSTERS,
+                                required=True,
+                                help='Cluster to perform this action against')
 
         # Validate the name being used to make sure it does not contain specific characters
         def _validate_name(val):
@@ -150,14 +129,12 @@ class AppCommand(CLICommand):
             return val
 
         # App integration name to be used for this instance that must be unique per cluster
-        app_parser.add_argument(
-            '-n',
-            '--name',
-            dest='app_name',
-            required=True,
-            help='Unique name for this app',
-            type=_validate_name
-        )
+        app_parser.add_argument('-n',
+                                '--name',
+                                dest='app_name',
+                                required=True,
+                                help='Unique name for this app',
+                                type=_validate_name)
 
     @classmethod
     def handler(cls, options, config):
@@ -182,19 +159,20 @@ class AppCommand(CLICommand):
             }
 
             for cluster, info in all_info.items():
-                print('\nCluster: {}\n'.format(cluster))
+                print(f'\nCluster: {cluster}\n')
                 if not info:
                     print('\tNo Apps configured\n')
                     continue
 
                 for name, details in info.items():
-                    print('\tName: {}'.format(name))
+                    print(f'\tName: {name}')
                     print('\n'.join([
-                        '\t\t{key}:{padding_char:<{padding_count}}{value}'.format(
-                            key=key_name,
-                            padding_char=' ',
-                            padding_count=30 - (len(key_name)),
-                            value=value) for key_name, value in details.items()
+                        '\t\t{key}:{padding_char:<{padding_count}}{value}'.format(key=key_name,
+                                                                                  padding_char=' ',
+                                                                                  padding_count=30 -
+                                                                                  (len(key_name)),
+                                                                                  value=value)
+                        for key_name, value in details.items()
                     ] + ['\n']))
             return True
 
@@ -208,10 +186,7 @@ class AppCommand(CLICommand):
         # Create a new app integration function
         if options.subcommand == 'new':
             function_name = '_'.join([
-                app_info['prefix'],
-                app_info['cluster'],
-                app_info['type'],
-                app_info['app_name'],
+                app_info['prefix'], app_info['cluster'], app_info['type'], app_info['app_name'],
                 'app'
             ])
 
@@ -225,12 +200,8 @@ class AppCommand(CLICommand):
                 LOGGER.error('No apps configured for cluster \'%s\'', app_info['cluster'])
                 return False
 
-            # Find the appropriate function config for this app
-            func_name = None
-            for function_name, app_config in apps.items():
-                if app_config.get('app_name') == app_info['app_name']:
-                    func_name = function_name
-                    break
+            func_name = next((function_name for function_name, app_config in apps.items()
+                              if app_config.get('app_name') == app_info['app_name']), None)
 
             if not func_name:
                 LOGGER.error('App with name \'%s\' does not exist for cluster \'%s\'',
@@ -243,7 +214,4 @@ class AppCommand(CLICommand):
 
             app = StreamAlertApp.get_app(app_info['type'])
 
-            if not save_app_auth_info(app, app_info, func_name, True):
-                return False
-
-            return True
+            return bool(save_app_auth_info(app, app_info, func_name, True))

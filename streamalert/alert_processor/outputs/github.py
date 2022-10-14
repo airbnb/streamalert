@@ -13,19 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import OrderedDict
 import base64
 import json
+from collections import OrderedDict
 
 from streamalert.alert_processor.helpers import compose_alert
 from streamalert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    OutputRequestFailure,
-    StreamAlertOutput
-)
+    OutputDispatcher, OutputProperty, OutputRequestFailure, StreamAlertOutput)
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -38,29 +33,27 @@ class GithubOutput(OutputDispatcher):
     @classmethod
     def get_user_defined_properties(cls):
         """Get properties that must be assigned by the user when configuring a new Github output."""
-        return OrderedDict([
-            ('descriptor',
-             OutputProperty(description='a short and unique descriptor for this'
-                                        ' Github integration')),
-            ('repository',
-             OutputProperty(description='the repository for this integration '
-                                        'in the form :username/:repository',
-                            cred_requirement=True,
-                            mask_input=False)),
-            ('labels',
-             OutputProperty(description='a comma separated list of labels to '
-                                        'apply to issues when they are created',
-                            cred_requirement=True,
-                            mask_input=False)),
-            ('username',
-             OutputProperty(description='the username for this integration',
-                            cred_requirement=True,
-                            mask_input=False)),
-            ('access_token',
-             OutputProperty(description='the access token for the integration',
-                            cred_requirement=True,
-                            mask_input=True))
-        ])
+        return OrderedDict([('descriptor',
+                             OutputProperty(description='a short and unique descriptor for this'
+                                            ' Github integration')),
+                            ('repository',
+                             OutputProperty(description='the repository for this integration '
+                                            'in the form :username/:repository',
+                                            cred_requirement=True,
+                                            mask_input=False)),
+                            ('labels',
+                             OutputProperty(description='a comma separated list of labels to '
+                                            'apply to issues when they are created',
+                                            cred_requirement=True,
+                                            mask_input=False)),
+                            ('username',
+                             OutputProperty(description='the username for this integration',
+                                            cred_requirement=True,
+                                            mask_input=False)),
+                            ('access_token',
+                             OutputProperty(description='the access token for the integration',
+                                            cred_requirement=True,
+                                            mask_input=True))])
 
     @classmethod
     def _get_default_properties(cls):
@@ -98,21 +91,17 @@ class GithubOutput(OutputDispatcher):
         if not credentials:
             return False
 
-        username_password = "{}:{}".format(credentials['username'],
-                                           credentials['access_token'])
+        username_password = f"{credentials['username']}:{credentials['access_token']}"
         encoded_credentials = base64.b64encode(username_password.encode())
-        headers = {'Authorization': "Basic {}".format(encoded_credentials.decode())}
-        url = '{}/repos/{}/issues'.format(credentials['api'],
-                                          credentials['repository'])
+        headers = {'Authorization': f"Basic {encoded_credentials.decode()}"}
+        url = f"{credentials['api']}/repos/{credentials['repository']}/issues"
 
         publication = compose_alert(alert, self, descriptor)
 
         # Default presentation to the output
-        default_title = "StreamAlert: {}".format(alert.rule_name)
+        default_title = f"StreamAlert: {alert.rule_name}"
         default_body = "### Description\n{}\n\n### Event data\n\n```\n{}\n```".format(
-            alert.rule_description,
-            json.dumps(alert.record, indent=2, sort_keys=True)
-        )
+            alert.rule_description, json.dumps(alert.record, indent=2, sort_keys=True))
 
         # Override presentation defaults
         issue_title = publication.get('@github.title', default_title)

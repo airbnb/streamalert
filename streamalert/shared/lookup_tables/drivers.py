@@ -1,4 +1,5 @@
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
+
 from streamalert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -60,9 +61,8 @@ class EphemeralDriver(PersistenceDriver):
 
     This persistence driver does not actually store data anywhere--it just keeps it in memory.
     """
-
     def __init__(self, configuration):
-        super(EphemeralDriver, self).__init__(configuration)
+        super().__init__(configuration)
         self._cache = {}
 
     def initialize(self):
@@ -77,7 +77,7 @@ class EphemeralDriver(PersistenceDriver):
 
     @property
     def id(self):
-        return '{}:{}'.format(self.driver_type, 1)
+        return f'{self.driver_type}:1'
 
     def get(self, key, default=None):
         return self._cache.get(key, default)
@@ -92,14 +92,13 @@ class NullDriver(PersistenceDriver):
     if a nonexistent LookupTable is referenced--in this case, we simply return the Null table,
     backed by this NullDriver.
     """
-
     @property
     def driver_type(self):
         return self.TYPE_NULL
 
     @property
     def id(self):
-        return '{}:{}'.format(self.driver_type, 1)
+        return f'{self.driver_type}:1'
 
     def initialize(self):
         pass

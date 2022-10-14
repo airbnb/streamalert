@@ -8,11 +8,6 @@ for input_file in os.listdir(os.path.dirname(__file__)):
     if input_file.startswith(('__init__', 'payload_base')) or not input_file.endswith('.py'):
         continue
 
-    full_import = [
-        'streamalert',
-        'classifier',
-        'payload',
-        os.path.splitext(input_file)[0]
-    ]
+    full_import = ['streamalert', 'classifier', 'payload', os.path.splitext(input_file)[0]]
 
     importlib.import_module('.'.join(full_import))

@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from streamalert.shared.publisher import AlertPublisherRepository, PublisherAssemblyError
+from streamalert.shared.publisher import (AlertPublisherRepository,
+                                          PublisherAssemblyError)
 
 
 def elide_string_middle(text, max_length):
@@ -30,7 +31,7 @@ def elide_string_middle(text, max_length):
         return text
 
     half_len = (max_length - 5) // 2  # Length of text on either side.
-    return '{} ... {}'.format(text[:half_len], text[-half_len:])
+    return f'{text[:half_len]} ... {text[-half_len:]}'
 
 
 def compose_alert(alert, output, descriptor):
@@ -53,17 +54,15 @@ def compose_alert(alert, output, descriptor):
     #   This is a temporary workaround
     #   A more permanent solution will involve refactoring the OutputDispatcher to load on-demand
     #   instead of eagerly.
+    # pylint: disable=import-outside-toplevel
     from streamalert.alert_processor.outputs.output_base import OutputDispatcher
+    # pylint: enable=import-outside-toplevel
     output_service_name = output.__service__ if isinstance(output, OutputDispatcher) else None
 
     if not output_service_name:
         raise PublisherAssemblyError('Invalid output service')
 
-    publisher = _assemble_alert_publisher_for_output(
-        alert,
-        output_service_name,
-        descriptor
-    )
+    publisher = _assemble_alert_publisher_for_output(alert, output_service_name, descriptor)
     return publisher.publish(alert, {})
 
 
@@ -109,7 +108,7 @@ def _assemble_alert_publisher_for_output(alert, output_service_name, descriptor)
                 publisher_names.append(publisher_name_or_names)
 
         # Then load output+descriptor-specific publishers second
-        described_output_name = '{}:{}'.format(output_service_name, descriptor)
+        described_output_name = f'{output_service_name}:{descriptor}'
         if described_output_name in alert_publishers:
             publisher_name_or_names = alert_publishers[described_output_name]
             if isinstance(publisher_name_or_names, list):

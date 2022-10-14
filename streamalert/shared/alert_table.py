@@ -48,9 +48,7 @@ class AlertTable:
         """
         while True:
             response = func(**func_kwargs)
-            for item in response.get('Items', []):
-                yield item
-
+            yield from response.get('Items', [])
             if response.get('LastEvaluatedKey'):
                 func_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
             else:
@@ -104,17 +102,17 @@ class AlertTable:
         kwargs = {
             # We need a consistent read here in order to pick up the most recent updates from the
             # alert processor. Otherwise, deleted/updated alerts may not yet have propagated.
-            'ConsistentRead': True,
+            'ConsistentRead':
+            True,
 
             # Include only those alerts which have not yet dispatched or were dispatched more than
             # ALERT_PROCESSOR_TIMEOUT seconds ago.
-            'FilterExpression': (
-                Attr('Dispatched').lt(in_progress_threshold.strftime(Alert.DATETIME_FORMAT))),
-
-            'KeyConditionExpression': Key('RuleName').eq(rule_name)
+            'FilterExpression':
+            (Attr('Dispatched').lt(in_progress_threshold.strftime(Alert.DATETIME_FORMAT))),
+            'KeyConditionExpression':
+            Key('RuleName').eq(rule_name)
         }
-        for item in self._paginate(self._table.query, kwargs):
-            yield item
+        yield from self._paginate(self._table.query, kwargs)
 
     def get_alert_record(self, rule_name, alert_id):
         """Get a single alert record from the alerts table.
@@ -162,8 +160,7 @@ class AlertTable:
                 ':attempts': alert.attempts,
                 ':dispatched': alert.dispatched.strftime(Alert.DATETIME_FORMAT)
             },
-            ConditionExpression='attribute_exists(AlertID)'
-        )
+            ConditionExpression='attribute_exists(AlertID)')
 
     @ignore_conditional_failure
     def update_sent_outputs(self, alert):
@@ -172,12 +169,10 @@ class AlertTable:
         Args:
             alert (Alert): Alert instance with sent outputs already updated.
         """
-        self._table.update_item(
-            Key=alert.dynamo_key,
-            UpdateExpression='SET OutputsSent = :outputs_sent',
-            ExpressionAttributeValues={':outputs_sent': alert.outputs_sent},
-            ConditionExpression='attribute_exists(AlertID)'
-        )
+        self._table.update_item(Key=alert.dynamo_key,
+                                UpdateExpression='SET OutputsSent = :outputs_sent',
+                                ExpressionAttributeValues={':outputs_sent': alert.outputs_sent},
+                                ConditionExpression='attribute_exists(AlertID)')
 
     def delete_alerts(self, keys):
         """Remove an alert from the table.

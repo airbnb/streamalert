@@ -13,17 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from getpass import getpass
+
 import json
 import os
 import re
 import subprocess
+from getpass import getpass
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from streamalert.shared.logger import get_logger
-
 
 LOGGER = get_logger(__name__)
 
@@ -32,8 +32,8 @@ SCHEMA_TYPE_LOOKUP = {
     float: 'float',
     int: 'integer',
     str: 'string',
-    dict: dict(),
-    list: list()
+    dict: {},
+    list: []
 }
 
 
@@ -48,19 +48,18 @@ def run_command(runner_args, cwd='./', **kwargs):
         error_message (str): Message to output if command fails
         quiet (bool): Set to True to suppress command output
     """
-    default_error_message = "An error occurred while running: {}".format(' '.join(runner_args))
+    default_error_message = f"An error occurred while running: {' '.join(runner_args)}"
+
     error_message = kwargs.get('error_message', default_error_message)
 
     # Add the -force-copy flag for s3 state copying to suppress dialogs that
     # the user must type 'yes' into.
-    if runner_args[0] == 'terraform':
-        if runner_args[1] == 'init':
-            runner_args.append('-force-copy')
+    if runner_args[0] == 'terraform' and runner_args[1] == 'init':
+        runner_args.append('-force-copy')
 
-    stdout_option = None
-    if kwargs.get('quiet'):
-        stdout_option = open(os.devnull, 'w')
-
+    # fixme rewrite this to use with statement
+    # pylint: disable=consider-using-with
+    stdout_option = open(os.devnull, 'w', encoding="utf-8") if kwargs.get('quiet') else None
     try:
         subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)  # nosec
     except subprocess.CalledProcessError as err:
@@ -90,7 +89,7 @@ def continue_prompt(message=None):
 
     response = ''
     while response not in required_responses:
-        response = input('\n{} (yes or no): '.format(message)) # nosec
+        response = input(f'\n{message} (yes or no): ')
 
     return response == 'yes'
 
@@ -116,10 +115,8 @@ def check_credentials():
             return False
         raise  # Raise the error if it is anything else
 
-    LOGGER.debug(
-        'Using credentials for user \'%s\' with user ID \'%s\' in account '
-        '\'%s\'', response['Arn'], response['UserId'], response['Account']
-    )
+    LOGGER.debug('Using credentials for user \'%s\' with user ID \'%s\' in account '
+                 '\'%s\'', response['Arn'], response['UserId'], response['Account'])
 
     return True
 
@@ -136,13 +133,13 @@ def user_input(requested_info, mask, input_restrictions):
     """
     # pylint: disable=protected-access
     response = ''
-    prompt = '\nPlease supply {}: '.format(requested_info)
+    prompt = f'\nPlease supply {requested_info}: '
 
     if not mask:
         while not response:
             response = input(prompt)  # nosec
 
-        valid_response = response_is_valid(response, input_restrictions)
+        valid_response, response = response_is_valid(response, input_restrictions)
 
         if not valid_response:
             return user_input(requested_info, mask, input_restrictions)
@@ -179,13 +176,13 @@ def response_is_valid(response, input_restrictions):
             LOGGER.error('The supplied input failed to pass the validation '
                          'function: %s', input_restrictions.__doc__)
     else:
-        valid_response = not any(x in input_restrictions for x in response)
+        valid_response = all(x not in input_restrictions for x in response)
         if not valid_response:
-            restrictions = ', '.join(
-                '\'{}\''.format(restriction) for restriction in input_restrictions)
+            restrictions = ', '.join(f"\'{restriction}\'" for restriction in input_restrictions)
+
             LOGGER.error('The supplied input should not contain any of the following: %s',
                          restrictions)
-    return valid_response
+    return valid_response, response
 
 
 def save_parameter(region, name, value, description, force_overwrite=False):
@@ -206,21 +203,20 @@ def save_parameter(region, name, value, description, force_overwrite=False):
     # Example: prefix_prod_duo_auth_production_collector_app_config
     def save(overwrite=False):
 
-        ssm_client.put_parameter(
-            Name=name,
-            Description=description,
-            Value=param_value,
-            Type='SecureString',
-            Overwrite=overwrite
-        )
+        ssm_client.put_parameter(Name=name,
+                                 Description=description,
+                                 Value=param_value,
+                                 Type='SecureString',
+                                 Overwrite=overwrite)
 
     try:
         save(overwrite=force_overwrite)
     except ClientError as err:
         if err.response['Error']['Code'] == 'ExpiredTokenException':
             # Log an error if this response was due to no credentials being found
-            LOGGER.error('Could not save \'%s\' to parameter store because no '
-                         'valid credentials were loaded.', name)
+            LOGGER.error(
+                'Could not save \'%s\' to parameter store because no '
+                'valid credentials were loaded.', name)
 
         if err.response['Error']['Code'] != 'ParameterAlreadyExists':
             raise
@@ -253,12 +249,8 @@ def record_to_schema(record, recursive=False):
     if not isinstance(record, dict):
         return
 
-    result = {}
-    for key, value in record.items():
-        # only worry about recursion for dicts, not lists
-        if recursive and isinstance(value, dict):
-            result[key] = record_to_schema(value, recursive)
-        else:
-            result[key] = SCHEMA_TYPE_LOOKUP.get(type(value), 'string')
-
-    return result
+    return {
+        key: record_to_schema(value, recursive)
+        if recursive and isinstance(value, dict) else SCHEMA_TYPE_LOOKUP.get(type(value), 'string')
+        for key, value in record.items()
+    }

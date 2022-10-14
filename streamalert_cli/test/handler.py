@@ -15,9 +15,9 @@ limitations under the License.
 """
 import argparse
 import os
+from unittest.mock import MagicMock, patch
 
 import jmespath
-from mock import patch, MagicMock
 
 from streamalert.alert_processor import main as alert_processor
 from streamalert.alert_processor.helpers import compose_alert
@@ -29,16 +29,13 @@ from streamalert.shared.config import ConfigError
 from streamalert.shared.logger import get_logger
 from streamalert.shared.stats import RuleStatisticTracker
 from streamalert_cli.helpers import check_credentials
-from streamalert_cli.test.format import format_green, format_red, format_underline, format_yellow
-from streamalert_cli.test.mocks import LookupTableMocks, ThreatIntelMocks
 from streamalert_cli.test.event_file import TestEventFile
-from streamalert_cli.utils import (
-    CLICommand,
-    DirectoryType,
-    generate_subparser,
-    UniqueSortedFileListAction,
-    UniqueSortedListAction,
-)
+from streamalert_cli.test.format import (format_green, format_red,
+                                         format_underline, format_yellow)
+from streamalert_cli.test.mocks import LookupTableMocks, ThreatIntelMocks
+from streamalert_cli.utils import (CLICommand, DirectoryType,
+                                   UniqueSortedFileListAction,
+                                   UniqueSortedListAction, generate_subparser)
 
 LOGGER = get_logger(__name__)
 
@@ -62,8 +59,7 @@ class TestCommand(CLICommand):
             subparsers,
             'classifier',
             description='Validate defined log schemas using integration test files',
-            subcommand=True
-        )
+            subcommand=True)
 
         cls._add_default_test_args(test_validate_parser)
 
@@ -74,16 +70,14 @@ class TestCommand(CLICommand):
             subparsers,
             'rules',
             description='Test rules using integration test files',
-            subcommand=True
-        )
+            subcommand=True)
 
         # Flag to run additional stats during testing
         test_rules_parser.add_argument(
             '-s',
             '--stats',
             action='store_true',
-            help='Enable outputing of statistical information on rules that run'
-        )
+            help='Enable outputing of statistical information on rules that run')
 
         # Validate the provided repitition value
         def _validate_repitition(val):
@@ -92,8 +86,8 @@ class TestCommand(CLICommand):
                    'and 1000').format(val)
             try:
                 count = int(val)
-            except TypeError:
-                raise test_rules_parser.error(err)
+            except TypeError as err:
+                raise test_rules_parser.error(err) from err
 
             if not 1 <= count <= 1000:
                 raise test_rules_parser.error(err)
@@ -106,8 +100,7 @@ class TestCommand(CLICommand):
             '--repeat',
             default=1,
             type=_validate_repitition,
-            help='Number of times to repeat the tests, to be used as a form performance testing'
-        )
+            help='Number of times to repeat the tests, to be used as a form performance testing')
 
         cls._add_default_test_args(test_rules_parser)
 
@@ -118,10 +111,8 @@ class TestCommand(CLICommand):
             subparsers,
             'live',
             description=(
-                'Run end-to-end tests that will attempt to send alerts to each rule\'s outputs'
-            ),
-            subcommand=True
-        )
+                'Run end-to-end tests that will attempt to send alerts to each rule\'s outputs'),
+            subcommand=True)
 
         cls._add_default_test_args(test_live_parser)
 
@@ -139,19 +130,16 @@ class TestCommand(CLICommand):
             help='Full path to one or more file(s) to test, separated by spaces',
             action=UniqueSortedFileListAction,
             type=argparse.FileType('r'),
-            default=[]
-        )
+            default=[])
 
         # add the optional ability to test specific rules
-        test_filter_group.add_argument(
-            '-r',
-            '--test-rules',
-            dest='rules',
-            nargs='+',
-            help='One or more rule to test, separated by spaces',
-            action=UniqueSortedListAction,
-            default=[]
-        )
+        test_filter_group.add_argument('-r',
+                                       '--test-rules',
+                                       dest='rules',
+                                       nargs='+',
+                                       help='One or more rule to test, separated by spaces',
+                                       action=UniqueSortedListAction,
+                                       default=[])
 
         # add the ability to specify rule directories to test
         test_parser.add_argument(
@@ -161,25 +149,21 @@ class TestCommand(CLICommand):
             nargs='+',
             action=UniqueSortedListAction,
             type=DirectoryType(),
-            default=['rules']
-        )
+            default=['rules'])
 
         # Add the optional ability to log verbosely or use quite logging for tests
         verbose_group = test_parser.add_mutually_exclusive_group(required=False)
 
-        verbose_group.add_argument(
-            '-v',
-            '--verbose',
-            action='store_true',
-            help='Output additional information during testing'
-        )
+        verbose_group.add_argument('-v',
+                                   '--verbose',
+                                   action='store_true',
+                                   help='Output additional information during testing')
 
         verbose_group.add_argument(
             '-q',
             '--quiet',
             action='store_true',
-            help='Suppress output for passing tests, only logging if there is a failure'
-        )
+            help='Suppress output for passing tests, only logging if there is a failure')
 
     @classmethod
     def handler(cls, options, config):
@@ -197,7 +181,7 @@ class TestCommand(CLICommand):
         repeat = opts.get('repeat', 1)
         for i in range(repeat):
             if repeat != 1:
-                print('\nRepetition #', i+1)
+                print('\nRepetition #', i + 1)
             result = result and TestRunner(options, config).run()
 
         if opts.get('stats'):
@@ -207,7 +191,6 @@ class TestCommand(CLICommand):
 
 class TestRunner:
     """TestRunner to handle running various tests"""
-
     class Types:
         """Simple types enum for test types"""
         CLASSIFY = 'classifier'
@@ -232,7 +215,7 @@ class TestRunner:
         env = {
             'STREAMALERT_PREFIX': prefix,
             'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
-            'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
+            'ALERTS_TABLE': f'{prefix}_streamalert_alerts'
         }
 
         if 'stats' in options and options.stats:
@@ -276,17 +259,13 @@ class TestRunner:
             return alert_proc.run(event=record.dynamo_record())
 
     def _check_prereqs(self):
-        if self._type == self.Types.LIVE:
-            return check_credentials()
-
-        return True
+        return check_credentials() if self._type == self.Types.LIVE else True
 
     def _finalize(self):
         summary = [
-            format_underline('\nSummary:\n'),
-            'Total Tests: {}'.format(self._passed + self._failed),
-            format_green('Pass: {}'.format(self._passed)) if self._passed else 'Pass: 0',
-            format_red('Fail: {}\n'.format(self._failed)) if self._failed else 'Fail: 0\n',
+            format_underline('\nSummary:\n'), f'Total Tests: {self._passed + self._failed}',
+            format_green(f'Pass: {self._passed}') if self._passed else 'Pass: 0',
+            format_red(f'Fail: {self._failed}\n') if self._failed else 'Fail: 0\n'
         ]
 
         print('\n'.join(summary))
@@ -311,7 +290,7 @@ class TestRunner:
 
     def _process_directory(self, directory):
         """Process rules and test files in the the rule directory"""
-        print('\nRunning tests for files found in: {}'.format(directory))
+        print(f'\nRunning tests for files found in: {directory}')
 
         for root, event_files in self._get_test_files(directory):
             for event_file in event_files:
@@ -335,20 +314,14 @@ class TestRunner:
                 if event.service not in cluster_value['data_sources']:
                     LOGGER.debug(
                         'Cluster "%s" does not have service "%s" configured as a data source',
-                        cluster_name,
-                        event.service
-                    )
+                        cluster_name, event.service)
                     continue
 
                 sources = set(cluster_value['data_sources'][event.service])
                 if event.source not in sources:
                     LOGGER.debug(
                         'Cluster "%s" does not have the source "%s" configured as a data source '
-                        'for service "%s"',
-                        cluster_name,
-                        event.source,
-                        event.service
-                    )
+                        'for service "%s"', cluster_name, event.source, event.service)
                     continue
 
                 # If we got here, then this cluster is actually configured for this data source
@@ -358,9 +331,9 @@ class TestRunner:
             # A misconfigured test event and/or cluster config can cause this to be unset
             if 'CLUSTER' not in os.environ:
                 error = (
-                    'Test event\'s "service" ({}) and "source" ({}) are not defined within '
-                    'the "data_sources" of any configured clusters: {}:{}'
-                ).format(event.service, event.source, event_file.path, event.index)
+                    f"""Test event's "service" ({event.service}) and "source" ({event.source}) are not defined within the"""
+                    f""" "data_sources"of any configured clusters: {event_file.path}:{event.index}"""
+                )
                 raise ConfigError(error)
 
             classifier_result = self._run_classification(event.record)
@@ -396,9 +369,9 @@ class TestRunner:
         # It is possible for a test_event to have no results, but contain errors
         # so only print it if it does and if quiet mode is not being used
         # Quite mode is overridden if not all of the events passed
-        if event_file.error or not (self._quiet and event_file.all_passed):
-            if event_file.should_print:
-                print(event_file)
+        if (event_file.error or not self._quiet
+                or not event_file.all_passed) and event_file.should_print:
+            print(event_file)
 
     def run(self):
         """Run the tests"""
@@ -424,15 +397,11 @@ class TestRunner:
             str: Path to test event file
         """
         for root, _, test_event_files in os.walk(directory):
-            # Simple filter to remove any non-json files first
-            files = [
-                file for file in sorted(test_event_files)
-                if os.path.splitext(file)[1] == '.json'
-            ]
-            if not files:
-                continue
-
-            yield root, files
+            if files := [
+                    file for file in sorted(test_event_files)
+                    if os.path.splitext(file)[1] == '.json'
+            ]:
+                yield root, files
 
 
 class PublisherTestRunner:
@@ -467,32 +436,32 @@ class PublisherTestRunner:
                     if isinstance(publisher_test, list):
                         if len(publisher_test) != 3:
                             publisher_test_results.append({
-                                'success': False,
-                                'error': (
-                                    'Invalid publisher test specified: {}'
-                                    'Publisher test must be a triple with elements: '
-                                    '(jsonpath, condition, condition_value)'
-                                ).format(publisher_test),
-                                'output_descriptor': output,
+                                'success':
+                                False,
+                                'error':
+                                ('Invalid publisher test specified: {}'
+                                 'Publisher test must be a triple with elements: '
+                                 '(jsonpath, condition, condition_value)').format(publisher_test),
+                                'output_descriptor':
+                                output,
                             })
                             continue
 
                         jsonpath, condition, condition_value = publisher_test
                     elif isinstance(publisher_test, dict):
-                        valid_test_syntax = (
-                            'jmespath_expression' in publisher_test and
-                            'condition' in publisher_test and
-                            'value' in publisher_test
-                        )
+                        valid_test_syntax = ('jmespath_expression' in publisher_test
+                                             and 'condition' in publisher_test
+                                             and 'value' in publisher_test)
                         if not valid_test_syntax:
                             publisher_test_results.append({
-                                'success': False,
-                                'error': (
-                                    'Invalid publisher test specified: {}'
-                                    'Publisher test must be a dict with keys: '
-                                    '(jmespath_expression, condition, value)'
-                                ).format(publisher_test),
-                                'output_descriptor': output,
+                                'success':
+                                False,
+                                'error':
+                                ('Invalid publisher test specified: {}'
+                                 'Publisher test must be a dict with keys: '
+                                 '(jmespath_expression, condition, value)').format(publisher_test),
+                                'output_descriptor':
+                                output,
                             })
                             continue
 
@@ -501,22 +470,23 @@ class PublisherTestRunner:
                         condition_value = publisher_test['value']
                     else:
                         publisher_test_results.append({
-                            'success': False,
-                            'error': (
-                                'Invalid publisher test specified: {}'
-                                'Publisher test must be list or dict'
-                            ),
-                            'output_descriptor': output,
+                            'success':
+                            False,
+                            'error': ('Invalid publisher test specified: {}'
+                                      'Publisher test must be list or dict'),
+                            'output_descriptor':
+                            output,
                         })
                         continue
 
                     if output not in publication_results:
                         publisher_test_results.append({
-                            'success': False,
-                            'error': (
-                                'No such output {} was configured for this alert'
-                            ).format(output),
-                            'output_descriptor': output,
+                            'success':
+                            False,
+                            'error':
+                            ('No such output {} was configured for this alert').format(output),
+                            'output_descriptor':
+                            output,
                         })
                         continue
 
@@ -528,28 +498,26 @@ class PublisherTestRunner:
 
                     if not conditional:
                         publisher_test_results.append({
-                            'success': False,
-                            'error': (
-                                'Invalid condition specified: {}\n'
-                                'Valid conditions are: {}'
-                            ).format(condition, list(self.PUBLISHER_CONDITIONALS.keys())),
-                            'output_descriptor': output,
+                            'success':
+                            False,
+                            'error': ('Invalid condition specified: {}\n'
+                                      'Valid conditions are: {}').format(
+                                          condition, list(self.PUBLISHER_CONDITIONALS.keys())),
+                            'output_descriptor':
+                            output,
                         })
                         continue
 
                     res = conditional['comparator'](subject_value, condition_value)
 
                     publisher_test_results.append({
-                        'success': res,
-                        'failure': None if res else (
-                            'Item at path "{}" {} "{}",\nActual value: "{}"'.format(
-                                jsonpath,
-                                conditional['clause'],
-                                condition_value,
-                                subject_value
-                            )
-                        ),
-                        'output_descriptor': output
+                        'success':
+                        res,
+                        'failure':
+                        None if res else ('Item at path "{}" {} "{}",\nActual value: "{}"'.format(
+                            jsonpath, conditional['clause'], condition_value, subject_value)),
+                        'output_descriptor':
+                        output
                     })
 
             event.set_publication_results(publisher_test_results)

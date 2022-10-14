@@ -1,4 +1,3 @@
-
 """
 Copyright 2017-present Airbnb, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +11,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # from streamalert.shared import ARTIFACT_EXTRACTOR_NAME
-from streamalert.shared.config import artifact_extractor_enabled, firehose_data_bucket
+from streamalert.shared.config import (artifact_extractor_enabled,
+                                       firehose_data_bucket)
 from streamalert.shared.firehose import FirehoseClient
 from streamalert.shared.utils import get_database_name
 from streamalert_cli.athena.helpers import generate_artifacts_table_schema
@@ -20,6 +20,7 @@ from streamalert_cli.terraform.common import infinitedict
 
 # FIXME: Should we provide custom artifacs table name?
 DEFAULT_ARTIFACTS_TABLE_NAME = 'artifacts'
+
 
 def generate_artifact_extractor(config):
     """Generate Terraform for the Artifact Extractor Lambda function
