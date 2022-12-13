@@ -1,13 +1,15 @@
 {
   "box:admin_events": {
     "schema": {
+      "action_by": {},
       "accessible_by": {},
-      "additional_details": "string",
+      "additional_details": {},
       "created_at": "string",
       "created_by": {},
       "event_id": "string",
       "event_type": "string",
       "ip_address": "string",
+      "recorded_at": "string",
       "session_id": "string",
       "source": {},
       "type": "string"
@@ -15,7 +17,10 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
-        "accessible_by"
+        "accessible_by",
+        "action_by",
+        "ip_address",
+        "additional_details"
       ]
     }
   }
