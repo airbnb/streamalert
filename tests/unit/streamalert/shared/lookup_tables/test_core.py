@@ -17,7 +17,7 @@ import json
 import zlib
 
 from mock import ANY, patch
-from moto import mock_s3, mock_dynamodb2
+from moto import mock_s3, mock_dynamodb
 from nose.tools import assert_equal
 
 from streamalert.shared.config import load_config
@@ -37,7 +37,7 @@ class TestLookupTablesCore:
         self.s3_mock = mock_s3()
         self.s3_mock.start()
 
-        self.dynamodb_mock = mock_dynamodb2()
+        self.dynamodb_mock = mock_dynamodb()
         self.dynamodb_mock.start()
 
         self._put_mock_data()

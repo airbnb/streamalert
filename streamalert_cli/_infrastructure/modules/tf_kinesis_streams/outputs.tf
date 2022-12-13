@@ -3,7 +3,7 @@ output "arn" {
 }
 
 output "stream_name" {
-  value = "${aws_kinesis_stream.streamalert_stream.name}"
+  value = aws_kinesis_stream.streamalert_stream.name
 }
 
 output "username" {

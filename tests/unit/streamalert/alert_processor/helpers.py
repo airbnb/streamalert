@@ -49,11 +49,12 @@ def get_random_alert(key_count, rule_name, omit_rule_desc=False):
     )
 
 
-def get_alert(context=None):
+def get_alert(context=None, output="slack:unit_test_channel"):
     """This function generates a sample alert for testing purposes
 
     Args:
         context (dict): Optional alert context
+        output (str): alert output
     """
     return Alert(
         'cb_binarystore_file_added',
@@ -67,7 +68,7 @@ def get_alert(context=None):
             'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
             'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
         },
-        {'slack:unit_test_channel'},
+        {output},
         alert_id='79192344-4a6d-4850-8d06-9c3fef1060a4',
         context=context,
         log_source='carbonblack:binarystore.file.added',

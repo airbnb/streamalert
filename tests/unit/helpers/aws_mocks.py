@@ -45,17 +45,17 @@ class MockLambdaClient:
 
         return {
             'FunctionName': function_name,
-            'FunctionArn': 'arn:aws:lambda:region:account-id:function:{}'.format(function_name),
-            'Runtime': 'python3.7',
-            'Role': 'string',
-            'Handler': 'main.handler',
-            'CodeSize': 128,
-            'Description': description,
-            'Timeout': 60,
-            'MemorySize': 128,
+            'FunctionArn':  'arn:aws:lambda:region:account-id:function:{}'.format(function_name),
+            'Runtime':      'python3.7',
+            'Role':         'string',
+            'Handler':      'main.handler',
+            'CodeSize':     128,
+            'Description':  description,
+            'Timeout':      60,
+            'MemorySize':   128,
             'LastModified': 'string',
-            'CodeSha256': code_sha_256,
-            'Version': self.current_version + 1
+            'CodeSha256':   code_sha_256,
+            'Version':      self.current_version + 1
         }
 
 
@@ -64,6 +64,7 @@ class MockAthenaClient:
 
     class MockAthenaPaginator:
         """Mock class for paginating athena results"""
+
         def __init__(self, func, pages):
             self._func = func
             self._pages = pages
@@ -84,22 +85,22 @@ class MockAthenaClient:
         """Get query start parameters."""
         return {
             'QueryExecution': {
-                'QueryExecutionId': str(uuid.uuid4()),
-                'Query': kwargs.get('QueryString'),
-                'ResultConfiguration': {
-                    'OutputLocation': kwargs.get('OutputLocation', ''),
+                'QueryExecutionId':      str(uuid.uuid4()),
+                'Query':                 kwargs.get('QueryString'),
+                'ResultConfiguration':   {
+                    'OutputLocation':          kwargs.get('OutputLocation', ''),
                     'EncryptionConfiguration': kwargs.get('EncryptionConfiguration', {})
                 },
                 'QueryExecutionContext': kwargs.get('QueryExecutionContext', {}),
-                'Status': {
-                    'State': 'QUEUED',
-                    'StateChangeReason': 'string',
+                'Status':                {
+                    'State':              'QUEUED',
+                    'StateChangeReason':  'string',
                     'SubmissionDateTime': datetime(2017, 1, 1),
                     'CompletionDateTime': datetime(2017, 1, 1)
                 },
-                'Statistics': {
+                'Statistics':            {
                     'EngineExecutionTimeInMillis': 123,
-                    'DataScannedInBytes': 123
+                    'DataScannedInBytes':          123
                 }
             }
         }
@@ -148,6 +149,18 @@ def handler(event, context):
     return package_output.read()
 
 
+def get_role_name(region):
+    iam = boto3.client("iam", region_name=region)
+    try:
+        return iam.get_role(RoleName="my-role")["Role"]["Arn"]
+    except ClientError:
+        return iam.create_role(
+            RoleName="my-role",
+            AssumeRolePolicyDocument="some policy",
+            Path="/my-path/",
+        )["Role"]["Arn"]
+
+
 def create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
     if function_name.find(':') != -1:
@@ -156,7 +169,7 @@ def create_lambda_function(function_name, region):
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
         Runtime='python3.7',
-        Role='test-iam-role',
+        Role=get_role_name(region),
         Handler='function.handler',
         Description='test lambda function',
         Timeout=3,
@@ -183,14 +196,14 @@ def setup_mock_alerts_table(table_name):
                     'AttributeType': 'S'
                 }
             ],
-            'KeySchema': [
+            'KeySchema':            [
                 {
                     'AttributeName': 'RuleName',
-                    'KeyType': 'HASH'
+                    'KeyType':       'HASH'
                 },
                 {
                     'AttributeName': 'AlertID',
-                    'KeyType': 'RANGE'
+                    'KeyType':       'RANGE'
                 }
             ],
         },
@@ -209,10 +222,10 @@ def setup_mock_rules_table(table_name):
                     'AttributeType': 'S'
                 }
             ],
-            'KeySchema': [
+            'KeySchema':            [
                 {
                     'AttributeName': 'RuleName',
-                    'KeyType': 'HASH'
+                    'KeyType':       'HASH'
                 }
             ]
         },
@@ -240,7 +253,7 @@ def put_mock_dynamod_data(table_name, schema, data):
 
     schema['TableName'] = table_name
     schema['ProvisionedThroughput'] = {
-        'ReadCapacityUnits': 5,
+        'ReadCapacityUnits':  5,
         'WriteCapacityUnits': 5
     }
 

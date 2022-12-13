@@ -38,16 +38,16 @@ class LambdaPackage:
 
     # Define a package dict to support pinning versions across all subclasses
     REQUIRED_LIBS = {
-        'backoff==1.10.0',
-        'boto3==1.14.29',
-        'cbapi==1.7.1',
-        'google-api-python-client==1.10.0',
+        'backoff==2.2.1',
+        'boto3==1.26.26',
+        'cbapi==1.7.9',
+        'google-api-python-client==2.69.0',
         'jmespath==0.10.0',
-        'jsonlines==1.2.0',
+        'jsonlines==3.1.0',
         'netaddr==0.8.0',
-        'requests==2.24.0',
-        'pymsteams==0.1.13',
-        'idna==2.8',
+        'requests==2.28.1',
+        'pymsteams==0.2.2',
+        'idna==3.4',
     }
 
     def __init__(self, config):

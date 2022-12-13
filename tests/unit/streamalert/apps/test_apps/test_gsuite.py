@@ -13,11 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import json
 import os
 import socket
 import ssl
 from datetime import datetime, timedelta
+import httplib2
 
 import googleapiclient
 from google.auth import exceptions
@@ -30,6 +32,32 @@ from streamalert.apps._apps.gsuite import GSuiteReportsApp
 from tests.unit.streamalert.apps.test_helpers import get_event, put_mock_params
 from tests.unit.streamalert.shared.test_config import get_mock_lambda_context
 
+
+# https://github.com/googleapis/google-api-python-client/blob/main/tests/test_errors.py
+JSON_ERROR_CONTENT = b"""
+{
+ "error": {
+  "errors": [
+   {
+    "domain": "global",
+    "reason": "required",
+    "message": "country is required",
+    "locationType": "parameter",
+    "location": "country"
+   }
+  ],
+  "code": 400,
+  "message": "country is required",
+  "details": "error details"
+ }
+}
+"""
+
+
+def fake_response(data, headers, reason="Ok"):
+    response = httplib2.Response(headers)
+    response.reason = reason
+    return response, data
 
 @mock_ssm
 @patch.object(GSuiteReportsApp, '_type', Mock(return_value='admin'))
@@ -166,7 +194,12 @@ class TestGSuiteReportsApp:
     def test_gather_logs_http_error(self, log_mock):
         """GSuiteReportsApp - Gather Logs, Google API HTTP Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
-            error = googleapiclient.errors.HttpError('response', 'bad'.encode())
+            resp, content = fake_response(
+                JSON_ERROR_CONTENT,
+                {"status": "400", "content-type": "application/json"},
+                reason="Failed",
+            )
+            error = googleapiclient.errors.HttpError(resp, content)
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)

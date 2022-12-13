@@ -17,8 +17,9 @@ limitations under the License.
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 import boto3
+from botocore.exceptions import ClientError
 from mock import MagicMock, Mock, patch
-from moto import mock_kinesis, mock_s3, mock_sns, mock_sqs, mock_ses
+from moto import mock_s3, mock_sns, mock_sqs, mock_ses, mock_firehose
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -69,7 +70,8 @@ class TestAWSOutput:
         assert_is_not_none(formatted_config.get('unit_test_bucket'))
 
 
-@mock_kinesis
+@mock_firehose
+@mock_s3
 class TestFirehoseOutput:
     """Test class for AWS Kinesis Firehose"""
     DESCRIPTOR = 'unit_test_delivery_stream'
@@ -81,19 +83,27 @@ class TestFirehoseOutput:
         """Setup before each method"""
         self._dispatcher = KinesisFirehoseOutput(CONFIG)
         delivery_stream = CONFIG[self.SERVICE][self.DESCRIPTOR]
-        boto3.client('firehose', region_name=REGION).create_delivery_stream(
-            DeliveryStreamName=delivery_stream,
-            S3DestinationConfiguration={
-                'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
-                'BucketARN': 'arn:aws:s3:::unit_test',
-                'Prefix': '/',
-                'BufferingHints': {
-                    'SizeInMBs': 128,
-                    'IntervalInSeconds': 128
-                },
-                'CompressionFormat': 'GZIP',
-            }
-        )
+        s_three = boto3.client("s3")
+        s_three.create_bucket(Bucket="unit_test")
+        firehose = boto3.client('firehose', region_name=REGION)
+        try:
+            firehose.describe_delivery_stream(
+                DeliveryStreamName=delivery_stream
+            )
+        except ClientError:
+            firehose.create_delivery_stream(
+                DeliveryStreamName=delivery_stream,
+                S3DestinationConfiguration={
+                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                    'BucketARN': 'arn:aws:s3:::unit_test',
+                    'Prefix': '/',
+                    'BufferingHints': {
+                        'SizeInMBs': 128,
+                        'IntervalInSeconds': 128
+                    },
+                    'CompressionFormat': 'GZIP',
+                }
+            )
 
     def test_locals(self):
         """Kinesis Firehose - Output local variables"""
@@ -103,7 +113,10 @@ class TestFirehoseOutput:
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """Kinesis Firehose - Output Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        assert_true(self._dispatcher.dispatch(
+            get_alert(output="aws-firehose:unit_test_delivery_stream"),
+            self.OUTPUT
+        ))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)

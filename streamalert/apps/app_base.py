@@ -120,6 +120,8 @@ class AppIntegration(metaclass=ABCMeta):
         Returns:
             str: The specific type of log (duo_auth, duo_admin, google_admin, etc)
         """
+        #
+        # pylint: disable=no-value-for-parameter
         return '_'.join([cls.service(), cls._type()])
 
     @classmethod

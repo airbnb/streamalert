@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 import os
 
 from mock import ANY, call, patch, MagicMock
-from moto import mock_dynamodb2, mock_lambda
+from moto import mock_dynamodb, mock_lambda, mock_iam
 from nose.tools import assert_equal, assert_false, assert_true
 
 from streamalert.alert_merger import main
@@ -63,10 +63,12 @@ class TestAlertMerger:
     })
     def setup(self):
         """Alert Merger - Setup"""
-        self.dynamo_mock = mock_dynamodb2()
+        self.dynamo_mock = mock_dynamodb()
         self.lambda_mock = mock_lambda()
+        self.iam_mock = mock_iam()
         self.dynamo_mock.start()
         self.lambda_mock.start()
+        self.iam_mock.start()
 
         create_lambda_function(_ALERT_PROCESSOR, 'us-east-1')
         setup_mock_alerts_table(_ALERTS_TABLE)
@@ -76,6 +78,7 @@ class TestAlertMerger:
         """Alert Merger - Teardown (Stop Mocks)"""
         self.dynamo_mock.stop()
         self.lambda_mock.stop()
+        self.iam_mock.stop()
 
     @patch.object(main, 'LOGGER')
     def test_alert_generator(self, mock_logger):

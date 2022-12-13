@@ -18,7 +18,7 @@ import os
 
 from boto3 import client
 from mock import Mock, patch, PropertyMock
-from moto import mock_dynamodb2
+from moto import mock_dynamodb
 from nose.tools import assert_equal
 
 from streamalert.rule_promotion.promoter import RulePromoter
@@ -44,7 +44,7 @@ class TestRulePromoter:
     def setup(self):
         """RulePromoter - Setup"""
         # pylint: disable=attribute-defined-outside-init
-        self.dynamo_mock = mock_dynamodb2()
+        self.dynamo_mock = mock_dynamodb()
         self.dynamo_mock.start()
         with patch('streamalert.rule_promotion.promoter.load_config') as config_mock, \
              patch('streamalert.rule_promotion.promoter.StatsPublisher', Mock()), \
