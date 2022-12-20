@@ -1,7 +1,7 @@
 {
     "ghce:cloud": {
         "schema": {
-            "@timestamp": "string",
+            "@timestamp": "integer",
             "_document_id": "string",
             "action": "string",
             "active": "boolean",
@@ -25,7 +25,7 @@
             "conclusion": "string",
             "config": {},
             "create_protected": "boolean",
-            "created_at": "string",
+            "created_at": "integer",
             "dismiss_stale_reviews_on_push": "boolean",
             "enforcement_level": "string",
             "environment_name": "string",
