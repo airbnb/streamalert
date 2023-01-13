@@ -40,7 +40,7 @@ def generate_cloudwatch_events(cluster_name, cluster_dict, config):
     Args:
         cluster_name (str): The name of the currently generating cluster
         cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
-        config (dict): The loaded config from the 'conf/' directory
+        config (CLIConfig or dict): The loaded config from the 'conf/' directory
 
     Returns:
         bool: Result of applying the cloudwatch events module

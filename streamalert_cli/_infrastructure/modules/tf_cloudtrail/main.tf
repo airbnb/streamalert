@@ -127,31 +127,39 @@ resource "aws_cloudtrail" "streamalert" {
 // S3 bucket for CloudTrail output
 resource "aws_s3_bucket" "cloudtrail_bucket" {
   bucket        = var.s3_bucket_name
-  policy        = data.aws_iam_policy_document.cloudtrail_bucket.json
   force_destroy = false
-
-  versioning {
-    enabled = true
-  }
-
-  logging {
-    target_bucket = var.s3_logging_bucket
-    target_prefix = "${var.s3_bucket_name}/"
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm     = "aws:kms"
-        kms_master_key_id = aws_kms_key.cloudtrail_encryption.key_id
-      }
-    }
-  }
-
   tags = {
     Name    = var.s3_bucket_name
     Cluster = var.cluster
   }
+}
+
+resource "aws_s3_bucket_logging" "cloudtrail_bucket" {
+  bucket = aws_s3_bucket.cloudtrail_bucket.id
+  target_bucket = var.s3_logging_bucket
+  target_prefix = "${var.s3_bucket_name}/"
+}
+
+resource "aws_s3_bucket_versioning" "cloudtrail_bucket" {
+  bucket = aws_s3_bucket.cloudtrail_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail_bucket" {
+  bucket = aws_s3_bucket.cloudtrail_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.cloudtrail_encryption.key_id
+      sse_algorithm     = "aws:kms"
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "cloudtrail_bucket" {
+  bucket = aws_s3_bucket.cloudtrail_bucket.id
+  policy = data.aws_iam_policy_document.cloudtrail_bucket.json
 }
 
 data "aws_iam_policy_document" "cloudtrail_bucket" {

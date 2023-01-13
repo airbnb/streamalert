@@ -28,29 +28,41 @@ data "aws_iam_policy_document" "streamalert_data" {
 
 resource "aws_s3_bucket" "streamalert_data" {
   bucket        = var.s3_bucket_name
-  acl           = "private"
-  policy        = data.aws_iam_policy_document.streamalert_data.json
   force_destroy = false
-
-  versioning {
-    enabled = true
-  }
-
-  logging {
-    target_bucket = var.s3_logging_bucket
-    target_prefix = "${var.s3_bucket_name}/"
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm     = "aws:kms"
-        kms_master_key_id = var.kms_key_id
-      }
-    }
-  }
-
   tags = {
     Name = "StreamAlert"
+  }
+}
+
+resource "aws_s3_bucket_acl" "streamalert_data" {
+  bucket = aws_s3_bucket.streamalert_data.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_versioning" "streamalert_data" {
+  bucket = aws_s3_bucket.streamalert_data.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_logging" "streamalert_data" {
+  bucket = aws_s3_bucket.streamalert_data.id
+  target_bucket = var.s3_logging_bucket
+  target_prefix = "${var.s3_bucket_name}/"
+}
+
+resource "aws_s3_bucket_policy" "streamalert_data" {
+  bucket = aws_s3_bucket.streamalert_data.id
+  policy = data.aws_iam_policy_document.streamalert_data.json
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "streamalert_data" {
+  bucket = aws_s3_bucket.streamalert_data.id
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = var.kms_key_id
+      sse_algorithm     = "aws:kms"
+    }
   }
 }

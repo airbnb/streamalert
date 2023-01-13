@@ -49,7 +49,7 @@ resource "aws_lambda_alias" "alias" {
 // Allow Lambda function to be invoked via a CloudWatch event rule (if applicable)
 resource "aws_lambda_permission" "allow_cloudwatch_invocation" {
   count         = local.schedule_enabled ? 1 : 0
-  statement_id  = "AllowExecutionFromCloudWatch_${aws_lambda_function.function.function_name}"
+  statement_id_prefix  = "AllowExecutionFromCloudWatch_${aws_lambda_function.function.function_name}"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.function.function_name
   principal     = "events.amazonaws.com"
@@ -60,7 +60,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_invocation" {
 // Lambda Permission: Allow SNS to invoke this function
 resource "aws_lambda_permission" "sns_inputs" {
   count         = length(var.input_sns_topics)
-  statement_id  = "AllowExecutionFromSNS${count.index}"
+  statement_id_prefix  = "AllowExecutionFromSNS${count.index}"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.function.function_name
   principal     = "sns.amazonaws.com"

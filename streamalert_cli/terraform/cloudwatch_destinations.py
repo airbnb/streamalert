@@ -30,7 +30,7 @@ def generate_cloudwatch_destinations(cluster_name, cluster_dict, config):
         cluster_name (str): The name of the current cluster being generated
         cluster_dict (defaultdict): The dict containing all Terraform config for
             a given cluster.
-        config (dict): The loaded config from the 'conf/' directory
+        config (CLIConfig or dict): The loaded config from the 'conf/' directory
 
     Returns:
         bool: True if this module was applied successfully, False otherwise
