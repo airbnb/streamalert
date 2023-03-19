@@ -68,7 +68,7 @@ class RuleDescriptionParser:
         r'^(?!http:|https:)(?P<field>[a-zA-Z\d\-_&\s]{0,20}):(?P<remainder>.*)$'
     )
     _URL_REGEX = re.compile(
-        r'^(?:http(s)?://)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+$'
+        r'^(?:http(s)?://)?[\w.-]+(?:\.[\w\.-]+)[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+$'
     )
 
     @classmethod
