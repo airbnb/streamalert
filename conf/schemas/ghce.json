@@ -45,6 +45,7 @@
             "head_sha": "string",
             "hook_id": "integer",
             "ignore_approvals_from_contributors": "boolean",
+            "imposer_repo": "string",
             "integration": "string",
             "invitee": "string",
             "invitee_email": "string",
@@ -123,7 +124,7 @@
             "user_id": "integer",
             "visibility": "string",
             "workflow_id": "string",
-            "workflow_run_id": "string"
+            "workflow_run_id": "integer"
         },
         "parser": "json",
         "configuration": {
@@ -173,6 +174,7 @@
                 "head_sha",
                 "hook_id",
                 "ignore_approvals_from_contributors",
+                "imposer_repo",
                 "integration",
                 "invitee",
                 "invitee_email",
