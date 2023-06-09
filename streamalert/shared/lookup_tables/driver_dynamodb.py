@@ -17,6 +17,7 @@ import json
 import logging
 
 import boto3
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutError
 
 import streamalert.shared.helpers.boto as boto_helpers
@@ -45,6 +46,7 @@ class DynamoDBDriver(PersistenceDriver):
         # {
         #     "driver": "dynamodb",
         #     "table": "some_table_name",
+        #     "index": "secondary_index_name",
         #     "partition_key": "MyPartitionKey",
         #     "sort_key": "MySortKey",
         #     "value_key": "MyValueKey",
@@ -57,6 +59,7 @@ class DynamoDBDriver(PersistenceDriver):
         super(DynamoDBDriver, self).__init__(configuration)
 
         self._dynamo_db_table = configuration['table']
+        self._dynamo_db_index = configuration.get('index')
         self._dynamo_db_partition_key = configuration['partition_key']
         self._dynamo_db_value_key = configuration['value_key']
         self._dynamo_db_sort_key = configuration.get('sort_key', False)
@@ -159,7 +162,12 @@ class DynamoDBDriver(PersistenceDriver):
                 self.id,
                 key
             )
-            self._load(key)
+            # If index attribute is provide in the lookup table configuration, invoke index
+            # function instead of primary
+            if self._dynamo_db_index:
+                self._load_index(key)
+            else:
+                self._load(key)
 
     def _load(self, key):
         key_schema = self._convert_key_to_key_schema(key)
@@ -217,6 +225,44 @@ class DynamoDBDriver(PersistenceDriver):
         self._cache.set(
             key,
             response['Item'][self._dynamo_db_value_key],
+            self._cache_refresh_minutes
+        )
+
+    def _load_index(self, key):
+        key_schema = self._convert_key_to_key_schema(key)
+
+        if LOGGER_DEBUG_ENABLED:
+            # Guard json.dumps calls due to its expensive computation
+            LOGGER.debug(
+                'LookupTable (%s): Loading key \'%s\' with schema (%s)',
+                self.id,
+                key,
+                json.dumps(key_schema)
+            )
+
+        try:
+            response = self._table.query(
+                IndexName=self._dynamo_db_index,
+                KeyConditionExpression=Key(self._dynamo_db_partition_key).eq(key)
+            )
+
+        except (ConnectTimeoutError, ReadTimeoutError):
+            # Catching timeouts
+            LOGGER.error(
+                'LookupTable (%s): Reading from DynamoDB timed out',
+                self.id
+            )
+            raise LookupTablesInitializationError(
+                'LookupTable ({}): Reading from DynamoDB timed out'.format(self.id)
+            )
+
+        if 'Items' not in response:
+            self._cache.set_blank(key, self._cache_refresh_minutes)
+            return
+
+        self._cache.set(
+            key,
+            response['Items'],
             self._cache_refresh_minutes
         )
 
