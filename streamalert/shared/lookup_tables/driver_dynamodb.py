@@ -58,7 +58,7 @@ class DynamoDBDriver(PersistenceDriver):
 
         super(DynamoDBDriver, self).__init__(configuration)
 
-        self._dynamo_db_table = configuration['table']
+        self._dynamo_db_table = configuration['table'].split('/')[0]
         self._dynamo_db_index = configuration.get('index')
         self._dynamo_db_partition_key = configuration['partition_key']
         self._dynamo_db_value_key = configuration['value_key']

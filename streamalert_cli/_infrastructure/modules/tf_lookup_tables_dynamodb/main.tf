@@ -3,6 +3,7 @@ data "aws_iam_policy_document" "streamalert_read_items_from_lookup_tables_dynamo
     actions = [
       "dynamodb:GetItem",
       "dynamodb:DescribeTable",
+      "dynamodb:Query"
     ]
 
     resources = local.dynamodb_table_arns
