@@ -569,6 +569,12 @@ def _generate_lookup_tables_settings(config):
 
         if table_config['driver'] == 'dynamodb':
             dynamodb_tables.add(table_config['table'])
+
+            # Generates ARN for global secondary index for a dynamodb table
+            index = table_config.get('index', '')
+            if index:
+                dynamodb_tables.add(f"{table_config['table']}/index/{index}")
+
             continue
 
     if not dynamodb_tables and not s3_buckets:
