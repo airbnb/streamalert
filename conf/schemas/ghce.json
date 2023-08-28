@@ -1,4 +1,10 @@
 {
+    "ghce:test": {
+        "parser": "csv",
+        "schema": {
+            "message": "string"
+        }
+    },
     "ghce:cloud": {
         "schema": {
             "@timestamp": "integer",
