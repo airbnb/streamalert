@@ -659,7 +659,7 @@ class CSVParser(ParserBase):
                 quotechar=self.quotechar,
                 escapechar=self.escapechar
             )
-        except (ValueError, csv.Error):
+        except (ValueError, csv.Error, TypeError):
             return False
 
     def _parse(self, data):
