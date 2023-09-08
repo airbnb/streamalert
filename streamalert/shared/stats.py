@@ -60,7 +60,7 @@ class RuleStatisticTracker:
     def statistics_info(cls):
         """Return human-readable information on rule stats"""
         if not cls.STATS:
-            LOGGER.error('No rule statistics to return')
+            LOGGER.debug('No rule statistics to return')
             return
 
         max_rule_name_len = max([len(rule) for rule in cls.STATS])

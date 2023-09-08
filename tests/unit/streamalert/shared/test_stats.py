@@ -64,7 +64,7 @@ class TestRuleStats:
         stat.calls = 1
         assert_equal(str(stat), '   10.00000000 ms       1 calls     10.00000000 avg')
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.debug')
     def test_get_rule_stats_empty(self, log_mock):
         """RuleStatisticTracker - Statistics Info, None"""
         stats.RuleStatisticTracker.statistics_info()
