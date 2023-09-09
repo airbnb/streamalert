@@ -1,0 +1,31 @@
+version: 2
+registries:
+  pypi-artifactory:
+    type: python-index
+    url: https://ridgelineapps.jfrog.io/ridgelineapps/api/pypi/ridgeline-python-dev/simple/
+    username: dependabot
+    password: ${{secrets.ART_DEPENDABOT_ACCESS_TOKEN}}
+    replaces-base: true
+updates:
+- package-ecosystem: "pip"
+  directory: "/"
+  insecure-external-code-execution: allow
+  registries:
+  - pypi-artifactory
+  schedule:
+    interval: "daily"
+    time: "09:00"
+  open-pull-requests-limit: 0
+  versioning-strategy: increase-if-necessary
+  commit-message:
+    prefix: "build(deps)"
+    prefix-development: "build(deps-dev)"
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "daily"
+    time: "09:00"
+  open-pull-requests-limit: 0
+  commit-message:
+    prefix: "build(deps)"
+    prefix-development: "build(deps-dev)"
