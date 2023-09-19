@@ -1,0 +1,38 @@
+{
+  "waf:web_acl": {
+    "schema": {
+      "action": "string",
+      "formatVersion": "integer",
+      "httpRequest": {},
+      "httpSourceId": "string",
+      "httpSourceName": "string",
+      "ja3Fingerprint": "string",
+      "labels": [],
+      "nonTerminatingMatchingRules": [],
+      "oversizeFields": [],
+      "rateBasedRuleList": [],
+      "requestBodySize": "integer",
+      "requestBodySizeInspectedByWAF": "integer",
+      "requestHeadersInserted": "string",
+      "responseCodeSent": "string",
+      "ruleGroupList": [],
+      "terminatingRuleId": "string",
+      "terminatingRuleMatchDetails": [],
+      "terminatingRuleType": "string",
+      "timestamp": "integer",
+      "webaclId": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "ja3Fingerprint",
+        "labels",
+        "oversizeFields",
+        "requestBodySize",
+        "requestBodySizeInspectedByWAF",
+        "responseCodeSent",
+        "requestHeadersInserted"
+      ]
+    }
+  }
+}
