@@ -1,0 +1,9 @@
+# This workflow will approve and enable auto-merge on low-risk dependabot pull-requests
+# If you would like to disable this automation, add a repository variable named DISABLE_DEPENDABOT_REVIEWER with any value
+# More info: https://ridgelineapps.atlassian.net/wiki/spaces/SEC/pages/2966290543/Dependabot+Security+Vulnerability+Fix+PRs
+
+on: pull_request_target
+
+jobs:
+  dependabot-reviewer:
+    uses: ridgelineapps/github-workflows/.github/workflows/dependabot_reviewer.yml@master
